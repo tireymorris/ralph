@@ -89,30 +89,59 @@ module Ralph
 
     def self.implement_story(story)
       puts "\n🔧 Implementing story: #{story['title']}"
-      puts '   (This would integrate with Amp CLI in real implementation)'
-      puts '   ✓ Code implementation completed'
-      update_agents_md(story)
-      true
+
+      llm = Ralph::LLM.new
+      project_context = build_project_context
+
+      response = llm.implement_story(story, project_context)
+
+      if response && !response.empty?
+        puts '   ✓ Code implementation completed'
+        update_agents_md(story)
+        true
+      else
+        puts '   ❌ Failed to generate code'
+        false
+      end
+    rescue StandardError => e
+      puts "   ❌ Implementation failed: #{e.message}"
+      false
     end
 
     def self.run_quality_checks
       puts "\n🧪 Running quality checks..."
 
-      checks = [
-        { name: 'Type check', command: 'echo "✅ Type check passed"', critical: true },
-        { name: 'Tests', command: 'echo "✅ Tests passed"', critical: true },
-        { name: 'Linting', command: 'echo "✅ Linting passed"', critical: false }
-      ]
+      llm = Ralph::LLM.new
+      quality_commands = llm.analyze_project_for_quality_checks
 
       all_passed = true
-      checks.each do |check|
-        print "   #{check[:name]}... "
-        result = system(check[:command])
+      critical_checks = %w[typecheck test]
+
+      critical_checks.each do |check_type|
+        command = quality_commands[check_type]
+        next unless command && !command.include?('No')
+
+        print "   #{check_type.capitalize}... "
+        result = system(command)
         if result
           puts '✅'
         else
           puts '❌'
-          all_passed = false if check[:critical]
+          all_passed = false
+        end
+      end
+
+      # Run optional checks
+      %w[lint build].each do |check_type|
+        command = quality_commands[check_type]
+        next unless command && !command.include?('No')
+
+        print "   #{check_type.capitalize}... "
+        result = system(command)
+        if result
+          puts '✅'
+        else
+          puts '⚠️  (non-critical)'
         end
       end
 
@@ -158,6 +187,17 @@ module Ralph
 
       File.write('AGENTS.md', agents_content + new_learning)
       puts '  ✓ AGENTS.md updated'
+    end
+
+    def self.build_project_context
+      agents_content = File.exist?('AGENTS.md') ? File.read('AGENTS.md') : ''
+      previous_iterations = File.exist?('progress.txt') ? File.read('progress.txt').scan(/Iteration \d+/).length : 0
+
+      {
+        agents_content: agents_content,
+        previous_iterations: previous_iterations,
+        scan_files: true
+      }
     end
   end
 end

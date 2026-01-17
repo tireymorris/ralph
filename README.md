@@ -2,6 +2,13 @@
 
 Ralph automates software development through an autonomous agent loop that implements PRD requirements iteratively until completion.
 
+## About
+
+This is a Ruby implementation of the **Ralph Wiggum pattern** originally created by [Geoffrey Huntley](https://ghuntley.com/). The Ralph pattern is a simple but powerful concept: run an AI coding agent repeatedly until all tasks are complete, starting fresh with each iteration.
+
+**Original Concept:** [Geoffrey Huntley](https://ghuntley.com/)  
+**Learn More:** [everything is a ralph loop](https://ghuntley.com/loop/)
+
 ## Quick Start
 
 ```bash
@@ -39,14 +46,51 @@ Ralph automates software development through an autonomous agent loop that imple
 4. **Execute**: `ralph run` starts autonomous development loop
 5. **Monitor**: `ralph status` tracks progress
 
-## Autonomous Agent Features
+## Ralph Pattern Features
 
-- **Fresh Context**: Each iteration starts with clean state
+- **Fresh Context**: Each iteration spawns a new agent instance with clean state (core Ralph principle)
 - **Priority-Based**: Implements stories in priority order
 - **Quality Gates**: Runs type checking, tests, and linting
 - **Progress Tracking**: Updates `prd.json`, `progress.txt`, and `AGENTS.md`
 - **Git Integration**: Automatic branching and committing
-- **Learning Persistence**: Documents patterns and discoveries
+- **Learning Persistence**: Documents patterns and discoveries for future iterations
+- **Deterministic Context Allocation**: Avoids context rot through clean iteration boundaries
+
+## Current Implementation Status
+
+✅ **Implemented:**
+- Full CLI with command registry
+- Interactive mode and help system
+- Project structure initialization
+- PRD creation and conversion (basic)
+- Autonomous agent loop framework
+- Progress tracking and git integration
+- AGENTS.md learning persistence
+
+⚠️ **Requirements:**
+- **LLM Provider**: OpenAI, Anthropic, or Ollama
+- **API Keys**: Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variables
+- **Ruby Gems**: `gem install openai anthropic` (if using those providers)
+
+## LLM Configuration
+
+Configure your LLM provider via environment variables:
+
+```bash
+# OpenAI (default)
+export RALPH_LLM_PROVIDER=openai
+export RALPH_LLM_MODEL=gpt-4
+export OPENAI_API_KEY=your_key_here
+
+# Anthropic Claude
+export RALPH_LLM_PROVIDER=anthropic
+export RALPH_LLM_MODEL=claude-3-sonnet-20241022
+export ANTHROPIC_API_KEY=your_key_here
+
+# Local Ollama
+export RALPH_LLM_PROVIDER=ollama
+export RALPH_LLM_MODEL=codellama
+```
 
 ## Project Structure
 
@@ -105,3 +149,16 @@ Generated files are excluded from git via `.gitignore`:
 - `archive/` - Completed feature archives
 
 Only the Ralph CLI framework code is version controlled.
+
+## References
+
+- **Original Pattern:** [Geoffrey Huntley](https://ghuntley.com/)
+- **Ralph Philosophy:** [everything is a ralph loop](https://ghuntley.com/loop/)
+- **History:** [A brief history of ralph](https://www.humanlayer.dev/blog/brief-history-of-ralph)
+- **Technical Deep Dive:** [Ralph Wiggum, explained](https://jpcaparas.medium.com/ralph-wiggum-explained-the-claude-code-loop-that-keeps-going-3250dcc30809)
+
+## Acknowledgments
+
+This implementation is based on the Ralph Wiggum pattern by [Geoffrey Huntley](https://ghuntley.com/). The pattern fundamentally changed how we approach autonomous AI development by recognizing that clean iteration boundaries are more effective than accumulating conversation history.
+
+The name "Ralph" comes from Ralph Wiggum of The Simpsons, known for his persistent and optimistic approach - a perfect metaphor for autonomous agents that keep trying until they succeed.
