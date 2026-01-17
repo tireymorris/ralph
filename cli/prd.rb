@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'fileutils'
+
 module Ralph
   class PRD
     def self.create(description)
@@ -19,23 +21,19 @@ module Ralph
         4. Technical Requirements
         5. Success Metrics
 
-        Write the PRD to: #{filename}
-
         Focus on clarity and actionable requirements that can be implemented iteratively.
         Make user stories small enough for single-iteration implementation.
 
-        Write the file and then respond with "OK" when complete.
+        Return the complete PRD as markdown content only.
       PROMPT
 
-      response = llm.complete(prompt, { write_files: true })
+      response = llm.complete(prompt)
+      markdown_content = extract_markdown_content(response)
 
-      if File.exist?(filename)
-        puts "  ✓ Created #{filename}"
-        puts "\nNext: Run 'ralph prd:convert #{filename}' to extract stories"
-      else
-        puts '  ❌ Failed to create PRD file'
-        puts "  LLM response: #{response}"
-      end
+      File.write(filename, markdown_content)
+
+      puts "  ✓ Created #{filename}"
+      puts "\nNext: Run 'ralph prd:convert #{filename}' to extract stories"
     end
 
     def self.convert(file_path)
@@ -54,7 +52,6 @@ module Ralph
         puts "  ✓ Extracted #{stories.length} user stories"
         puts '  ✓ Created prd.json with stories prioritized for implementation'
 
-        # Show preview
         puts "\nUser Stories Preview:"
         stories.each_with_index do |story, i|
           puts "  #{i + 1}. #{story['title']} (Priority: #{story['priority']})"
@@ -63,6 +60,16 @@ module Ralph
         puts "\nReady to run: ralph run"
       else
         puts '  ❌ Failed to extract stories from PRD'
+      end
+    end
+
+    def self.extract_markdown_content(response)
+      if response.match(/```markdown\s*\n(.*?)\n```/m)
+        ::Regexp.last_match(1)
+      elsif response.match(/```\s*\n(.*?)\n```/m)
+        ::Regexp.last_match(1)
+      else
+        response
       end
     end
   end
