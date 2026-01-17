@@ -1,31 +1,25 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'json'
-require 'fileutils'
+require_relative 'agent'
 
-require_relative 'llm'
-require_relative 'cli/registry'
-require_relative 'cli/help'
-require_relative 'cli/interactive'
-require_relative 'cli/project'
-require_relative 'cli/prd'
-require_relative 'cli/status'
-require_relative 'cli/agent'
-
-Dir.glob(File.join(__dir__, 'commands', '*.rb')).each do |file|
-  require file
-end
-
-if __FILE__ == $PROGRAM_NAME || ARGV[0]&.start_with?('--')
-  command_name = ARGV.shift
-
-  case command_name
-  when '-i', '--interactive'
-    Ralph::Interactive.run(Ralph::Registry.commands)
-  when nil, 'help', '--help', '-h'
-    Ralph::Help.show(Ralph::Registry.commands)
-  else
-    Ralph::Registry.run(command_name, *ARGV)
+# Main execution
+if __FILE__ == $PROGRAM_NAME
+  if ARGV.empty? || ARGV[0] == '--help' || ARGV[0] == '-h'
+    puts 'Ralph - Autonomous Software Development Agent'
+    puts ''
+    puts 'Usage:'
+    puts '  ./ralph "your feature description"'
+    puts ''
+    puts 'Example:'
+    puts '  ./ralph "Add user authentication with login and registration"'
+    puts ''
+    puts 'Requirements:'
+    puts '  - opencode CLI tool installed and available'
+    puts '  - Git repository'
+    exit 0
   end
+
+  prompt = ARGV.join(' ')
+  Ralph::Agent.run(prompt)
 end
