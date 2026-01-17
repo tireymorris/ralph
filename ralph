@@ -1,9 +1,16 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'json'
+require 'fileutils'
+
 require_relative 'cli/registry'
 require_relative 'cli/help'
 require_relative 'cli/interactive'
+require_relative 'cli/project'
+require_relative 'cli/prd'
+require_relative 'cli/status'
+require_relative 'cli/agent'
 
 Dir.glob(File.join(__dir__, 'commands', '*.rb')).each do |file|
   require file

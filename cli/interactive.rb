@@ -4,7 +4,6 @@ require 'readline'
 require 'io/console'
 
 module Ralph
-  # Interactive REPL mode with autocomplete
   module Interactive
     def self.run(commands)
       cmd_list = commands.keys.sort

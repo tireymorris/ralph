@@ -3,7 +3,6 @@
 require_relative 'command'
 
 module Ralph
-  # Stores and executes registered commands
   class Registry
     class << self
       def commands
