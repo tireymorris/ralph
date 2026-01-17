@@ -1,13 +1,13 @@
-# CLI Builder
+# Ralph CLI Builder
 
 A minimal Ruby CLI framework with command registration, interactive mode, and autocomplete.
 
 ## Usage
 
 ```bash
-./cli.rb --help              # show commands
-./cli.rb -i                  # interactive mode
-./cli.rb namespace:command   # run command
+./ralph --help              # show commands
+./ralph -i                  # interactive mode
+./ralph namespace:command   # run command
 ```
 
 ## Adding Commands
@@ -15,7 +15,7 @@ A minimal Ruby CLI framework with command registration, interactive mode, and au
 Create files in `commands/` that register commands:
 
 ```ruby
-CLI::Registry.register('myapp:greet', 'Say hello') do |name = 'World'|
+Ralph::Registry.register('myapp:greet', 'Say hello') do |name = 'World'|
   puts "Hello, #{name}!"
 end
 ```

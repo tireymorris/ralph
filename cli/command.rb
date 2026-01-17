@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module CLI
-  # Represents a registered CLI command with name, description, and handler
+module Ralph
+  # Represents a registered Ralph command with name, description, and handler
   class Command
     attr_reader :name, :description, :handler
 
@@ -16,4 +16,3 @@ module CLI
     end
   end
 end
-

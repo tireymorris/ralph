@@ -14,10 +14,10 @@ if __FILE__ == $PROGRAM_NAME || ARGV[0]&.start_with?('--')
 
   case command_name
   when '-i', '--interactive'
-    CLI::Interactive.run(CLI::Registry.commands)
+    Ralph::Interactive.run(Ralph::Registry.commands)
   when nil, 'help', '--help', '-h'
-    CLI::Help.show(CLI::Registry.commands)
+    Ralph::Help.show(Ralph::Registry.commands)
   else
-    CLI::Registry.run(command_name, *ARGV)
+    Ralph::Registry.run(command_name, *ARGV)
   end
 end
