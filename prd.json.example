@@ -1,0 +1,17 @@
+{
+  "projectName": "Example Project",
+  "branchName": "feature/example-feature",
+  "userStories": [
+    {
+      "id": "story-1",
+      "title": "Example story title",
+      "description": "Detailed description of what needs to be implemented",
+      "acceptanceCriteria": [
+        "Criterion 1",
+        "Criterion 2"
+      ],
+      "priority": 1,
+      "passes": false
+    }
+  ]
+}

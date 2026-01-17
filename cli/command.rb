@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # Represents a registered Ralph command with name, description, and handler
   class Command
     attr_reader :name, :description, :handler
 

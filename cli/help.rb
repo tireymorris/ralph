@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # Displays Ralph usage and available commands
   module Help
     def self.show(commands)
       puts '╔═══════════════════════════════════════════════════════════════════════════════╗'
