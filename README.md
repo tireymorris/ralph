@@ -48,9 +48,11 @@ This is a Ruby implementation of the **Ralph Wiggum pattern** originally created
 
 ## Ralph Pattern Features
 
+- **LLM-Agnostic**: Works with OpenAI, Anthropic, or Ollama models
 - **Fresh Context**: Each iteration spawns a new agent instance with clean state (core Ralph principle)
+- **Intelligent Quality Gates**: LLM determines appropriate project-specific quality checks
+- **Smart Story Parsing**: LLM extracts and prioritizes user stories from PRDs
 - **Priority-Based**: Implements stories in priority order
-- **Quality Gates**: Runs type checking, tests, and linting
 - **Progress Tracking**: Updates `prd.json`, `progress.txt`, and `AGENTS.md`
 - **Git Integration**: Automatic branching and committing
 - **Learning Persistence**: Documents patterns and discoveries for future iterations
@@ -91,6 +93,27 @@ export ANTHROPIC_API_KEY=your_key_here
 export RALPH_LLM_PROVIDER=ollama
 export RALPH_LLM_MODEL=codellama
 ```
+
+## How It Works
+
+1. **LLM Integration**: Ralph uses any configured LLM for:
+   - Extracting user stories from PRD documents
+   - Determining project-appropriate quality checks  
+   - Implementing code based on story requirements
+   - Learning from previous iterations
+
+2. **Project Discovery**: The LLM scans your project to understand:
+   - Technology stack (package.json, requirements.txt, etc.)
+   - Testing frameworks and commands
+   - Build and lint configurations
+   - Code patterns and conventions
+
+3. **Iterative Implementation**: Each iteration:
+   - Spawns a fresh LLM context (no conversation accumulation)
+   - Implements one user story completely
+   - Runs project-specific quality checks
+   - Commits if all checks pass
+   - Updates progress and learning files
 
 ## Project Structure
 
