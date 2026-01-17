@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'json'
 require 'fileutils'
+require 'open3'
 require_relative 'config'
 
 module Ralph
@@ -94,6 +94,38 @@ module Ralph
       Logger.error('System command exception', { command: command, operation: operation, error: e.message })
       false
     end
+
+    def self.capture_command_output(prompt, operation, timeout_seconds = nil)
+      Logger.debug("Capturing output for: #{prompt[0..100]}...", { operation: operation })
+
+      timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
+
+      temp_file = Tempfile.new(['ralph_prompt', '.txt'])
+      begin
+        temp_file.write(prompt)
+        temp_file.close
+
+        ['timeout', timeout_seconds.to_s, 'opencode', 'run', "opencode run $(cat #{temp_file.path})"]
+
+        cmd_parts = if timeout_seconds
+                      ['timeout', timeout_seconds.to_s, 'opencode', 'run', "$(cat #{temp_file.path})"]
+                    else
+                      ['opencode', 'run', "$(cat #{temp_file.path})"]
+                    end
+
+        stdout, stderr, = Open3.capture3(*cmd_parts)
+        output = stdout + stderr
+      ensure
+        temp_file.close
+        temp_file.unlink
+      end
+
+      Logger.debug('Command output captured', { operation: operation, output_length: output.length })
+      output
+    rescue StandardError => e
+      Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
+      nil
+    end
   end
 
   class Agent
@@ -114,75 +146,83 @@ module Ralph
       puts "\n📋 Phase 1: Creating PRD and analyzing project..."
 
       prd_prompt = <<~PROMPT
-        You are Ralph, an autonomous software development agent. Your task is to implement: #{prompt}
+        You are Ralph, an autonomous software development agent.
 
-        Follow this process:
+        Your task: #{prompt}
 
-        1. PROJECT ANALYSIS
-           - Scan current directory to understand existing codebase
-           - Identify technology stack, patterns, conventions
-           - Note dependencies, tests, build setup
-        #{'   '}
-        2. CREATE PRD
-           - Generate comprehensive user stories
-           - Each story must be implementable in one iteration
-           - Include acceptance criteria and priorities (1=highest)
-        #{'   '}
-        3. OUTPUT REQUIREMENTS
-           - Respond ONLY with raw JSON (no markdown, no explanation)
-        #{'   '}
-        Required JSON format:
-        {
-          "project_name": "descriptive project name",
-          "branch_name": "feature/descriptive-name",#{' '}
-          "stories": [
-            {
-              "id": "story-1",
-              "title": "Story title",
-              "description": "Detailed description",
-              "acceptance_criteria": ["criterion 1", "criterion 2"],
-              "priority": 1,
-              "passes": false
-            }
-          ]
-        }
+        Step 1: Analyze the current codebase
+        - Read main files to understand the project
+        - Identify the technology stack and patterns
 
-        CRITICAL: Return only the JSON object, nothing else.
+        Step 2: Create PRD.md file with this structure:
+        ```
+        # PRD - [Project Name]
+
+        ## Project Branch
+        feature/[branch-name]
+
+        ## User Stories
+        - [List of story IDs]
+        ```
+
+        Step 3: Create individual story files (story-1.md, story-2.md, etc.)
+        Each story file must contain:
+        ```
+        # Story [ID]: [Title]
+
+        ## Description
+        [Detailed description]
+
+        ## Acceptance Criteria
+        - [Criterion 1]
+        - [Criterion 2]
+
+        ## Priority
+        [1-5]
+
+        ## Implementation Notes
+        [Any specific guidance for implementing this story]
+        ```
+
+        CRITICAL: You MUST create ALL files (PRD.md and all story-*.md files). Do not respond with text only - actually create the files.
+
+        When complete, respond with: "DONE: Created [N] story files"
       PROMPT
 
       success = ErrorHandler.with_error_handling('PRD creation') do
-        response = ErrorHandler.safe_system_command("opencode run \"#{prd_prompt}\" 2>/dev/null", 'Generate PRD')
-        return false unless response
+        Logger.info('Calling opencode to create PRD and story files...')
+        response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
+        Logger.info("Response received: #{response ? 'Yes' : 'No'}")
 
-        response = response.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
-        Logger.debug('OpenCode response received', { length: response.length })
-
-        requirements = parse_json_safely(response, 'PRD requirements')
-        return false unless requirements
-
-        # Validate required structure
-        required_fields = %w[project_name branch_name stories]
-        missing_fields = required_fields.select { |field| requirements[field].nil? || requirements[field].empty? }
-        raise ArgumentError, "Missing required fields: #{missing_fields.join(', ')}" if missing_fields.any?
-
-        unless requirements['stories'].is_a?(Array) && requirements['stories'].any?
-          raise ArgumentError, 'Invalid stories format: expected non-empty array'
+        unless response
+          Logger.error('No response from opencode')
+          return false
         end
 
-        # Create state files
-        ErrorHandler.with_error_handling('State file creation') do
-          File.write('prd.json', JSON.pretty_generate(requirements))
+        # Wait a moment for file system to sync
+        sleep 2
 
-          agents_content = "# Ralph Agent Patterns\n\n## Project Context\n- Technology: #{requirements['project_name']}\n- Stories: #{requirements['stories'].length} items\n- Started: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-          File.write('AGENTS.md', agents_content)
+        # Check if PRD.md was created
+        unless File.exist?('PRD.md')
+          Logger.error('PRD.md file was not created')
+          Logger.error("Response was: #{response[0..500]}")
+          return false
         end
 
-        Logger.info('PRD analysis complete', {
-                      project: requirements['project_name'],
-                      stories: requirements['stories'].length
-                    })
+        Logger.info('PRD.md created successfully')
 
-        requirements
+        story_files = Dir.glob('story-*.md').sort
+        if story_files.empty?
+          Logger.error('No story files were created')
+          return false
+        end
+
+        Logger.info("Created #{story_files.length} story files: #{story_files.join(', ')}")
+
+        agents_content = "# Ralph Agent Patterns\n\n## Project Context\n- PRD: PRD.md\n- Stories: #{story_files.length} items\n- Started: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        File.write('AGENTS.md', agents_content)
+
+        true
       end
 
       unless success
@@ -190,12 +230,11 @@ module Ralph
         return
       end
 
-      requirements = success
-
       # Phase 2: Autonomous implementation loop
       puts "\n🔄 Phase 2: Implementing all stories..."
 
-      create_feature_branch(requirements['branch_name'])
+      branch_name = extract_branch_name_from_prd
+      create_feature_branch(branch_name)
 
       iteration = 0
       loop do
@@ -205,22 +244,21 @@ module Ralph
         puts "🔄 Iteration #{iteration}"
         puts '=' * 60
 
-        # Find next incomplete story
-        next_story = requirements['stories'].find { |s| s['passes'] != true }
+        # Find next incomplete story file
+        story_file = find_next_story_file
 
-        if next_story.nil?
+        if story_file.nil?
           puts "\n🎉 All stories completed!"
           puts '<promise>COMPLETE</promise>'
           break
         end
 
-        puts "\n📖 Implementing: #{next_story['title']}"
-        puts "🎯 Priority: #{next_story['priority']}"
+        story_id = File.basename(story_file, '.md')
+        puts "\n📖 Implementing: #{story_id}"
 
-        # Implement story
-        if implement_story(next_story, iteration, requirements)
-          next_story['passes'] = true
-          update_state(requirements)
+        # Implement story by feeding story file to opencode
+        if implement_story_from_file(story_file, iteration)
+          mark_story_complete(story_id)
           puts '✅ Story completed successfully'
         else
           puts '❌ Story failed - will retry in next iteration'
@@ -238,75 +276,68 @@ module Ralph
       end
 
       ErrorHandler.with_error_handling('Git branch creation', { branch: branch_name }) do
-        # Check if branch already exists
         if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
-          # Checkout existing branch
           ErrorHandler.safe_system_command("git checkout #{branch_name}", 'Checkout existing branch')
         else
-          # Create new branch
           ErrorHandler.safe_system_command("git checkout -b #{branch_name}", 'Create new branch')
         end
       end
     end
 
-    def self.implement_story(story, iteration, all_requirements)
-      completed = all_requirements['stories'].count { |s| s['passes'] == true }
-      total = all_requirements['stories'].length
+    def self.implement_story_from_file(story_file, iteration)
+      story_content = ErrorHandler.with_error_handling('Reading story file', { file: story_file }) do
+        File.read(story_file)
+      end || ''
 
       context = ErrorHandler.with_error_handling('Reading AGENTS.md') do
         File.exist?('AGENTS.md') ? File.read('AGENTS.md') : ''
       end || ''
 
       implementation_prompt = <<~PROMPT
-        You are Ralph implementing story: #{story['title']}
+        #{story_content}
 
-        Story: #{story['description']}
-        Acceptance Criteria: #{story['acceptance_criteria'].join(', ')}
-
-        Context: Iteration #{iteration} (#{completed}/#{total} stories done)
-        Previous patterns: #{context || 'None yet'}
+        Context:
+        - Iteration: #{iteration}
+        - Previous patterns: #{context || 'None yet'}
+        - AGENTS.md exists: #{File.exist?('AGENTS.md')}
 
         Process:
-        1. Read existing code to understand patterns
+        1. Read the story requirements above
         2. Implement complete solution
-        3. Run tests and fix issues
-        4. Update AGENTS.md with new patterns
-        5. Commit changes
+        3. Run tests if available
+        4. Update AGENTS.md with new patterns discovered
+        5. Commit changes with a descriptive message
 
         Work systematically. When complete, respond: "COMPLETED: [summary]"
 
         CRITICAL: Respond ONLY with the completion message, nothing else.
       PROMPT
 
-      response = ErrorHandler.with_error_handling('Story implementation', { story: story['id'] }) do
-        success = ErrorHandler.safe_system_command("opencode run \"#{implementation_prompt}\" 2>/dev/null",
-                                                   "Implement story: #{story['title']}")
-        return nil unless success
+      response = ErrorHandler.with_error_handling('Story implementation', { file: story_file }) do
+        response = ErrorHandler.capture_command_output(implementation_prompt, "Implement #{story_file}")
+        return nil unless response
 
-        response = `opencode run "#{implementation_prompt}" 2>/dev/null`
         response.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
       end
 
       unless response
-        Logger.error('Story implementation failed', { story: story['id'] })
+        Logger.error('Story implementation failed', { file: story_file })
         return false
       end
 
       if response&.include?('COMPLETED:')
         puts "✓ #{response}"
 
-        # Run tests if available
         if run_tests
-          commit_changes(story)
-          log_progress(iteration, story, true)
+          log_progress(iteration, story_file, true)
           true
         else
-          log_progress(iteration, story, false)
+          log_progress(iteration, story_file, false)
           false
         end
       else
         puts '❌ Implementation failed'
-        log_progress(iteration, story, false)
+        log_progress(iteration, story_file, false)
         false
       end
     end
@@ -335,45 +366,31 @@ module Ralph
       true # Continue without tests
     end
 
-    def self.commit_changes(story)
+    def self.commit_changes
       puts '💾 Committing changes...'
 
-      ErrorHandler.with_error_handling('Git commit', { story: story['id'] }) do
-        # Check if there are changes to commit
+      ErrorHandler.with_error_handling('Git commit') do
         status_output = `git status --porcelain 2>/dev/null`
         if status_output.nil? || status_output.strip.empty?
-          Logger.info('No changes to commit', { story: story['id'] })
+          Logger.info('No changes to commit')
           return true
         end
 
         ErrorHandler.safe_system_command('git add .', 'Stage changes')
-
-        commit_title = story['title']&.to_s&.gsub("'", "''") || 'Story implementation'
-        commit_desc = story['description']&.to_s&.gsub("'", "''") || ''
-        story_id = story['id']&.to_s || 'unknown'
-
-        commit_message = "feat: #{commit_title}
-
-#{commit_desc}
-
-Story: #{story_id}"
-
-        ErrorHandler.safe_system_command("git commit -m '#{commit_message}'", 'Commit changes')
+        ErrorHandler.safe_system_command("git commit -m 'Story implementation'", 'Commit changes')
       end
     end
 
-    def self.log_progress(iteration, story, success)
+    def self.log_progress(iteration, story_file, success)
       Logger.log(success ? :info : :error, "Iteration #{iteration} completed", {
-                   story: story['title'],
-                   story_id: story['id'],
-                   success: success,
-                   priority: story['priority']
+                   story: File.basename(story_file),
+                   success: success
                  })
 
       ErrorHandler.with_error_handling('Progress logging') do
         log = [
           "## Iteration #{iteration} - #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}",
-          "Story: #{story['title']}",
+          "Story: #{File.basename(story_file)}",
           "Status: #{success ? 'Success' : 'Failed'}",
           '---'
         ].join("\n")
@@ -382,26 +399,29 @@ Story: #{story_id}"
       end
     end
 
-    def self.update_state(requirements)
-      ErrorHandler.with_error_handling('State update') do
-        File.write('prd.json', JSON.pretty_generate(requirements))
+    def self.extract_branch_name_from_prd
+      ErrorHandler.with_error_handling('Reading PRD') do
+        prd_content = File.read('PRD.md')
+        return ::Regexp.last_match(1).strip if prd_content =~ /## Project Branch\s*\n\s*([^\n]+)/
+
+        'feature/implementation'
       end
     end
 
-    def self.parse_json_safely(json_string, context = 'JSON parsing')
-      return nil if json_string.nil? || json_string.strip.empty?
+    def self.find_next_story_file
+      stories_dir = Dir.glob('story-*.md').sort
+      stories_dir.find { |file| !file.include?('.completed.') }
+    end
 
-      ErrorHandler.with_error_handling(context) do
-        cleaned = json_string.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
+    def self.mark_story_complete(story_id)
+      ErrorHandler.with_error_handling('Mark story complete', { story: story_id }) do
+        original_file = "#{story_id}.md"
+        completed_file = "#{story_id}.completed.md"
 
-        # Try to extract JSON if it's wrapped in markdown or other text
-        json_match = cleaned.match(/\{[\s\S]*\}/)
-        cleaned = json_match[0] if json_match
-
-        parsed = JSON.parse(cleaned)
-        raise ArgumentError, 'Invalid JSON structure: expected Hash' unless parsed.is_a?(Hash)
-
-        parsed
+        if File.exist?(original_file)
+          File.rename(original_file, completed_file)
+          Logger.info("Marked #{story_id} as complete")
+        end
       end
     end
   end
