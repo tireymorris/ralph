@@ -1,6 +1,4 @@
-# Ralph - Autonomous Software Development Agent
-
-## About Ralph
+# Ralph 
 
 Ralph implements the Ralph Wiggum pattern - autonomous agents that learn and improve through clean iteration boundaries.
 
