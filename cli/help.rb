@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+module CLI
+  # Displays CLI usage and available commands
+  module Help
+    def self.show(commands)
+      puts '╔═══════════════════════════════════════════════════════════════════════════════╗'
+      puts '║                                 🚀 CLI                                        ║'
+      puts '╚═══════════════════════════════════════════════════════════════════════════════╝'
+      puts
+      puts 'Usage:'
+      puts '  ./cli.rb <command> [args...]'
+      puts '  ./cli.rb -i                    # Interactive mode'
+      puts
+      puts 'Available Commands:'
+      puts
+
+      commands.keys.sort.group_by { |k| k.split(':').first }.each do |namespace, cmds|
+        puts "  #{namespace.upcase}:"
+        cmds.each do |cmd_name|
+          command = commands[cmd_name]
+          puts "    #{cmd_name.ljust(40)} #{command.description}"
+        end
+        puts
+      end
+
+      puts 'Examples:'
+      puts '  ./cli.rb -i'
+      puts
+    end
+  end
+end
+
