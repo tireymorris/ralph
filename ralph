@@ -4,6 +4,7 @@
 require 'json'
 require 'fileutils'
 
+require_relative 'llm'
 require_relative 'cli/registry'
 require_relative 'cli/help'
 require_relative 'cli/interactive'

@@ -63,6 +63,22 @@ module Ralph
     end
 
     def self.parse_user_stories(content)
+      llm = Ralph::LLM.new
+      stories = llm.extract_stories_from_prd(content)
+
+      # Ensure required fields and default passes: false
+      stories.map do |story|
+        story.merge('passes' => false)
+      end
+    rescue StandardError => e
+      puts "⚠️  Failed to extract stories with LLM: #{e.message}"
+      puts '  Using fallback story generation'
+
+      # Fallback: try basic regex extraction
+      fallback_parse_stories(content)
+    end
+
+    def self.fallback_parse_stories(content)
       stories = []
 
       content.scan(/^###?\s*(.+)$/i) do |matches|
