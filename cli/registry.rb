@@ -2,7 +2,7 @@
 
 require_relative 'command'
 
-module CLI
+module Ralph
   # Stores and executes registered commands
   class Registry
     class << self
@@ -20,7 +20,7 @@ module CLI
         if command.nil?
           puts "❌ Unknown command: #{command_name}"
           puts
-          Help.show(commands)
+          Ralph::Help.show(commands)
           exit 1
         end
 
@@ -29,4 +29,3 @@ module CLI
     end
   end
 end
-

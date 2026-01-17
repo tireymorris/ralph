@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-module CLI
-  # Displays CLI usage and available commands
+module Ralph
+  # Displays Ralph usage and available commands
   module Help
     def self.show(commands)
       puts '╔═══════════════════════════════════════════════════════════════════════════════╗'
-      puts '║                                 🚀 CLI                                        ║'
+      puts '║                                 🚀 Ralph                                      ║'
       puts '╚═══════════════════════════════════════════════════════════════════════════════╝'
       puts
       puts 'Usage:'
-      puts '  ./cli.rb <command> [args...]'
-      puts '  ./cli.rb -i                    # Interactive mode'
+      puts '  ./ralph <command> [args...]'
+      puts '  ./ralph -i                    # Interactive mode'
       puts
       puts 'Available Commands:'
       puts
@@ -25,9 +25,8 @@ module CLI
       end
 
       puts 'Examples:'
-      puts '  ./cli.rb -i'
+      puts '  ./ralph -i'
       puts
     end
   end
 end
-

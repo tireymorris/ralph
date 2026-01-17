@@ -3,7 +3,7 @@
 require 'readline'
 require 'io/console'
 
-module CLI
+module Ralph
   # Interactive REPL mode with autocomplete
   module Interactive
     def self.run(commands)
@@ -52,7 +52,7 @@ module CLI
       def print_header
         puts
         puts "\e[1;36m╔═══════════════════════════════════════════════════════════════════════════════╗\e[0m"
-        puts "\e[1;36m║\e[0m                              \e[1;33m🚀 CLI\e[0m                                          \e[1;36m║\e[0m"
+        puts "\e[1;36m║\e[0m                              \e[1;33m🚀 Ralph\e[0m                                        \e[1;36m║\e[0m"
         puts "\e[1;36m╚═══════════════════════════════════════════════════════════════════════════════╝\e[0m"
         puts
         puts "\e[1;32mAvailable Commands:\e[0m"
@@ -126,4 +126,3 @@ module CLI
     end
   end
 end
-
