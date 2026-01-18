@@ -22,11 +22,11 @@ module Ralph
         nil
       end
 
-      def safe_system_command(command, operation, timeout_seconds = nil)
+      def safe_system_command(command, operation)
         Logger.debug("Executing command: #{command}", { operation: operation })
 
-        timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
-        full_command = timeout_seconds ? "timeout #{timeout_seconds} #{command}" : command
+        # No timeouts - let it cook
+        full_command = command
         result = system(full_command)
 
         if result.nil?
