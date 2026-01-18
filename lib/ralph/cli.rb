@@ -32,8 +32,8 @@ module Ralph
           Ralph - Autonomous Software Development Agent
 
           Usage:
-            ./ralph "your feature description"           # Full implementation
-            ./ralph "your feature description" --dry-run # Generate PRD only
+            ./bin/ralph "your feature description"           # Full implementation
+            ./bin/ralph "your feature description" --dry-run # Generate PRD only
         HELP
       end
     end

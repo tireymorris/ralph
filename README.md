@@ -12,10 +12,10 @@ Ralph transforms natural language requirements into working code through autonom
 
 ```bash
 # Full implementation
-./ralph "Add user authentication with login and registration"
+./bin/ralph "Add user authentication with login and registration"
 
 # Generate PRD for review
-./ralph "Add user authentication" --dry-run
+./bin/ralph "Add user authentication" --dry-run
 ```
 
 ## Generated Files
