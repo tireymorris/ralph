@@ -122,10 +122,7 @@ module Ralph
       end
 
       def create_state_files(requirements)
-        ErrorHandler.with_error_handling('State file creation') do
-          prd_file = Ralph::Config.get(:prd_file)
-          File.write(prd_file, JSON.pretty_generate(requirements))
-        end
+        StateManager.write_state(requirements)
       end
     end
   end
