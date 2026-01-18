@@ -74,8 +74,6 @@ module Ralph
           else
             puts '❌ Story failed - will retry in next iteration'
           end
-
-          sleep 1
         end
       end
     end
