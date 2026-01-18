@@ -10,23 +10,6 @@ module Ralph
         end
       end
 
-      def create_branch(branch_name)
-        puts "🌿 Creating branch: #{branch_name}"
-
-        validate_repository
-
-        ErrorHandler.with_error_handling('Git branch creation', { branch: branch_name }) do
-          # Check if branch already exists
-          if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
-            # Checkout existing branch
-            ErrorHandler.safe_system_command("git checkout #{branch_name}", 'Checkout existing branch')
-          else
-            # Create new branch
-            ErrorHandler.safe_system_command("git checkout -b #{branch_name}", 'Create new branch')
-          end
-        end
-      end
-
       def commit_changes(story)
         puts '💾 Committing changes...'
 
