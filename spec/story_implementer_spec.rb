@@ -23,7 +23,6 @@ RSpec.describe Ralph::StoryImplementer do
 
   describe '.implement' do
     before do
-      allow(Ralph::TestRunner).to receive(:run).and_return(true)
       allow(Ralph::GitManager).to receive(:commit_changes)
       allow(Ralph::ProgressLogger).to receive(:log_iteration)
     end
@@ -39,41 +38,13 @@ RSpec.describe Ralph::StoryImplementer do
         expect(result).to be true
       end
 
-      it 'runs tests' do
-        expect(Ralph::TestRunner).to receive(:run).and_return(true)
-        described_class.implement(story, 1, all_requirements)
-      end
-
-      it 'commits changes after passing tests' do
+      it 'commits changes' do
         expect(Ralph::GitManager).to receive(:commit_changes).with(story)
         described_class.implement(story, 1, all_requirements)
       end
 
       it 'logs successful iteration' do
         expect(Ralph::ProgressLogger).to receive(:log_iteration).with(1, story, true)
-        described_class.implement(story, 1, all_requirements)
-      end
-    end
-
-    context 'when tests fail' do
-      before do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
-          .and_return('COMPLETED: Done')
-        allow(Ralph::TestRunner).to receive(:run).and_return(false)
-      end
-
-      it 'returns false' do
-        result = described_class.implement(story, 1, all_requirements)
-        expect(result).to be false
-      end
-
-      it 'does not commit changes' do
-        expect(Ralph::GitManager).not_to receive(:commit_changes)
-        described_class.implement(story, 1, all_requirements)
-      end
-
-      it 'logs failed iteration' do
-        expect(Ralph::ProgressLogger).to receive(:log_iteration).with(1, story, false)
         described_class.implement(story, 1, all_requirements)
       end
     end
@@ -92,6 +63,14 @@ RSpec.describe Ralph::StoryImplementer do
 
         result = described_class.implement(story, 1, all_requirements)
         expect(result).to be false
+      end
+
+      it 'does not commit changes' do
+        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+          .and_return('Failed response')
+
+        expect(Ralph::GitManager).not_to receive(:commit_changes)
+        described_class.implement(story, 1, all_requirements)
       end
 
       it 'logs failed iteration' do
@@ -135,6 +114,16 @@ RSpec.describe Ralph::StoryImplementer do
 
         expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
           expect(prompt).to include('Previous patterns here')
+          'COMPLETED: done'
+        end
+
+        described_class.implement(story, 1, all_requirements)
+      end
+
+      it 'instructs OpenCode to run tests' do
+        expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
+          expect(prompt).to include('Run tests')
+          expect(prompt).to include('responsible for running tests')
           'COMPLETED: done'
         end
 

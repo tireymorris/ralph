@@ -45,11 +45,13 @@ module Ralph
           Process:
           1. Read existing code to understand patterns
           2. Implement complete solution
-          3. Run tests and fix issues
+          3. Run tests and fix any issues
           4. Update AGENTS.md with new patterns
-          5. Commit changes
+          5. Commit changes with descriptive message
 
-          Work systematically. When complete, respond: "COMPLETED: [summary]"
+          IMPORTANT: You are responsible for running tests and ensuring they pass before completing.
+
+          Work systematically. When ALL tests pass and changes are committed, respond: "COMPLETED: [summary]"
 
           CRITICAL: Respond ONLY with the completion message, nothing else.
         PROMPT
@@ -58,18 +60,11 @@ module Ralph
       def process_implementation_response(story, iteration, response)
         if response&.include?('COMPLETED:')
           puts "✓ #{response}"
-
-          test_success = TestRunner.run
-          if test_success
-            GitManager.commit_changes(story)
-            ProgressLogger.log_iteration(iteration, story, true)
-            true
-          else
-            ProgressLogger.log_iteration(iteration, story, false)
-            false
-          end
+          GitManager.commit_changes(story)
+          ProgressLogger.log_iteration(iteration, story, true)
+          true
         else
-          puts '❌ Implementation failed'
+          puts '❌ Implementation did not complete'
           ProgressLogger.log_iteration(iteration, story, false)
           false
         end
