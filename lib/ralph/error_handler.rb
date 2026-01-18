@@ -27,16 +27,10 @@ module Ralph
       end
 
       def capture_command_output(prompt, operation)
-        puts "\n🔄 Executing: #{operation}"
-        puts "📝 Prompt length: #{prompt.length} chars"
-
         model = Ralph::Config.get(:model)
-        model_name = model || 'default'
+        model || 'default'
         cmd = %w[opencode run]
         cmd += ['--model', model] if model
-
-        puts "🚀 Running: opencode run #{model ? "--model #{model}" : ''}"
-        puts "📡 Streaming from #{model_name}..."
 
         output_lines = []
 
@@ -46,16 +40,13 @@ module Ralph
 
           stdout_thread = Thread.new do
             stdout.each_line do |line|
-              puts "  📤 #{line}"
-              $stdout.flush
               output_lines << line
             end
           end
 
           stderr_thread = Thread.new do
             stderr.each_line do |line|
-              puts "  ⚠️  #{line}"
-              $stdout.flush
+              # STDERR output is still captured but not printed to minimize console output
             end
           end
 
@@ -72,7 +63,6 @@ module Ralph
 
         output = output_lines.join
         cleaned = clean_opencode_output(output)
-        puts "📊 Output: #{cleaned.length} chars"
 
         Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
         cleaned
