@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Ralph
   # Error handling utilities for Ralph agent
   class ErrorHandler
@@ -13,7 +15,7 @@ module Ralph
                      })
       end
 
-      def with_error_handling(operation, context = {})
+        # Safely execute a block with error handling(operation, context = {})
         result = yield
         Logger.debug("Completed #{operation}", context)
         result

@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 module Ralph
-  # Structured logging system for Ralph agent
+  # Logging system for Ralph agent
+  # Provides structured logging with configurable levels and output
   class Logger
+
     LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 }.freeze
 
     class << self

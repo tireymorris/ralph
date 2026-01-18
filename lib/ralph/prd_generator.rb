@@ -10,10 +10,9 @@ module Ralph
         prd_prompt = build_prd_prompt(prompt)
 
         success = ErrorHandler.with_error_handling('PRD creation') do
-          response = ErrorHandler.safe_system_command("opencode run \"#{prd_prompt}\" 2>/dev/null", 'Generate PRD')
+          response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
           return nil unless response
 
-          response = response.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
           Logger.debug('OpenCode response received', { length: response.length })
 
           requirements = ErrorHandler.parse_json_safely(response, 'PRD requirements')
