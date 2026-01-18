@@ -1,17 +1,16 @@
-# Ralph Configuration
 # frozen_string_literal: true
 
 module Ralph
   class Config
     DEFAULTS = {
-      opencode_timeout: nil, # no timeout
-      git_timeout: nil,       # no timeout
-      test_timeout: nil,      # no timeout
-      max_iterations: 50,            # maximum iterations before stopping
-      log_level: :info,              # debug, info, warn, error
-      prd_file: 'prd.json',          # PRD state file
-      retry_attempts: 3, # number of retries for failed operations
-      retry_delay: 5 # seconds between retries
+      opencode_timeout: nil,
+      git_timeout: nil,
+      test_timeout: nil,
+      max_iterations: 50,
+      log_level: :info,
+      prd_file: 'prd.json',
+      retry_attempts: 3,
+      retry_delay: 5
     }.freeze
 
     attr_reader :settings
