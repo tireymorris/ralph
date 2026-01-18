@@ -99,7 +99,6 @@ module Ralph
       end
 
       def validate_requirements(requirements)
-        # Validate required structure
         required_fields = %w[project_name branch_name stories]
         missing_fields = required_fields.select { |field| requirements[field].nil? || requirements[field].empty? }
         raise ArgumentError, "Missing required fields: #{missing_fields.join(', ')}" if missing_fields.any?
