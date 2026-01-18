@@ -91,7 +91,7 @@ module Ralph
           else
             puts "\n❌ Story failed - will retry in next iteration"
             puts '⏳ Waiting before retry...'
-            sleep 2
+            sleep 0.5
           end
         end
       end
