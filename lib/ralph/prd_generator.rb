@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # PRD (Product Requirements Document) generator
   class PrdGenerator
     class << self
       def generate(prompt)

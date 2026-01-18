@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # PRD state management
   class ProgressLogger
     class << self
       def update_state(requirements)

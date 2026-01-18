@@ -45,7 +45,6 @@ module Ralph
 
           stderr_thread = Thread.new do
             stderr.each_line do |line|
-              # STDERR output is still captured but not printed to minimize console output
             end
           end
 

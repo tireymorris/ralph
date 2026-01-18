@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # Git operations manager
   class GitManager
     class << self
       def validate_repository
