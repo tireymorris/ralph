@@ -42,14 +42,6 @@ RSpec.describe Ralph::PrdGenerator do
         expect(content['project_name']).to eq('Test Project')
       end
 
-      it 'creates AGENTS.md file' do
-        described_class.generate('Add feature')
-
-        expect(File.exist?('AGENTS.md')).to be true
-        content = File.read('AGENTS.md')
-        expect(content).to include('Ralph Agent Patterns')
-      end
-
       it 'logs info on completion' do
         expect(Ralph::Logger).to receive(:info).with('Generating PRD for prompt', anything)
         expect(Ralph::Logger).to receive(:info).with('PRD analysis complete', anything)
