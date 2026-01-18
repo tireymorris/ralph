@@ -8,7 +8,6 @@ scripts/
 # Ralph runtime files
 prd.json
 progress.txt
-AGENTS.md
 
 # Ralph PRD files (markdown)
 *.md
