@@ -6,7 +6,6 @@ RSpec.describe Ralph::Agent do
   let(:requirements) do
     {
       'project_name' => 'Test',
-      'branch_name' => 'feature/test',
       'stories' => [
         { 'id' => 'story-1', 'title' => 'Story 1', 'description' => 'Desc', 'passes' => false, 'priority' => 1 }
       ]
@@ -100,7 +99,6 @@ RSpec.describe Ralph::Agent do
       let(:multi_story_requirements) do
         {
           'project_name' => 'Test',
-          'branch_name' => 'feature/test',
           'stories' => [
             { 'id' => 'story-1', 'title' => 'Story 1', 'description' => 'D1', 'passes' => false, 'priority' => 1 },
             { 'id' => 'story-2', 'title' => 'Story 2', 'description' => 'D2', 'passes' => false, 'priority' => 2 }
