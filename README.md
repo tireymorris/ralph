@@ -2,6 +2,8 @@
 
 Ralph implements the Ralph Wiggum pattern - autonomous agents that learn and improve through clean iteration boundaries.
 
+<!-- Simple comment -->
+
 **Original Pattern**: [Geoffrey Huntley](https://ghuntley.com/)  
 **Ralph Philosophy**: [everything is a ralph loop](https://ghuntley.com/loop/)  
 **History**: [A brief history of ralph](https://www.humanlayer.dev/blog/brief-history-of-ralph)
