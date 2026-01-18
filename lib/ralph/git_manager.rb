@@ -14,7 +14,6 @@ module Ralph
         puts '💾 Committing changes...'
 
         ErrorHandler.with_error_handling('Git commit', { story: story['id'] }) do
-          # Check if there are changes to commit
           if system('git diff --quiet --exit-code 2>/dev/null') && system('git diff --staged --quiet --exit-code 2>/dev/null')
             Logger.info('No changes to commit', { story: story['id'] })
             return true
