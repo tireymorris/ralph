@@ -8,6 +8,8 @@ module Ralph
       'yarn test',
       'pytest',
       'python -m pytest',
+      'rspec',
+      'bundle exec rspec',
       'cargo test',
       'go test'
     ].freeze
