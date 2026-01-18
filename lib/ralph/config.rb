@@ -4,8 +4,18 @@ require 'json'
 
 module Ralph
   class Config
+    SUPPORTED_MODELS = %w[
+      opencode/big-pickle
+      opencode/glm-4.7-free
+      opencode/gpt-5-nano
+      opencode/grok-code
+      opencode/minimax-m2.1-free
+    ].freeze
+
+    DEFAULT_MODEL = 'opencode/grok-code'
+
     DEFAULTS = {
-      model: nil,
+      model: DEFAULT_MODEL,
       git_timeout: nil,
       test_timeout: nil,
       max_iterations: 50,
