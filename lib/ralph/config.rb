@@ -3,27 +3,24 @@
 require 'json'
 
 module Ralph
-  # Configuration management for Ralph agent
   class Config
     DEFAULTS = {
-      big_pickle_timeout: nil, # no timeout - let it cook
-      git_timeout: nil,       # no timeout
-      test_timeout: nil,      # no timeout
-      max_iterations: 50,            # maximum iterations before stopping
-      log_level: :info,              # debug, info, warn, error
-      log_file: 'ralph.log',         # log filename
-      progress_file: 'progress.txt', # progress tracking file
-      prd_file: 'prd.json',          # PRD state file
-      agents_file: 'AGENTS.md',      # patterns file
-      retry_attempts: 3, # number of retries for failed operations
-      retry_delay: 5 # seconds between retries
+      big_pickle_timeout: nil,
+      git_timeout: nil,
+      test_timeout: nil,
+      max_iterations: 50,
+      log_level: :info,
+      log_file: 'ralph.log',
+      progress_file: 'progress.txt',
+      prd_file: 'prd.json',
+      agents_file: 'AGENTS.md',
+      retry_attempts: 3,
+      retry_delay: 5
     }.freeze
 
     class << self
-      attr_reader :settings
-
       def load
-        @load ||= DEFAULTS.merge(load_from_file)
+        @settings ||= DEFAULTS.merge(load_from_file)
       end
 
       def get(key)
@@ -31,8 +28,11 @@ module Ralph
       end
 
       def set(key, value)
-        @settings = load
-        @settings[key] = value
+        load[key] = value
+      end
+
+      def reset!
+        @settings = nil
       end
 
       private
@@ -42,7 +42,7 @@ module Ralph
         return {} unless File.exist?(config_file)
 
         begin
-          JSON.parse(File.read(config_file))
+          JSON.parse(File.read(config_file), symbolize_names: true)
         rescue JSON::ParserError => e
           puts "⚠️ Invalid config file: #{e.message}"
           {}
