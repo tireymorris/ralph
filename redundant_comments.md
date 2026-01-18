@@ -1,4 +1,13 @@
-# Redundant Comments in lib/ralph/ Files
+# Redundant Comments in Root Ruby Files
+
+## config.rb
+- Line 1: # Ralph Configuration (obvious from code)
+- Line 7: # no timeout (obvious that nil means no timeout)
+- Line 8: # no timeout (same)
+- Line 9: # no timeout (same)
+
+## Rakefile
+- None
 
 After scanning all Ruby files in the `lib/ralph/` directory, the following comments were identified as redundant (i.e., they explain obvious code functionality):
 
