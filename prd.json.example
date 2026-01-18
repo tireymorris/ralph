@@ -1,12 +1,12 @@
 {
-  "projectName": "Example Project",
-  "branchName": "feature/example-feature",
-  "userStories": [
+  "project_name": "Example Project",
+  "branch_name": "feature/example-feature",
+  "stories": [
     {
       "id": "story-1",
       "title": "Example story title",
       "description": "Detailed description of what needs to be implemented",
-      "acceptanceCriteria": [
+      "acceptance_criteria": [
         "Criterion 1",
         "Criterion 2"
       ],

@@ -2,47 +2,6 @@
 # frozen_string_literal: true
 
 require_relative 'lib/ralph/agent'
+require_relative 'lib/ralph/cli'
 
-# Main entry point for Ralph CLI
-module Ralph
-  class CLI
-    def self.run(args)
-      if args.empty? || args.include?('--help') || args.include?('-h')
-        show_help
-        return
-      end
-
-      # Parse arguments
-      dry_run = args.include?('--dry-run')
-      prompt_args = args.reject { |arg| arg == '--dry-run' }
-
-      if prompt_args.empty?
-        puts '❌ Error: Please provide a prompt when using --dry-run'
-        show_help
-        return
-      end
-
-      prompt = prompt_args.join(' ')
-
-      puts "📝 Request: #{prompt}"
-      puts "📁 Working in: #{Dir.pwd}"
-      puts "🎯 Mode: #{dry_run ? 'Dry run (PRD only)' : 'Full implementation'}"
-
-      # Run Ralph
-      Agent.run(prompt, dry_run: dry_run)
-    end
-
-    def self.show_help
-      puts <<~HELP
-        Ralph - Autonomous Software Development Agent
-
-        Usage:
-          ./ralph "your feature description"           # Full implementation
-          ./ralph "your feature description" --dry-run # Generate PRD only
-      HELP
-    end
-  end
-end
-
-# Execute if run directly
 Ralph::CLI.run(ARGV) if __FILE__ == $PROGRAM_NAME

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Ralph
-  # Story implementation engine
   class StoryImplementer
     class << self
       def implement(story, iteration, all_requirements)
@@ -13,12 +12,7 @@ module Ralph
         implementation_prompt = build_implementation_prompt(story, iteration, completed, total, context)
 
         response = ErrorHandler.with_error_handling('Story implementation', { story: story['id'] }) do
-          success = ErrorHandler.safe_system_command("opencode run \"#{implementation_prompt}\" 2>/dev/null",
-                                                     "Implement story: #{story['title']}")
-          return nil unless success
-
-          response = `opencode run "#{implementation_prompt}" 2>/dev/null`
-          response.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
+          ErrorHandler.capture_command_output(implementation_prompt, "Implement story: #{story['title']}")
         end
 
         unless response
@@ -65,7 +59,6 @@ module Ralph
         if response&.include?('COMPLETED:')
           puts "✓ #{response}"
 
-          # Run tests if available
           test_success = TestRunner.run
           if test_success
             GitManager.commit_changes(story)

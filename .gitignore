@@ -24,6 +24,7 @@ AGENTS.md
 /pkg/
 /spec/reports/
 /spec/tmp/
+/spec/examples.txt
 /tmp/
 *.log
 
