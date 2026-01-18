@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Ralph
   # Configuration management for Ralph agent
   class Config
     DEFAULTS = {
-      opencode_timeout: nil, # no timeout - let it cook
+      big_pickle_timeout: nil, # no timeout - let it cook
       git_timeout: nil,       # no timeout
       test_timeout: nil,      # no timeout
       max_iterations: 50,            # maximum iterations before stopping
@@ -20,7 +22,7 @@ module Ralph
     class << self
       attr_reader :settings
 
-        # Load configuration from defaults and file
+      def load
         @load ||= DEFAULTS.merge(load_from_file)
       end
 
@@ -35,7 +37,7 @@ module Ralph
 
       private
 
-        # Load configuration from defaults and file_from_file
+      def load_from_file
         config_file = 'ralph.config.json'
         return {} unless File.exist?(config_file)
 
