@@ -75,11 +75,11 @@ module Ralph
       nil
     end
 
-    def self.safe_system_command(command, operation, timeout_seconds = nil)
+    def self.safe_system_command(command, operation)
       Logger.debug("Executing command: #{command}", { operation: operation })
 
-      timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
-      full_command = timeout_seconds ? "timeout #{timeout_seconds} #{command}" : command
+      # No timeouts - let it cook
+      full_command = command
       result = system(full_command)
 
       if result.nil?
@@ -97,17 +97,15 @@ module Ralph
       false
     end
 
-    def self.capture_command_output(prompt, operation, timeout_seconds = nil)
+    def self.capture_command_output(prompt, operation)
       Logger.debug("Capturing output for: #{prompt[0..100]}...", { operation: operation })
-
-      timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
 
       # Write prompt to file in current directory
       prompt_file = ".ralph_prompt_#{$PROCESS_ID}.txt"
       begin
         File.write(prompt_file, prompt)
 
-        cmd = "timeout #{timeout_seconds} bash -c 'cat #{prompt_file.shellescape} | opencode run --format default /dev/stdin' 2>&1"
+        cmd = "bash -c 'cat #{prompt_file.shellescape} | opencode run --format default /dev/stdin' 2>&1"
         output = `#{cmd}`
 
         # Clean output - remove ANSI codes and JSON artifacts

@@ -4,9 +4,9 @@
 module Ralph
   class Config
     DEFAULTS = {
-      opencode_timeout: 300, # seconds
-      git_timeout: 30,               # seconds
-      test_timeout: 120,             # seconds
+      opencode_timeout: nil, # no timeout
+      git_timeout: nil,       # no timeout
+      test_timeout: nil,      # no timeout
       max_iterations: 50,            # maximum iterations before stopping
       log_level: :info,              # debug, info, warn, error
       log_file: 'ralph.log',         # log filename
