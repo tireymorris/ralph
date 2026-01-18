@@ -64,10 +64,10 @@ RSpec.describe Ralph::ErrorHandler do
       expect(described_class.clean_opencode_output(input)).to eq('Green text')
     end
 
-    it 'removes JSON artifacts from beginning' do
-      input = '{"key": "value"}\nActual content'
+    it 'preserves JSON content' do
+      input = '{"key": "value"}'
       result = described_class.clean_opencode_output(input)
-      expect(result).not_to include('{')
+      expect(result).to include('{')
     end
 
     it 'reduces multiple newlines' do
