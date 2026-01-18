@@ -22,6 +22,40 @@ module Ralph
         nil
       end
 
+      def capture_command_output(prompt, operation)
+        Logger.debug("Capturing output for: #{prompt[0..100]}...", { operation: operation })
+
+        # Write prompt to file in current directory
+        prompt_file = ".ralph_prompt_#{Process.pid}.txt"
+        begin
+          File.write(prompt_file, prompt)
+
+          cmd = "bash -c 'cat #{prompt_file.shellescape} | opencode run --format default /dev/stdin' 2>&1"
+          output = `#{cmd}`
+
+          # Clean output - remove ANSI codes and JSON artifacts
+          cleaned = clean_opencode_output(output)
+
+          Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
+          cleaned
+        ensure
+          File.delete(prompt_file) if File.exist?(prompt_file)
+        end
+      rescue StandardError => e
+        Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
+        nil
+      end
+
+      def clean_opencode_output(output)
+        return '' if output.nil? || output.strip.empty?
+
+        output
+          .gsub(/\x1b\[[0-9;]*[a-zA-Z]/, '') # Remove ANSI color codes
+          .gsub(/^[{"].*$/m, '') # Remove JSON artifacts from beginning
+          .gsub(/\n{3,}/, "\n\n") # Reduce multiple newlines to max 2
+          .strip
+      end
+
       def safe_system_command(command, operation)
         Logger.debug("Executing command: #{command}", { operation: operation })
 

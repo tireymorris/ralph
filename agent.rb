@@ -5,8 +5,8 @@ require 'fileutils'
 require 'open3'
 require 'shellwords'
 require_relative 'config'
-require_relative 'logger'
-require_relative 'error_handler'
+require_relative 'lib/ralph/logger'
+require_relative 'lib/ralph/error_handler'
 
 module Ralph
   class Agent
@@ -60,8 +60,6 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
         Logger.info('Calling opencode to create files...')
         response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
         Logger.info("Response: #{response ? response[0..200] : 'nil'}")
-
-        sleep 2
 
         return false unless File.exist?('PRD.md')
 
@@ -125,15 +123,13 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
             break
           else
             puts "❌ Attempt #{attempt + 1} failed"
-            sleep 2 if attempt < max_retries - 1
+
           end
         end
 
         log_progress(iteration, story_file, success, retries: retry_count)
 
         puts '❌ Story failed after all retries - skipping to next story' unless success
-
-        sleep 1
       end
     end
 
