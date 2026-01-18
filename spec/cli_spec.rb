@@ -99,7 +99,7 @@ RSpec.describe Ralph::CLI do
 
     it 'shows full implementation example' do
       expect { described_class.show_help }
-        .to output(%r{\./ralph "your feature description"}).to_stdout
+        .to output(%r{\./bin/ralph "your feature description"}).to_stdout
     end
 
     it 'shows dry run example' do
