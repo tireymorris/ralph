@@ -39,12 +39,15 @@ module Ralph
 
           stdout_thread = Thread.new do
             stdout.each_line do |line|
+              puts line.strip
               output_lines << line
             end
           end
 
           stderr_thread = Thread.new do
             stderr.each_line do |line|
+              puts line.strip
+              # Also collect stderr if needed, but for now just stream
             end
           end
 

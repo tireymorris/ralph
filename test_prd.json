@@ -1,0 +1,19 @@
+{
+"project_name": "Ralph",
+"branch_name": "feature/add-simple-test-feature",
+"stories": [
+{
+"id": "story-1",
+"title": "Add test command to CLI",
+"description": "Implement a 'test' command in the CLI that executes RSpec tests and displays the results. This allows users to run tests easily without manually invoking rspec.",
+"acceptance_criteria": [
+"CLI accepts 'test' as a command",
+"Running ./bin/ralph test executes rspec",
+"Test results are displayed in the console",
+"Command returns appropriate exit code based on test success/failure"
+],
+"priority": 1,
+"passes": false
+}
+]
+}

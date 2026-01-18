@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'state_manager'
+
 module Ralph
   class PrdGenerator
     class << self
