@@ -28,7 +28,6 @@ module Ralph
 
           puts "\n✅ Requirements parsed successfully:"
           puts "  📁 Project: #{requirements['project_name']}"
-          puts "  🌿 Branch: #{requirements['branch_name']}"
           puts "  📖 Stories: #{requirements['stories'].length}"
 
           puts "\n🛡️ Validating requirements structure..."
@@ -79,11 +78,10 @@ module Ralph
           3. OUTPUT REQUIREMENTS
              - Respond ONLY with raw JSON (no markdown, no explanation)
           #{'   '}
-          Required JSON format:
-          {
-            "project_name": "descriptive project name",
-            "branch_name": "feature/descriptive-name",#{' '}
-            "stories": [
+           Required JSON format:
+           {
+             "project_name": "descriptive project name",
+             "stories": [
               {
                 "id": "story-1",
                 "title": "Story title",
@@ -100,7 +98,7 @@ module Ralph
       end
 
       def validate_requirements(requirements)
-        required_fields = %w[project_name branch_name stories]
+        required_fields = %w[project_name stories]
         missing_fields = required_fields.select { |field| requirements[field].nil? || requirements[field].empty? }
         raise ArgumentError, "Missing required fields: #{missing_fields.join(', ')}" if missing_fields.any?
 

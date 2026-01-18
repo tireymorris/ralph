@@ -6,7 +6,6 @@ RSpec.describe Ralph::PrdGenerator do
   let(:valid_prd_response) do
     {
       'project_name' => 'Test Project',
-      'branch_name' => 'feature/test',
       'stories' => [
         {
           'id' => 'story-1',
@@ -77,7 +76,6 @@ RSpec.describe Ralph::PrdGenerator do
       it 'rejects empty stories array' do
         response = {
           'project_name' => 'Test',
-          'branch_name' => 'test',
           'stories' => []
         }.to_json
 
@@ -90,7 +88,6 @@ RSpec.describe Ralph::PrdGenerator do
       it 'rejects stories missing required fields' do
         response = {
           'project_name' => 'Test',
-          'branch_name' => 'test',
           'stories' => [{ 'id' => 'story-1' }]
         }.to_json
 
@@ -103,7 +100,6 @@ RSpec.describe Ralph::PrdGenerator do
       it 'rejects stories with empty acceptance criteria' do
         response = {
           'project_name' => 'Test',
-          'branch_name' => 'test',
           'stories' => [{
             'id' => 'story-1',
             'title' => 'Title',
@@ -122,7 +118,6 @@ RSpec.describe Ralph::PrdGenerator do
       it 'rejects non-array acceptance criteria' do
         response = {
           'project_name' => 'Test',
-          'branch_name' => 'test',
           'stories' => [{
             'id' => 'story-1',
             'title' => 'Title',
