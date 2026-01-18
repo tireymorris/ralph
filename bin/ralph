@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative 'lib/ralph/agent'
-require_relative 'lib/ralph/cli'
+require_relative '../lib/ralph/agent'
+require_relative '../lib/ralph/cli'
 
 Ralph::CLI.run(ARGV) if __FILE__ == $PROGRAM_NAME
