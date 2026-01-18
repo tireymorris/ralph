@@ -50,50 +50,55 @@ module Ralph
         puts '=' * 60
 
         total_stories = requirements['stories'].length
-        completed_stories = 0
-
         iteration = 0
+
         loop do
           iteration += 1
-
-          puts "\n#{'=' * 60}"
-          puts "🔄 ITERATION #{iteration} - #{Time.now.strftime('%H:%M:%S')}"
-          puts '=' * 60
-
-          next_story = requirements['stories'].find { |s| s['passes'] != true }
-
-          if next_story.nil?
-            puts "\n#{'=' * 60}"
-            puts '🎉 ALL STORIES COMPLETED!'
-            puts '=' * 60
-            puts "📊 Total Stories: #{total_stories}"
-            puts "📝 Total Iterations: #{iteration}"
-            puts "⏰ Completed: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
-            cleanup_working_files
-            puts '<promise>COMPLETE</promise>'
-            break
-          end
-
-          completed_stories = requirements['stories'].count { |s| s['passes'] == true }
-          progress_percentage = (completed_stories.to_f / total_stories * 100).round(1)
-
-          puts "\n📈 Progress: #{completed_stories}/#{total_stories} stories (#{progress_percentage}%)"
-          puts "\n📖 Current Story: #{next_story['title']}"
-          puts "🎯 Priority: #{next_story['priority']}"
-          puts "📝 Description: #{next_story['description'][0..80]}#{'...' if next_story['description'].length > 80}"
-
-          puts "\n⚡ Starting implementation..."
-          if StoryImplementer.implement(next_story, iteration, requirements)
-            next_story['passes'] = true
-            ProgressLogger.update_state(requirements)
-            puts "\n✅ Story completed successfully!"
-            puts "📊 Progress: #{completed_stories + 1}/#{total_stories} stories"
-          else
-            puts "\n❌ Story failed - will retry in next iteration"
-            puts '⏳ Waiting before retry...'
-            sleep 0.5
-          end
+          result = run_single_iteration(iteration, requirements, total_stories)
+          break if result == :completed
         end
+      end
+
+      def run_single_iteration(iteration, requirements, total_stories)
+        puts "\n#{'=' * 60}"
+        puts "🔄 ITERATION #{iteration} - #{Time.now.strftime('%H:%M:%S')}"
+        puts '=' * 60
+
+        next_story = requirements['stories'].find { |s| s['passes'] != true }
+
+        if next_story.nil?
+          puts "\n#{'=' * 60}"
+          puts '🎉 ALL STORIES COMPLETED!'
+          puts '=' * 60
+          puts "📊 Total Stories: #{total_stories}"
+          puts "📝 Total Iterations: #{iteration}"
+          puts "⏰ Completed: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+          cleanup_working_files
+          puts '<promise>COMPLETE</promise>'
+          return :completed
+        end
+
+        completed_stories = requirements['stories'].count { |s| s['passes'] == true }
+        progress_percentage = (completed_stories.to_f / total_stories * 100).round(1)
+
+        puts "\n📈 Progress: #{completed_stories}/#{total_stories} stories (#{progress_percentage}%)"
+        puts "\n📖 Current Story: #{next_story['title']}"
+        puts "🎯 Priority: #{next_story['priority']}"
+        puts "📝 Description: #{next_story['description'][0..80]}#{'...' if next_story['description'].length > 80}"
+
+        puts "\n⚡ Starting implementation..."
+        if StoryImplementer.implement(next_story, iteration, requirements)
+          next_story['passes'] = true
+          ProgressLogger.update_state(requirements)
+          puts "\n✅ Story completed successfully!"
+          puts "📊 Progress: #{completed_stories + 1}/#{total_stories} stories"
+        else
+          puts "\n❌ Story failed - will retry in next iteration"
+          puts '⏳ Waiting before retry...'
+          sleep 0.5
+        end
+
+        :continue
       end
 
       def cleanup_working_files
