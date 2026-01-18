@@ -5,7 +5,7 @@ require 'json'
 module Ralph
   class Config
     DEFAULTS = {
-      big_pickle_timeout: nil,
+      model: nil,
       git_timeout: nil,
       test_timeout: nil,
       max_iterations: 50,
