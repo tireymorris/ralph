@@ -37,7 +37,8 @@ RSpec.describe Ralph::GitManager do
 
     context 'when there are no changes' do
       before do
-        allow(described_class).to receive(:`).with('git status --porcelain 2>/dev/null').and_return('')
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(true)
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
       end
 
       it 'logs info and returns true' do
@@ -48,7 +49,8 @@ RSpec.describe Ralph::GitManager do
 
     context 'when there are changes' do
       before do
-        allow(described_class).to receive(:`).with('git status --porcelain 2>/dev/null').and_return('M file.rb')
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(false)
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
       end
 
       it 'stages and commits changes' do
@@ -84,7 +86,8 @@ RSpec.describe Ralph::GitManager do
       let(:minimal_story) { {} }
 
       before do
-        allow(described_class).to receive(:`).with('git status --porcelain 2>/dev/null').and_return('M file.rb')
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(false)
+        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
         allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
       end
 
