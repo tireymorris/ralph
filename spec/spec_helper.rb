@@ -40,8 +40,6 @@ RSpec.configure do |config|
   end
 
   config.after(:each) do
-    %w[ralph.log progress.txt prd.json AGENTS.md].each do |file|
-      File.delete(file) if File.exist?(file)
-    end
+    File.delete('prd.json') if File.exist?('prd.json')
   end
 end

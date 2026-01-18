@@ -9,10 +9,7 @@ module Ralph
       test_timeout: nil,      # no timeout
       max_iterations: 50,            # maximum iterations before stopping
       log_level: :info,              # debug, info, warn, error
-      log_file: 'ralph.log',         # log filename
-      progress_file: 'progress.txt', # progress tracking file
       prd_file: 'prd.json',          # PRD state file
-      agents_file: 'AGENTS.md',      # patterns file
       retry_attempts: 3, # number of retries for failed operations
       retry_delay: 5 # seconds between retries
     }.freeze

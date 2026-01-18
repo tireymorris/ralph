@@ -47,7 +47,7 @@ RSpec.describe Ralph::Config do
 
   describe '.get' do
     it 'returns value for existing key' do
-      expect(described_class.get(:log_file)).to eq('ralph.log')
+      expect(described_class.get(:prd_file)).to eq('prd.json')
     end
 
     it 'returns nil for non-existent key' do
@@ -79,8 +79,7 @@ RSpec.describe Ralph::Config do
     it 'contains all required keys' do
       required_keys = %i[
         model git_timeout test_timeout max_iterations
-        log_level log_file progress_file prd_file agents_file
-        retry_attempts retry_delay
+        log_level prd_file retry_attempts retry_delay
       ]
 
       required_keys.each do |key|

@@ -20,10 +20,7 @@ module Ralph
       test_timeout: nil,
       max_iterations: 50,
       log_level: :info,
-      log_file: 'ralph.log',
-      progress_file: 'progress.txt',
       prd_file: 'prd.json',
-      agents_file: 'AGENTS.md',
       retry_attempts: 3,
       retry_delay: 5
     }.freeze

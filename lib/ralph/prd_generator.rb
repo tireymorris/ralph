@@ -126,12 +126,7 @@ module Ralph
       def create_state_files(requirements)
         ErrorHandler.with_error_handling('State file creation') do
           prd_file = Ralph::Config.get(:prd_file)
-          agents_file = Ralph::Config.get(:agents_file)
-
           File.write(prd_file, JSON.pretty_generate(requirements))
-
-          agents_content = "# Ralph Agent Patterns\n\n## Project Context\n- Technology: #{requirements['project_name']}\n- Stories: #{requirements['stories'].length} items\n- Started: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-          File.write(agents_file, agents_content)
         end
       end
     end

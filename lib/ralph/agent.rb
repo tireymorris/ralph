@@ -10,7 +10,7 @@ require_relative '../ralph/progress_logger'
 
 module Ralph
   class Agent
-    WORKING_FILES = %w[prd.json progress.txt AGENTS.md ralph.log].freeze
+    WORKING_FILES = %w[prd.json].freeze
 
     class << self
       def run(prompt, dry_run: false)
@@ -22,7 +22,7 @@ module Ralph
 
         if dry_run
           puts '🎯 Dry run mode: PRD generated successfully'
-          puts "📁 Files created: #{Ralph::Config.get(:prd_file)}, #{Ralph::Config.get(:agents_file)}"
+          puts "📁 Files created: #{Ralph::Config.get(:prd_file)}"
           return
         end
 
@@ -69,7 +69,6 @@ module Ralph
             puts "📊 Total Stories: #{total_stories}"
             puts "📝 Total Iterations: #{iteration}"
             puts "⏰ Completed: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
-            Logger.flush
             cleanup_working_files
             puts '<promise>COMPLETE</promise>'
             break

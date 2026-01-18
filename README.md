@@ -20,8 +20,5 @@ Ralph transforms natural language requirements into working code through autonom
 
 ## Generated Files
 
-- `prd.json` - User stories and project state
-- `AGENTS.md` - Discovered patterns and knowledge
-- `progress.txt` - Iteration logs
-- `ralph.log` - Detailed operation logs
+- `prd.json` - User stories and project state (cleaned up on completion)
 

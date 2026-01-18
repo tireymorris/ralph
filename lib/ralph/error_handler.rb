@@ -22,7 +22,6 @@ module Ralph
         result
       rescue StandardError => e
         log_error(operation, e, context)
-        Logger.flush
         nil
       end
 

@@ -24,7 +24,6 @@ RSpec.describe Ralph::StoryImplementer do
   describe '.implement' do
     before do
       allow(Ralph::GitManager).to receive(:commit_changes)
-      allow(Ralph::ProgressLogger).to receive(:log_iteration)
     end
 
     context 'when implementation succeeds' do
@@ -40,11 +39,6 @@ RSpec.describe Ralph::StoryImplementer do
 
       it 'commits changes' do
         expect(Ralph::GitManager).to receive(:commit_changes).with(story)
-        described_class.implement(story, 1, all_requirements)
-      end
-
-      it 'logs successful iteration' do
-        expect(Ralph::ProgressLogger).to receive(:log_iteration).with(1, story, true)
         described_class.implement(story, 1, all_requirements)
       end
     end
@@ -70,14 +64,6 @@ RSpec.describe Ralph::StoryImplementer do
           .and_return('Failed response')
 
         expect(Ralph::GitManager).not_to receive(:commit_changes)
-        described_class.implement(story, 1, all_requirements)
-      end
-
-      it 'logs failed iteration' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
-          .and_return('Failed response')
-
-        expect(Ralph::ProgressLogger).to receive(:log_iteration).with(1, story, false)
         described_class.implement(story, 1, all_requirements)
       end
     end
@@ -107,17 +93,6 @@ RSpec.describe Ralph::StoryImplementer do
         end
 
         described_class.implement(story, 2, requirements)
-      end
-
-      it 'includes AGENTS.md context when present' do
-        File.write('AGENTS.md', 'Previous patterns here')
-
-        expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
-          expect(prompt).to include('Previous patterns here')
-          'COMPLETED: done'
-        end
-
-        described_class.implement(story, 1, all_requirements)
       end
 
       it 'instructs OpenCode to run tests' do
