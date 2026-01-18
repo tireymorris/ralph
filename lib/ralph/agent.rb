@@ -44,8 +44,6 @@ module Ralph
       def run_implementation_loop(requirements)
         puts "\n🔄 Phase 2: Implementing all stories..."
 
-        GitManager.create_branch(requirements['branch_name'])
-
         iteration = 0
         loop do
           iteration += 1
