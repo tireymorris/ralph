@@ -2,6 +2,9 @@
 
 module Ralph
   class StoryImplementer
+    @@cached_agents_content = nil
+    @@agents_file_mtime = nil
+
     class << self
       def implement(story, iteration, all_requirements)
         completed = all_requirements['stories'].count { |s| s['passes'] == true }
@@ -26,8 +29,13 @@ module Ralph
       private
 
       def read_context_file
-        ErrorHandler.with_error_handling('Reading AGENTS.md') do
-          agents_file = Ralph::Config.get(:agents_file)
+        agents_file = Ralph::Config.get(:agents_file)
+        current_mtime = File.exist?(agents_file) ? File.mtime(agents_file) : nil
+
+        return @@cached_agents_content if @@cached_agents_content && @@agents_file_mtime == current_mtime
+
+        @@agents_file_mtime = current_mtime
+        @@cached_agents_content = ErrorHandler.with_error_handling('Reading AGENTS.md') do
           File.exist?(agents_file) ? File.read(agents_file) : ''
         end || ''
       end
