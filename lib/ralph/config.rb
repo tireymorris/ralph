@@ -39,7 +39,7 @@ module Ralph
       end
 
       def reset!
-        @settings = nil
+        @load = nil
       end
 
       private
