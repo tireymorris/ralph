@@ -5,7 +5,6 @@ require_relative '../ralph/logger'
 require_relative '../ralph/error_handler'
 require_relative '../ralph/git_manager'
 require_relative '../ralph/prd_generator'
-require_relative '../ralph/test_runner'
 require_relative '../ralph/story_implementer'
 require_relative '../ralph/progress_logger'
 
