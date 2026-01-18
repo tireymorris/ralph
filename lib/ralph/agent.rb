@@ -32,7 +32,7 @@ module Ralph
       private
 
       def initialize_environment
-        puts "\n" + '=' * 60
+        puts "\n#{'=' * 60}"
         puts '🤖 RALPH - Autonomous Software Development Agent'
         puts '=' * 60
 
@@ -45,7 +45,7 @@ module Ralph
       end
 
       def run_implementation_loop(requirements)
-        puts "\n" + '=' * 60
+        puts "\n#{'=' * 60}"
         puts '🚀 PHASE 2: Autonomous Implementation Loop'
         puts '=' * 60
 
@@ -63,7 +63,7 @@ module Ralph
           next_story = requirements['stories'].find { |s| s['passes'] != true }
 
           if next_story.nil?
-            puts "\n" + '=' * 60
+            puts "\n#{'=' * 60}"
             puts '🎉 ALL STORIES COMPLETED!'
             puts '=' * 60
             puts "📊 Total Stories: #{total_stories}"
