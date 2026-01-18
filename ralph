@@ -1,9 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'json'
-require 'fileutils'
-require_relative 'lib/ralph/agent'
+require_relative 'agent'
 
 # Main entry point for Ralph CLI
 module Ralph
