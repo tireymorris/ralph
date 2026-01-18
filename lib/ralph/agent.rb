@@ -69,6 +69,7 @@ module Ralph
             puts "📊 Total Stories: #{total_stories}"
             puts "📝 Total Iterations: #{iteration}"
             puts "⏰ Completed: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+            Logger.flush
             cleanup_working_files
             puts '<promise>COMPLETE</promise>'
             break
