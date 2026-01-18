@@ -5,21 +5,40 @@ module Ralph
   class PrdGenerator
     class << self
       def generate(prompt)
+        puts "\n📋 PHASE 1: Generating Project Requirements Document"
+        puts "🎯 Analyzing: #{prompt}"
+
         Logger.info('Generating PRD for prompt', { prompt: prompt })
 
+        puts "\n🔍 Building analysis prompt..."
         prd_prompt = build_prd_prompt(prompt)
 
         success = ErrorHandler.with_error_handling('PRD creation') do
+          puts "\n🚀 Sending request to OpenCode API..."
           response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
           return nil unless response
 
+          puts "\n📝 Processing OpenCode response..."
           Logger.debug('OpenCode response received', { length: response.length })
 
+          puts "\n🔧 Parsing requirements..."
           requirements = ErrorHandler.parse_json_safely(response, 'PRD requirements')
           return nil unless requirements
 
+          puts "\n✅ Requirements parsed successfully:"
+          puts "  📁 Project: #{requirements['project_name']}"
+          puts "  🌿 Branch: #{requirements['branch_name']}"
+          puts "  📖 Stories: #{requirements['stories'].length}"
+
+          puts "\n🛡️ Validating requirements structure..."
           validate_requirements(requirements)
+
+          puts "\n💾 Creating state files..."
           create_state_files(requirements)
+
+          puts "\n🎉 PRD Analysis Complete!"
+          puts "  ✅ Project: #{requirements['project_name']}"
+          puts "  ✅ Stories: #{requirements['stories'].length}"
 
           Logger.info('PRD analysis complete', {
                         project: requirements['project_name'],
@@ -30,6 +49,7 @@ module Ralph
         end
 
         unless success
+          puts "\n❌ Failed to create PRD"
           Logger.error('Failed to create PRD')
           return nil
         end

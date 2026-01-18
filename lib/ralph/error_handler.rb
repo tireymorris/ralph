@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'shellwords'
 
 module Ralph
   # Error handling utilities for Ralph agent
   class ErrorHandler
-    class << self
-      def log_error(operation, error, context = {})
+      def self.log_error(operation, error, context = {})
         Logger.error("Error in #{operation}", {
                        error_class: error.class.name,
                        error_message: error.message,
@@ -15,7 +15,7 @@ module Ralph
                      })
       end
 
-        # Safely execute a block with error handling(operation, context = {})
+      def self.with_error_handling(operation, context = {})
         result = yield
         Logger.debug("Completed #{operation}", context)
         result
@@ -24,19 +24,41 @@ module Ralph
         nil
       end
 
-      def capture_command_output(prompt, operation)
-        Logger.debug("Capturing output for: #{prompt[0..100]}...", { operation: operation })
+      def self.capture_command_output(prompt, operation)
+        puts "\n🔄 Executing: #{operation}"
+        puts "📝 Prompt: #{prompt[0..100]}#{'...' if prompt.length > 100}"
 
         # Write prompt to file in current directory
         prompt_file = ".ralph_prompt_#{Process.pid}.txt"
         begin
           File.write(prompt_file, prompt)
 
-          cmd = "bash -c 'cat #{prompt_file.shellescape} | opencode run --format default /dev/stdin' 2>&1"
-          output = `#{cmd}`
+          # Use popen3 to stream output in real-time with BigPickle
+          require 'open3'
+          
+           cmd = "opencode run --model big-pickle \"$(cat #{prompt_file.shellescape})\""
+          output_lines = []
+          
+          Open3.popen3(cmd) do |stdin, stdout, stderr, wait_thr|
+            puts "📡 Streaming output from BigPickle..."
+            
+            stdout.each_line do |line|
+              # Print raw output to show real-time progress
+              puts "  📤 #{line.strip}"
+              output_lines << line
+            end
+            
+            exit_status = wait_thr.value
+            puts "✅ Process completed with status: #{exit_status.exitstatus}" if exit_status.success?
+            puts "⚠️ Process failed with status: #{exit_status.exitstatus}" unless exit_status.success?
+          end
 
+          output = output_lines.join
+          
           # Clean output - remove ANSI codes and JSON artifacts
           cleaned = clean_opencode_output(output)
+          
+          puts "📊 Output processed: #{cleaned.length} characters"
 
           Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
           cleaned
@@ -44,11 +66,35 @@ module Ralph
           File.delete(prompt_file) if File.exist?(prompt_file)
         end
       rescue StandardError => e
+        puts "❌ Error during command execution: #{e.message}"
         Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
         nil
       end
 
-      def clean_opencode_output(output)
+            exit_status = wait_thr.value
+            puts "✅ Process completed with status: #{exit_status.exitstatus}" if exit_status.success?
+            puts "⚠️ Process failed with status: #{exit_status.exitstatus}" unless exit_status.success?
+          end
+
+          output = output_lines.join
+
+          # Clean output - remove ANSI codes and JSON artifacts
+          cleaned = clean_opencode_output(output)
+
+          puts "📊 Output processed: #{cleaned.length} characters"
+
+          Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
+          cleaned
+        ensure
+          File.delete(prompt_file) if File.exist?(prompt_file)
+        end
+      rescue StandardError => e
+        puts "❌ Error during command execution: #{e.message}"
+        Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
+        nil
+      end
+
+      def self.clean_opencode_output(output)
         return '' if output.nil? || output.strip.empty?
 
         output
@@ -58,7 +104,7 @@ module Ralph
           .strip
       end
 
-      def safe_system_command(command, operation)
+      def self.safe_system_command(command, operation)
         Logger.debug("Executing command: #{command}", { operation: operation })
 
         # No timeouts - let it cook
@@ -80,7 +126,7 @@ module Ralph
         false
       end
 
-      def parse_json_safely(json_string, context = 'JSON parsing')
+      def self.parse_json_safely(json_string, context = 'JSON parsing')
         return nil if json_string.nil? || json_string.strip.empty?
 
         with_error_handling(context) do
@@ -93,7 +139,7 @@ module Ralph
           parsed = JSON.parse(cleaned)
           raise ArgumentError, 'Invalid JSON structure: expected Hash' unless parsed.is_a?(Hash)
 
-          parsed
+           parsed
         end
       end
     end
