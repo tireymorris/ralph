@@ -39,31 +39,6 @@ module Ralph
         Usage:
           ./ralph "your feature description"           # Full implementation
           ./ralph "your feature description" --dry-run # Generate PRD only
-
-        Examples:
-          ./ralph "Add user authentication with login and registration"
-          ./ralph "Implement REST API for user management" --dry-run
-
-        Requirements:
-          - opencode CLI tool installed and available
-          - Git repository
-
-        Features:
-          - Autonomous software development through user stories
-          - Comprehensive error handling and logging
-          - Git-native workflow with automatic commits
-          - Configurable timeouts and retry logic
-          - Dry run mode for planning and review
-
-        Configuration:
-          Create ralph.config.json to customize settings:
-          {
-            "opencode_timeout": 300,
-            "log_level": "info",
-            "max_iterations": 50
-          }
-
-        For more information, see the README.md file.
       HELP
     end
   end

@@ -85,9 +85,6 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
       # Phase 2: Autonomous implementation loop
       puts "\n🔄 Phase 2: Implementing all stories..."
 
-      branch_name = extract_branch_name_from_prd
-      create_feature_branch(branch_name)
-
       iteration = 0
       max_retries = Ralph::Config.get(:retry_attempts) || 3
       loop do
