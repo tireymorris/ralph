@@ -21,7 +21,7 @@ module Ralph
             '---'
           ].join("\n")
 
-          File.open(progress_file, 'a') { |f| f.puts(log + "\n") }
+          File.open(progress_file, 'a') { |f| f.puts("#{log}\n") }
         end
       end
 
