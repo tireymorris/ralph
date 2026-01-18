@@ -91,5 +91,27 @@ RSpec.describe Ralph::Config do
     it 'is frozen' do
       expect(described_class::DEFAULTS).to be_frozen
     end
+
+    it 'uses grok-code as default model' do
+      expect(described_class::DEFAULTS[:model]).to eq('opencode/grok-code')
+    end
+  end
+
+  describe 'SUPPORTED_MODELS' do
+    it 'includes all opencode models' do
+      expected = %w[
+        opencode/big-pickle
+        opencode/glm-4.7-free
+        opencode/gpt-5-nano
+        opencode/grok-code
+        opencode/minimax-m2.1-free
+      ]
+
+      expect(described_class::SUPPORTED_MODELS).to match_array(expected)
+    end
+
+    it 'is frozen' do
+      expect(described_class::SUPPORTED_MODELS).to be_frozen
+    end
   end
 end
