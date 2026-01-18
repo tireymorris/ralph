@@ -20,7 +20,7 @@ module Ralph
     class << self
       attr_reader :settings
 
-      def load
+        # Load configuration from defaults and file
         @load ||= DEFAULTS.merge(load_from_file)
       end
 
@@ -35,7 +35,7 @@ module Ralph
 
       private
 
-      def load_from_file
+        # Load configuration from defaults and file_from_file
         config_file = 'ralph.config.json'
         return {} unless File.exist?(config_file)
 
