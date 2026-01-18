@@ -4,7 +4,9 @@ module Ralph
   class ProgressLogger
     class << self
       def update_state(requirements)
-        StateManager.write_state(requirements)
+        ErrorHandler.with_error_handling(context: { operation: 'write_state' }) do
+          StateManager.write_state(requirements)
+        end
       end
     end
   end
