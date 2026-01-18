@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative '../ralph/config'
-require_relative '../ralph/logger'
-require_relative '../ralph/error_handler'
-require_relative '../ralph/git_manager'
-require_relative '../ralph/prd_generator'
-require_relative '../ralph/story_implementer'
-require_relative '../ralph/progress_logger'
+require_relative 'config'
+require_relative 'logger'
+require_relative 'error_handler'
+require_relative 'git_manager'
+require_relative 'prd_generator'
+require_relative 'story_implementer'
+require_relative 'progress_logger'
 
 module Ralph
   class Agent
