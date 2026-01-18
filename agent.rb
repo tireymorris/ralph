@@ -151,30 +151,33 @@ module Ralph
       # Phase 1: Complete PRD and story analysis
       puts "\n📋 Phase 1: Creating PRD and analyzing project..."
 
-      prd_prompt = "Task: Add simple scoring
+      prd_prompt = "Task: #{prompt}
 
-Step 1: Read source files to understand the project.
+Step 1: THOROUGHLY analyze the project by reading ALL relevant files:
+- Use Glob to find all source files (*.rb, *.js, *.ts, *.py, etc.)
+- Read key files to understand the project structure, existing code, dependencies, and current state
+- Check for existing test files, package.json, Gemfile, or other config files
+- Understand what frameworks, libraries, and patterns are currently used
 
-Step 2: Create PRD.md with:
-# PRD - Simple Scoring
-## Branch: feature/scoring
-## Stories: story-1, story-2
+Step 2: Based on your thorough analysis of the codebase and the user's request \"#{prompt}\", create PRD.md with:
+# PRD - #{prompt.split(' ').first.capitalize} #{prompt.split(' ')[1..3].join(' ')}
+## Branch: feature/implementation
 
-Step 3: Create story-1.md with:
-# Story story-1: Score Component
+## Overview
+[Brief description of what needs to be done based on both the user request AND your codebase analysis]
+
+## Goals
+[List appropriate number of goals based on the actual project state and user request - could be 2-8+ goals as needed]
+
+## Technical Approach
+[Describe the approach considering the existing codebase, frameworks, and patterns discovered]
+
+Step 3: Create appropriate number of story files (story-1.md, story-2.md, etc.) based on the complexity of the user's request \"#{prompt}\" and your codebase analysis. Don't limit to 2 stories if the request needs more breakdown. Each story should have:
+# Story story-X: [Relevant Title]
 ## Priority: 1
-## Description: Create Score component
+## Description: [Specific description based on both user request and actual codebase analysis]
 ## Acceptance Criteria:
-- Score component added
-- Score initializes to 0
-
-Step 4: Create story-2.md with:
-# Story story-2: Score Display
-## Priority: 1
-## Description: Display score in UI
-## Acceptance Criteria:
-- Score shown in game
-- Score updates in real-time
+- [Specific, actionable criteria that address the user's needs in the context of the existing codebase]
 
 Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
 
@@ -266,7 +269,21 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
         raise StandardError, 'Not in a git repository' unless system('git rev-parse --git-dir > /dev/null 2>&1')
       end
 
+      # Commit any changes before creating branch to avoid carrying modifications
+      ErrorHandler.with_error_handling('Git status check before branch') do
+        status_output = ErrorHandler.capture_command_output('git status --porcelain', 'Check git status')
+        if status_output && !status_output.strip.empty?
+          puts '📝 Committing changes before creating branch...'
+          ErrorHandler.safe_system_command('git add .', 'Stage changes before branch')
+          ErrorHandler.safe_system_command('git commit -m "Commit changes before branch creation"',
+                                           'Commit changes before branch')
+        end
+      end
+
       ErrorHandler.with_error_handling('Git branch creation', { branch: branch_name }) do
+        # Switch to main first to ensure clean branch creation
+        ErrorHandler.safe_system_command('git checkout main', 'Switch to main branch')
+
         if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
           ErrorHandler.safe_system_command("git checkout #{branch_name}", 'Checkout existing branch')
         else
