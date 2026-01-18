@@ -9,14 +9,14 @@ require_relative '../ralph/story_implementer'
 require_relative '../ralph/progress_logger'
 
 module Ralph
-  # Main autonomous agent implementation
   class Agent
+    WORKING_FILES = %w[prd.json progress.txt AGENTS.md ralph.log].freeze
+
     class << self
       def run(prompt, dry_run: false)
         initialize_environment
         Logger.info('Starting Ralph', { prompt: prompt, dry_run: dry_run })
 
-        # Generate PRD
         requirements = PrdGenerator.generate(prompt)
         return unless requirements
 
@@ -26,7 +26,6 @@ module Ralph
           return
         end
 
-        # Autonomous implementation loop
         run_implementation_loop(requirements)
       end
 
@@ -61,7 +60,6 @@ module Ralph
           puts "🔄 ITERATION #{iteration} - #{Time.now.strftime('%H:%M:%S')}"
           puts '=' * 60
 
-          # Find next incomplete story
           next_story = requirements['stories'].find { |s| s['passes'] != true }
 
           if next_story.nil?
@@ -71,6 +69,7 @@ module Ralph
             puts "📊 Total Stories: #{total_stories}"
             puts "📝 Total Iterations: #{iteration}"
             puts "⏰ Completed: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+            cleanup_working_files
             puts '<promise>COMPLETE</promise>'
             break
           end
@@ -84,7 +83,6 @@ module Ralph
           puts "📝 Description: #{next_story['description'][0..80]}#{'...' if next_story['description'].length > 80}"
 
           puts "\n⚡ Starting implementation..."
-          # Implement story
           if StoryImplementer.implement(next_story, iteration, requirements)
             next_story['passes'] = true
             ProgressLogger.update_state(requirements)
@@ -94,6 +92,16 @@ module Ralph
             puts "\n❌ Story failed - will retry in next iteration"
             puts '⏳ Waiting before retry...'
             sleep 2
+          end
+        end
+      end
+
+      def cleanup_working_files
+        puts "\n🧹 Cleaning up working files..."
+        WORKING_FILES.each do |file|
+          if File.exist?(file)
+            File.delete(file)
+            puts "  🗑️  Deleted #{file}"
           end
         end
       end
