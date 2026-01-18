@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'open3'
+require 'shellwords'
 require_relative 'config'
 
 module Ralph
@@ -100,39 +101,43 @@ module Ralph
 
       timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
 
-      temp_file = Tempfile.new(['ralph_prompt', '.txt'])
+      # Write prompt to file in current directory
+      prompt_file = ".ralph_prompt_#{$$}.txt"
       begin
-        temp_file.write(prompt)
-        temp_file.close
+        File.write(prompt_file, prompt)
 
-        ['timeout', timeout_seconds.to_s, 'opencode', 'run', "opencode run $(cat #{temp_file.path})"]
+        cmd = "timeout #{timeout_seconds} bash -c 'cat #{prompt_file.shellescape} | opencode run --format default /dev/stdin' 2>&1"
+        output = `#{cmd}`
 
-        cmd_parts = if timeout_seconds
-                      ['timeout', timeout_seconds.to_s, 'opencode', 'run', "$(cat #{temp_file.path})"]
-                    else
-                      ['opencode', 'run', "$(cat #{temp_file.path})"]
-                    end
+        # Clean output - remove ANSI codes and JSON artifacts
+        cleaned = clean_opencode_output(output)
 
-        stdout, stderr, = Open3.capture3(*cmd_parts)
-        output = stdout + stderr
+        Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
+        cleaned
       ensure
-        temp_file.close
-        temp_file.unlink
+        File.delete(prompt_file) if File.exist?(prompt_file)
       end
-
-      Logger.debug('Command output captured', { operation: operation, output_length: output.length })
-      output
     rescue StandardError => e
       Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
       nil
     end
+
+    def self.clean_opencode_output(output)
+      # Remove ANSI color codes
+      output.gsub(/\x1b\[[0-9;]*[a-zA-Z]/, '')
+            # Remove JSON-like artifacts (lines starting with { or })
+            .gsub(/^[{"].*$/m, '')
+            # Clean up extra whitespace
+            .gsub(/\n{3,}/, "\n\n")
+            .strip
+    end
   end
 
   class Agent
-    def self.run(prompt)
+    def self.run(prompt, dry_run: false)
       # Initialize logger
       Logger.configure(:info)
-      Logger.info('Starting Ralph', { prompt: prompt, working_dir: Dir.pwd })
+      Logger.info('Starting Ralph', { prompt: prompt, dry_run: dry_run })
 
       ErrorHandler.with_error_handling('Directory change') do
         Dir.chdir(ENV['PWD'] || Dir.pwd)
@@ -145,79 +150,49 @@ module Ralph
       # Phase 1: Complete PRD and story analysis
       puts "\n📋 Phase 1: Creating PRD and analyzing project..."
 
-      prd_prompt = <<~PROMPT
-        You are Ralph, an autonomous software development agent.
+      prd_prompt = "Task: Add simple scoring
 
-        Your task: #{prompt}
+Step 1: Read source files to understand the project.
 
-        Step 1: Analyze the current codebase
-        - Read main files to understand the project
-        - Identify the technology stack and patterns
+Step 2: Create PRD.md with:
+# PRD - Simple Scoring
+## Branch: feature/scoring
+## Stories: story-1, story-2
 
-        Step 2: Create PRD.md file with this structure:
-        ```
-        # PRD - [Project Name]
+Step 3: Create story-1.md with:
+# Story story-1: Score Component
+## Priority: 1
+## Description: Create Score component
+## Acceptance Criteria:
+- Score component added
+- Score initializes to 0
 
-        ## Project Branch
-        feature/[branch-name]
+Step 4: Create story-2.md with:
+# Story story-2: Score Display
+## Priority: 1
+## Description: Display score in UI
+## Acceptance Criteria:
+- Score shown in game
+- Score updates in real-time
 
-        ## User Stories
-        - [List of story IDs]
-        ```
-
-        Step 3: Create individual story files (story-1.md, story-2.md, etc.)
-        Each story file must contain:
-        ```
-        # Story [ID]: [Title]
-
-        ## Description
-        [Detailed description]
-
-        ## Acceptance Criteria
-        - [Criterion 1]
-        - [Criterion 2]
-
-        ## Priority
-        [1-5]
-
-        ## Implementation Notes
-        [Any specific guidance for implementing this story]
-        ```
-
-        CRITICAL: You MUST create ALL files (PRD.md and all story-*.md files). Do not respond with text only - actually create the files.
-
-        When complete, respond with: "DONE: Created [N] story files"
-      PROMPT
+Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
 
       success = ErrorHandler.with_error_handling('PRD creation') do
-        Logger.info('Calling opencode to create PRD and story files...')
+        Logger.info('Calling opencode to create files...')
         response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
-        Logger.info("Response received: #{response ? 'Yes' : 'No'}")
+        Logger.info("Response: #{response ? response[0..200] : 'nil'}")
 
-        unless response
-          Logger.error('No response from opencode')
-          return false
-        end
-
-        # Wait a moment for file system to sync
         sleep 2
 
-        # Check if PRD.md was created
-        unless File.exist?('PRD.md')
-          Logger.error('PRD.md file was not created')
-          Logger.error("Response was: #{response[0..500]}")
-          return false
-        end
-
-        Logger.info('PRD.md created successfully')
+        return false unless File.exist?('PRD.md')
 
         story_files = Dir.glob('story-*.md').sort
         if story_files.empty?
-          Logger.error('No story files were created')
+          Logger.error('No story files created')
           return false
         end
 
-        Logger.info("Created #{story_files.length} story files: #{story_files.join(', ')}")
+        Logger.info("Created PRD.md and #{story_files.length} story files")
 
         agents_content = "# Ralph Agent Patterns\n\n## Project Context\n- PRD: PRD.md\n- Stories: #{story_files.length} items\n- Started: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         File.write('AGENTS.md', agents_content)
@@ -237,8 +212,10 @@ module Ralph
       create_feature_branch(branch_name)
 
       iteration = 0
+      max_retries = Ralph::Config.get(:retry_attempts) || 3
       loop do
         iteration += 1
+        retry_count = 0
 
         puts "\n" + '=' * 60
         puts "🔄 Iteration #{iteration}"
@@ -256,13 +233,26 @@ module Ralph
         story_id = File.basename(story_file, '.md')
         puts "\n📖 Implementing: #{story_id}"
 
-        # Implement story by feeding story file to opencode
-        if implement_story_from_file(story_file, iteration)
-          mark_story_complete(story_id)
-          puts '✅ Story completed successfully'
-        else
-          puts '❌ Story failed - will retry in next iteration'
+        # Implement with retry logic
+        success = false
+        max_retries.times do |attempt|
+          puts "  Attempt #{attempt + 1}/#{max_retries}"
+
+          if implement_story_from_file(story_file, iteration)
+            success = true
+            retry_count = attempt
+            mark_story_complete(story_id)
+            puts '✅ Story completed successfully'
+            break
+          else
+            puts "❌ Attempt #{attempt + 1} failed"
+            sleep 2 if attempt < max_retries - 1
+          end
         end
+
+        log_progress(iteration, story_file, success, retries: retry_count)
+
+        puts '❌ Story failed after all retries - skipping to next story' unless success
 
         sleep 1
       end
@@ -381,10 +371,11 @@ module Ralph
       end
     end
 
-    def self.log_progress(iteration, story_file, success)
+    def self.log_progress(iteration, story_file, success, retries: 0)
       Logger.log(success ? :info : :error, "Iteration #{iteration} completed", {
                    story: File.basename(story_file),
-                   success: success
+                   success: success,
+                   retries: retries
                  })
 
       ErrorHandler.with_error_handling('Progress logging') do
@@ -392,6 +383,7 @@ module Ralph
           "## Iteration #{iteration} - #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}",
           "Story: #{File.basename(story_file)}",
           "Status: #{success ? 'Success' : 'Failed'}",
+          "Retries: #{retries}",
           '---'
         ].join("\n")
 
@@ -409,8 +401,18 @@ module Ralph
     end
 
     def self.find_next_story_file
-      stories_dir = Dir.glob('story-*.md').sort
-      stories_dir.find { |file| !file.include?('.completed.') }
+      # First check for .completed.md files to see what's already done
+      completed = Dir.glob('story-*.completed.md').map { |f| File.basename(f, '.completed.md') }
+      remaining = Dir.glob('story-*.md').sort.reject { |f| completed.include?(File.basename(f, '.md')) }
+
+      remaining.find { |file| story_not_yet_committed?(file) }
+    end
+
+    def self.story_not_yet_committed?(story_file)
+      story_id = File.basename(story_file, '.md')
+      # Check if this story ID appears in recent git log
+      log = `git log --oneline -20 2>/dev/null`
+      !log.include?("story-#{story_id.gsub('story-', '')}:") && !log.include?(story_id)
     end
 
     def self.mark_story_complete(story_id)
