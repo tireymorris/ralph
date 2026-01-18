@@ -281,8 +281,9 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
       end
 
       ErrorHandler.with_error_handling('Git branch creation', { branch: branch_name }) do
-        # Switch to main first to ensure clean branch creation
-        ErrorHandler.safe_system_command('git checkout main', 'Switch to main branch')
+        # Switch to main/master first to ensure clean branch creation
+        main_branch = system('git rev-parse --verify main >/dev/null 2>&1') ? 'main' : 'master'
+        ErrorHandler.safe_system_command("git checkout #{main_branch}", "Switch to #{main_branch} branch")
 
         if system("git show-ref --verify --quiet refs/heads/#{branch_name}")
           ErrorHandler.safe_system_command("git checkout #{branch_name}", 'Checkout existing branch')
