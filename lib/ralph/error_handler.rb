@@ -27,43 +27,58 @@ module Ralph
 
       def capture_command_output(prompt, operation)
         puts "\n🔄 Executing: #{operation}"
-        puts "📝 Prompt: #{prompt[0..100]}#{'...' if prompt.length > 100}"
+        puts "📝 Prompt length: #{prompt.length} chars"
 
-        prompt_file = ".ralph_prompt_#{Process.pid}.txt"
-        begin
-          File.write(prompt_file, prompt)
+        model = Ralph::Config.get(:model)
+        model_name = model || 'default'
+        cmd = %w[opencode run]
+        cmd += ['--model', model] if model
 
-          model = Ralph::Config.get(:model)
-          model_flag = model ? "--model #{model.shellescape}" : ''
-          cmd = "opencode run #{model_flag} \"$(cat #{prompt_file.shellescape})\"".strip.gsub(/\s+/, ' ')
-          output_lines = []
+        puts "🚀 Running: opencode run #{model ? "--model #{model}" : ''}"
+        puts "📡 Streaming from #{model_name}..."
 
-          Open3.popen3(cmd) do |_stdin, stdout, _stderr, wait_thr|
-            puts '📡 Streaming output from BigPickle...'
+        output_lines = []
 
+        Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
+          stdin.write(prompt)
+          stdin.close
+
+          stdout_thread = Thread.new do
             stdout.each_line do |line|
-              puts "  📤 #{line.strip}"
+              puts "  📤 #{line}"
+              $stdout.flush
               output_lines << line
             end
-
-            exit_status = wait_thr.value
-            puts "✅ Process completed with status: #{exit_status.exitstatus}" if exit_status.success?
-            puts "⚠️ Process failed with status: #{exit_status.exitstatus}" unless exit_status.success?
           end
 
-          output = output_lines.join
-          cleaned = clean_opencode_output(output)
+          stderr_thread = Thread.new do
+            stderr.each_line do |line|
+              puts "  ⚠️  #{line}"
+              $stdout.flush
+            end
+          end
 
-          puts "📊 Output processed: #{cleaned.length} characters"
+          stdout_thread.join
+          stderr_thread.join
 
-          Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
-          cleaned
-        ensure
-          File.delete(prompt_file) if File.exist?(prompt_file)
+          exit_status = wait_thr.value
+          if exit_status.success?
+            puts "✅ Completed (exit #{exit_status.exitstatus})"
+          else
+            puts "❌ Failed (exit #{exit_status.exitstatus})"
+          end
         end
+
+        output = output_lines.join
+        cleaned = clean_opencode_output(output)
+        puts "📊 Output: #{cleaned.length} chars"
+
+        Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
+        cleaned
       rescue StandardError => e
-        puts "❌ Error during command execution: #{e.message}"
-        Logger.error('Command capture exception', { prompt: prompt[0..100], operation: operation, error: e.message })
+        puts "❌ Error: #{e.message}"
+        puts e.backtrace.first(3).join("\n")
+        Logger.error('Command capture exception', { operation: operation, error: e.message })
         nil
       end
 
@@ -72,7 +87,6 @@ module Ralph
 
         output
           .gsub(/\x1b\[[0-9;]*[a-zA-Z]/, '')
-          .gsub(/^[{"].*$/m, '')
           .gsub(/\n{3,}/, "\n\n")
           .strip
       end
