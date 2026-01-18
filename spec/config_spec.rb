@@ -78,7 +78,7 @@ RSpec.describe Ralph::Config do
   describe 'DEFAULTS' do
     it 'contains all required keys' do
       required_keys = %i[
-        big_pickle_timeout git_timeout test_timeout max_iterations
+        model git_timeout test_timeout max_iterations
         log_level log_file progress_file prd_file agents_file
         retry_attempts retry_delay
       ]

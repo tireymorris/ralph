@@ -33,7 +33,9 @@ module Ralph
         begin
           File.write(prompt_file, prompt)
 
-          cmd = "opencode run --model big-pickle \"$(cat #{prompt_file.shellescape})\""
+          model = Ralph::Config.get(:model)
+          model_flag = model ? "--model #{model.shellescape}" : ''
+          cmd = "opencode run #{model_flag} \"$(cat #{prompt_file.shellescape})\"".strip.gsub(/\s+/, ' ')
           output_lines = []
 
           Open3.popen3(cmd) do |_stdin, stdout, _stderr, wait_thr|
