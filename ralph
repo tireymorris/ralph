@@ -17,7 +17,7 @@ module Ralph
       prompt_args = args.reject { |arg| arg == '--dry-run' }
 
       if prompt_args.empty?
-        puts "❌ Error: Please provide a prompt when using --dry-run"
+        puts '❌ Error: Please provide a prompt when using --dry-run'
         show_help
         return
       end
@@ -31,8 +31,6 @@ module Ralph
       # Run Ralph
       Agent.run(prompt, dry_run: dry_run)
     end
-
-    private
 
     def self.show_help
       puts <<~HELP
@@ -72,6 +70,4 @@ module Ralph
 end
 
 # Execute if run directly
-if __FILE__ == $PROGRAM_NAME
-  Ralph::CLI.run(ARGV)
-end
+Ralph::CLI.run(ARGV) if __FILE__ == $PROGRAM_NAME

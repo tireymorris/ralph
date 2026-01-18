@@ -20,7 +20,7 @@ module Ralph
     attr_reader :settings
 
     def self.load
-      @settings ||= DEFAULTS.merge(load_from_file)
+      @load ||= DEFAULTS.merge(load_from_file)
     end
 
     def self.get(key)

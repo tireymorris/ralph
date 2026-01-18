@@ -50,7 +50,7 @@ module Ralph
         loop do
           iteration += 1
 
-          puts "\n" + '=' * 60
+          puts "\n#{'=' * 60}"
           puts "🔄 Iteration #{iteration}"
           puts '=' * 60
 

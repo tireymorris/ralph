@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'English'
 require 'fileutils'
 require 'open3'
 require 'shellwords'
@@ -102,7 +103,7 @@ module Ralph
       timeout_seconds ||= Ralph::Config.get(:opencode_timeout)
 
       # Write prompt to file in current directory
-      prompt_file = ".ralph_prompt_#{$$}.txt"
+      prompt_file = ".ralph_prompt_#{$PROCESS_ID}.txt"
       begin
         File.write(prompt_file, prompt)
 
@@ -217,7 +218,7 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
         iteration += 1
         retry_count = 0
 
-        puts "\n" + '=' * 60
+        puts "\n#{'=' * 60}"
         puts "🔄 Iteration #{iteration}"
         puts '=' * 60
 
@@ -387,7 +388,7 @@ Use Write tool. NO JSON. NO MARKDOWN CODE BLOCKS."
           '---'
         ].join("\n")
 
-        File.open('progress.txt', 'a') { |f| f.puts(log + "\n") }
+        File.open('progress.txt', 'a') { |f| f.puts("#{log}\n") }
       end
     end
 
