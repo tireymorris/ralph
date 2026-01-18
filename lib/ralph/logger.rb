@@ -13,6 +13,7 @@ module Ralph
         @level = LOG_LEVELS[level&.to_sym] ||
                  LOG_LEVELS[Ralph::Config.get(:log_level)&.to_sym] ||
                  LOG_LEVELS[:info]
+        @@buffer ||= []
       end
 
       def log(level, message, context = {})
@@ -30,9 +31,14 @@ module Ralph
         formatted += " | #{context}" unless context.empty?
 
         puts formatted
-        write_to_file(formatted)
+        @@buffer << formatted
       rescue StandardError => e
         puts "❌ Logger error: #{e.message}"
+      end
+
+      def flush
+        @@buffer.each { |msg| write_to_file(msg) }
+        @@buffer.clear
       end
 
       def debug(message, context = {})

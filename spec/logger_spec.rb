@@ -49,8 +49,9 @@ RSpec.describe Ralph::Logger do
         .to output(/key.*value/).to_stdout
     end
 
-    it 'writes to log file' do
+    it 'writes to log file after flush' do
       described_class.log(:info, 'File test')
+      described_class.flush
       expect(File.read(log_file)).to include('File test')
     end
 
@@ -103,6 +104,28 @@ RSpec.describe Ralph::Logger do
       expect(described_class::LOG_LEVELS).to eq({
                                                   debug: 0, info: 1, warn: 2, error: 3
                                                 })
+    end
+  end
+
+  describe '.flush' do
+    before { described_class.configure(:debug) }
+
+    it 'writes buffered messages to file' do
+      described_class.log(:info, 'Buffered message 1')
+      described_class.log(:warn, 'Buffered message 2')
+      described_class.flush
+      content = File.read(log_file)
+      expect(content).to include('Buffered message 1')
+      expect(content).to include('Buffered message 2')
+    end
+
+    it 'clears the buffer after flushing' do
+      described_class.log(:info, 'Test message')
+      described_class.flush
+      # Buffer should be empty, so another flush does nothing new
+      initial_size = File.size(log_file)
+      described_class.flush
+      expect(File.size(log_file)).to eq(initial_size)
     end
   end
 end
