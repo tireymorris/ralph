@@ -1,54 +1,29 @@
-# Ralph CLI - Generated files and user data
+# Binary
+ralph
 
-# Ralph working directories
-tasks/
-archive/
-scripts/
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
 
-# Ralph runtime files
-prd.json
-progress.txt
-
-# Ralph PRD files (markdown)
-*.md
-!README.md
-!.gitignore
-
-# Ruby specific
-*.gem
-*.rbc
-/.config
-/coverage/
-/InstalledFiles
-/pkg/
-/spec/reports/
-/spec/tmp/
-/spec/examples.txt
-/tmp/
-*.log
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# OS files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Editor files
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
 
-# Backup files
-*.bak
-*.backup
-*.orig
+# OS
+.DS_Store
+Thumbs.db
+
+# Ralph working files
+prd.json
+ralph.log
+debug.log
