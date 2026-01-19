@@ -17,7 +17,6 @@ import (
 	"ralph/internal/runner"
 )
 
-// Phase represents the current phase of execution
 type Phase int
 
 const (
@@ -45,15 +44,12 @@ func (p Phase) String() string {
 	}
 }
 
-// Model is the main Bubble Tea model
 type Model struct {
-	// Configuration
 	cfg    *config.Config
 	prompt string
 	dryRun bool
 	resume bool
 
-	// State
 	phase        Phase
 	prd          *prd.PRD
 	currentStory *prd.Story
@@ -63,20 +59,17 @@ type Model struct {
 	width        int
 	height       int
 
-	// Components
 	spinner  spinner.Model
 	progress progress.Model
 	logView  viewport.Model
 	logs     []string
 	maxLogs  int
 
-	// Background operation
 	ctx        context.Context
 	cancelFunc context.CancelFunc
 	outputCh   chan runner.OutputLine
 }
 
-// NewModel creates a new TUI model
 func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -109,7 +102,6 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
 	}
 }
 
-// Messages
 type (
 	outputMsg        runner.OutputLine
 	prdGeneratedMsg  struct{ prd *prd.PRD }
@@ -121,7 +113,6 @@ type (
 	tickMsg          time.Time
 )
 
-// Init initializes the model
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
@@ -131,7 +122,6 @@ func (m *Model) Init() tea.Cmd {
 	)
 }
 
-// Update handles messages
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
@@ -215,14 +205,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// ExitCode returns the appropriate exit code based on final state
 func (m *Model) ExitCode() int {
 	switch m.phase {
 	case PhaseCompleted:
 		return 0
 	case PhaseFailed:
 		if m.prd != nil && m.prd.CompletedCount() > 0 {
-			return 2 // Partial success
+			return 2
 		}
 		return 1
 	default:

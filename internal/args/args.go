@@ -5,16 +5,14 @@ import (
 	"strings"
 )
 
-// Options holds parsed command line arguments
 type Options struct {
 	Prompt   string
 	DryRun   bool
 	Resume   bool
-	Headless bool // run mode (non-TUI)
+	Headless bool
 	Help     bool
 }
 
-// Parse parses command line arguments into Options
 func Parse(args []string) *Options {
 	opts := &Options{}
 	var promptParts []string
@@ -40,7 +38,6 @@ func Parse(args []string) *Options {
 	return opts
 }
 
-// Validate checks if the options are valid and returns an error message if not
 func (o *Options) Validate() error {
 	if o.Help {
 		return nil
@@ -53,7 +50,6 @@ func (o *Options) Validate() error {
 	return nil
 }
 
-// HelpText returns the help message
 func HelpText() string {
 	return `
 Ralph - Autonomous Software Development Agent

@@ -1,6 +1,5 @@
 package prd
 
-// Story represents a single user story in the PRD
 type Story struct {
 	ID                 string   `json:"id"`
 	Title              string   `json:"title"`
@@ -12,14 +11,12 @@ type Story struct {
 	RetryCount         int      `json:"retry_count"`
 }
 
-// PRD represents the Product Requirements Document
 type PRD struct {
 	ProjectName string   `json:"project_name"`
 	BranchName  string   `json:"branch_name,omitempty"`
 	Stories     []*Story `json:"stories"`
 }
 
-// NextPendingStory returns the next story to implement
 func (p *PRD) NextPendingStory(maxRetries int) *Story {
 	var best *Story
 	for _, story := range p.Stories {
@@ -36,7 +33,6 @@ func (p *PRD) NextPendingStory(maxRetries int) *Story {
 	return best
 }
 
-// CompletedCount returns the number of completed stories
 func (p *PRD) CompletedCount() int {
 	count := 0
 	for _, story := range p.Stories {
@@ -47,7 +43,6 @@ func (p *PRD) CompletedCount() int {
 	return count
 }
 
-// FailedStories returns stories that have exceeded retry limits
 func (p *PRD) FailedStories(maxRetries int) []*Story {
 	var failed []*Story
 	for _, story := range p.Stories {
@@ -58,7 +53,6 @@ func (p *PRD) FailedStories(maxRetries int) []*Story {
 	return failed
 }
 
-// AllCompleted returns true if all stories are done
 func (p *PRD) AllCompleted() bool {
 	for _, story := range p.Stories {
 		if !story.Passes {

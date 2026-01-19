@@ -12,13 +12,11 @@ import (
 	"ralph/internal/runner"
 )
 
-// Generator creates PRDs from prompts
 type Generator struct {
 	cfg    *config.Config
 	runner *runner.Runner
 }
 
-// NewGenerator creates a new PRD generator
 func NewGenerator(cfg *config.Config) *Generator {
 	return &Generator{
 		cfg:    cfg,
@@ -26,7 +24,6 @@ func NewGenerator(cfg *config.Config) *Generator {
 	}
 }
 
-// Generate creates a PRD from the given prompt
 func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh chan<- runner.OutputLine) (*PRD, error) {
 	prdPrompt := prompt.PRDGeneration(userPrompt)
 
@@ -48,7 +45,6 @@ func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh ch
 		return nil, fmt.Errorf("invalid PRD: %w", err)
 	}
 
-	// Sort stories by priority
 	sort.Slice(p.Stories, func(i, j int) bool {
 		return p.Stories[i].Priority < p.Stories[j].Priority
 	})
@@ -59,7 +55,6 @@ func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh ch
 func parseResponse(response string) (*PRD, error) {
 	response = strings.TrimSpace(response)
 
-	// Find JSON object boundaries
 	start := strings.Index(response, "{")
 	if start == -1 {
 		return nil, fmt.Errorf("no JSON object found in response")

@@ -12,14 +12,12 @@ import (
 	"ralph/internal/runner"
 )
 
-// Implementer handles story implementation
 type Implementer struct {
 	cfg    *config.Config
 	runner *runner.Runner
 	git    *git.Manager
 }
 
-// NewImplementer creates a new story implementer
 func NewImplementer(cfg *config.Config) *Implementer {
 	return &Implementer{
 		cfg:    cfg,
@@ -28,7 +26,6 @@ func NewImplementer(cfg *config.Config) *Implementer {
 	}
 }
 
-// Implement executes the implementation of a single story
 func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration int, p *prd.PRD, outputCh chan<- runner.OutputLine) (bool, error) {
 	implPrompt := prompt.StoryImplementation(
 		story.Title,
@@ -50,12 +47,10 @@ func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration
 		return false, nil
 	}
 
-	// Check if implementation was successful
 	if !strings.Contains(result.Output, "COMPLETED:") {
 		return false, nil
 	}
 
-	// Commit changes
 	if err := i.git.CommitStory(story.ID, story.Title, story.Description); err != nil {
 		if outputCh != nil {
 			outputCh <- runner.OutputLine{Text: fmt.Sprintf("Warning: commit failed: %v", err), IsErr: true}

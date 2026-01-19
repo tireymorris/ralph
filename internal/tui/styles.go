@@ -3,15 +3,13 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	// Colors
-	primaryColor   = lipgloss.Color("#7C3AED") // Purple
-	successColor   = lipgloss.Color("#10B981") // Green
-	errorColor     = lipgloss.Color("#EF4444") // Red
-	warningColor   = lipgloss.Color("#F59E0B") // Amber
-	mutedColor     = lipgloss.Color("#6B7280") // Gray
-	highlightColor = lipgloss.Color("#3B82F6") // Blue
+	primaryColor   = lipgloss.Color("#7C3AED")
+	successColor   = lipgloss.Color("#10B981")
+	errorColor     = lipgloss.Color("#EF4444")
+	warningColor   = lipgloss.Color("#F59E0B")
+	mutedColor     = lipgloss.Color("#6B7280")
+	highlightColor = lipgloss.Color("#3B82F6")
 
-	// Base styles
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(primaryColor).
@@ -21,13 +19,11 @@ var (
 			Foreground(mutedColor).
 			Italic(true)
 
-	// Box styles
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
 			Padding(1, 2)
 
-	// Status styles
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
 			Bold(true)
@@ -47,7 +43,6 @@ var (
 	pendingStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
-	// Story list styles
 	storyItemStyle = lipgloss.NewStyle().
 			PaddingLeft(2)
 
@@ -56,7 +51,6 @@ var (
 				Foreground(highlightColor).
 				Bold(true)
 
-	// Header styles
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#FFFFFF")).
@@ -64,14 +58,12 @@ var (
 			Padding(0, 2).
 			MarginBottom(1)
 
-	// Phase indicator styles
 	phaseStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(primaryColor).
 			MarginTop(1).
 			MarginBottom(1)
 
-	// Log styles
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(mutedColor).
@@ -84,12 +76,10 @@ var (
 	logErrorStyle = lipgloss.NewStyle().
 			Foreground(errorColor)
 
-	// Help styles
 	helpStyle = lipgloss.NewStyle().
 			Foreground(mutedColor).
 			MarginTop(1)
 
-	// Progress bar styles
 	progressFullStyle = lipgloss.NewStyle().
 				Foreground(successColor)
 
@@ -97,7 +87,6 @@ var (
 				Foreground(mutedColor)
 )
 
-// Status icons
 const (
 	iconPending    = "○"
 	iconInProgress = "◐"

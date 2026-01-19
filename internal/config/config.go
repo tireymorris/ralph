@@ -48,7 +48,6 @@ func Load() *Config {
 		return cfg
 	}
 
-	// Merge file config with defaults
 	if fileCfg.Model != "" {
 		cfg.Model = fileCfg.Model
 	}
@@ -69,14 +68,4 @@ func Load() *Config {
 	}
 
 	return cfg
-}
-
-func IsValidModel(model string) bool {
-	for _, m := range SupportedModels {
-		if m == model {
-			return true
-		}
-	}
-	// Allow any model to be specified (for Ollama and other non-supported models)
-	return true
 }
