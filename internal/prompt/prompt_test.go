@@ -31,6 +31,14 @@ func TestPRDGeneration(t *testing.T) {
 				"priority",
 			},
 		},
+		{
+			name:       "instructs to analyze existing test conventions",
+			userPrompt: "Add feature",
+			mustInclude: []string{
+				"Analyze existing test files to understand naming conventions",
+				"Tests should follow existing project conventions",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -52,7 +60,6 @@ func TestStoryImplementation(t *testing.T) {
 		description        string
 		acceptanceCriteria []string
 		testSpec           string
-		storyID            string
 		iteration          int
 		completed          int
 		total              int
@@ -64,7 +71,6 @@ func TestStoryImplementation(t *testing.T) {
 			description:        "Implement login functionality",
 			acceptanceCriteria: []string{"User can login", "Error on bad credentials"},
 			testSpec:           "Test login flow",
-			storyID:            "story-1",
 			iteration:          1,
 			completed:          0,
 			total:              3,
@@ -74,9 +80,9 @@ func TestStoryImplementation(t *testing.T) {
 				"User can login",
 				"Error on bad credentials",
 				"Test login flow",
-				"story-1",
 				"Iteration 1",
 				"0/3",
+				"FOLLOW EXISTING TEST CONVENTIONS",
 			},
 		},
 		{
@@ -85,7 +91,6 @@ func TestStoryImplementation(t *testing.T) {
 			description:        "Desc",
 			acceptanceCriteria: []string{"AC"},
 			testSpec:           "",
-			storyID:            "s1",
 			iteration:          2,
 			completed:          1,
 			total:              2,
@@ -100,11 +105,25 @@ func TestStoryImplementation(t *testing.T) {
 			description:        "D",
 			acceptanceCriteria: []string{"A", "B", "C"},
 			testSpec:           "spec",
-			storyID:            "s",
 			iteration:          1,
 			completed:          0,
 			total:              1,
 			mustInclude:        []string{"A, B, C"},
+		},
+		{
+			name:               "instructs to follow existing patterns",
+			title:              "Add feature",
+			description:        "Some feature",
+			acceptanceCriteria: []string{"Works"},
+			testSpec:           "Test it",
+			iteration:          1,
+			completed:          0,
+			total:              1,
+			mustInclude: []string{
+				"FOLLOW EXISTING TEST CONVENTIONS",
+				"DO NOT use generic names like",
+				"story-1.test.js",
+			},
 		},
 	}
 
@@ -115,7 +134,6 @@ func TestStoryImplementation(t *testing.T) {
 				tt.description,
 				tt.acceptanceCriteria,
 				tt.testSpec,
-				tt.storyID,
 				tt.iteration,
 				tt.completed,
 				tt.total,
