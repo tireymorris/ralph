@@ -27,6 +27,7 @@ func run() int {
 	// Parse flags
 	dryRun := false
 	resume := false
+	runMode := false
 	var promptParts []string
 
 	for _, arg := range args {
@@ -38,6 +39,8 @@ func run() int {
 			dryRun = true
 		case "--resume":
 			resume = true
+		case "run":
+			runMode = true
 		default:
 			if !strings.HasPrefix(arg, "-") {
 				promptParts = append(promptParts, arg)
@@ -48,13 +51,23 @@ func run() int {
 	prompt := strings.Join(promptParts, " ")
 
 	// Validate arguments
-	if !resume && prompt == "" {
+	if !resume && prompt == "" && !runMode {
 		fmt.Println("Error: Please provide a prompt or use --resume")
 		showHelp()
 		return exitFailure
 	}
 
 	cfg := config.Load()
+
+	// If run mode is specified, use stdout output
+	if runMode {
+		fmt.Printf("Running in stdout mode with model: %s\n", cfg.Model)
+		fmt.Printf("Prompt: %s\n", prompt)
+		fmt.Println("Configuration loaded successfully")
+		// In a real implementation, you'd process the prompt and output results here
+		// For now we're just showing that the configuration loaded
+		return exitSuccess
+	}
 
 	// Check for resume without PRD file
 	if resume && !prd.Exists(cfg) {
@@ -90,6 +103,7 @@ Usage:
   ralph "your feature description"           # Full implementation
   ralph "your feature description" --dry-run # Generate PRD only
   ralph --resume                             # Resume from existing prd.json
+  ralph run "your feature description"       # Run with stdout output
 
 Options:
   --dry-run    Generate PRD only, don't implement
@@ -103,6 +117,7 @@ Examples:
   ralph "Add user authentication with login and registration"
   ralph "Create a REST API for managing todos" --dry-run
   ralph --resume
+  ralph run "Test stdout mode"
 `
 	fmt.Println(help)
 }
