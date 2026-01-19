@@ -12,10 +12,14 @@ import (
 	"ralph/internal/runner"
 )
 
+type GitCommitter interface {
+	CommitStory(storyID, title, description string) error
+}
+
 type Implementer struct {
 	cfg    *config.Config
-	runner *runner.Runner
-	git    *git.Manager
+	runner runner.CodeRunner
+	git    GitCommitter
 }
 
 func NewImplementer(cfg *config.Config) *Implementer {
@@ -23,6 +27,14 @@ func NewImplementer(cfg *config.Config) *Implementer {
 		cfg:    cfg,
 		runner: runner.New(cfg),
 		git:    git.New(),
+	}
+}
+
+func NewImplementerWithDeps(cfg *config.Config, r runner.CodeRunner, g GitCommitter) *Implementer {
+	return &Implementer{
+		cfg:    cfg,
+		runner: r,
+		git:    g,
 	}
 }
 

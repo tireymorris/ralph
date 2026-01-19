@@ -1,0 +1,159 @@
+package args
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestParse(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		expected Options
+	}{
+		{
+			name:     "empty args",
+			args:     []string{},
+			expected: Options{},
+		},
+		{
+			name:     "help flag short",
+			args:     []string{"-h"},
+			expected: Options{Help: true},
+		},
+		{
+			name:     "help flag long",
+			args:     []string{"--help"},
+			expected: Options{Help: true},
+		},
+		{
+			name:     "dry run flag",
+			args:     []string{"--dry-run"},
+			expected: Options{DryRun: true},
+		},
+		{
+			name:     "resume flag",
+			args:     []string{"--resume"},
+			expected: Options{Resume: true},
+		},
+		{
+			name:     "run command sets headless",
+			args:     []string{"run"},
+			expected: Options{Headless: true},
+		},
+		{
+			name:     "single prompt word",
+			args:     []string{"hello"},
+			expected: Options{Prompt: "hello"},
+		},
+		{
+			name:     "multi word prompt",
+			args:     []string{"hello", "world"},
+			expected: Options{Prompt: "hello world"},
+		},
+		{
+			name:     "prompt with flags",
+			args:     []string{"Add", "feature", "--dry-run"},
+			expected: Options{Prompt: "Add feature", DryRun: true},
+		},
+		{
+			name:     "run with prompt",
+			args:     []string{"run", "implement", "tests"},
+			expected: Options{Headless: true, Prompt: "implement tests"},
+		},
+		{
+			name:     "all flags combined",
+			args:     []string{"run", "--dry-run", "--resume", "prompt"},
+			expected: Options{Headless: true, DryRun: true, Resume: true, Prompt: "prompt"},
+		},
+		{
+			name:     "unknown flag ignored",
+			args:     []string{"--unknown", "prompt"},
+			expected: Options{Prompt: "prompt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Parse(tt.args)
+			if got.Prompt != tt.expected.Prompt {
+				t.Errorf("Prompt = %q, want %q", got.Prompt, tt.expected.Prompt)
+			}
+			if got.DryRun != tt.expected.DryRun {
+				t.Errorf("DryRun = %v, want %v", got.DryRun, tt.expected.DryRun)
+			}
+			if got.Resume != tt.expected.Resume {
+				t.Errorf("Resume = %v, want %v", got.Resume, tt.expected.Resume)
+			}
+			if got.Headless != tt.expected.Headless {
+				t.Errorf("Headless = %v, want %v", got.Headless, tt.expected.Headless)
+			}
+			if got.Help != tt.expected.Help {
+				t.Errorf("Help = %v, want %v", got.Help, tt.expected.Help)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    Options
+		wantErr bool
+	}{
+		{
+			name:    "help bypasses validation",
+			opts:    Options{Help: true},
+			wantErr: false,
+		},
+		{
+			name:    "resume without prompt is valid",
+			opts:    Options{Resume: true},
+			wantErr: false,
+		},
+		{
+			name:    "prompt provided is valid",
+			opts:    Options{Prompt: "do something"},
+			wantErr: false,
+		},
+		{
+			name:    "no prompt no resume is invalid",
+			opts:    Options{},
+			wantErr: true,
+		},
+		{
+			name:    "empty prompt without resume is invalid",
+			opts:    Options{DryRun: true},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.opts.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestHelpText(t *testing.T) {
+	text := HelpText()
+	requiredPhrases := []string{
+		"Ralph",
+		"Usage:",
+		"Options:",
+		"--dry-run",
+		"--resume",
+		"--help",
+		"run",
+		"Examples:",
+	}
+
+	for _, phrase := range requiredPhrases {
+		if !strings.Contains(text, phrase) {
+			t.Errorf("HelpText() missing %q", phrase)
+		}
+	}
+}

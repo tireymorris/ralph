@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,8 +10,15 @@ import (
 	"ralph/internal/git"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
-	"ralph/internal/story"
 )
+
+type PRDGenerator interface {
+	Generate(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) (*prd.PRD, error)
+}
+
+type StoryImplementer interface {
+	Implement(ctx context.Context, s *prd.Story, iteration int, p *prd.PRD, outputCh chan<- runner.OutputLine) (bool, error)
+}
 
 func (m *Model) startOperation() tea.Cmd {
 	return func() tea.Msg {
@@ -30,9 +38,7 @@ func (m *Model) loadAndResume() tea.Msg {
 }
 
 func (m *Model) generatePRD() tea.Msg {
-	gen := prd.NewGenerator(m.cfg)
-
-	generatedPRD, err := gen.Generate(m.ctx, m.prompt, m.outputCh)
+	generatedPRD, err := m.generator.Generate(m.ctx, m.prompt, m.outputCh)
 	if err != nil {
 		return prdErrorMsg{err: err}
 	}
@@ -86,8 +92,7 @@ func (m *Model) startNextStory() tea.Msg {
 	}
 
 	go func() {
-		impl := story.NewImplementer(m.cfg)
-		success, err := impl.Implement(m.ctx, next, m.iteration+1, m.prd, m.outputCh)
+		success, err := m.implementer.Implement(m.ctx, next, m.iteration+1, m.prd, m.outputCh)
 
 		if err != nil {
 			m.outputCh <- runner.OutputLine{Text: fmt.Sprintf("Error: %v", err), IsErr: true}

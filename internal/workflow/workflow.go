@@ -72,27 +72,79 @@ type EventFailed struct {
 
 func (EventFailed) isEvent() {}
 
+type PRDGenerator interface {
+	Generate(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) (*prd.PRD, error)
+}
+
+type StoryImplementer interface {
+	Implement(ctx context.Context, story *prd.Story, iteration int, p *prd.PRD, outputCh chan<- runner.OutputLine) (bool, error)
+}
+
+type GitManager interface {
+	CreateBranch(name string) error
+}
+
+type PRDStorage interface {
+	Load() (*prd.PRD, error)
+	Save(p *prd.PRD) error
+	Delete() error
+}
+
+type defaultPRDStorage struct {
+	cfg *config.Config
+}
+
+func (s *defaultPRDStorage) Load() (*prd.PRD, error) {
+	return prd.Load(s.cfg)
+}
+
+func (s *defaultPRDStorage) Save(p *prd.PRD) error {
+	return prd.Save(s.cfg, p)
+}
+
+func (s *defaultPRDStorage) Delete() error {
+	return prd.Delete(s.cfg)
+}
+
 type Executor struct {
-	cfg      *config.Config
-	eventsCh chan Event
+	cfg         *config.Config
+	eventsCh    chan Event
+	generator   PRDGenerator
+	implementer StoryImplementer
+	git         GitManager
+	storage     PRDStorage
 }
 
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	return &Executor{
-		cfg:      cfg,
-		eventsCh: eventsCh,
+		cfg:         cfg,
+		eventsCh:    eventsCh,
+		generator:   prd.NewGenerator(cfg),
+		implementer: story.NewImplementer(cfg),
+		git:         git.New(),
+		storage:     &defaultPRDStorage{cfg: cfg},
+	}
+}
+
+func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen PRDGenerator, impl StoryImplementer, g GitManager, storage PRDStorage) *Executor {
+	return &Executor{
+		cfg:         cfg,
+		eventsCh:    eventsCh,
+		generator:   gen,
+		implementer: impl,
+		git:         g,
+		storage:     storage,
 	}
 }
 
 func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
 	e.emit(EventPRDGenerating{})
 
-	gen := prd.NewGenerator(e.cfg)
 	outputCh := make(chan runner.OutputLine, 100)
 
 	go e.forwardOutput(outputCh)
 
-	p, err := gen.Generate(ctx, prompt, outputCh)
+	p, err := e.generator.Generate(ctx, prompt, outputCh)
 	close(outputCh)
 
 	if err != nil {
@@ -100,7 +152,7 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 		return nil, err
 	}
 
-	if err := prd.Save(e.cfg, p); err != nil {
+	if err := e.storage.Save(p); err != nil {
 		e.emit(EventError{Err: err})
 		return nil, err
 	}
@@ -110,7 +162,7 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 }
 
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
-	p, err := prd.Load(e.cfg)
+	p, err := e.storage.Load()
 	if err != nil {
 		e.emit(EventError{Err: err})
 		return nil, err
@@ -122,8 +174,7 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	if p.BranchName != "" {
-		gitMgr := git.New()
-		if err := gitMgr.CreateBranch(p.BranchName); err != nil {
+		if err := e.git.CreateBranch(p.BranchName); err != nil {
 			e.emit(EventOutput{Output{
 				Text:  fmt.Sprintf("Warning: failed to create branch: %v", err),
 				IsErr: true,
@@ -131,7 +182,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		}
 	}
 
-	impl := story.NewImplementer(e.cfg)
 	iteration := 0
 
 	for {
@@ -142,7 +192,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		}
 
 		if p.AllCompleted() {
-			prd.Delete(e.cfg)
+			e.storage.Delete()
 			e.emit(EventCompleted{})
 			return nil
 		}
@@ -164,7 +214,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		outputCh := make(chan runner.OutputLine, 100)
 		go e.forwardOutput(outputCh)
 
-		success, err := impl.Implement(ctx, next, iteration, p, outputCh)
+		success, err := e.implementer.Implement(ctx, next, iteration, p, outputCh)
 		close(outputCh)
 
 		if err != nil {
@@ -178,7 +228,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			e.emit(EventStoryCompleted{Story: next, Success: false})
 		}
 
-		if err := prd.Save(e.cfg, p); err != nil {
+		if err := e.storage.Save(p); err != nil {
 			e.emit(EventOutput{Output{
 				Text:  fmt.Sprintf("Warning: failed to save state: %v", err),
 				IsErr: true,
