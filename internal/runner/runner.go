@@ -92,9 +92,27 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
+	// Channel to signal permission prompts that need auto-approval
+	permissionCh := make(chan struct{}, 10)
+
+	// Write initial prompt, then keep stdin open for permission responses
 	go func() {
 		defer stdin.Close()
 		io.WriteString(stdin, prompt)
+
+		// Listen for permission prompts and auto-approve by sending Enter
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case _, ok := <-permissionCh:
+				if !ok {
+					return
+				}
+				// Send Enter to accept the default "Allow once" option
+				io.WriteString(stdin, "\n")
+			}
+		}
 	}()
 
 	var outputBuilder strings.Builder
@@ -108,7 +126,15 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 			if outputCh != nil {
 				outputCh <- OutputLine{Text: line, IsErr: false, Time: time.Now()}
 			}
+			// Detect permission prompts (opencode shows "Permission required:" or "Allow once")
+			if strings.Contains(line, "Permission required:") || strings.Contains(line, "● Allow once") {
+				select {
+				case permissionCh <- struct{}{}:
+				default:
+				}
+			}
 		}
+		close(permissionCh)
 	}()
 
 	go func() {
