@@ -1,0 +1,87 @@
+package args
+
+import (
+	"fmt"
+	"strings"
+)
+
+// Options holds parsed command line arguments
+type Options struct {
+	Prompt   string
+	DryRun   bool
+	Resume   bool
+	Headless bool // run mode (non-TUI)
+	Help     bool
+}
+
+// Parse parses command line arguments into Options
+func Parse(args []string) *Options {
+	opts := &Options{}
+	var promptParts []string
+
+	for _, arg := range args {
+		switch arg {
+		case "--help", "-h":
+			opts.Help = true
+		case "--dry-run":
+			opts.DryRun = true
+		case "--resume":
+			opts.Resume = true
+		case "run":
+			opts.Headless = true
+		default:
+			if !strings.HasPrefix(arg, "-") {
+				promptParts = append(promptParts, arg)
+			}
+		}
+	}
+
+	opts.Prompt = strings.Join(promptParts, " ")
+	return opts
+}
+
+// Validate checks if the options are valid and returns an error message if not
+func (o *Options) Validate() error {
+	if o.Help {
+		return nil
+	}
+
+	if !o.Resume && o.Prompt == "" {
+		return fmt.Errorf("please provide a prompt or use --resume")
+	}
+
+	return nil
+}
+
+// HelpText returns the help message
+func HelpText() string {
+	return `
+Ralph - Autonomous Software Development Agent
+
+Usage:
+  ralph "your feature description"               # Full implementation (TUI)
+  ralph "your feature description" --dry-run     # Generate PRD only (TUI)
+  ralph --resume                                 # Resume from existing prd.json (TUI)
+  ralph run "your feature description"           # Full implementation (stdout)
+  ralph run "your feature description" --dry-run # Generate PRD only (stdout)
+  ralph run --resume                             # Resume from existing prd.json (stdout)
+
+Options:
+  --dry-run    Generate PRD only, don't implement
+  --resume     Resume implementation from existing prd.json
+  --help, -h   Show this help message
+
+Modes:
+  (default)    Interactive TUI with progress display
+  run          Non-interactive stdout output (for CI/scripts)
+
+Controls (TUI mode):
+  q, Ctrl+C    Quit the application
+
+Examples:
+  ralph "Add user authentication with login and registration"
+  ralph "Create a REST API for managing todos" --dry-run
+  ralph --resume
+  ralph run "Add unit tests for the API" --dry-run
+`
+}
