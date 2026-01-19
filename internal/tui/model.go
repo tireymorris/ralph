@@ -76,16 +76,18 @@ type Model struct {
 
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
 	s := spinner.New()
-	s.Spinner = spinner.Dot
+	s.Spinner = spinner.Jump
 	s.Style = lipgloss.NewStyle().Foreground(primaryColor)
 
 	p := progress.New(
-		progress.WithDefaultGradient(),
+		progress.WithGradient("#8B5CF6", "#34D399"),
 		progress.WithWidth(40),
+		progress.WithSolidFill("#374151"),
 	)
 
 	v := viewport.New(80, 10)
-	v.Style = logBoxStyle
+	// Border/padding are applied by the surrounding log panel.
+	v.Style = lipgloss.NewStyle()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -153,9 +155,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.logView.Width = msg.Width - 4
-		m.logView.Height = min(10, msg.Height/3)
-		m.progress.Width = min(40, msg.Width-20)
+		m.logView.Width = max(20, msg.Width-6)
+		// Favor showing logs while still leaving room for the main content.
+		m.logView.Height = min(max(8, msg.Height/3), max(8, msg.Height-14))
+		m.progress.Width = min(40, max(10, msg.Width-20))
+		m.refreshLogView()
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -248,6 +252,38 @@ func (m *Model) addLog(line string) {
 	if len(m.logs) > m.maxLogs {
 		m.logs = m.logs[1:]
 	}
-	m.logView.SetContent(strings.Join(m.logs, "\n"))
-	m.logView.GotoBottom()
+	m.refreshLogView()
+}
+
+func (m *Model) refreshLogView() {
+	wasAtBottom := m.logView.AtBottom()
+
+	w := m.logView.Width
+	if w <= 0 {
+		// Fall back to a conservative width if we haven't received a window size yet.
+		w = max(30, m.width-6)
+	}
+
+	lines := make([]string, 0, len(m.logs))
+	for _, logText := range m.logs {
+		// Truncate *before* styling so we don't cut ANSI sequences.
+		line := truncate(logText, max(10, w-2))
+		style := logLineStyle
+
+		// Colorize logs based on content
+		if strings.Contains(logText, "Error") || strings.Contains(logText, "error") {
+			style = logErrorStyle
+		} else if strings.Contains(logText, "completed") || strings.Contains(logText, "success") {
+			style = logLineStyle.Copy().Foreground(successColor)
+		} else if strings.Contains(logText, "Starting") || strings.Contains(logText, "starting") {
+			style = logLineStyle.Copy().Foreground(highlightColor)
+		}
+
+		lines = append(lines, style.Render(line))
+	}
+
+	m.logView.SetContent(strings.Join(lines, "\n"))
+	if wasAtBottom {
+		m.logView.GotoBottom()
+	}
 }
