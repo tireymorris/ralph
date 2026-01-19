@@ -3,26 +3,38 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	primaryColor   = lipgloss.Color("#7C3AED")
-	successColor   = lipgloss.Color("#10B981")
-	errorColor     = lipgloss.Color("#EF4444")
-	warningColor   = lipgloss.Color("#F59E0B")
-	mutedColor     = lipgloss.Color("#6B7280")
-	highlightColor = lipgloss.Color("#3B82F6")
+	// Modern color palette with better contrast and visual appeal
+	primaryColor   = lipgloss.Color("#8B5CF6") // Softer purple
+	successColor   = lipgloss.Color("#34D399") // Brighter green
+	errorColor     = lipgloss.Color("#F87171") // Softer red
+	warningColor   = lipgloss.Color("#FBBF24") // Warmer yellow
+	mutedColor     = lipgloss.Color("#9CA3AF") // Lighter gray
+	highlightColor = lipgloss.Color("#60A5FA") // Lighter blue
+
+	// Additional colors for enhanced visual design
+	accentColor  = lipgloss.Color("#A78BFA") // Light purple accent
+	surfaceColor = lipgloss.Color("#1F2937") // Dark surface
+	borderColor  = lipgloss.Color("#374151") // Border gray
+	textColor    = lipgloss.Color("#F3F4F6") // Light text
+	subtleColor  = lipgloss.Color("#6B7280") // Subtle text
 
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(primaryColor).
-			MarginBottom(1)
+			MarginTop(1)
 
 	subtitleStyle = lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Italic(true)
+			Foreground(subtleColor).
+			Italic(true).
+			MarginLeft(2)
 
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(primaryColor).
-			Padding(1, 2)
+			BorderForeground(borderColor).
+			Background(surfaceColor).
+			Foreground(textColor).
+			Padding(1, 2).
+			MarginBottom(1)
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
@@ -44,47 +56,62 @@ var (
 			Foreground(mutedColor)
 
 	storyItemStyle = lipgloss.NewStyle().
-			PaddingLeft(2)
+			PaddingLeft(2).
+			Foreground(textColor).
+			MarginBottom(1)
 
 	selectedStoryStyle = lipgloss.NewStyle().
 				PaddingLeft(2).
 				Foreground(highlightColor).
-				Bold(true)
+				Bold(true).
+				Background(accentColor).
+				Padding(0, 1).
+				MarginBottom(1).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(highlightColor)
 
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
+			Foreground(textColor).
 			Background(primaryColor).
-			Padding(0, 2).
-			MarginBottom(1)
+			Padding(0, 2)
 
 	phaseStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(primaryColor).
-			MarginTop(1).
-			MarginBottom(1)
+			Foreground(textColor).
+			Background(surfaceColor).
+			Padding(0, 1).
+			MarginBottom(1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(accentColor)
 
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(mutedColor).
-			Padding(0, 1).
-			MarginTop(1)
+			BorderForeground(borderColor).
+			Background(surfaceColor).
+			Foreground(textColor).
+			Padding(1, 1)
 
 	logLineStyle = lipgloss.NewStyle().
-			Foreground(mutedColor)
+			Foreground(subtleColor).
+			PaddingLeft(1)
 
 	logErrorStyle = lipgloss.NewStyle().
-			Foreground(errorColor)
+			Foreground(errorColor).
+			Bold(true).
+			PaddingLeft(1)
 
 	helpStyle = lipgloss.NewStyle().
-			Foreground(mutedColor).
+			Foreground(subtleColor).
+			Italic(true).
 			MarginTop(1)
 
 	progressFullStyle = lipgloss.NewStyle().
-				Foreground(successColor)
+				Foreground(successColor).
+				Bold(true)
 
 	progressEmptyStyle = lipgloss.NewStyle().
-				Foreground(mutedColor)
+				Foreground(borderColor)
 )
 
 const (
@@ -92,6 +119,9 @@ const (
 	iconInProgress = "◐"
 	iconCompleted  = "●"
 	iconFailed     = "✗"
+	iconSuccess    = "✓"
+	iconWorking    = "⚡"
+	iconWarning    = "⚠"
 )
 
 func getStatusIcon(passes bool, inProgress bool, retryCount, maxRetries int) string {
