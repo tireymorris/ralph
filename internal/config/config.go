@@ -77,5 +77,6 @@ func IsValidModel(model string) bool {
 			return true
 		}
 	}
-	return false
+	// Allow any model to be specified (for Ollama and other non-supported models)
+	return true
 }
