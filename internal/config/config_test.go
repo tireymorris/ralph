@@ -52,7 +52,10 @@ func TestLoadNoFile(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	cfg := Load()
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
 
 	if cfg.Model != DefaultModel {
 		t.Errorf("Model = %q, want %q", cfg.Model, DefaultModel)
@@ -67,10 +70,9 @@ func TestLoadInvalidJSON(t *testing.T) {
 
 	os.WriteFile("ralph.config.json", []byte("invalid json"), 0644)
 
-	cfg := Load()
-
-	if cfg.Model != DefaultModel {
-		t.Errorf("Model = %q, want default %q", cfg.Model, DefaultModel)
+	_, err := Load()
+	if err == nil {
+		t.Error("Load() should return error for invalid JSON")
 	}
 }
 
@@ -80,13 +82,16 @@ func TestLoadPartialConfig(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	configContent := `{"model": "custom-model"}`
+	configContent := `{"model": "opencode/big-pickle"}`
 	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
 
-	cfg := Load()
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
 
-	if cfg.Model != "custom-model" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "custom-model")
+	if cfg.Model != "opencode/big-pickle" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
 	}
 	if cfg.MaxIterations != 50 {
 		t.Errorf("MaxIterations = %d, want default 50", cfg.MaxIterations)
@@ -100,7 +105,7 @@ func TestLoadFullConfig(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	configContent := `{
-		"model": "test-model",
+		"model": "opencode/glm-4.7-free",
 		"max_iterations": 100,
 		"retry_attempts": 5,
 		"retry_delay": 10,
@@ -109,10 +114,13 @@ func TestLoadFullConfig(t *testing.T) {
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "ralph.config.json"), []byte(configContent), 0644)
 
-	cfg := Load()
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
 
-	if cfg.Model != "test-model" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "test-model")
+	if cfg.Model != "opencode/glm-4.7-free" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/glm-4.7-free")
 	}
 	if cfg.MaxIterations != 100 {
 		t.Errorf("MaxIterations = %d, want 100", cfg.MaxIterations)
@@ -147,7 +155,10 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 	}`
 	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
 
-	cfg := Load()
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
 
 	if cfg.Model != DefaultModel {
 		t.Errorf("Model = %q, want default %q", cfg.Model, DefaultModel)
@@ -175,7 +186,10 @@ func TestLoadSetsWorkDir(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	cfg := Load()
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
 
 	// Resolve symlinks for comparison (handles macOS /var -> /private/var)
 	wantDir, _ := filepath.EvalSymlinks(tmpDir)
@@ -261,5 +275,128 @@ func TestValidateModel(t *testing.T) {
 				t.Errorf("ValidateModel() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name:    "valid default config",
+			config:  DefaultConfig(),
+			wantErr: false,
+		},
+		{
+			name: "invalid model",
+			config: &Config{
+				Model:         "invalid-model",
+				MaxIterations: 50,
+				RetryAttempts: 3,
+				RetryDelay:    5,
+				LogLevel:      "info",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative max_iterations",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: -1,
+				RetryAttempts: 3,
+				RetryDelay:    5,
+				LogLevel:      "info",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "zero max_iterations",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: 0,
+				RetryAttempts: 3,
+				RetryDelay:    5,
+				LogLevel:      "info",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative retry_attempts",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: 50,
+				RetryAttempts: -1,
+				RetryDelay:    5,
+				LogLevel:      "info",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative retry_delay",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: 50,
+				RetryAttempts: 3,
+				RetryDelay:    -1,
+				LogLevel:      "info",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty log_level",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: 50,
+				RetryAttempts: 3,
+				RetryDelay:    5,
+				LogLevel:      "",
+				PRDFile:       "prd.json",
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty prd_file",
+			config: &Config{
+				Model:         DefaultModel,
+				MaxIterations: 50,
+				RetryAttempts: 3,
+				RetryDelay:    5,
+				LogLevel:      "info",
+				PRDFile:       "",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	// Invalid model
+	configContent := `{"model": "invalid-model"}`
+	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+
+	_, err := Load()
+	if err == nil {
+		t.Error("Load() should return error for invalid model")
 	}
 }
