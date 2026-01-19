@@ -12,6 +12,8 @@ import (
 	"ralph/internal/config"
 )
 
+// Note: io import kept for CmdInterface
+
 type OutputLine struct {
 	Text  string
 	IsErr bool
@@ -66,17 +68,14 @@ func New(cfg *config.Config) *Runner {
 }
 
 func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error) {
-	args := []string{"run"}
+	args := []string{"run", "--print-logs"}
 	if r.cfg.Model != "" {
 		args = append(args, "--model", r.cfg.Model)
 	}
+	// Pass the prompt as a positional argument
+	args = append(args, prompt)
 
 	cmd := r.CmdFunc(ctx, "opencode", args...)
-
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get stdin pipe: %w", err)
-	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -92,53 +91,27 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// Channel to signal permission prompts that need auto-approval
-	permissionCh := make(chan struct{}, 10)
-
-	// Write initial prompt, then keep stdin open for permission responses
-	go func() {
-		defer stdin.Close()
-		io.WriteString(stdin, prompt)
-
-		// Listen for permission prompts and auto-approve by sending Enter
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case _, ok := <-permissionCh:
-				if !ok {
-					return
-				}
-				// Send Enter to accept the default "Allow once" option
-				io.WriteString(stdin, "\n")
-			}
-		}
-	}()
-
 	var outputBuilder strings.Builder
 	doneCh := make(chan struct{})
 
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		// Increase buffer size for long lines
+		buf := make([]byte, 0, 64*1024)
+		scanner.Buffer(buf, 1024*1024)
 		for scanner.Scan() {
 			line := scanner.Text()
 			outputBuilder.WriteString(line + "\n")
 			if outputCh != nil {
 				outputCh <- OutputLine{Text: line, IsErr: false, Time: time.Now()}
 			}
-			// Detect permission prompts (opencode shows "Permission required:" or "Allow once")
-			if strings.Contains(line, "Permission required:") || strings.Contains(line, "● Allow once") {
-				select {
-				case permissionCh <- struct{}{}:
-				default:
-				}
-			}
 		}
-		close(permissionCh)
 	}()
 
 	go func() {
 		scanner := bufio.NewScanner(stderr)
+		buf := make([]byte, 0, 64*1024)
+		scanner.Buffer(buf, 1024*1024)
 		for scanner.Scan() {
 			line := scanner.Text()
 			if outputCh != nil {
