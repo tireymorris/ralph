@@ -225,9 +225,9 @@ func isVerboseLogLine(line string) bool {
 	// These are internal opencode logs that are noisy
 	if len(line) >= 4 {
 		prefix := line[:4]
-		if prefix == "INFO" || prefix == "DEBU" || prefix == "WARN" {
+		if prefix == "INFO" || prefix == "DEBU" || prefix == "WARN" || prefix == "ERRO" {
 			// Check if it looks like a structured log line (has timestamp pattern)
-			if len(line) > 10 && (strings.Contains(line[:30], "T") && strings.Contains(line[:30], ":")) {
+			if len(line) > 10 && (strings.Contains(line[:min(30, len(line))], "T") && strings.Contains(line[:min(30, len(line))], ":")) {
 				return true
 			}
 		}
@@ -243,6 +243,17 @@ func isVerboseLogLine(line string) bool {
 		"service=session",
 		"service=lsp",
 		"service=file",
+		"service=default",
+		" tracking",        // git tracking status lines
+		"cwd=/",            // working directory status lines
+		"git=/",            // git snapshot status lines
+		"stderr=",          // stderr prefix lines
+		"Checked ",         // package check lines
+		"installed @",      // package install lines
+		"[1.00ms]",         // timing lines
+		"[2.00ms]",         // timing lines
+		"ms] done",         // completion markers like "[2.00ms] done"
+		"Saved lockfile",   // lockfile messages
 	}
 
 	for _, pattern := range verbosePatterns {

@@ -30,7 +30,7 @@ type Runner struct {
 }
 
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
-	eventsCh := make(chan workflow.Event, 100)
+	eventsCh := make(chan workflow.Event, 10000) // Large buffer to handle high-volume output
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,
