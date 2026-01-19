@@ -98,8 +98,18 @@ module Ralph
              - Generate comprehensive user stories
              - Each story must be implementable in one iteration
              - Include acceptance criteria and priorities (1=highest)
+             - CRITICAL: Each story MUST include a test_spec with concrete validation steps
           #{'   '}
-          3. OUTPUT REQUIREMENTS
+          3. TEST SPECIFICATION REQUIREMENTS
+             - Every story MUST have a test_spec field describing how to verify it works at RUNTIME
+             - Tests must validate actual functionality, not just that code compiles
+             - For UI features: specify user interactions and expected visual/behavioral outcomes
+             - For API integrations: specify request/response validation
+             - For libraries/dependencies: verify they work with the current runtime environment
+             - Include edge cases and error handling validation
+             - The FINAL story should ALWAYS be an integration/smoke test that validates all features work together
+          #{'   '}
+          4. OUTPUT REQUIREMENTS
              - Respond ONLY with raw JSON (no markdown, no explanation)
           #{'   '}
            Required JSON format:
@@ -111,13 +121,18 @@ module Ralph
                 "title": "Story title",
                 "description": "Detailed description",
                 "acceptance_criteria": ["criterion 1", "criterion 2"],
+                "test_spec": "Concrete test steps: 1) Do X, 2) Verify Y happens, 3) Check Z renders correctly. Include specific assertions.",
                 "priority": 1,
                 "passes": false
               }
             ]
           }
 
-          CRITICAL: Return only the JSON object, nothing else.
+          CRITICAL:#{' '}
+          - Return only the JSON object, nothing else.
+          - Every story MUST have a non-empty test_spec field.
+          - Test specs must be specific enough to catch runtime errors, not just compilation errors.
+          - Always include a final integration test story to validate all features work together.
         PROMPT
       end
 

@@ -58,9 +58,11 @@ module Ralph
       end
 
       def stream_output(io, collector = nil)
+        $stdout.sync = true
         io.each_line do |line|
           cleaned_line = line.encode('UTF-8', invalid: :replace, undef: :replace).strip
           puts cleaned_line
+          $stdout.flush
           collector&.push(line)
         end
       end
