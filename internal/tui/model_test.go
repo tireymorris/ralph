@@ -60,8 +60,8 @@ func TestNewModel(t *testing.T) {
 	if m.outputCh == nil {
 		t.Error("outputCh should not be nil")
 	}
-	if m.maxLogs != 100 {
-		t.Errorf("maxLogs = %d, want 100", m.maxLogs)
+	if m.maxLogs != 500 {
+		t.Errorf("maxLogs = %d, want 500", m.maxLogs)
 	}
 }
 

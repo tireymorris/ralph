@@ -68,9 +68,9 @@ Ralph follows a two-phase approach:
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.21+
 - Git
-- [opencode](https://github.com/opencode-ai/opencode) - AI coding assistant CLI
+- [opencode](https://github.com/opencode-ai/opencode) CLI
 
 ### Build from Source
 
@@ -101,6 +101,9 @@ ralph "Add user authentication" --dry-run
 
 # Resume from existing prd.json
 ralph --resume
+
+# Enable debug logging
+ralph "Add feature" --verbose
 ```
 
 ### Headless Mode
@@ -108,14 +111,14 @@ ralph --resume
 Use the `run` command for non-interactive execution (ideal for CI pipelines):
 
 ```bash
-# Full implementation with stdout output
+# Full implementation with streaming stdout
 ralph run "Add user authentication"
 
 # Generate PRD only
 ralph run "Add user authentication" --dry-run
 
-# Resume implementation
-ralph run --resume
+# Resume with debug output
+ralph run --resume --verbose
 ```
 
 ### CLI Reference
@@ -130,17 +133,23 @@ Usage:
   ralph run --resume                             # Headless, resume
 
 Options:
-  --dry-run    Generate PRD only, skip implementation
-  --resume     Resume implementation from existing prd.json
-  --help, -h   Show help message
+  --dry-run      Generate PRD only, skip implementation
+  --resume       Resume implementation from existing prd.json
+  --verbose, -v  Enable debug logging (stderr)
+  --help, -h     Show help message
 
 TUI Controls:
   q, Ctrl+C    Quit the application
+
+Exit Codes:
+  0    Success - all stories completed
+  1    Failure - fatal error or all stories failed
+  2    Partial - some stories completed, others failed
 ```
 
 ## Configuration
 
-Create a `ralph.config.json` in your project root to customize behavior:
+Create a `ralph.config.json` in your project root:
 
 ```json
 {
@@ -148,21 +157,17 @@ Create a `ralph.config.json` in your project root to customize behavior:
   "max_iterations": 50,
   "retry_attempts": 3,
   "retry_delay": 5,
-  "log_level": "info",
   "prd_file": "prd.json"
 }
 ```
 
-### Configuration Options
-
 | Option | Default | Description |
 |--------|---------|-------------|
-| `model` | `opencode/grok-code` | AI model to use for code generation |
+| `model` | `opencode/grok-code` | AI model for code generation |
 | `max_iterations` | `50` | Maximum total implementation iterations |
-| `retry_attempts` | `3` | Max retries per story before marking as failed |
-| `retry_delay` | `5` | Seconds to wait between retries |
-| `log_level` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `prd_file` | `prd.json` | Filename for the PRD |
+| `retry_attempts` | `3` | Max retries per story before failing |
+| `retry_delay` | `5` | Seconds between retries |
+| `prd_file` | `prd.json` | PRD filename |
 
 ### Supported Models
 
@@ -174,7 +179,7 @@ Create a `ralph.config.json` in your project root to customize behavior:
 
 ## PRD Format
 
-Ralph generates a `prd.json` file with this structure:
+Ralph generates a `prd.json` file:
 
 ```json
 {
@@ -187,10 +192,9 @@ Ralph generates a `prd.json` file with this structure:
       "description": "Implement user model with email, password hash, and timestamps",
       "acceptance_criteria": [
         "User model exists with required fields",
-        "Password is securely hashed",
-        "Model validations are in place"
+        "Password is securely hashed"
       ],
-      "test_spec": "Create integration test that: 1) Creates a user, 2) Verifies password hashing, 3) Validates required fields",
+      "test_spec": "Integration test: 1) Create user, 2) Verify password hashing",
       "priority": 1,
       "passes": false,
       "retry_count": 0
@@ -199,46 +203,52 @@ Ralph generates a `prd.json` file with this structure:
 }
 ```
 
-### Story Fields
-
 | Field | Description |
 |-------|-------------|
 | `id` | Unique story identifier |
 | `title` | Short descriptive title |
 | `description` | Detailed implementation requirements |
-| `acceptance_criteria` | List of conditions that must be met |
-| `test_spec` | Guidance for writing integration tests |
-| `priority` | Implementation order (1 = highest priority) |
-| `passes` | Whether the story is complete (set by Ralph) |
-| `retry_count` | Number of implementation attempts |
+| `acceptance_criteria` | Conditions that must be met |
+| `test_spec` | Guidance for integration tests |
+| `priority` | Implementation order (1 = highest) |
+| `passes` | Story completion status |
+| `retry_count` | Implementation attempts |
 
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| `0` | Success - all stories completed |
-| `1` | Failure - fatal error or all stories failed |
-| `2` | Partial - some stories completed, others failed |
-
-## Project Structure
+## Architecture
 
 ```
 ralph/
-├── main.go                 # Entry point
+├── main.go                 # Entry point, CLI initialization
 ├── internal/
 │   ├── args/               # CLI argument parsing
-│   ├── cli/                # Headless runner
-│   ├── config/             # Configuration loading
-│   ├── git/                # Git operations
-│   ├── prd/                # PRD generation, storage, types
+│   ├── cli/                # Headless runner with event handling
+│   ├── config/             # Configuration loading and defaults
+│   ├── git/                # Git operations (branch, commit, status)
+│   ├── logger/             # Structured logging (slog-based)
+│   ├── prd/                # PRD types, generation, storage
+│   │   ├── generator.go    # PRD generation with JSON parsing
+│   │   ├── storage.go      # Load/save/delete operations
+│   │   └── types.go        # PRD and Story structs
 │   ├── prompt/             # AI prompt templates
-│   ├── runner/             # OpenCode process runner
-│   ├── story/              # Story implementation
+│   ├── runner/             # OpenCode process execution
+│   ├── story/              # Story implementation logic
 │   ├── tui/                # Terminal UI (bubbletea)
-│   └── workflow/           # Orchestration logic
+│   │   ├── model.go        # TUI state management
+│   │   ├── view.go         # Rendering logic
+│   │   ├── commands.go     # Async operations
+│   │   └── styles.go       # lipgloss styling
+│   └── workflow/           # Orchestration and event system
 ├── ralph.config.json       # Default configuration
 └── prd.json.example        # Example PRD
 ```
+
+### Key Design Decisions
+
+- **Dependency Injection**: All major components accept interfaces for testability (`CodeRunner`, `PRDGenerator`, `StoryImplementer`, `GitManager`)
+- **Event-Driven**: Workflow emits events consumed by both TUI and CLI runners
+- **Streaming Output**: Real-time output from opencode via channels
+- **Structured Logging**: Debug logging via `log/slog` with `--verbose` flag
+- **Graceful Interruption**: State saved to `prd.json` on interrupt for resume
 
 ## Development
 
@@ -248,29 +258,50 @@ ralph/
 # Run all tests
 go test ./...
 
-# Run tests with coverage
+# With coverage
 go test ./... -cover
 
-# Run tests for a specific package
+# Verbose output for specific package
 go test ./internal/prd -v
+
+# Run with race detector
+go test ./... -race
 ```
 
 ### Building
 
 ```bash
-# Build for current platform
+# Current platform
 go build -o ralph .
 
-# Build for multiple platforms
+# Cross-compile
 GOOS=linux GOARCH=amd64 go build -o ralph-linux .
 GOOS=darwin GOARCH=arm64 go build -o ralph-macos .
+GOOS=windows GOARCH=amd64 go build -o ralph.exe .
 ```
+
+### Debug Mode
+
+```bash
+# See all internal logging
+ralph run "test prompt" --verbose 2>&1 | less
+
+# Structured log output example:
+# time=2024-01-15T10:30:00 level=DEBUG msg="invoking opencode" model=opencode/grok-code prompt_length=1842
+# time=2024-01-15T10:30:01 level=DEBUG msg="PRD generated" project="Test Project" stories=3
+```
+
+### Adding New Features
+
+1. **New CLI flags**: Update `internal/args/args.go` and add to `HelpText()`
+2. **New workflow events**: Add event type to `internal/workflow/workflow.go`, handle in both `cli/cli.go` and `tui/model.go`
+3. **New configuration**: Add field to `internal/config/config.go` with default value
 
 ## Troubleshooting
 
 ### Interrupted Run
 
-If Ralph is interrupted (Ctrl+C), progress is saved in `prd.json`. Resume with:
+Progress is saved to `prd.json`. Resume with:
 
 ```bash
 ralph --resume
@@ -278,32 +309,36 @@ ralph --resume
 
 ### Stories Failing Repeatedly
 
-When stories exceed the retry limit, Ralph stops and reports failures. To resolve:
+1. Check `prd.json` for failed stories
+2. Review output for error details
+3. Fix issues manually
+4. Resume: `ralph --resume`
 
-1. Check `prd.json` to see which stories failed
-2. Review the error messages in the output
-3. Make manual fixes to address the issue
-4. Run `ralph --resume` to continue
+### Debug Output
 
-### No prd.json Found
-
-If you see "No prd.json found to resume from":
+Enable verbose logging to see internal state:
 
 ```bash
-# Generate a new PRD first
-ralph "your feature description" --dry-run
-
-# Then resume
-ralph --resume
+ralph run "your prompt" --verbose
 ```
 
 ### OpenCode Not Found
 
-Ensure [opencode](https://github.com/opencode-ai/opencode) is installed and in your PATH:
+Ensure opencode is installed and in PATH:
 
 ```bash
 which opencode
+opencode --version
 ```
+
+### PRD Parse Errors
+
+The JSON parser handles:
+- Braces inside quoted strings
+- Escaped characters
+- Surrounding text (extracts JSON from response)
+
+If parsing fails, check opencode's raw output with `--verbose`.
 
 ## License
 

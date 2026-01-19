@@ -141,9 +141,15 @@ func (m *Model) renderLogs() string {
 		return logBoxStyle.Render("Waiting for output...")
 	}
 
+	// Show more lines based on terminal height, minimum 12 lines
+	maxLines := 12
+	if m.height > 40 {
+		maxLines = min(20, m.height/3)
+	}
+
 	startIdx := 0
-	if len(m.logs) > 8 {
-		startIdx = len(m.logs) - 8
+	if len(m.logs) > maxLines {
+		startIdx = len(m.logs) - maxLines
 	}
 
 	var lines []string

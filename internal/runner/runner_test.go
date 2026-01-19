@@ -122,20 +122,8 @@ func TestRunOpenCodeWithOutputChannel(t *testing.T) {
 	}
 }
 
-func TestRunOpenCodeStdinError(t *testing.T) {
-	cfg := &config.Config{}
-	r := New(cfg)
-
-	mock := &mockCmd{stdinErr: errors.New("stdin error")}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
-
-	_, err := r.RunOpenCode(context.Background(), "test", nil)
-	if err == nil {
-		t.Error("RunOpenCode() should error on stdin failure")
-	}
-}
+// Note: TestRunOpenCodeStdinError was removed because RunOpenCode
+// passes the prompt as a command-line argument, not via stdin.
 
 func TestRunOpenCodeStdoutError(t *testing.T) {
 	cfg := &config.Config{}

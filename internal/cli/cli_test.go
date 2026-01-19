@@ -376,11 +376,13 @@ func (e *testErr) Error() string {
 }
 
 type mockExecutor struct {
-	genPRD  *prd.PRD
-	genErr  error
-	loadPRD *prd.PRD
-	loadErr error
-	implErr error
+	genPRD   *prd.PRD
+	genErr   error
+	loadPRD  *prd.PRD
+	loadErr  error
+	implErr  error
+	eventsCh chan workflow.Event
+	implEvent workflow.Event
 }
 
 func (m *mockExecutor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
@@ -392,6 +394,9 @@ func (m *mockExecutor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 }
 
 func (m *mockExecutor) RunImplementation(ctx context.Context, p *prd.PRD) error {
+	if m.eventsCh != nil && m.implEvent != nil {
+		m.eventsCh <- m.implEvent
+	}
 	return m.implErr
 }
 
@@ -463,17 +468,17 @@ func TestRunImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
 	eventsCh := make(chan workflow.Event, 10)
 	testPRD := &prd.PRD{ProjectName: "Test"}
-	exec := &mockExecutor{genPRD: testPRD}
+	exec := &mockExecutor{
+		genPRD:    testPRD,
+		eventsCh:  eventsCh,
+		implEvent: workflow.EventCompleted{},
+	}
 
 	r := NewRunnerWithExecutor(cfg, "test", false, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
 	os.Stdout = w
-
-	go func() {
-		eventsCh <- workflow.EventCompleted{}
-	}()
 
 	code := r.Run()
 

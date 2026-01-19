@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/config"
 	"ralph/internal/git"
+	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
 	"ralph/internal/story"
@@ -138,7 +139,9 @@ func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen PRDGenerat
 }
 
 func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
+	logger.Debug("generating PRD", "prompt_length", len(prompt))
 	e.emit(EventPRDGenerating{})
+	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD...", IsErr: false}})
 
 	outputCh := make(chan runner.OutputLine, 100)
 
@@ -148,11 +151,15 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 	close(outputCh)
 
 	if err != nil {
+		logger.Error("PRD generation failed", "error", err)
 		e.emit(EventError{Err: err})
 		return nil, err
 	}
 
+	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
+
 	if err := e.storage.Save(p); err != nil {
+		logger.Error("failed to save PRD", "error", err)
 		e.emit(EventError{Err: err})
 		return nil, err
 	}
@@ -173,8 +180,16 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 }
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
+	logger.Debug("starting implementation",
+		"project", p.ProjectName,
+		"branch", p.BranchName,
+		"total_stories", len(p.Stories),
+		"completed", p.CompletedCount())
+
 	if p.BranchName != "" {
+		logger.Debug("creating branch", "branch", p.BranchName)
 		if err := e.git.CreateBranch(p.BranchName); err != nil {
+			logger.Warn("failed to create branch", "branch", p.BranchName, "error", err)
 			e.emit(EventOutput{Output{
 				Text:  fmt.Sprintf("Warning: failed to create branch: %v", err),
 				IsErr: true,
@@ -187,11 +202,13 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	for {
 		select {
 		case <-ctx.Done():
+			logger.Debug("context cancelled")
 			return ctx.Err()
 		default:
 		}
 
 		if p.AllCompleted() {
+			logger.Info("all stories completed successfully")
 			e.storage.Delete()
 			e.emit(EventCompleted{})
 			return nil
@@ -199,15 +216,24 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		next := p.NextPendingStory(e.cfg.RetryAttempts)
 		if next == nil {
-			e.emit(EventFailed{FailedStories: p.FailedStories(e.cfg.RetryAttempts)})
+			failed := p.FailedStories(e.cfg.RetryAttempts)
+			logger.Error("all remaining stories have failed", "failed_count", len(failed))
+			e.emit(EventFailed{FailedStories: failed})
 			return fmt.Errorf("all remaining stories have failed")
 		}
 
 		iteration++
 		if iteration > e.cfg.MaxIterations {
+			logger.Error("max iterations reached", "iterations", iteration, "max", e.cfg.MaxIterations)
 			e.emit(EventFailed{FailedStories: p.FailedStories(e.cfg.RetryAttempts)})
 			return fmt.Errorf("max iterations (%d) reached", e.cfg.MaxIterations)
 		}
+
+		logger.Debug("starting story",
+			"story_id", next.ID,
+			"title", next.Title,
+			"iteration", iteration,
+			"retry_count", next.RetryCount)
 
 		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
 
@@ -218,17 +244,21 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		close(outputCh)
 
 		if err != nil {
+			logger.Debug("story implementation error", "story_id", next.ID, "error", err)
 			next.RetryCount++
 			e.emit(EventStoryCompleted{Story: next, Success: false})
 		} else if success {
+			logger.Debug("story completed successfully", "story_id", next.ID)
 			next.Passes = true
 			e.emit(EventStoryCompleted{Story: next, Success: true})
 		} else {
+			logger.Debug("story failed", "story_id", next.ID, "retry_count", next.RetryCount+1)
 			next.RetryCount++
 			e.emit(EventStoryCompleted{Story: next, Success: false})
 		}
 
 		if err := e.storage.Save(p); err != nil {
+			logger.Warn("failed to save state", "error", err)
 			e.emit(EventOutput{Output{
 				Text:  fmt.Sprintf("Warning: failed to save state: %v", err),
 				IsErr: true,

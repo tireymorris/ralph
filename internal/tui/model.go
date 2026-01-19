@@ -98,7 +98,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
 		progress:    p,
 		logView:     v,
 		logs:        make([]string, 0),
-		maxLogs:     100,
+		maxLogs:     500,
 		ctx:         ctx,
 		cancelFunc:  cancel,
 		outputCh:    make(chan runner.OutputLine, 100),
@@ -209,6 +209,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case phaseChangeMsg:
 		m.phase = Phase(msg)
+		// When entering PRD generation phase, start the actual operation
+		if m.phase == PhasePRDGeneration {
+			cmds = append(cmds, m.runPRDOperation())
+		}
 	}
 
 	var cmd tea.Cmd

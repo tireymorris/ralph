@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"ralph/internal/config"
+	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/workflow"
 )
@@ -54,10 +55,13 @@ func (r *Runner) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	logger.Debug("cli runner starting", "prompt", r.prompt, "dry_run", r.dryRun, "resume", r.resume)
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-sigCh
+		logger.Debug("received interrupt signal")
 		fmt.Println("\nInterrupted, shutting down...")
 		cancel()
 	}()
@@ -71,23 +75,28 @@ func (r *Runner) Run() int {
 	var err error
 
 	if r.resume {
+		logger.Debug("loading existing PRD")
 		p, err = r.executor.RunLoad(ctx)
 	} else {
+		logger.Debug("generating new PRD")
 		p, err = r.executor.RunGenerate(ctx, r.prompt)
 	}
 
 	if err != nil {
+		logger.Error("operation failed", "error", err)
 		close(r.eventsCh)
 		<-doneCh
 		return 1
 	}
 
 	if r.dryRun {
+		logger.Debug("dry run complete")
 		fmt.Println("🏁 Dry run complete - PRD saved, no implementation performed")
 		close(r.eventsCh)
 		return 0
 	}
 
+	logger.Debug("starting implementation", "stories", len(p.Stories))
 	err = r.executor.RunImplementation(ctx, p)
 	close(r.eventsCh)
 	return <-doneCh
@@ -133,6 +142,8 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 				prefix = "   [!]"
 			}
 			fmt.Printf("%s %s\n", prefix, e.Text)
+			// Flush stdout for real-time streaming
+			os.Stdout.Sync()
 
 		case workflow.EventError:
 			fmt.Printf("❌ Error: %v\n", e.Err)

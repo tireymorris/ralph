@@ -37,6 +37,16 @@ func TestParse(t *testing.T) {
 			expected: Options{Resume: true},
 		},
 		{
+			name:     "verbose flag short",
+			args:     []string{"-v"},
+			expected: Options{Verbose: true},
+		},
+		{
+			name:     "verbose flag long",
+			args:     []string{"--verbose"},
+			expected: Options{Verbose: true},
+		},
+		{
 			name:     "run command sets headless",
 			args:     []string{"run"},
 			expected: Options{Headless: true},
@@ -63,8 +73,8 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:     "all flags combined",
-			args:     []string{"run", "--dry-run", "--resume", "prompt"},
-			expected: Options{Headless: true, DryRun: true, Resume: true, Prompt: "prompt"},
+			args:     []string{"run", "--dry-run", "--resume", "--verbose", "prompt"},
+			expected: Options{Headless: true, DryRun: true, Resume: true, Verbose: true, Prompt: "prompt"},
 		},
 		{
 			name:     "unknown flag ignored",
@@ -87,6 +97,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.Headless != tt.expected.Headless {
 				t.Errorf("Headless = %v, want %v", got.Headless, tt.expected.Headless)
+			}
+			if got.Verbose != tt.expected.Verbose {
+				t.Errorf("Verbose = %v, want %v", got.Verbose, tt.expected.Verbose)
 			}
 			if got.Help != tt.expected.Help {
 				t.Errorf("Help = %v, want %v", got.Help, tt.expected.Help)
@@ -146,6 +159,8 @@ func TestHelpText(t *testing.T) {
 		"Options:",
 		"--dry-run",
 		"--resume",
+		"--verbose",
+		"-v",
 		"--help",
 		"run",
 		"Examples:",

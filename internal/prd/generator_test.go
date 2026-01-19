@@ -137,6 +137,18 @@ func TestParseResponse(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:        "json with braces in string values",
+			response:    `{"project_name": "Test {Project}", "stories": [{"id": "1", "title": "Add func() { }", "description": "Implement { and }", "acceptance_criteria": ["code has {}"], "priority": 1}]}`,
+			wantProject: "Test {Project}",
+			wantErr:     false,
+		},
+		{
+			name:        "json with escaped quotes",
+			response:    `{"project_name": "Test \"Quoted\"", "stories": [{"id": "1", "title": "T", "description": "D", "acceptance_criteria": ["a"], "priority": 1}]}`,
+			wantProject: `Test "Quoted"`,
+			wantErr:     false,
+		},
+		{
 			name:     "no json object",
 			response: "no json here",
 			wantErr:  true,
@@ -220,6 +232,48 @@ func TestFindMatchingBrace(t *testing.T) {
 			s:     `{"a": {"b": {"c": {"d": 1}}}}`,
 			start: 0,
 			want:  29,
+		},
+		{
+			name:  "brace inside string",
+			s:     `{"a": "value with { and } braces"}`,
+			start: 0,
+			want:  34,
+		},
+		{
+			name:  "nested braces in string",
+			s:     `{"code": "func() { return {}; }"}`,
+			start: 0,
+			want:  33,
+		},
+		{
+			name:  "escaped quote in string",
+			s:     `{"a": "he said \"hello\""}`,
+			start: 0,
+			want:  26,
+		},
+		{
+			name:  "escaped backslash before quote",
+			s:     `{"a": "path\\"}`,
+			start: 0,
+			want:  15,
+		},
+		{
+			name:  "mixed escapes and braces",
+			s:     `{"a": "test \" { } \\"}`,
+			start: 0,
+			want:  23,
+		},
+		{
+			name:  "multiple strings with braces",
+			s:     `{"a": "{", "b": "}"}`,
+			start: 0,
+			want:  20,
+		},
+		{
+			name:  "complex nested with strings",
+			s:     `{"obj": {"inner": "value with }"}, "other": 1}`,
+			start: 0,
+			want:  46,
 		},
 	}
 

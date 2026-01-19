@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"ralph/internal/config"
+	"ralph/internal/logger"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
 )
@@ -32,29 +33,40 @@ func NewGeneratorWithRunner(cfg *config.Config, r runner.CodeRunner) *Generator 
 }
 
 func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh chan<- runner.OutputLine) (*PRD, error) {
+	logger.Debug("generating PRD prompt", "user_prompt_length", len(userPrompt))
 	prdPrompt := prompt.PRDGeneration(userPrompt)
 
 	result, err := g.runner.RunOpenCode(ctx, prdPrompt, outputCh)
 	if err != nil {
+		logger.Error("opencode run failed", "error", err)
 		return nil, fmt.Errorf("failed to run opencode: %w", err)
 	}
 
 	if result.Error != nil {
+		logger.Error("opencode returned error", "error", result.Error)
 		return nil, fmt.Errorf("opencode error: %w", result.Error)
 	}
 
+	logger.Debug("parsing PRD response", "response_length", len(result.Output))
 	p, err := parseResponse(result.Output)
 	if err != nil {
+		logger.Error("failed to parse PRD response", "error", err)
 		return nil, fmt.Errorf("failed to parse PRD: %w", err)
 	}
 
 	if err := validate(p); err != nil {
+		logger.Error("PRD validation failed", "error", err)
 		return nil, fmt.Errorf("invalid PRD: %w", err)
 	}
 
 	sort.Slice(p.Stories, func(i, j int) bool {
 		return p.Stories[i].Priority < p.Stories[j].Priority
 	})
+
+	logger.Debug("PRD generated successfully",
+		"project", p.ProjectName,
+		"stories", len(p.Stories),
+		"branch", p.BranchName)
 
 	return p, nil
 }
@@ -67,23 +79,57 @@ func parseResponse(response string) (*PRD, error) {
 		return nil, fmt.Errorf("no JSON object found in response")
 	}
 
-	end := findMatchingBrace(response, start)
-	if end == -1 {
-		return nil, fmt.Errorf("no complete JSON object found in response")
-	}
+	// Use json.Decoder to properly parse JSON, handling all edge cases
+	// including braces inside quoted strings
+	decoder := json.NewDecoder(strings.NewReader(response[start:]))
 
 	var p PRD
-	if err := json.Unmarshal([]byte(response[start:end]), &p); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	if err := decoder.Decode(&p); err != nil {
+		// If streaming decode fails, try to extract JSON manually
+		// with proper string handling as a fallback
+		end := findMatchingBrace(response, start)
+		if end == -1 {
+			return nil, fmt.Errorf("no complete JSON object found in response: %w", err)
+		}
+
+		if err := json.Unmarshal([]byte(response[start:end]), &p); err != nil {
+			return nil, fmt.Errorf("failed to parse JSON: %w", err)
+		}
 	}
 
 	return &p, nil
 }
 
+// findMatchingBrace finds the closing brace for a JSON object starting at 'start'.
+// It properly handles braces inside quoted strings and escape sequences.
 func findMatchingBrace(s string, start int) int {
 	depth := 0
+	inString := false
+	escaped := false
+
 	for i := start; i < len(s); i++ {
-		switch s[i] {
+		ch := s[i]
+
+		if escaped {
+			escaped = false
+			continue
+		}
+
+		if ch == '\\' && inString {
+			escaped = true
+			continue
+		}
+
+		if ch == '"' {
+			inString = !inString
+			continue
+		}
+
+		if inString {
+			continue
+		}
+
+		switch ch {
 		case '{':
 			depth++
 		case '}':
