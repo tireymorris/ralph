@@ -21,6 +21,13 @@ type StoryImplementer interface {
 }
 
 func (m *Model) startOperation() tea.Cmd {
+	// First, change the phase to show we're generating/loading
+	return func() tea.Msg {
+		return phaseChangeMsg(PhasePRDGeneration)
+	}
+}
+
+func (m *Model) runPRDOperation() tea.Cmd {
 	return func() tea.Msg {
 		if m.resume {
 			return m.loadAndResume()
@@ -30,6 +37,11 @@ func (m *Model) startOperation() tea.Cmd {
 }
 
 func (m *Model) loadAndResume() tea.Msg {
+	// Send feedback
+	if m.outputCh != nil {
+		m.outputCh <- runner.OutputLine{Text: "Loading existing PRD..."}
+	}
+
 	loadedPRD, err := prd.Load(m.cfg)
 	if err != nil {
 		return prdErrorMsg{err: err}
@@ -38,6 +50,11 @@ func (m *Model) loadAndResume() tea.Msg {
 }
 
 func (m *Model) generatePRD() tea.Msg {
+	// Send initial feedback
+	if m.outputCh != nil {
+		m.outputCh <- runner.OutputLine{Text: "Analyzing codebase and generating PRD..."}
+	}
+
 	generatedPRD, err := m.generator.Generate(m.ctx, m.prompt, m.outputCh)
 	if err != nil {
 		return prdErrorMsg{err: err}
@@ -53,7 +70,7 @@ func (m *Model) generatePRD() tea.Msg {
 func (m *Model) setupBranchAndStart() tea.Cmd {
 	return func() tea.Msg {
 		if m.prd.BranchName != "" {
-			gitMgr := git.New()
+			gitMgr := git.NewWithWorkDir(m.cfg.WorkDir)
 			if err := gitMgr.CreateBranch(m.prd.BranchName); err != nil {
 				m.addLog(fmt.Sprintf("Warning: failed to create branch: %v", err))
 			}

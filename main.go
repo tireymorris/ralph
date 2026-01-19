@@ -9,6 +9,7 @@ import (
 	"ralph/internal/args"
 	"ralph/internal/cli"
 	"ralph/internal/config"
+	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/tui"
 )
@@ -31,7 +32,12 @@ func run() int {
 		return 1
 	}
 
+	// Initialize logger with verbose flag
+	logger.Init(opts.Verbose)
+	logger.Debug("starting ralph", "verbose", opts.Verbose)
+
 	cfg := config.Load()
+	logger.Debug("config loaded", "model", cfg.Model, "max_iterations", cfg.MaxIterations)
 
 	if opts.Resume {
 		if !prd.Exists(cfg) {

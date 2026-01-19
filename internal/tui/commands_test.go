@@ -306,11 +306,22 @@ func TestStartOperationResume(t *testing.T) {
 
 	m := NewModel(cfg, "", false, true)
 
+	// startOperation now returns phase change first
 	cmd := m.startOperation()
 	msg := cmd()
 
+	if phaseMsg, ok := msg.(phaseChangeMsg); !ok {
+		t.Errorf("startOperation() should return phaseChangeMsg, got %T", msg)
+	} else if Phase(phaseMsg) != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", phaseMsg)
+	}
+
+	// Then runPRDOperation does the actual load
+	cmd = m.runPRDOperation()
+	msg = cmd()
+
 	if genMsg, ok := msg.(prdGeneratedMsg); !ok {
-		t.Errorf("startOperation() with resume should return prdGeneratedMsg, got %T", msg)
+		t.Errorf("runPRDOperation() with resume should return prdGeneratedMsg, got %T", msg)
 	} else if genMsg.prd.ProjectName != "Resume Test" {
 		t.Errorf("PRD name = %q, want %q", genMsg.prd.ProjectName, "Resume Test")
 	}
@@ -322,11 +333,20 @@ func TestStartOperationResumeError(t *testing.T) {
 
 	m := NewModel(cfg, "", false, true)
 
+	// startOperation returns phase change
 	cmd := m.startOperation()
 	msg := cmd()
 
+	if _, ok := msg.(phaseChangeMsg); !ok {
+		t.Errorf("startOperation() should return phaseChangeMsg, got %T", msg)
+	}
+
+	// runPRDOperation returns the error
+	cmd = m.runPRDOperation()
+	msg = cmd()
+
 	if _, ok := msg.(prdErrorMsg); !ok {
-		t.Errorf("startOperation() with missing file should return prdErrorMsg, got %T", msg)
+		t.Errorf("runPRDOperation() with missing file should return prdErrorMsg, got %T", msg)
 	}
 }
 
@@ -454,11 +474,22 @@ func TestStartOperationGenerate(t *testing.T) {
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	m.SetGenerator(&mockGenerator{prd: testPRD})
 
+	// startOperation returns phase change first
 	cmd := m.startOperation()
 	msg := cmd()
 
+	if phaseMsg, ok := msg.(phaseChangeMsg); !ok {
+		t.Errorf("startOperation() should return phaseChangeMsg, got %T", msg)
+	} else if Phase(phaseMsg) != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", phaseMsg)
+	}
+
+	// runPRDOperation does the actual generation
+	cmd = m.runPRDOperation()
+	msg = cmd()
+
 	if _, ok := msg.(prdGeneratedMsg); !ok {
-		t.Errorf("startOperation() generate path should return prdGeneratedMsg, got %T", msg)
+		t.Errorf("runPRDOperation() generate path should return prdGeneratedMsg, got %T", msg)
 	}
 }
 

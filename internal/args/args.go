@@ -10,6 +10,7 @@ type Options struct {
 	DryRun   bool
 	Resume   bool
 	Headless bool
+	Verbose  bool
 	Help     bool
 }
 
@@ -25,6 +26,8 @@ func Parse(args []string) *Options {
 			opts.DryRun = true
 		case "--resume":
 			opts.Resume = true
+		case "--verbose", "-v":
+			opts.Verbose = true
 		case "run":
 			opts.Headless = true
 		default:
@@ -63,9 +66,10 @@ Usage:
   ralph run --resume                             # Resume from existing prd.json (stdout)
 
 Options:
-  --dry-run    Generate PRD only, don't implement
-  --resume     Resume implementation from existing prd.json
-  --help, -h   Show this help message
+  --dry-run      Generate PRD only, don't implement
+  --resume       Resume implementation from existing prd.json
+  --verbose, -v  Enable debug logging
+  --help, -h     Show this help message
 
 Modes:
   (default)    Interactive TUI with progress display
@@ -79,5 +83,6 @@ Examples:
   ralph "Create a REST API for managing todos" --dry-run
   ralph --resume
   ralph run "Add unit tests for the API" --dry-run
+  ralph run "Add feature" --verbose
 `
 }

@@ -7,9 +7,11 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"ralph/internal/config"
+	"ralph/internal/logger"
 )
 
 // Note: io import kept for CmdInterface
@@ -75,6 +77,16 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 	// Pass the prompt as a positional argument
 	args = append(args, prompt)
 
+	logger.Debug("invoking opencode",
+		"model", r.cfg.Model,
+		"prompt_length", len(prompt),
+		"work_dir", r.cfg.WorkDir)
+
+	// Send feedback that we're starting opencode
+	if outputCh != nil {
+		outputCh <- OutputLine{Text: "Starting opencode...", IsErr: false, Time: time.Now()}
+	}
+
 	cmd := r.CmdFunc(ctx, "opencode", args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -92,9 +104,12 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 	}
 
 	var outputBuilder strings.Builder
-	doneCh := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(2)
 
+	// Read stdout
 	go func() {
+		defer wg.Done()
 		scanner := bufio.NewScanner(stdout)
 		// Increase buffer size for long lines
 		buf := make([]byte, 0, 64*1024)
@@ -108,7 +123,9 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		}
 	}()
 
+	// Read stderr
 	go func() {
+		defer wg.Done()
 		scanner := bufio.NewScanner(stderr)
 		buf := make([]byte, 0, 64*1024)
 		scanner.Buffer(buf, 1024*1024)
@@ -118,10 +135,10 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 				outputCh <- OutputLine{Text: line, IsErr: true, Time: time.Now()}
 			}
 		}
-		close(doneCh)
 	}()
 
-	<-doneCh
+	// Wait for both readers to finish before calling Wait()
+	wg.Wait()
 	err = cmd.Wait()
 
 	result := &Result{
@@ -131,9 +148,13 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitErr.ExitCode()
+			logger.Debug("opencode exited with code", "exit_code", result.ExitCode)
 		} else {
 			result.Error = err
+			logger.Debug("opencode error", "error", err)
 		}
+	} else {
+		logger.Debug("opencode completed successfully", "output_length", len(result.Output))
 	}
 
 	return result, nil
