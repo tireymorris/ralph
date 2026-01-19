@@ -382,6 +382,17 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "duplicate story ids",
+			prd: &PRD{
+				ProjectName: "Test",
+				Stories: []*Story{
+					{ID: "1", Title: "T1", Description: "D1", AcceptanceCriteria: []string{"a"}, Priority: 1},
+					{ID: "1", Title: "T2", Description: "D2", AcceptanceCriteria: []string{"b"}, Priority: 2},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

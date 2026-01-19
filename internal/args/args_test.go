@@ -77,9 +77,14 @@ func TestParse(t *testing.T) {
 			expected: Options{Headless: true, DryRun: true, Resume: true, Verbose: true, Prompt: "prompt"},
 		},
 		{
-			name:     "unknown flag ignored",
+			name:     "unknown flag captured",
 			args:     []string{"--unknown", "prompt"},
-			expected: Options{Prompt: "prompt"},
+			expected: Options{Prompt: "prompt", UnknownFlags: []string{"--unknown"}},
+		},
+		{
+			name:     "multiple unknown flags captured",
+			args:     []string{"--foo", "-x", "prompt", "--bar"},
+			expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}},
 		},
 	}
 
@@ -103,6 +108,15 @@ func TestParse(t *testing.T) {
 			}
 			if got.Help != tt.expected.Help {
 				t.Errorf("Help = %v, want %v", got.Help, tt.expected.Help)
+			}
+			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
+				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
+			} else {
+				for i, flag := range got.UnknownFlags {
+					if flag != tt.expected.UnknownFlags[i] {
+						t.Errorf("UnknownFlags[%d] = %q, want %q", i, flag, tt.expected.UnknownFlags[i])
+					}
+				}
 			}
 		})
 	}

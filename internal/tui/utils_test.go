@@ -63,22 +63,4 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
-func TestMin(t *testing.T) {
-	tests := []struct {
-		a, b, want int
-	}{
-		{1, 2, 1},
-		{2, 1, 1},
-		{0, 0, 0},
-		{-1, 1, -1},
-		{100, 50, 50},
-		{-5, -10, -10},
-	}
-
-	for _, tt := range tests {
-		got := min(tt.a, tt.b)
-		if got != tt.want {
-			t.Errorf("min(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
-		}
-	}
-}
+// TestMin removed - min() is now a built-in function in Go 1.21+

@@ -68,11 +68,17 @@ func (m *Model) generatePRD() tea.Msg {
 }
 
 func (m *Model) setupBranchAndStart() tea.Cmd {
+	// Capture values to avoid race conditions
+	branchName := m.prd.BranchName
+	workDir := m.cfg.WorkDir
+	outputCh := m.outputCh
+
 	return func() tea.Msg {
-		if m.prd.BranchName != "" {
-			gitMgr := git.NewWithWorkDir(m.cfg.WorkDir)
-			if err := gitMgr.CreateBranch(m.prd.BranchName); err != nil {
-				m.addLog(fmt.Sprintf("Warning: failed to create branch: %v", err))
+		if branchName != "" {
+			gitMgr := git.NewWithWorkDir(workDir)
+			if err := gitMgr.CreateBranch(branchName); err != nil {
+				// Send warning through channel instead of calling m.addLog directly
+				outputCh <- runner.OutputLine{Text: fmt.Sprintf("Warning: failed to create branch: %v", err), IsErr: true}
 			}
 		}
 		return m.startNextStory()
@@ -108,19 +114,26 @@ func (m *Model) startNextStory() tea.Msg {
 		return phaseChangeMsg(PhaseFailed)
 	}
 
-	go func() {
-		success, err := m.implementer.Implement(m.ctx, next, m.iteration+1, m.prd, m.outputCh)
+	// Capture values to avoid race conditions - these are passed explicitly to the goroutine
+	iteration := m.iteration + 1
+	ctx := m.ctx
+	outputCh := m.outputCh
+	prdCopy := m.prd
+	implementer := m.implementer
+
+	go func(story *prd.Story, iter int, p *prd.PRD, ch chan<- runner.OutputLine) {
+		success, err := implementer.Implement(ctx, story, iter, p, ch)
 
 		if err != nil {
-			m.outputCh <- runner.OutputLine{Text: fmt.Sprintf("Error: %v", err), IsErr: true}
+			ch <- runner.OutputLine{Text: fmt.Sprintf("Error: %v", err), IsErr: true}
 		}
 
 		if success {
-			m.outputCh <- runner.OutputLine{Text: "STORY_COMPLETE:success"}
+			ch <- runner.OutputLine{Text: "STORY_COMPLETE:success"}
 		} else {
-			m.outputCh <- runner.OutputLine{Text: "STORY_COMPLETE:failure"}
+			ch <- runner.OutputLine{Text: "STORY_COMPLETE:failure"}
 		}
-	}()
+	}(next, iteration, prdCopy, outputCh)
 
 	return storyStartMsg{story: next}
 }

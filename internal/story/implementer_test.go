@@ -203,3 +203,71 @@ func TestImplementWithOutputChannel(t *testing.T) {
 		t.Error("success should be true")
 	}
 }
+
+func TestIsCompletionMarkerPresent(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		want   bool
+	}{
+		{
+			name:   "valid completion at start of line",
+			output: "COMPLETED: done",
+			want:   true,
+		},
+		{
+			name:   "valid completion with leading whitespace",
+			output: "  COMPLETED: summary here",
+			want:   true,
+		},
+		{
+			name:   "valid completion in multi-line output",
+			output: "some output\nmore output\nCOMPLETED: all done\n",
+			want:   true,
+		},
+		{
+			name:   "quoted completion marker",
+			output: `"COMPLETED: done"`,
+			want:   true,
+		},
+		{
+			name:   "no completion marker",
+			output: "no marker here",
+			want:   false,
+		},
+		{
+			name:   "NOT COMPLETED should not match",
+			output: "NOT COMPLETED: failed",
+			want:   false,
+		},
+		{
+			name:   "UNCOMPLETED should not match",
+			output: "UNCOMPLETED: something",
+			want:   false,
+		},
+		{
+			name:   "completion in middle of word should not match",
+			output: "xCOMPLETED: no",
+			want:   false,
+		},
+		{
+			name:   "empty output",
+			output: "",
+			want:   false,
+		},
+		{
+			name:   "completion marker only",
+			output: "COMPLETED:",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isCompletionMarkerPresent(tt.output)
+			if got != tt.want {
+				t.Errorf("isCompletionMarkerPresent(%q) = %v, want %v", tt.output, got, tt.want)
+			}
+		})
+	}
+}

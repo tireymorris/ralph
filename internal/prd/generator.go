@@ -151,10 +151,18 @@ func validate(p *PRD) error {
 		return fmt.Errorf("no stories defined")
 	}
 
+	// Check for duplicate story IDs
+	seenIDs := make(map[string]bool)
+
 	for i, story := range p.Stories {
 		if story.ID == "" {
 			return fmt.Errorf("story %d missing id", i+1)
 		}
+		if seenIDs[story.ID] {
+			return fmt.Errorf("duplicate story id: %s", story.ID)
+		}
+		seenIDs[story.ID] = true
+
 		if story.Title == "" {
 			return fmt.Errorf("story %d missing title", i+1)
 		}

@@ -368,6 +368,21 @@ func TestCleanOutput(t *testing.T) {
 			input:  "text\x1b[",
 			expect: "text",
 		},
+		{
+			name:   "OSC sequence with BEL terminator",
+			input:  "\x1b]0;window title\x07text here",
+			expect: "text here",
+		},
+		{
+			name:   "OSC sequence with ST terminator",
+			input:  "\x1b]0;window title\x1b\\text here",
+			expect: "text here",
+		},
+		{
+			name:   "mixed CSI and OSC sequences",
+			input:  "\x1b]0;title\x07\x1b[32mgreen\x1b[0m",
+			expect: "green",
+		},
 	}
 
 	for _, tt := range tests {
@@ -380,7 +395,7 @@ func TestCleanOutput(t *testing.T) {
 	}
 }
 
-func TestIsTerminator(t *testing.T) {
+func TestIsCSITerminator(t *testing.T) {
 	tests := []struct {
 		input byte
 		want  bool
@@ -400,9 +415,9 @@ func TestIsTerminator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.input), func(t *testing.T) {
-			got := isTerminator(tt.input)
+			got := isCSITerminator(tt.input)
 			if got != tt.want {
-				t.Errorf("isTerminator(%q) = %v, want %v", tt.input, got, tt.want)
+				t.Errorf("isCSITerminator(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}

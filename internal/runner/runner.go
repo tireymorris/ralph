@@ -160,12 +160,17 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 	return result, nil
 }
 
+// CleanOutput removes ANSI escape sequences from the output string.
+// It handles CSI sequences (\x1b[...X) and OSC sequences (\x1b]...\x07).
+// This function is useful for processing terminal output for logging or comparison.
 func CleanOutput(output string) string {
 	result := output
+
+	// Remove CSI sequences (\x1b[...m, \x1b[...K, etc.)
 	for strings.Contains(result, "\x1b[") {
 		start := strings.Index(result, "\x1b[")
 		end := start + 2
-		for end < len(result) && !isTerminator(result[end]) {
+		for end < len(result) && !isCSITerminator(result[end]) {
 			end++
 		}
 		if end < len(result) {
@@ -173,9 +178,30 @@ func CleanOutput(output string) string {
 		}
 		result = result[:start] + result[end:]
 	}
+
+	// Remove OSC sequences (\x1b]...\x07 or \x1b]...\x1b\\)
+	for strings.Contains(result, "\x1b]") {
+		start := strings.Index(result, "\x1b]")
+		end := start + 2
+		// Look for BEL (\x07) or ST (\x1b\\) terminator
+		for end < len(result) {
+			if result[end] == '\x07' {
+				end++
+				break
+			}
+			if end+1 < len(result) && result[end] == '\x1b' && result[end+1] == '\\' {
+				end += 2
+				break
+			}
+			end++
+		}
+		result = result[:start] + result[end:]
+	}
+
 	return strings.TrimSpace(result)
 }
 
-func isTerminator(b byte) bool {
+// isCSITerminator returns true if the byte terminates a CSI escape sequence.
+func isCSITerminator(b byte) bool {
 	return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
 }

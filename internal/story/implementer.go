@@ -68,7 +68,9 @@ func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration
 		return false, nil
 	}
 
-	if !strings.Contains(result.Output, "COMPLETED:") {
+	// Check for completion marker - must start with "COMPLETED:" (not "NOT COMPLETED:" etc.)
+	// We look for the pattern at the start of a line or after whitespace to avoid false positives
+	if !isCompletionMarkerPresent(result.Output) {
 		logger.Debug("story not marked as completed", "story_id", story.ID)
 		return false, nil
 	}
@@ -82,4 +84,23 @@ func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration
 	}
 
 	return true, nil
+}
+
+// isCompletionMarkerPresent checks if the output contains a valid completion marker.
+// It validates that "COMPLETED:" appears in a valid context (not as part of "NOT COMPLETED:" etc.)
+func isCompletionMarkerPresent(output string) bool {
+	// Look for lines that start with "COMPLETED:" or contain it after whitespace
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Check if line starts with COMPLETED: (the expected format)
+		if strings.HasPrefix(trimmed, "COMPLETED:") {
+			return true
+		}
+		// Also check for quoted version that might appear in logs
+		if strings.HasPrefix(trimmed, `"COMPLETED:`) {
+			return true
+		}
+	}
+	return false
 }
