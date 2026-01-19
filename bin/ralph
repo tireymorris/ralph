@@ -6,9 +6,11 @@ require_relative '../lib/ralph/cli'
 
 if __FILE__ == $PROGRAM_NAME
   begin
-    Ralph::CLI.run(ARGV)
+    exit_code = Ralph::CLI.run(ARGV)
+    exit(exit_code || 0)
   rescue Interrupt
     puts "\n\n⚠️ Interrupted by user"
+    puts "💡 Run './bin/ralph --resume' to continue"
     exit 130
   rescue StandardError => e
     puts "\n❌ Fatal error: #{e.message}"
