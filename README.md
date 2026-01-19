@@ -53,16 +53,22 @@ Ralph follows a two-phase approach:
 
 ### Prerequisites
 
-- Ruby >= 3.0
+- Go >= 1.21
 - Git
 - [opencode](https://github.com/opencode-ai/opencode) - AI coding assistant CLI
 
-### Setup
+### Build from Source
 
 ```bash
 git clone https://github.com/your-org/ralph.git
 cd ralph
-bundle install
+go build -o ralph .
+```
+
+### Install Globally
+
+```bash
+go install .
 ```
 
 ## Usage
@@ -72,7 +78,7 @@ bundle install
 Run Ralph with a natural language description of what you want to build:
 
 ```bash
-./bin/ralph "Add user authentication with login and registration"
+./ralph "Add user authentication with login and registration"
 ```
 
 Ralph will:
@@ -88,7 +94,7 @@ Ralph will:
 Generate a PRD without implementing to review the plan first:
 
 ```bash
-./bin/ralph "Add user authentication" --dry-run
+./ralph "Add user authentication" --dry-run
 ```
 
 This creates `prd.json` for review. You can then run `--resume` to implement.
@@ -98,7 +104,7 @@ This creates `prd.json` for review. You can then run `--resume` to implement.
 Continue from an existing `prd.json` (useful after interruption or dry run):
 
 ```bash
-./bin/ralph --resume
+./ralph --resume
 ```
 
 ### CLI Options
@@ -108,6 +114,13 @@ Continue from an existing `prd.json` (useful after interruption or dry run):
 | `--dry-run` | Generate PRD only, skip implementation |
 | `--resume` | Resume from existing `prd.json` |
 | `--help`, `-h` | Show help message |
+
+### TUI Controls
+
+| Key | Action |
+|-----|--------|
+| `q` | Quit the application |
+| `Ctrl+C` | Quit the application |
 
 ## Configuration
 
@@ -187,20 +200,6 @@ The generated `prd.json` follows this structure:
 | `1` | Failure - fatal error occurred |
 | `2` | Partial - some stories completed, others failed |
 
-## Development
-
-### Running Tests
-
-```bash
-bundle exec rspec
-```
-
-### Linting
-
-```bash
-bundle exec rubocop
-```
-
 ## Troubleshooting
 
 ### Interrupted Run
@@ -208,7 +207,7 @@ bundle exec rubocop
 If Ralph is interrupted (Ctrl+C), your progress is saved in `prd.json`. Resume with:
 
 ```bash
-./bin/ralph --resume
+./ralph --resume
 ```
 
 ### Stories Failing Repeatedly
@@ -217,15 +216,7 @@ If stories exceed the retry limit, Ralph stops and reports which stories failed.
 
 1. Review the failing stories in `prd.json`
 2. Make manual fixes
-3. Run `./bin/ralph --resume` to continue
-
-### Debug Mode
-
-Set the `DEBUG` environment variable for verbose error output:
-
-```bash
-DEBUG=1 ./bin/ralph "your prompt"
-```
+3. Run `./ralph --resume` to continue
 
 ## License
 
