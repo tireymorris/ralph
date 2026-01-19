@@ -77,3 +77,55 @@ func TestIntegrationInvalidConfig(t *testing.T) {
 		t.Errorf("Expected output to contain 'Error:', got: %s", outputStr)
 	}
 }
+
+func TestIntegrationDryRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	// Build the binary
+	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to build binary: %v\nOutput: %s", err, output)
+	}
+	defer os.Remove("ralph-test")
+
+	// Create temp dir with valid config
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "ralph.config.json")
+	configContent := `{"max_iterations":5,"retry_attempts":3}`
+	err = os.WriteFile(configPath, []byte(configContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write config: %v", err)
+	}
+
+	// Get absolute path to binary
+	binaryPath, _ := filepath.Abs("ralph-test")
+
+	// Run 'ralph run "test" --dry-run'
+	cmd = exec.Command(binaryPath, "run", "test", "--dry-run")
+	cmd.Dir = tmpDir
+	output, err = cmd.CombinedOutput()
+	if err != nil && cmd.ProcessState == nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+	exitCode := cmd.ProcessState.ExitCode()
+	outputStr := string(output)
+
+	// Assert no runtime panics (panic would show in output or exit code)
+	if strings.Contains(outputStr, "panic") || strings.Contains(outputStr, "runtime error") {
+		t.Errorf("Runtime panic detected in output: %s", outputStr)
+	}
+
+	// Assert PRD generation completes without errors
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 for successful dry run, got %d. Output: %s", exitCode, outputStr)
+	}
+
+	// Assert PRD generation completed
+	if !strings.Contains(outputStr, "PRD generated") || !strings.Contains(outputStr, "Dry run complete") {
+		t.Errorf("Expected PRD generation success messages, got: %s", outputStr)
+	}
+}

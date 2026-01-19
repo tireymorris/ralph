@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/git"
 	"ralph/internal/logger"
@@ -74,18 +75,6 @@ type EventFailed struct {
 
 func (EventFailed) isEvent() {}
 
-type PRDGenerator interface {
-	Generate(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) (*prd.PRD, error)
-}
-
-type StoryImplementer interface {
-	Implement(ctx context.Context, story *prd.Story, iteration int, p *prd.PRD, outputCh chan<- runner.OutputLine) (bool, error)
-}
-
-type GitManager interface {
-	CreateBranch(name string) error
-}
-
 type PRDStorage interface {
 	Load() (*prd.PRD, error)
 	Save(p *prd.PRD) error
@@ -111,9 +100,9 @@ func (s *defaultPRDStorage) Delete() error {
 type Executor struct {
 	cfg         *config.Config
 	eventsCh    chan Event
-	generator   PRDGenerator
-	implementer StoryImplementer
-	git         GitManager
+	generator   internal.PRDGenerator
+	implementer internal.StoryImplementer
+	git         internal.GitManager
 	storage     PRDStorage
 }
 
@@ -128,7 +117,7 @@ func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	}
 }
 
-func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen PRDGenerator, impl StoryImplementer, g GitManager, storage PRDStorage) *Executor {
+func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen internal.PRDGenerator, impl internal.StoryImplementer, g internal.GitManager, storage PRDStorage) *Executor {
 	return &Executor{
 		cfg:         cfg,
 		eventsCh:    eventsCh,

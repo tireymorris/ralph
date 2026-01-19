@@ -7,17 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/workflow"
 )
-
-type WorkflowExecutor interface {
-	RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error)
-	RunLoad(ctx context.Context) (*prd.PRD, error)
-	RunImplementation(ctx context.Context, p *prd.PRD) error
-}
 
 type Runner struct {
 	cfg      *config.Config
@@ -25,7 +20,7 @@ type Runner struct {
 	dryRun   bool
 	resume   bool
 	verbose  bool
-	executor WorkflowExecutor
+	executor internal.WorkflowRunner
 	eventsCh chan workflow.Event
 }
 
@@ -42,7 +37,7 @@ func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) 
 	}
 }
 
-func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec WorkflowExecutor, eventsCh chan workflow.Event) *Runner {
+func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec internal.WorkflowRunner, eventsCh chan workflow.Event) *Runner {
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,
