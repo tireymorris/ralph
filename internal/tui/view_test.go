@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
+
 	"ralph/internal/config"
 	"ralph/internal/prd"
 )
@@ -178,6 +181,23 @@ func TestRenderHeader(t *testing.T) {
 	if !strings.Contains(header, "RALPH") {
 		t.Error("renderHeader() should contain RALPH")
 	}
+}
+
+func TestRenderHeaderPrimaryColor(t *testing.T) {
+	// Ensure colors are enabled for the test
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	header := m.renderHeader()
+	// Assert output contains ANSI color escape sequences for primary color (#8B5CF6)
+	// Primary color is background in headerStyle, RGB 139,92,246
+	expectedEscape := "\x1b[48;2;139;92;246m"
+	if !strings.Contains(header, expectedEscape) {
+		t.Errorf("renderHeader() should contain ANSI escape for primary color #8B5CF6, got: %q", header)
+	}
+	// Verify no color-related panics occur - this is implicit as the function call succeeded
 }
 
 func TestRenderPhase(t *testing.T) {
