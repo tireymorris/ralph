@@ -244,16 +244,16 @@ func isVerboseLogLine(line string) bool {
 		"service=lsp",
 		"service=file",
 		"service=default",
-		" tracking",        // git tracking status lines
-		"cwd=/",            // working directory status lines
-		"git=/",            // git snapshot status lines
-		"stderr=",          // stderr prefix lines
-		"Checked ",         // package check lines
-		"installed @",      // package install lines
-		"[1.00ms]",         // timing lines
-		"[2.00ms]",         // timing lines
-		"ms] done",         // completion markers like "[2.00ms] done"
-		"Saved lockfile",   // lockfile messages
+		" tracking",      // git tracking status lines
+		"cwd=/",          // working directory status lines
+		"git=/",          // git snapshot status lines
+		"stderr=",        // stderr prefix lines
+		"Checked ",       // package check lines
+		"installed @",    // package install lines
+		"[1.00ms]",       // timing lines
+		"[2.00ms]",       // timing lines
+		"ms] done",       // completion markers like "[2.00ms] done"
+		"Saved lockfile", // lockfile messages
 	}
 
 	for _, pattern := range verbosePatterns {

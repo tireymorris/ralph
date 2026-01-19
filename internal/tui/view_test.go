@@ -253,6 +253,29 @@ func TestRenderLogsTruncated(t *testing.T) {
 	}
 }
 
+func TestRenderLogsStyling(t *testing.T) {
+	// Ensure colors and styles are enabled for the test
+	lipgloss.SetColorProfile(termenv.TrueColor)
+
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.width = 80
+
+	logs := m.renderLogs()
+
+	// Assert output contains rounded border ANSI sequences
+	// Rounded border uses box drawing characters like ╭
+	if !strings.Contains(logs, "╭") {
+		t.Error("renderLogs() output should contain rounded border characters")
+	}
+
+	// Verify background surface color (#1F2937) is applied correctly
+	// #1F2937 is rgb(31,41,55), ANSI 24-bit background \x1b[48;2;31;40;55m
+	if !strings.Contains(logs, "\x1b[48;2;31;40;55m") {
+		t.Error("renderLogs() output should contain surface color background ANSI sequence")
+	}
+}
+
 func TestViewTypographyAndSpacing(t *testing.T) {
 	// Ensure colors and styles are enabled for the test
 	lipgloss.SetColorProfile(termenv.TrueColor)
