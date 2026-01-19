@@ -6,12 +6,13 @@ import (
 )
 
 type Options struct {
-	Prompt   string
-	DryRun   bool
-	Resume   bool
-	Headless bool
-	Verbose  bool
-	Help     bool
+	Prompt       string
+	DryRun       bool
+	Resume       bool
+	Headless     bool
+	Verbose      bool
+	Help         bool
+	UnknownFlags []string // Stores unknown flags for warning
 }
 
 func Parse(args []string) *Options {
@@ -31,7 +32,10 @@ func Parse(args []string) *Options {
 		case "run":
 			opts.Headless = true
 		default:
-			if !strings.HasPrefix(arg, "-") {
+			if strings.HasPrefix(arg, "-") {
+				// Track unknown flags for warning
+				opts.UnknownFlags = append(opts.UnknownFlags, arg)
+			} else {
 				promptParts = append(promptParts, arg)
 			}
 		}

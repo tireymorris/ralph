@@ -224,3 +224,42 @@ func TestPRDPath(t *testing.T) {
 		t.Errorf("PRDPath() = %q, want %q", got, want)
 	}
 }
+
+func TestValidateModel(t *testing.T) {
+	tests := []struct {
+		name    string
+		model   string
+		wantErr bool
+	}{
+		{
+			name:    "valid default model",
+			model:   DefaultModel,
+			wantErr: false,
+		},
+		{
+			name:    "valid supported model",
+			model:   "opencode/big-pickle",
+			wantErr: false,
+		},
+		{
+			name:    "invalid model",
+			model:   "invalid-model",
+			wantErr: true,
+		},
+		{
+			name:    "empty model",
+			model:   "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{Model: tt.model}
+			err := cfg.ValidateModel()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateModel() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

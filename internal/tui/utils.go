@@ -10,9 +10,4 @@ func truncate(s string, max int) string {
 	return s[:max-3] + "..."
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+// Note: min() is built-in since Go 1.21, no need to define it here

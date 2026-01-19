@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -88,4 +89,15 @@ func (c *Config) ConfigPath(filename string) string {
 // PRDPath returns the full path to the PRD file
 func (c *Config) PRDPath() string {
 	return c.ConfigPath(c.PRDFile)
+}
+
+// ValidateModel checks if the configured model is in the list of supported models.
+// Returns an error if the model is not supported.
+func (c *Config) ValidateModel() error {
+	for _, m := range SupportedModels {
+		if c.Model == m {
+			return nil
+		}
+	}
+	return fmt.Errorf("unsupported model: %s (supported: %v)", c.Model, SupportedModels)
 }

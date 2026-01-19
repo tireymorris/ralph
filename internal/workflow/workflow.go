@@ -269,7 +269,16 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 func (e *Executor) emit(event Event) {
 	if e.eventsCh != nil {
-		e.eventsCh <- event
+		// Use non-blocking send to prevent deadlock if event channel is full.
+		// In practice, the channel is buffered (100) and consumers should keep up,
+		// but this prevents blocking the workflow if they don't.
+		select {
+		case e.eventsCh <- event:
+			// Event sent successfully
+		default:
+			// Channel full, log and drop the event to prevent deadlock
+			logger.Warn("event channel full, dropping event", "event_type", fmt.Sprintf("%T", event))
+		}
 	}
 }
 
