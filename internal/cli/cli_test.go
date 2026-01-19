@@ -454,12 +454,12 @@ func (e *testErr) Error() string {
 }
 
 type mockExecutor struct {
-	genPRD   *prd.PRD
-	genErr   error
-	loadPRD  *prd.PRD
-	loadErr  error
-	implErr  error
-	eventsCh chan workflow.Event
+	genPRD    *prd.PRD
+	genErr    error
+	loadPRD   *prd.PRD
+	loadErr   error
+	implErr   error
+	eventsCh  chan workflow.Event
 	implEvent workflow.Event
 }
 
