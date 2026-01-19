@@ -94,9 +94,7 @@ module Ralph
       end
 
       def run_implementation_loop(requirements)
-        puts "\n#{'=' * 60}"
-        puts '🚀 PHASE 2: Autonomous Implementation Loop'
-        puts '=' * 60
+        print_phase_header('PHASE 2: Autonomous Implementation Loop')
 
         total_stories = requirements['stories'].length
         iteration = 0
@@ -105,26 +103,29 @@ module Ralph
 
         loop do
           iteration += 1
-
           if iteration > max_iterations
-            puts "\n#{'=' * 60}"
-            puts '⚠️ MAX ITERATIONS REACHED'
-            puts '=' * 60
-            completed = requirements['stories'].count { |s| s['passes'] == true }
-            puts "📊 Completed: #{completed}/#{total_stories} stories"
-            puts "📝 Max Iterations: #{max_iterations}"
-            Logger.error('Max iterations exceeded', { iteration: iteration, max: max_iterations })
-            return completed == total_stories ? CLI::EXIT_SUCCESS : CLI::EXIT_PARTIAL
+            return handle_max_iterations(requirements, total_stories, iteration, max_iterations)
           end
 
           result = run_single_iteration(iteration, requirements, total_stories, max_retries)
-          case result
-          when :completed
-            return CLI::EXIT_SUCCESS
-          when :all_failed
-            return CLI::EXIT_FAILURE
-          end
+          return CLI::EXIT_SUCCESS if result == :completed
+          return CLI::EXIT_FAILURE if result == :all_failed
         end
+      end
+
+      def handle_max_iterations(requirements, total_stories, iteration, max_iterations)
+        print_phase_header('MAX ITERATIONS REACHED', prefix: '⚠️')
+        completed = requirements['stories'].count { |s| s['passes'] == true }
+        puts "📊 Completed: #{completed}/#{total_stories} stories"
+        puts "📝 Max Iterations: #{max_iterations}"
+        Logger.error('Max iterations exceeded', { iteration: iteration, max: max_iterations })
+        completed == total_stories ? CLI::EXIT_SUCCESS : CLI::EXIT_PARTIAL
+      end
+
+      def print_phase_header(title, prefix: '🚀')
+        puts "\n#{'=' * 60}"
+        puts "#{prefix} #{title}"
+        puts '=' * 60
       end
 
       def run_single_iteration(iteration, requirements, total_stories, max_retries)
@@ -132,10 +133,10 @@ module Ralph
         puts "🔄 ITERATION #{iteration} - #{Time.now.strftime('%H:%M:%S')}"
         puts '=' * 60
 
-        # Find next story that hasn't passed and hasn't exceeded retry limit
-        next_story = requirements['stories'].find do |s|
-          s['passes'] != true && (s['retry_count'] || 0) < max_retries
-        end
+        # Find next story that hasn't passed and hasn't exceeded retry limit (sorted by priority)
+        next_story = requirements['stories']
+                     .select { |s| s['passes'] != true && (s['retry_count'] || 0) < max_retries }
+                     .min_by { |s| s['priority'] || Float::INFINITY }
 
         # Check if all remaining stories have exceeded retries
         if next_story.nil?
@@ -177,32 +178,47 @@ module Ralph
 
       def run_story_implementation(next_story, iteration, requirements, total_stories)
         completed_stories = requirements['stories'].count { |s| s['passes'] == true }
-        progress_percentage = (completed_stories.to_f / total_stories * 100).round(1)
         retry_count = next_story['retry_count'] || 0
 
-        puts "\n📈 Progress: #{completed_stories}/#{total_stories} stories (#{progress_percentage}%)"
-        puts "\n📖 Current Story: #{next_story['title']}"
-        puts "🎯 Priority: #{next_story['priority']}"
-        puts "🔄 Attempt: #{retry_count + 1}/#{Config.get(:retry_attempts)}"
-        puts "📝 Description: #{next_story['description'][0..80]}#{'...' if next_story['description'].length > 80}"
+        print_story_info(next_story, completed_stories, total_stories, retry_count)
 
         puts "\n⚡ Starting implementation..."
         if StoryImplementer.implement(next_story, iteration, requirements)
-          next_story['passes'] = true
-          next_story['retry_count'] = retry_count
-          ProgressLogger.update_state(requirements)
-          puts "\n✅ Story completed successfully!"
-          puts "📊 Progress: #{completed_stories + 1}/#{total_stories} stories"
+          handle_story_success(next_story, retry_count, requirements, completed_stories, total_stories)
         else
-          next_story['retry_count'] = retry_count + 1
-          ProgressLogger.update_state(requirements)
-          remaining = Config.get(:retry_attempts) - next_story['retry_count']
-          puts "\n❌ Story failed - #{remaining} retries remaining"
-          puts '⏳ Waiting before retry...'
-          sleep Config.get(:retry_delay)
+          handle_story_failure(next_story, retry_count, requirements)
         end
 
         :continue
+      end
+
+      def print_story_info(story, completed, total, retry_count)
+        progress_percentage = (completed.to_f / total * 100).round(1)
+        description = story['description'][0..80]
+        description += '...' if story['description'].length > 80
+
+        puts "\n📈 Progress: #{completed}/#{total} stories (#{progress_percentage}%)"
+        puts "\n📖 Current Story: #{story['title']}"
+        puts "🎯 Priority: #{story['priority']}"
+        puts "🔄 Attempt: #{retry_count + 1}/#{Config.get(:retry_attempts)}"
+        puts "📝 Description: #{description}"
+      end
+
+      def handle_story_success(story, retry_count, requirements, completed_stories, total_stories)
+        story['passes'] = true
+        story['retry_count'] = retry_count
+        ProgressLogger.update_state(requirements)
+        puts "\n✅ Story completed successfully!"
+        puts "📊 Progress: #{completed_stories + 1}/#{total_stories} stories"
+      end
+
+      def handle_story_failure(story, retry_count, requirements)
+        story['retry_count'] = retry_count + 1
+        ProgressLogger.update_state(requirements)
+        remaining = Config.get(:retry_attempts) - story['retry_count']
+        puts "\n❌ Story failed - #{remaining} retries remaining"
+        puts '⏳ Waiting before retry...'
+        sleep Config.get(:retry_delay)
       end
 
       def cleanup_working_files

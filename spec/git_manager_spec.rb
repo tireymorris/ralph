@@ -97,7 +97,9 @@ RSpec.describe Ralph::GitManager do
     end
 
     it 'strips whitespace from branch name' do
-      allow(described_class).to receive(:`).with('git rev-parse --abbrev-ref HEAD 2>/dev/null').and_return("  feature/test  \n")
+      allow(described_class).to receive(:`)
+        .with('git rev-parse --abbrev-ref HEAD 2>/dev/null')
+        .and_return("  feature/test  \n")
 
       expect(described_class.current_branch).to eq('feature/test')
     end
@@ -114,8 +116,8 @@ RSpec.describe Ralph::GitManager do
 
     context 'when there are no changes' do
       before do
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(true)
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
+        allow(described_class).to receive(:no_unstaged_changes?).and_return(true)
+        allow(described_class).to receive(:no_staged_changes?).and_return(true)
       end
 
       it 'logs info and returns true' do
@@ -126,8 +128,8 @@ RSpec.describe Ralph::GitManager do
 
     context 'when there are changes' do
       before do
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(false)
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
+        allow(described_class).to receive(:no_unstaged_changes?).and_return(false)
+        allow(described_class).to receive(:no_staged_changes?).and_return(true)
       end
 
       it 'stages and commits changes' do
@@ -168,8 +170,8 @@ RSpec.describe Ralph::GitManager do
       let(:minimal_story) { {} }
 
       before do
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --quiet --exit-code 2>/dev/null').and_return(false)
-        allow_any_instance_of(Kernel).to receive(:system).with('git diff --staged --quiet --exit-code 2>/dev/null').and_return(true)
+        allow(described_class).to receive(:no_unstaged_changes?).and_return(false)
+        allow(described_class).to receive(:no_staged_changes?).and_return(true)
         allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
       end
 
