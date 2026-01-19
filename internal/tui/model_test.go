@@ -51,17 +51,14 @@ func TestNewModel(t *testing.T) {
 	if m.phase != PhaseInit {
 		t.Errorf("phase = %v, want PhaseInit", m.phase)
 	}
-	if m.ctx == nil {
-		t.Error("ctx should not be nil")
+	if m.operationManager == nil {
+		t.Error("operationManager should not be nil")
 	}
-	if m.cancelFunc == nil {
-		t.Error("cancelFunc should not be nil")
+	if m.logger == nil {
+		t.Error("logger should not be nil")
 	}
-	if m.outputCh == nil {
-		t.Error("outputCh should not be nil")
-	}
-	if m.maxLogs != 500 {
-		t.Errorf("maxLogs = %d, want 500", m.maxLogs)
+	if m.phaseHandler == nil {
+		t.Error("phaseHandler should not be nil")
 	}
 }
 
@@ -124,42 +121,6 @@ func TestExitCode(t *testing.T) {
 	}
 }
 
-func TestAddLog(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-
-	m.addLog("line 1")
-	m.addLog("line 2")
-
-	if len(m.logs) != 2 {
-		t.Errorf("logs length = %d, want 2", len(m.logs))
-	}
-	if m.logs[0] != "line 1" {
-		t.Errorf("logs[0] = %q, want %q", m.logs[0], "line 1")
-	}
-	if m.logs[1] != "line 2" {
-		t.Errorf("logs[1] = %q, want %q", m.logs[1], "line 2")
-	}
-}
-
-func TestAddLogMaxLogs(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.maxLogs = 3
-
-	m.addLog("1")
-	m.addLog("2")
-	m.addLog("3")
-	m.addLog("4")
-
-	if len(m.logs) != 3 {
-		t.Errorf("logs length = %d, want 3", len(m.logs))
-	}
-	if m.logs[0] != "2" {
-		t.Errorf("logs[0] = %q, want %q", m.logs[0], "2")
-	}
-}
-
 func TestInit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
@@ -211,19 +172,6 @@ func TestUpdateWindowSizeMsg(t *testing.T) {
 		}
 		if model.height != 40 {
 			t.Errorf("height = %d, want 40", model.height)
-		}
-	}
-}
-
-func TestUpdateOutputMsg(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-
-	newModel, _ := m.Update(outputMsg{Text: "test output"})
-
-	if model, ok := newModel.(*Model); ok {
-		if len(model.logs) == 0 || model.logs[len(model.logs)-1] != "test output" {
-			t.Error("output should be added to logs")
 		}
 	}
 }

@@ -129,3 +129,59 @@ func TestIntegrationDryRun(t *testing.T) {
 		t.Errorf("Expected PRD generation success messages, got: %s", outputStr)
 	}
 }
+
+func TestIntegrationTUIDryRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
+
+	// Build the binary
+	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to build binary: %v\nOutput: %s", err, output)
+	}
+	defer os.Remove("ralph-test")
+
+	// Create temp dir with valid config
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "ralph.config.json")
+	configContent := `{"max_iterations":5,"retry_attempts":3}`
+	err = os.WriteFile(configPath, []byte(configContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write config: %v", err)
+	}
+
+	// Get absolute path to binary
+	binaryPath, _ := filepath.Abs("ralph-test")
+
+	// Run 'ralph "test prompt" --dry-run' with a simulated TUI interaction
+	// We'll use expect or a similar tool to interact with the TUI
+	cmd = exec.Command("expect", "-c", `
+		spawn "`+binaryPath+`" "test prompt" --dry-run
+		expect {
+			"Phase 1: PRD Generation" { send "q\r" }
+			timeout { exit 1 }
+		}
+		expect eof
+	`)
+	cmd.Dir = tmpDir
+	output, err = cmd.CombinedOutput()
+	outputStr := string(output)
+
+	// Check for errors
+	if err != nil {
+		t.Errorf("TUI interaction failed: %v\nOutput: %s", err, outputStr)
+	}
+
+	// Assert TUI displays PRD generation phase correctly
+	if !strings.Contains(outputStr, "Phase 1: PRD Generation") {
+		t.Errorf("Expected TUI to display 'Phase 1: PRD Generation', got: %s", outputStr)
+	}
+
+	// Assert clean exit with no errors (expect script should exit cleanly)
+	if strings.Contains(outputStr, "Error:") || strings.Contains(outputStr, "panic") {
+		t.Errorf("Expected clean exit with no errors, but found errors in output: %s", outputStr)
+	}
+}
