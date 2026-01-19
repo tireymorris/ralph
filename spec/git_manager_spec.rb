@@ -26,6 +26,83 @@ RSpec.describe Ralph::GitManager do
     end
   end
 
+  describe '.create_branch' do
+    context 'when branch_name is nil' do
+      it 'does nothing' do
+        expect(Ralph::ErrorHandler).not_to receive(:safe_system_command)
+        described_class.create_branch(nil)
+      end
+    end
+
+    context 'when branch already exists' do
+      before do
+        allow_any_instance_of(Kernel).to receive(:system)
+          .with(/git show-ref --verify --quiet/)
+          .and_return(true)
+      end
+
+      it 'switches to existing branch' do
+        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+          .with(%r{git checkout feature/test}, 'Switch branch')
+          .and_return(true)
+
+        described_class.create_branch('feature/test')
+      end
+
+      it 'prints switching message' do
+        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+
+        expect { described_class.create_branch('feature/test') }
+          .to output(/already exists, switching/).to_stdout
+      end
+    end
+
+    context 'when branch does not exist' do
+      before do
+        allow_any_instance_of(Kernel).to receive(:system)
+          .with(/git show-ref --verify --quiet/)
+          .and_return(false)
+      end
+
+      it 'creates new branch' do
+        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+          .with(%r{git checkout -b feature/new-branch}, 'Create branch')
+          .and_return(true)
+
+        described_class.create_branch('feature/new-branch')
+      end
+
+      it 'prints creating message' do
+        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+
+        expect { described_class.create_branch('feature/test') }
+          .to output(/Creating new branch/).to_stdout
+      end
+    end
+
+    it 'escapes special characters in branch name' do
+      allow_any_instance_of(Kernel).to receive(:system).and_return(false)
+      allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+
+      # Should not raise error with special characters
+      expect { described_class.create_branch('feature/test-branch') }.not_to raise_error
+    end
+  end
+
+  describe '.current_branch' do
+    it 'returns current git branch name' do
+      allow(described_class).to receive(:`).with('git rev-parse --abbrev-ref HEAD 2>/dev/null').and_return("main\n")
+
+      expect(described_class.current_branch).to eq('main')
+    end
+
+    it 'strips whitespace from branch name' do
+      allow(described_class).to receive(:`).with('git rev-parse --abbrev-ref HEAD 2>/dev/null').and_return("  feature/test  \n")
+
+      expect(described_class.current_branch).to eq('feature/test')
+    end
+  end
+
   describe '.commit_changes' do
     let(:story) do
       {

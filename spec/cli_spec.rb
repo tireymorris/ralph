@@ -5,13 +5,15 @@ require 'spec_helper'
 RSpec.describe Ralph::CLI do
   describe '.run' do
     before do
-      allow(Ralph::Agent).to receive(:run)
+      allow(Ralph::Agent).to receive(:run).and_return(described_class::EXIT_SUCCESS)
     end
 
     context 'with no arguments' do
-      it 'shows help' do
-        expect { described_class.run([]) }
+      it 'shows help and returns success' do
+        result = nil
+        expect { result = described_class.run([]) }
           .to output(/Usage:/).to_stdout
+        expect(result).to eq(described_class::EXIT_SUCCESS)
       end
 
       it 'does not call Agent.run' do
@@ -24,6 +26,11 @@ RSpec.describe Ralph::CLI do
       it 'shows help' do
         expect { described_class.run(['--help']) }
           .to output(/Usage:/).to_stdout
+      end
+
+      it 'returns success exit code' do
+        result = described_class.run(['--help'])
+        expect(result).to eq(described_class::EXIT_SUCCESS)
       end
     end
 
@@ -84,9 +91,57 @@ RSpec.describe Ralph::CLI do
           .to output(/Error:.*prompt.*Usage:/m).to_stdout
       end
 
+      it 'returns failure exit code' do
+        result = described_class.run(['--dry-run'])
+        expect(result).to eq(described_class::EXIT_FAILURE)
+      end
+
       it 'does not call Agent.run' do
         expect(Ralph::Agent).not_to receive(:run)
         described_class.run(['--dry-run'])
+      end
+    end
+
+    context 'with --resume flag' do
+      let(:prd_file) { Ralph::Config.get(:prd_file) }
+
+      context 'when prd.json exists' do
+        before do
+          allow(Ralph::Agent).to receive(:resume).and_return(described_class::EXIT_SUCCESS)
+        end
+
+        after do
+          File.delete(prd_file) if File.exist?(prd_file)
+        end
+
+        it 'calls Agent.resume' do
+          File.write(prd_file, '{}')
+          expect(Ralph::Agent).to receive(:resume)
+          described_class.run(['--resume'])
+        end
+
+        it 'prints resume mode' do
+          File.write(prd_file, '{}')
+          expect { described_class.run(['--resume']) }
+            .to output(/Resuming from:.*Mode: Resume implementation/m).to_stdout
+        end
+      end
+
+      context 'when prd.json does not exist' do
+        it 'shows error' do
+          expect { described_class.run(['--resume']) }
+            .to output(/Error:.*No.*prd.json.*found/).to_stdout
+        end
+
+        it 'returns failure exit code' do
+          result = described_class.run(['--resume'])
+          expect(result).to eq(described_class::EXIT_FAILURE)
+        end
+
+        it 'does not call Agent.resume' do
+          expect(Ralph::Agent).not_to receive(:resume)
+          described_class.run(['--resume'])
+        end
       end
     end
   end
@@ -105,6 +160,25 @@ RSpec.describe Ralph::CLI do
     it 'shows dry run example' do
       expect { described_class.show_help }
         .to output(/--dry-run/).to_stdout
+    end
+
+    it 'shows resume option' do
+      expect { described_class.show_help }
+        .to output(/--resume/).to_stdout
+    end
+  end
+
+  describe 'exit codes' do
+    it 'defines EXIT_SUCCESS as 0' do
+      expect(described_class::EXIT_SUCCESS).to eq(0)
+    end
+
+    it 'defines EXIT_FAILURE as 1' do
+      expect(described_class::EXIT_FAILURE).to eq(1)
+    end
+
+    it 'defines EXIT_PARTIAL as 2' do
+      expect(described_class::EXIT_PARTIAL).to eq(2)
     end
   end
 end

@@ -18,6 +18,7 @@ module Ralph
       model: DEFAULT_MODEL,
       git_timeout: nil,
       test_timeout: nil,
+      command_timeout: nil,
       max_iterations: 50,
       log_level: :info,
       prd_file: 'prd.json',

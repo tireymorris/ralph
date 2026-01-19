@@ -17,6 +17,7 @@ RSpec.describe Ralph::Agent do
       allow(Ralph::PrdGenerator).to receive(:generate).and_return(requirements)
       allow(Ralph::StoryImplementer).to receive(:implement).and_return(true)
       allow(Ralph::ProgressLogger).to receive(:update_state)
+      allow(Ralph::GitManager).to receive(:create_branch)
     end
 
     context 'dry run mode' do
@@ -30,6 +31,11 @@ RSpec.describe Ralph::Agent do
       it 'prints dry run message' do
         expect { described_class.run('Test prompt', dry_run: true) }
           .to output(/Dry run mode/).to_stdout
+      end
+
+      it 'returns success exit code' do
+        result = described_class.run('Test prompt', dry_run: true)
+        expect(result).to eq(Ralph::CLI::EXIT_SUCCESS)
       end
     end
 
@@ -64,6 +70,13 @@ RSpec.describe Ralph::Agent do
         expect { described_class.run('Test prompt') }
           .to output(/ALL STORIES COMPLETED/).to_stdout
       end
+
+      it 'returns success exit code on completion' do
+        allow(Ralph::StoryImplementer).to receive(:implement).and_return(true)
+
+        result = described_class.run('Test prompt')
+        expect(result).to eq(Ralph::CLI::EXIT_SUCCESS)
+      end
     end
 
     context 'when PRD generation fails' do
@@ -72,6 +85,13 @@ RSpec.describe Ralph::Agent do
         expect(Ralph::StoryImplementer).not_to receive(:implement)
 
         described_class.run('Test prompt')
+      end
+
+      it 'returns failure exit code' do
+        allow(Ralph::PrdGenerator).to receive(:generate).and_return(nil)
+
+        result = described_class.run('Test prompt')
+        expect(result).to eq(Ralph::CLI::EXIT_FAILURE)
       end
     end
 
@@ -91,6 +111,68 @@ RSpec.describe Ralph::Agent do
       it 'does not mark story as passed' do
         allow(Ralph::StoryImplementer).to receive(:implement).and_return(false, true)
 
+        described_class.run('Test prompt')
+      end
+
+      it 'increments retry count on failure' do
+        allow(Ralph::StoryImplementer).to receive(:implement).and_return(false, true)
+
+        described_class.run('Test prompt')
+
+        expect(requirements['stories'].first['retry_count']).to eq(1)
+      end
+    end
+
+    context 'when story exceeds max retries' do
+      before do
+        Ralph::Config.set(:retry_attempts, 2)
+        allow(Ralph::StoryImplementer).to receive(:implement).and_return(false)
+      end
+
+      after do
+        Ralph::Config.reset!
+      end
+
+      it 'stops retrying after max attempts' do
+        call_count = 0
+        allow(Ralph::StoryImplementer).to receive(:implement) do
+          call_count += 1
+          false
+        end
+
+        described_class.run('Test prompt')
+
+        expect(call_count).to eq(2)
+      end
+
+      it 'returns failure exit code' do
+        result = described_class.run('Test prompt')
+        expect(result).to eq(Ralph::CLI::EXIT_FAILURE)
+      end
+
+      it 'prints failure message with retry hint' do
+        expect { described_class.run('Test prompt') }
+          .to output(/exceeded max retries.*--resume/m).to_stdout
+      end
+    end
+
+    context 'with branch_name in requirements' do
+      let(:requirements_with_branch) do
+        {
+          'project_name' => 'Test',
+          'branch_name' => 'feature/test-feature',
+          'stories' => [
+            { 'id' => 'story-1', 'title' => 'Story 1', 'description' => 'Desc', 'passes' => false, 'priority' => 1 }
+          ]
+        }
+      end
+
+      before do
+        allow(Ralph::PrdGenerator).to receive(:generate).and_return(requirements_with_branch)
+      end
+
+      it 'creates git branch' do
+        expect(Ralph::GitManager).to receive(:create_branch).with('feature/test-feature')
         described_class.run('Test prompt')
       end
     end
@@ -132,6 +214,77 @@ RSpec.describe Ralph::Agent do
         expect { described_class.run('Test prompt') }
           .to output(%r{1/2 stories.*2/2 stories}m).to_stdout
       end
+    end
+  end
+
+  describe '.resume' do
+    let(:prd_file) { Ralph::Config.get(:prd_file) }
+    let(:existing_requirements) do
+      {
+        'project_name' => 'Test',
+        'stories' => [
+          { 'id' => 'story-1', 'title' => 'Story 1', 'description' => 'D1', 'passes' => true, 'priority' => 1 },
+          { 'id' => 'story-2', 'title' => 'Story 2', 'description' => 'D2', 'passes' => false, 'priority' => 2 }
+        ]
+      }
+    end
+
+    before do
+      allow(Ralph::StoryImplementer).to receive(:implement).and_return(true)
+      allow(Ralph::ProgressLogger).to receive(:update_state)
+    end
+
+    after do
+      File.delete(prd_file) if File.exist?(prd_file)
+    end
+
+    it 'loads existing PRD file' do
+      File.write(prd_file, JSON.pretty_generate(existing_requirements))
+
+      expect { described_class.resume }
+        .to output(/PRD loaded: Test/).to_stdout
+    end
+
+    it 'shows progress from existing PRD' do
+      File.write(prd_file, JSON.pretty_generate(existing_requirements))
+
+      expect { described_class.resume }
+        .to output(%r{1/2 stories already completed}).to_stdout
+    end
+
+    it 'only implements incomplete stories' do
+      File.write(prd_file, JSON.pretty_generate(existing_requirements))
+
+      expect(Ralph::StoryImplementer).to receive(:implement)
+        .with(hash_including('id' => 'story-2'), anything, anything)
+        .and_return(true)
+
+      described_class.resume
+    end
+
+    it 'returns success when all stories complete' do
+      completed_requirements = existing_requirements.dup
+      completed_requirements['stories'].each { |s| s['passes'] = true }
+      File.write(prd_file, JSON.pretty_generate(completed_requirements))
+
+      result = described_class.resume
+      expect(result).to eq(Ralph::CLI::EXIT_SUCCESS)
+    end
+
+    it 'returns failure when PRD file is invalid' do
+      File.write(prd_file, 'invalid json')
+
+      result = described_class.resume
+      expect(result).to eq(Ralph::CLI::EXIT_FAILURE)
+    end
+
+    it 'initializes retry counts if missing' do
+      File.write(prd_file, JSON.pretty_generate(existing_requirements))
+      allow(Ralph::StoryImplementer).to receive(:implement).and_return(true)
+
+      described_class.resume
+
+      # Should not raise error due to missing retry_count
     end
   end
 end

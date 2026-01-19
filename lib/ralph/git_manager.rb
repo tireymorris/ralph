@@ -11,6 +11,25 @@ module Ralph
         end
       end
 
+      def create_branch(branch_name)
+        return unless branch_name
+
+        ErrorHandler.with_error_handling('Git branch creation', { branch: branch_name }) do
+          # Check if branch already exists
+          if system("git show-ref --verify --quiet refs/heads/#{Shellwords.escape(branch_name)}")
+            puts "  📌 Branch '#{branch_name}' already exists, switching to it"
+            ErrorHandler.safe_system_command("git checkout #{Shellwords.escape(branch_name)}", 'Switch branch')
+          else
+            puts "  🌱 Creating new branch '#{branch_name}'"
+            ErrorHandler.safe_system_command("git checkout -b #{Shellwords.escape(branch_name)}", 'Create branch')
+          end
+        end
+      end
+
+      def current_branch
+        `git rev-parse --abbrev-ref HEAD 2>/dev/null`.strip
+      end
+
       def commit_changes(story)
         puts '💾 Committing changes...'
 

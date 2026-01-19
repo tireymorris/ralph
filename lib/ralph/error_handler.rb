@@ -25,12 +25,13 @@ module Ralph
         nil
       end
 
-      def capture_command_output(prompt, operation)
+      def capture_command_output(prompt, operation, timeout: nil)
         model = Ralph::Config.get(:model)
         cmd = %w[opencode run]
         cmd += ['--model', model] if model
 
         output_lines = []
+        timeout ||= Ralph::Config.get(:command_timeout)
 
         Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
           stdin.write(prompt)
@@ -46,12 +47,24 @@ module Ralph
           stderr_thread = Thread.new do
             stderr.each_line do |line|
               puts line.encode('UTF-8', invalid: :replace, undef: :replace).strip
-              # Also collect stderr if needed, but for now just stream
             end
           end
 
-          stdout_thread.join
-          stderr_thread.join
+          if timeout
+            unless wait_with_timeout(wait_thr, stdout_thread, stderr_thread, timeout)
+              puts "⏱️ Command timed out after #{timeout}s"
+              begin
+                Process.kill('TERM', wait_thr.pid)
+              rescue StandardError
+                nil
+              end
+              Logger.error('Command timeout', { operation: operation, timeout: timeout })
+              return nil
+            end
+          else
+            stdout_thread.join
+            stderr_thread.join
+          end
 
           exit_status = wait_thr.value
           if exit_status.success?
@@ -71,6 +84,30 @@ module Ralph
         puts e.backtrace.first(3).join("\n")
         Logger.error('Command capture exception', { operation: operation, error: e.message })
         nil
+      end
+
+      def wait_with_timeout(wait_thr, stdout_thread, stderr_thread, timeout)
+        deadline = Time.now + timeout
+
+        until wait_thr.join(0.1)
+          next unless Time.now > deadline
+
+          begin
+            stdout_thread.kill
+          rescue StandardError
+            nil
+          end
+          begin
+            stderr_thread.kill
+          rescue StandardError
+            nil
+          end
+          return false
+        end
+
+        stdout_thread.join(1)
+        stderr_thread.join(1)
+        true
       end
 
       def clean_opencode_output(output)
