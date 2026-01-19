@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'shellwords'
+
 module Ralph
   class GitManager
     class << self
@@ -20,17 +22,13 @@ module Ralph
 
           ErrorHandler.safe_system_command('git add .', 'Stage changes')
 
-          commit_title = story['title']&.to_s&.gsub("'", "''") || 'Story implementation'
-          commit_desc = story['description']&.to_s&.gsub("'", "''") || ''
+          commit_title = story['title']&.to_s || 'Story implementation'
+          commit_desc = story['description'].to_s
           story_id = story['id']&.to_s || 'unknown'
 
-          commit_message = "feat: #{commit_title}
+          commit_message = "feat: #{commit_title}\n\n#{commit_desc}\n\nStory: #{story_id}"
 
-#{commit_desc}
-
-Story: #{story_id}"
-
-          ErrorHandler.safe_system_command("git commit -m '#{commit_message}'", 'Commit changes')
+          ErrorHandler.safe_system_command("git commit -m #{Shellwords.escape(commit_message)}", 'Commit changes')
         end
       end
     end

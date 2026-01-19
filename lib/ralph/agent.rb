@@ -32,6 +32,8 @@ module Ralph
       private
 
       def initialize_environment
+        Logger.configure
+
         puts "\n#{'=' * 60}"
         puts '🤖 RALPH - Autonomous Software Development Agent'
         puts '=' * 60
@@ -52,8 +54,21 @@ module Ralph
         total_stories = requirements['stories'].length
         iteration = 0
 
+        max_iterations = Config.get(:max_iterations)
+
         loop do
           iteration += 1
+
+          if iteration > max_iterations
+            puts "\n#{'=' * 60}"
+            puts '⚠️ MAX ITERATIONS REACHED'
+            puts '=' * 60
+            puts "📊 Completed: #{requirements['stories'].count { |s| s['passes'] == true }}/#{total_stories} stories"
+            puts "📝 Max Iterations: #{max_iterations}"
+            Logger.error('Max iterations exceeded', { iteration: iteration, max: max_iterations })
+            break
+          end
+
           result = run_single_iteration(iteration, requirements, total_stories)
           break if result == :completed
         end
@@ -95,7 +110,7 @@ module Ralph
         else
           puts "\n❌ Story failed - will retry in next iteration"
           puts '⏳ Waiting before retry...'
-          sleep 0.5
+          sleep Config.get(:retry_delay)
         end
 
         :continue

@@ -27,7 +27,6 @@ module Ralph
 
       def capture_command_output(prompt, operation)
         model = Ralph::Config.get(:model)
-        model || 'default'
         cmd = %w[opencode run]
         cmd += ['--model', model] if model
 
@@ -104,10 +103,14 @@ module Ralph
       end
 
       def parse_json_safely(json_string, context = 'JSON parsing')
-        return nil if json_string.nil? || json_string.strip.empty?
+        return nil if json_string.nil?
+
+        # Encode to UTF-8 first to handle binary data safely
+        safe_string = json_string.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
+        return nil if safe_string.strip.empty?
 
         with_error_handling(context) do
-          cleaned = json_string.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').strip
+          cleaned = safe_string.strip
 
           json_match = cleaned.match(/\{[\s\S]*\}/)
           cleaned = json_match[0] if json_match

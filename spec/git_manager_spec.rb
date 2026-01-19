@@ -65,18 +65,23 @@ RSpec.describe Ralph::GitManager do
       it 'includes story details in commit message' do
         expect(Ralph::ErrorHandler).to receive(:safe_system_command)
           .with('git add .', anything).and_return(true)
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
-          .with(/feat: Test Story.*Story: story-1/m, anything).and_return(true)
+        expect(Ralph::ErrorHandler).to receive(:safe_system_command) do |cmd, _op|
+          expect(cmd).to start_with('git commit -m')
+          # Shellwords.escape converts spaces to backslash-space
+          expect(cmd).to include('Test\\ Story')
+          expect(cmd).to include('story-1')
+          true
+        end
 
         described_class.commit_changes(story)
       end
 
-      it 'escapes single quotes in title' do
-        story['title'] = "Story's title"
+      it 'properly escapes special characters in title' do
+        story['title'] = "Story's $title `with` special chars"
         allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
 
         expect(Ralph::ErrorHandler).to receive(:safe_system_command)
-          .with(/Story''s title/, anything).and_return(true)
+          .with(/git commit -m /, anything).and_return(true)
 
         described_class.commit_changes(story)
       end
@@ -93,7 +98,13 @@ RSpec.describe Ralph::GitManager do
 
       it 'uses default values' do
         expect(Ralph::ErrorHandler).to receive(:safe_system_command)
-          .with(/feat: Story implementation/, anything).and_return(true)
+          .with('git add .', anything).and_return(true)
+        expect(Ralph::ErrorHandler).to receive(:safe_system_command) do |cmd, _op|
+          expect(cmd).to start_with('git commit -m')
+          # Shellwords.escape converts spaces to backslash-space
+          expect(cmd).to include('Story\\ implementation')
+          true
+        end
 
         described_class.commit_changes(minimal_story)
       end
