@@ -85,6 +85,18 @@ RSpec.describe Ralph::PrdGenerator do
         expect(described_class.generate('prompt')).to be_nil
       end
 
+      it 'rejects non-array stories' do
+        response = {
+          'project_name' => 'Test',
+          'stories' => 'not an array'
+        }.to_json
+
+        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+          .and_return(response)
+
+        expect(described_class.generate('prompt')).to be_nil
+      end
+
       it 'rejects stories missing required fields' do
         response = {
           'project_name' => 'Test',
@@ -131,6 +143,15 @@ RSpec.describe Ralph::PrdGenerator do
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
+      end
+    end
+
+    context 'failure handling' do
+      it 'prints failure message when PRD creation fails' do
+        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+
+        expect { described_class.generate('prompt') }
+          .to output(/Failed to create PRD/).to_stdout
       end
     end
   end

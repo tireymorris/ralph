@@ -24,6 +24,18 @@ RSpec.describe Ralph::Logger do
       described_class.configure
       expect(described_class.level).to eq(0)
     end
+
+    it 'handles nil argument explicitly' do
+      Ralph::Config.set(:log_level, :warn)
+      described_class.configure(nil)
+      expect(described_class.level).to eq(2)
+    end
+
+    it 'falls back to info when both level and config are nil' do
+      Ralph::Config.set(:log_level, nil)
+      described_class.configure(nil)
+      expect(described_class.level).to eq(1) # info level
+    end
   end
 
   describe '.log' do
@@ -48,6 +60,14 @@ RSpec.describe Ralph::Logger do
     it 'handles nil level gracefully' do
       described_class.instance_variable_set(:@level, nil)
       expect { described_class.log(:info, 'Test') }.not_to raise_error
+    end
+
+    it 'handles errors during logging gracefully' do
+      described_class.configure(:debug)
+      allow(Time).to receive(:now).and_raise(StandardError.new('time error'))
+
+      expect { described_class.log(:info, 'Test') }
+        .to output(/Logger error: time error/).to_stdout
     end
   end
 

@@ -105,6 +105,42 @@ RSpec.describe Ralph::GitManager do
     end
   end
 
+  describe '.no_unstaged_changes?' do
+    it 'returns true when no unstaged changes' do
+      allow_any_instance_of(Kernel).to receive(:system)
+        .with('git diff --quiet --exit-code 2>/dev/null')
+        .and_return(true)
+
+      expect(described_class.no_unstaged_changes?).to be true
+    end
+
+    it 'returns false when there are unstaged changes' do
+      allow_any_instance_of(Kernel).to receive(:system)
+        .with('git diff --quiet --exit-code 2>/dev/null')
+        .and_return(false)
+
+      expect(described_class.no_unstaged_changes?).to be false
+    end
+  end
+
+  describe '.no_staged_changes?' do
+    it 'returns true when no staged changes' do
+      allow_any_instance_of(Kernel).to receive(:system)
+        .with('git diff --staged --quiet --exit-code 2>/dev/null')
+        .and_return(true)
+
+      expect(described_class.no_staged_changes?).to be true
+    end
+
+    it 'returns false when there are staged changes' do
+      allow_any_instance_of(Kernel).to receive(:system)
+        .with('git diff --staged --quiet --exit-code 2>/dev/null')
+        .and_return(false)
+
+      expect(described_class.no_staged_changes?).to be false
+    end
+  end
+
   describe '.commit_changes' do
     let(:story) do
       {
