@@ -4,4 +4,15 @@
 require_relative '../lib/ralph/agent'
 require_relative '../lib/ralph/cli'
 
-Ralph::CLI.run(ARGV) if __FILE__ == $PROGRAM_NAME
+if __FILE__ == $PROGRAM_NAME
+  begin
+    Ralph::CLI.run(ARGV)
+  rescue Interrupt
+    puts "\n\n⚠️ Interrupted by user"
+    exit 130
+  rescue StandardError => e
+    puts "\n❌ Fatal error: #{e.message}"
+    puts e.backtrace.first(5).map { |line| "  #{line}" }.join("\n") if ENV['DEBUG']
+    exit 1
+  end
+end

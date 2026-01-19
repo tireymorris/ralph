@@ -35,7 +35,17 @@ module Ralph
       end
 
       def set(key, value)
+        if key == :model
+          validate_model!(value)
+        end
         load[key] = value
+      end
+
+      def validate_model!(model)
+        return if model.nil?
+        return if SUPPORTED_MODELS.include?(model)
+
+        raise ArgumentError, "Unsupported model: #{model}. Supported models: #{SUPPORTED_MODELS.join(', ')}"
       end
 
       def reset!
@@ -49,9 +59,14 @@ module Ralph
         return {} unless File.exist?(config_file)
 
         begin
-          JSON.parse(File.read(config_file), symbolize_names: true)
+          config = JSON.parse(File.read(config_file), symbolize_names: true)
+          validate_model!(config[:model]) if config[:model]
+          config
         rescue JSON::ParserError => e
           puts "⚠️ Invalid config file: #{e.message}"
+          {}
+        rescue ArgumentError => e
+          puts "⚠️ Invalid config: #{e.message}"
           {}
         end
       end

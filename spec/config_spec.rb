@@ -42,6 +42,22 @@ RSpec.describe Ralph::Config do
         expect { described_class.load }.not_to raise_error
         expect(described_class.get(:max_iterations)).to eq(50)
       end
+
+      it 'handles invalid model in config file gracefully' do
+        File.write(config_file, '{"model": "invalid/model"}')
+        described_class.reset!
+
+        expect { described_class.load }.not_to raise_error
+        expect(described_class.get(:model)).to eq('opencode/grok-code')
+      end
+
+      it 'validates model from config file' do
+        File.write(config_file, '{"model": "opencode/grok-code"}')
+        described_class.reset!
+
+        config = described_class.load
+        expect(config[:model]).to eq('opencode/grok-code')
+      end
     end
   end
 
@@ -64,6 +80,38 @@ RSpec.describe Ralph::Config do
     it 'allows setting new keys' do
       described_class.set(:custom_key, 'custom_value')
       expect(described_class.get(:custom_key)).to eq('custom_value')
+    end
+
+    it 'validates model when setting' do
+      expect { described_class.set(:model, 'invalid/model') }
+        .to raise_error(ArgumentError, /Unsupported model/)
+    end
+
+    it 'allows setting supported models' do
+      expect { described_class.set(:model, 'opencode/grok-code') }
+        .not_to raise_error
+    end
+
+    it 'allows setting model to nil' do
+      expect { described_class.set(:model, nil) }
+        .not_to raise_error
+    end
+  end
+
+  describe '.validate_model!' do
+    it 'raises error for unsupported model' do
+      expect { described_class.validate_model!('bad/model') }
+        .to raise_error(ArgumentError, %r{Unsupported model.*bad/model})
+    end
+
+    it 'does not raise for supported model' do
+      expect { described_class.validate_model!('opencode/grok-code') }
+        .not_to raise_error
+    end
+
+    it 'does not raise for nil' do
+      expect { described_class.validate_model!(nil) }
+        .not_to raise_error
     end
   end
 
