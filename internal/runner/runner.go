@@ -24,12 +24,39 @@ type Result struct {
 	Error    error
 }
 
+type CodeRunner interface {
+	RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error)
+}
+
 type Runner struct {
-	cfg *config.Config
+	cfg     *config.Config
+	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
+}
+
+type CmdInterface interface {
+	StdinPipe() (io.WriteCloser, error)
+	StdoutPipe() (io.ReadCloser, error)
+	StderrPipe() (io.ReadCloser, error)
+	Start() error
+	Wait() error
+}
+
+type realCmd struct {
+	*exec.Cmd
+}
+
+func (c *realCmd) StdinPipe() (io.WriteCloser, error) { return c.Cmd.StdinPipe() }
+func (c *realCmd) StdoutPipe() (io.ReadCloser, error) { return c.Cmd.StdoutPipe() }
+func (c *realCmd) StderrPipe() (io.ReadCloser, error) { return c.Cmd.StderrPipe() }
+func (c *realCmd) Start() error                       { return c.Cmd.Start() }
+func (c *realCmd) Wait() error                        { return c.Cmd.Wait() }
+
+func defaultCmdFunc(ctx context.Context, name string, args ...string) CmdInterface {
+	return &realCmd{exec.CommandContext(ctx, name, args...)}
 }
 
 func New(cfg *config.Config) *Runner {
-	return &Runner{cfg: cfg}
+	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc}
 }
 
 func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error) {
@@ -38,7 +65,7 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		args = append(args, "--model", r.cfg.Model)
 	}
 
-	cmd := exec.CommandContext(ctx, "opencode", args...)
+	cmd := r.CmdFunc(ctx, "opencode", args...)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

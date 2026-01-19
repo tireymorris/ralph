@@ -14,13 +14,20 @@ import (
 
 type Generator struct {
 	cfg    *config.Config
-	runner *runner.Runner
+	runner runner.CodeRunner
 }
 
 func NewGenerator(cfg *config.Config) *Generator {
 	return &Generator{
 		cfg:    cfg,
 		runner: runner.New(cfg),
+	}
+}
+
+func NewGeneratorWithRunner(cfg *config.Config, r runner.CodeRunner) *Generator {
+	return &Generator{
+		cfg:    cfg,
+		runner: r,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"ralph/internal/config"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
+	"ralph/internal/story"
 )
 
 type Phase int
@@ -65,9 +66,11 @@ type Model struct {
 	logs     []string
 	maxLogs  int
 
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-	outputCh   chan runner.OutputLine
+	ctx         context.Context
+	cancelFunc  context.CancelFunc
+	outputCh    chan runner.OutputLine
+	generator   PRDGenerator
+	implementer StoryImplementer
 }
 
 func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
@@ -86,20 +89,30 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Model{
-		cfg:        cfg,
-		prompt:     prompt,
-		dryRun:     dryRun,
-		resume:     resume,
-		phase:      PhaseInit,
-		spinner:    s,
-		progress:   p,
-		logView:    v,
-		logs:       make([]string, 0),
-		maxLogs:    100,
-		ctx:        ctx,
-		cancelFunc: cancel,
-		outputCh:   make(chan runner.OutputLine, 100),
+		cfg:         cfg,
+		prompt:      prompt,
+		dryRun:      dryRun,
+		resume:      resume,
+		phase:       PhaseInit,
+		spinner:     s,
+		progress:    p,
+		logView:     v,
+		logs:        make([]string, 0),
+		maxLogs:     100,
+		ctx:         ctx,
+		cancelFunc:  cancel,
+		outputCh:    make(chan runner.OutputLine, 100),
+		generator:   prd.NewGenerator(cfg),
+		implementer: story.NewImplementer(cfg),
 	}
+}
+
+func (m *Model) SetGenerator(g PRDGenerator) {
+	m.generator = g
+}
+
+func (m *Model) SetImplementer(i StoryImplementer) {
+	m.implementer = i
 }
 
 type (

@@ -12,19 +12,41 @@ import (
 	"ralph/internal/workflow"
 )
 
+type WorkflowExecutor interface {
+	RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error)
+	RunLoad(ctx context.Context) (*prd.PRD, error)
+	RunImplementation(ctx context.Context, p *prd.PRD) error
+}
+
 type Runner struct {
-	cfg    *config.Config
-	prompt string
-	dryRun bool
-	resume bool
+	cfg      *config.Config
+	prompt   string
+	dryRun   bool
+	resume   bool
+	executor WorkflowExecutor
+	eventsCh chan workflow.Event
 }
 
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume bool) *Runner {
+	eventsCh := make(chan workflow.Event, 100)
 	return &Runner{
-		cfg:    cfg,
-		prompt: prompt,
-		dryRun: dryRun,
-		resume: resume,
+		cfg:      cfg,
+		prompt:   prompt,
+		dryRun:   dryRun,
+		resume:   resume,
+		eventsCh: eventsCh,
+		executor: workflow.NewExecutor(cfg, eventsCh),
+	}
+}
+
+func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume bool, exec WorkflowExecutor, eventsCh chan workflow.Event) *Runner {
+	return &Runner{
+		cfg:      cfg,
+		prompt:   prompt,
+		dryRun:   dryRun,
+		resume:   resume,
+		executor: exec,
+		eventsCh: eventsCh,
 	}
 }
 
@@ -42,35 +64,32 @@ func (r *Runner) Run() int {
 
 	r.printHeader()
 
-	eventsCh := make(chan workflow.Event, 100)
-	exec := workflow.NewExecutor(r.cfg, eventsCh)
-
 	doneCh := make(chan int, 1)
-	go r.handleEvents(eventsCh, doneCh)
+	go r.handleEvents(r.eventsCh, doneCh)
 
 	var p *prd.PRD
 	var err error
 
 	if r.resume {
-		p, err = exec.RunLoad(ctx)
+		p, err = r.executor.RunLoad(ctx)
 	} else {
-		p, err = exec.RunGenerate(ctx, r.prompt)
+		p, err = r.executor.RunGenerate(ctx, r.prompt)
 	}
 
 	if err != nil {
-		close(eventsCh)
+		close(r.eventsCh)
 		<-doneCh
 		return 1
 	}
 
 	if r.dryRun {
 		fmt.Println("🏁 Dry run complete - PRD saved, no implementation performed")
-		close(eventsCh)
+		close(r.eventsCh)
 		return 0
 	}
 
-	err = exec.RunImplementation(ctx, p)
-	close(eventsCh)
+	err = r.executor.RunImplementation(ctx, p)
+	close(r.eventsCh)
 	return <-doneCh
 }
 
