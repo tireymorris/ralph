@@ -19,19 +19,51 @@ type PRD struct {
 	Stories     []*Story `json:"stories"`
 }
 
-// StoryStatus represents the current status of a story
-type StoryStatus int
-
-const (
-	StatusPending StoryStatus = iota
-	StatusInProgress
-	StatusCompleted
-	StatusFailed
-)
-
-func (s *Story) Status() StoryStatus {
-	if s.Passes {
-		return StatusCompleted
+// NextPendingStory returns the next story to implement
+func (p *PRD) NextPendingStory(maxRetries int) *Story {
+	var best *Story
+	for _, story := range p.Stories {
+		if story.Passes {
+			continue
+		}
+		if story.RetryCount >= maxRetries {
+			continue
+		}
+		if best == nil || story.Priority < best.Priority {
+			best = story
+		}
 	}
-	return StatusPending
+	return best
+}
+
+// CompletedCount returns the number of completed stories
+func (p *PRD) CompletedCount() int {
+	count := 0
+	for _, story := range p.Stories {
+		if story.Passes {
+			count++
+		}
+	}
+	return count
+}
+
+// FailedStories returns stories that have exceeded retry limits
+func (p *PRD) FailedStories(maxRetries int) []*Story {
+	var failed []*Story
+	for _, story := range p.Stories {
+		if !story.Passes && story.RetryCount >= maxRetries {
+			failed = append(failed, story)
+		}
+	}
+	return failed
+}
+
+// AllCompleted returns true if all stories are done
+func (p *PRD) AllCompleted() bool {
+	for _, story := range p.Stories {
+		if !story.Passes {
+			return false
+		}
+	}
+	return true
 }
