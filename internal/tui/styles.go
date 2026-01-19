@@ -5,7 +5,7 @@ import "github.com/charmbracelet/lipgloss"
 var (
 	// Modern color palette with better contrast and visual appeal
 	primaryColor   = lipgloss.Color("#8B5CF6") // Softer purple
-	successColor   = lipgloss.Color("#34D399") // Brighter green
+	successColor   = lipgloss.Color("#FF0000") // Brighter green
 	errorColor     = lipgloss.Color("#F87171") // Softer red
 	warningColor   = lipgloss.Color("#FBBF24") // Warmer yellow
 	mutedColor     = lipgloss.Color("#9CA3AF") // Lighter gray
@@ -40,22 +40,27 @@ var (
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
-			Bold(true)
+			Bold(true).
+			Background(surfaceColor)
 
 	errorStyle = lipgloss.NewStyle().
 			Foreground(errorColor).
-			Bold(true)
+			Bold(true).
+			Background(surfaceColor)
 
 	warningStyle = lipgloss.NewStyle().
 			Foreground(warningColor).
-			Bold(true)
+			Bold(true).
+			Background(surfaceColor)
 
 	inProgressStyle = lipgloss.NewStyle().
 			Foreground(highlightColor).
-			Bold(true)
+			Bold(true).
+			Background(surfaceColor)
 
 	pendingStyle = lipgloss.NewStyle().
-			Foreground(mutedColor)
+			Foreground(mutedColor).
+			Background(surfaceColor)
 
 	storyItemStyle = lipgloss.NewStyle().
 			PaddingLeft(2).
