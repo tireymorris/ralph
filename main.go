@@ -76,6 +76,15 @@ func run() int {
 		return exitFailure
 	}
 
+	// Validate PRD if resuming
+	if resume {
+		_, err := prd.Load(cfg)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return exitFailure
+		}
+	}
+
 	// Create and run the TUI
 	model := tui.NewModel(cfg, prompt, dryRun, resume)
 
