@@ -13,8 +13,9 @@ import (
 )
 
 type Output struct {
-	Text  string
-	IsErr bool
+	Text    string
+	IsErr   bool
+	Verbose bool // If true, only show when verbose mode is enabled
 }
 
 type Event interface {
@@ -284,6 +285,6 @@ func (e *Executor) emit(event Event) {
 
 func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
-		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr}})
+		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})
 	}
 }

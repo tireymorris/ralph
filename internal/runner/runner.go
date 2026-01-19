@@ -17,9 +17,10 @@ import (
 // Note: io import kept for CmdInterface
 
 type OutputLine struct {
-	Text  string
-	IsErr bool
-	Time  time.Time
+	Text    string
+	IsErr   bool
+	Time    time.Time
+	Verbose bool // If true, only show when verbose mode is enabled
 }
 
 type Result struct {
@@ -118,7 +119,12 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 			line := scanner.Text()
 			outputBuilder.WriteString(line + "\n")
 			if outputCh != nil {
-				outputCh <- OutputLine{Text: line, IsErr: false, Time: time.Now()}
+				outputCh <- OutputLine{
+					Text:    line,
+					IsErr:   false,
+					Time:    time.Now(),
+					Verbose: isVerboseLogLine(line),
+				}
 			}
 		}
 	}()
@@ -132,7 +138,12 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		for scanner.Scan() {
 			line := scanner.Text()
 			if outputCh != nil {
-				outputCh <- OutputLine{Text: line, IsErr: true, Time: time.Now()}
+				outputCh <- OutputLine{
+					Text:    line,
+					IsErr:   true,
+					Time:    time.Now(),
+					Verbose: isVerboseLogLine(line),
+				}
 			}
 		}
 	}()
@@ -204,4 +215,41 @@ func CleanOutput(output string) string {
 // isCSITerminator returns true if the byte terminates a CSI escape sequence.
 func isCSITerminator(b byte) bool {
 	return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+}
+
+// isVerboseLogLine returns true if the line is verbose internal logging
+// that should only be shown when --verbose is enabled.
+// This filters out noisy service bus messages, internal state updates, etc.
+func isVerboseLogLine(line string) bool {
+	// Check for structured log format: "INFO|DEBUG|WARN timestamp ..."
+	// These are internal opencode logs that are noisy
+	if len(line) >= 4 {
+		prefix := line[:4]
+		if prefix == "INFO" || prefix == "DEBU" || prefix == "WARN" {
+			// Check if it looks like a structured log line (has timestamp pattern)
+			if len(line) > 10 && (strings.Contains(line[:30], "T") && strings.Contains(line[:30], ":")) {
+				return true
+			}
+		}
+	}
+
+	// Filter service bus and internal messaging logs
+	verbosePatterns := []string{
+		"service=bus",
+		"type=message.",
+		"publishing",
+		"subscribing",
+		"service=provider",
+		"service=session",
+		"service=lsp",
+		"service=file",
+	}
+
+	for _, pattern := range verbosePatterns {
+		if strings.Contains(line, pattern) {
+			return true
+		}
+	}
+
+	return false
 }

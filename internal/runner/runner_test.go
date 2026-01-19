@@ -454,3 +454,88 @@ func TestResult(t *testing.T) {
 		t.Errorf("Error = %v, want nil", result.Error)
 	}
 }
+
+func TestIsVerboseLogLine(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want bool
+	}{
+		{
+			name: "service bus log",
+			line: "INFO 2026-01-19T22:45:58 +22ms service=bus type=message.part.updated publishing",
+			want: true,
+		},
+		{
+			name: "debug log",
+			line: "DEBUG 2026-01-19T22:45:58 +0ms service=provider starting",
+			want: true,
+		},
+		{
+			name: "warn log",
+			line: "WARN 2026-01-19T22:45:58 +0ms service=session warning",
+			want: true,
+		},
+		{
+			name: "service provider log",
+			line: "INFO 2026-01-19T22:45:58 service=provider model=test",
+			want: true,
+		},
+		{
+			name: "service lsp log",
+			line: "INFO 2026-01-19T22:45:58 service=lsp initializing",
+			want: true,
+		},
+		{
+			name: "tool call output - not verbose",
+			line: "Running tool: read_file",
+			want: false,
+		},
+		{
+			name: "regular output - not verbose",
+			line: "Implementing feature...",
+			want: false,
+		},
+		{
+			name: "error output - not verbose",
+			line: "Error: something went wrong",
+			want: false,
+		},
+		{
+			name: "COMPLETED marker - not verbose",
+			line: "COMPLETED: done",
+			want: false,
+		},
+		{
+			name: "empty line - not verbose",
+			line: "",
+			want: false,
+		},
+		{
+			name: "short line - not verbose",
+			line: "OK",
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isVerboseLogLine(tt.line)
+			if got != tt.want {
+				t.Errorf("isVerboseLogLine(%q) = %v, want %v", tt.line, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOutputLineVerboseField(t *testing.T) {
+	line := OutputLine{
+		Text:    "test output",
+		IsErr:   false,
+		Verbose: true,
+	}
+
+	if !line.Verbose {
+		t.Error("Verbose = false, want true")
+	}
+}

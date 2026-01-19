@@ -14,7 +14,7 @@ import (
 
 func TestNewRunner(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test prompt", true, false)
+	r := NewRunner(cfg, "test prompt", true, false, false)
 
 	if r == nil {
 		t.Fatal("NewRunner() returned nil")
@@ -35,7 +35,7 @@ func TestNewRunner(t *testing.T) {
 
 func TestNewRunnerResume(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "", false, true)
+	r := NewRunner(cfg, "", false, true, false)
 
 	if !r.resume {
 		t.Error("resume should be true")
@@ -45,10 +45,19 @@ func TestNewRunnerResume(t *testing.T) {
 	}
 }
 
+func TestNewRunnerVerbose(t *testing.T) {
+	cfg := config.DefaultConfig()
+	r := NewRunner(cfg, "test", false, false, true)
+
+	if !r.verbose {
+		t.Error("verbose should be true")
+	}
+}
+
 func TestPrintHeader(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Model = "test-model"
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	old := os.Stdout
 	rr, w, _ := os.Pipe()
@@ -73,7 +82,7 @@ func TestPrintHeader(t *testing.T) {
 
 func TestPrintStories(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	p := &prd.PRD{
 		Stories: []*prd.Story{
@@ -105,7 +114,7 @@ func TestPrintStories(t *testing.T) {
 
 func TestHandleEventsPRDGenerating(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -131,7 +140,7 @@ func TestHandleEventsPRDGenerating(t *testing.T) {
 
 func TestHandleEventsPRDGenerated(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -153,7 +162,7 @@ func TestHandleEventsPRDGenerated(t *testing.T) {
 
 func TestHandleEventsPRDLoaded(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -176,7 +185,7 @@ func TestHandleEventsPRDLoaded(t *testing.T) {
 func TestHandleEventsStoryStarted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -198,7 +207,7 @@ func TestHandleEventsStoryStarted(t *testing.T) {
 
 func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -220,7 +229,7 @@ func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 
 func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -242,7 +251,7 @@ func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 
 func TestHandleEventsOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -263,9 +272,78 @@ func TestHandleEventsOutput(t *testing.T) {
 	os.Stdout = old
 }
 
+func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
+	cfg := config.DefaultConfig()
+	// verbose = false, so verbose output should be filtered
+	r := NewRunner(cfg, "test", false, false, false)
+
+	eventsCh := make(chan workflow.Event, 10)
+	doneCh := make(chan int, 1)
+
+	old := os.Stdout
+	rr, w, _ := os.Pipe()
+	os.Stdout = w
+
+	go r.handleEvents(eventsCh, doneCh)
+
+	// Send verbose output (should be filtered)
+	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "service bus log", IsErr: false, Verbose: true}}
+	// Send normal output (should be shown)
+	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "tool call output", IsErr: false, Verbose: false}}
+	close(eventsCh)
+
+	<-doneCh
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	buf.ReadFrom(rr)
+	output := buf.String()
+
+	if strings.Contains(output, "service bus log") {
+		t.Error("verbose output should be filtered when verbose=false")
+	}
+	if !strings.Contains(output, "tool call output") {
+		t.Error("normal output should be shown")
+	}
+}
+
+func TestHandleEventsVerboseOutputShown(t *testing.T) {
+	cfg := config.DefaultConfig()
+	// verbose = true, so all output should be shown
+	r := NewRunner(cfg, "test", false, false, true)
+
+	eventsCh := make(chan workflow.Event, 10)
+	doneCh := make(chan int, 1)
+
+	old := os.Stdout
+	rr, w, _ := os.Pipe()
+	os.Stdout = w
+
+	go r.handleEvents(eventsCh, doneCh)
+
+	// Send verbose output (should be shown because verbose=true)
+	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "service bus log", IsErr: false, Verbose: true}}
+	close(eventsCh)
+
+	<-doneCh
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	buf.ReadFrom(rr)
+	output := buf.String()
+
+	if !strings.Contains(output, "service bus log") {
+		t.Error("verbose output should be shown when verbose=true")
+	}
+}
+
 func TestHandleEventsError(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -291,7 +369,7 @@ func TestHandleEventsError(t *testing.T) {
 
 func TestHandleEventsCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -317,7 +395,7 @@ func TestHandleEventsCompleted(t *testing.T) {
 
 func TestHandleEventsFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -343,7 +421,7 @@ func TestHandleEventsFailed(t *testing.T) {
 
 func TestHandleEventsFailedNoStories(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false)
+	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -405,7 +483,7 @@ func TestRunGenerateError(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	exec := &mockExecutor{genErr: &testErr{msg: "gen error"}}
 
-	r := NewRunnerWithExecutor(cfg, "test", false, false, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "test", false, false, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -426,7 +504,7 @@ func TestRunLoadError(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	exec := &mockExecutor{loadErr: &testErr{msg: "load error"}}
 
-	r := NewRunnerWithExecutor(cfg, "", false, true, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "", false, true, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -448,7 +526,7 @@ func TestRunDryRun(t *testing.T) {
 	testPRD := &prd.PRD{ProjectName: "Test"}
 	exec := &mockExecutor{genPRD: testPRD}
 
-	r := NewRunnerWithExecutor(cfg, "test", true, false, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "test", true, false, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -474,7 +552,7 @@ func TestRunImplementation(t *testing.T) {
 		implEvent: workflow.EventCompleted{},
 	}
 
-	r := NewRunnerWithExecutor(cfg, "test", false, false, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "test", false, false, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -496,7 +574,7 @@ func TestRunResume(t *testing.T) {
 	testPRD := &prd.PRD{ProjectName: "Test"}
 	exec := &mockExecutor{loadPRD: testPRD}
 
-	r := NewRunnerWithExecutor(cfg, "", true, true, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "", true, true, false, exec, eventsCh)
 
 	old := os.Stdout
 	_, w, _ := os.Pipe()
@@ -517,7 +595,7 @@ func TestNewRunnerWithExecutor(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	exec := &mockExecutor{}
 
-	r := NewRunnerWithExecutor(cfg, "test", true, false, exec, eventsCh)
+	r := NewRunnerWithExecutor(cfg, "test", true, false, false, exec, eventsCh)
 
 	if r == nil {
 		t.Fatal("NewRunnerWithExecutor() returned nil")

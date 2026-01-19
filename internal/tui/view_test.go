@@ -10,7 +10,7 @@ import (
 
 func TestViewQuitting(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.quitting = true
 
 	view := m.View()
@@ -21,7 +21,7 @@ func TestViewQuitting(t *testing.T) {
 
 func TestViewPhaseInit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", false, false)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	m.phase = PhaseInit
 	m.width = 80
 	m.height = 24
@@ -34,7 +34,7 @@ func TestViewPhaseInit(t *testing.T) {
 
 func TestViewPhasePRDGeneration(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", false, false)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	m.phase = PhasePRDGeneration
 	m.width = 80
 	m.height = 24
@@ -47,7 +47,7 @@ func TestViewPhasePRDGeneration(t *testing.T) {
 
 func TestViewPhaseImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = &prd.PRD{
 		ProjectName: "Test Project",
@@ -75,7 +75,7 @@ func TestViewPhaseImplementation(t *testing.T) {
 
 func TestViewPhaseImplementationNilPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = nil
 	m.width = 80
@@ -89,7 +89,7 @@ func TestViewPhaseImplementationNilPRD(t *testing.T) {
 
 func TestViewPhaseCompletedDryRun(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", true, false)
+	m := NewModel(cfg, "test", true, false, false)
 	m.phase = PhaseCompleted
 	m.dryRun = true
 	m.width = 80
@@ -103,7 +103,7 @@ func TestViewPhaseCompletedDryRun(t *testing.T) {
 
 func TestViewPhaseCompletedWithPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseCompleted
 	m.prd = &prd.PRD{
 		ProjectName: "Done Project",
@@ -124,7 +124,7 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 
 func TestViewPhaseFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseFailed
 	m.width = 80
 	m.height = 24
@@ -137,7 +137,7 @@ func TestViewPhaseFailed(t *testing.T) {
 
 func TestViewPhaseFailedWithError(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseFailed
 	m.err = &testError{msg: "test error"}
 	m.width = 80
@@ -151,7 +151,7 @@ func TestViewPhaseFailedWithError(t *testing.T) {
 
 func TestViewPhaseFailedWithFailedStories(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseFailed
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{
@@ -172,7 +172,7 @@ func TestViewPhaseFailedWithFailedStories(t *testing.T) {
 
 func TestRenderHeader(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	header := m.renderHeader()
 	if !strings.Contains(header, "RALPH") {
@@ -182,7 +182,7 @@ func TestRenderHeader(t *testing.T) {
 
 func TestRenderPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted, PhaseFailed}
 	for _, p := range phases {
@@ -196,7 +196,7 @@ func TestRenderPhase(t *testing.T) {
 
 func TestRenderLogsEmpty(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.logs = []string{}
 	m.width = 80
 
@@ -208,7 +208,7 @@ func TestRenderLogsEmpty(t *testing.T) {
 
 func TestRenderLogsWithContent(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.logs = []string{"Log line 1", "Log line 2"}
 	m.width = 80
 
@@ -220,7 +220,7 @@ func TestRenderLogsWithContent(t *testing.T) {
 
 func TestRenderLogsTruncated(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.width = 80
 
 	for i := 0; i < 20; i++ {

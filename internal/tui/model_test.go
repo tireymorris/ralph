@@ -34,7 +34,7 @@ func TestPhaseString(t *testing.T) {
 
 func TestNewModel(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", true, false)
+	m := NewModel(cfg, "test prompt", true, false, false)
 
 	if m.cfg != cfg {
 		t.Error("cfg not set correctly")
@@ -126,7 +126,7 @@ func TestExitCode(t *testing.T) {
 
 func TestAddLog(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	m.addLog("line 1")
 	m.addLog("line 2")
@@ -144,7 +144,7 @@ func TestAddLog(t *testing.T) {
 
 func TestAddLogMaxLogs(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.maxLogs = 3
 
 	m.addLog("1")
@@ -162,7 +162,7 @@ func TestAddLogMaxLogs(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	cmd := m.Init()
 	if cmd == nil {
@@ -172,7 +172,7 @@ func TestInit(t *testing.T) {
 
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 
@@ -188,7 +188,7 @@ func TestUpdateKeyMsgQuit(t *testing.T) {
 
 func TestUpdateKeyMsgCtrlC(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
@@ -201,7 +201,7 @@ func TestUpdateKeyMsgCtrlC(t *testing.T) {
 
 func TestUpdateWindowSizeMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
@@ -217,7 +217,7 @@ func TestUpdateWindowSizeMsg(t *testing.T) {
 
 func TestUpdateOutputMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, _ := m.Update(outputMsg{Text: "test output"})
 
@@ -230,7 +230,7 @@ func TestUpdateOutputMsg(t *testing.T) {
 
 func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", true, false)
+	m := NewModel(cfg, "test", true, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	newModel, _ := m.Update(prdGeneratedMsg{prd: testPRD})
@@ -247,7 +247,7 @@ func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 
 func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	newModel, _ := m.Update(prdGeneratedMsg{prd: testPRD})
@@ -261,7 +261,7 @@ func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 
 func TestUpdatePRDErrorMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	testErr := &testErrorType{msg: "test error"}
 	newModel, _ := m.Update(prdErrorMsg{err: testErr})
@@ -278,7 +278,7 @@ func TestUpdatePRDErrorMsg(t *testing.T) {
 
 func TestUpdateStoryStartMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.iteration = 0
 
 	story := &prd.Story{ID: "1", Title: "Test Story"}
@@ -299,7 +299,7 @@ func TestUpdateStoryCompleteMsgSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = tmpDir + "/prd.json"
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
 	m.currentStory = story
 	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
@@ -317,7 +317,7 @@ func TestUpdateStoryCompleteMsgSaveError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = "/nonexistent/dir/prd.json"
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
 	m.currentStory = story
 	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
@@ -330,7 +330,7 @@ func TestUpdateStoryCompleteMsgFailure(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = tmpDir + "/prd.json"
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false, RetryCount: 0}
 	m.currentStory = story
 	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
@@ -349,7 +349,7 @@ func TestUpdateStoryErrorMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = tmpDir + "/prd.json"
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false, RetryCount: 0}
 	m.currentStory = story
 	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
@@ -365,7 +365,7 @@ func TestUpdateStoryErrorMsg(t *testing.T) {
 
 func TestUpdatePhaseChangeMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, _ := m.Update(phaseChangeMsg(PhaseCompleted))
 
@@ -378,7 +378,7 @@ func TestUpdatePhaseChangeMsg(t *testing.T) {
 
 func TestUpdateSpinnerTickMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	_, cmd := m.Update(m.spinner.Tick())
 	if cmd == nil {

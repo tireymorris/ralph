@@ -57,14 +57,14 @@ func run() int {
 	}
 
 	if opts.Headless {
-		return cli.NewRunner(cfg, opts.Prompt, opts.DryRun, opts.Resume).Run()
+		return cli.NewRunner(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose).Run()
 	}
 
 	return runTUI(cfg, opts)
 }
 
 func runTUI(cfg *config.Config, opts *args.Options) int {
-	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume)
+	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	finalModel, err := p.Run()
