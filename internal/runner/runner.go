@@ -51,12 +51,18 @@ func (c *realCmd) StderrPipe() (io.ReadCloser, error) { return c.Cmd.StderrPipe(
 func (c *realCmd) Start() error                       { return c.Cmd.Start() }
 func (c *realCmd) Wait() error                        { return c.Cmd.Wait() }
 
-func defaultCmdFunc(ctx context.Context, name string, args ...string) CmdInterface {
-	return &realCmd{exec.CommandContext(ctx, name, args...)}
+func defaultCmdFunc(workDir string) func(ctx context.Context, name string, args ...string) CmdInterface {
+	return func(ctx context.Context, name string, args ...string) CmdInterface {
+		cmd := exec.CommandContext(ctx, name, args...)
+		if workDir != "" {
+			cmd.Dir = workDir
+		}
+		return &realCmd{cmd}
+	}
 }
 
 func New(cfg *config.Config) *Runner {
-	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc}
+	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 }
 
 func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error) {

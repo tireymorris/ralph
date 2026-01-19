@@ -168,3 +168,59 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 		t.Errorf("PRDFile = %q, want default %q", cfg.PRDFile, "prd.json")
 	}
 }
+
+func TestLoadSetsWorkDir(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	cfg := Load()
+
+	// Resolve symlinks for comparison (handles macOS /var -> /private/var)
+	wantDir, _ := filepath.EvalSymlinks(tmpDir)
+	gotDir, _ := filepath.EvalSymlinks(cfg.WorkDir)
+
+	if gotDir != wantDir {
+		t.Errorf("WorkDir = %q, want %q", cfg.WorkDir, tmpDir)
+	}
+}
+
+func TestConfigPath(t *testing.T) {
+	cfg := &Config{
+		WorkDir: "/some/path",
+		PRDFile: "prd.json",
+	}
+
+	got := cfg.ConfigPath("test.json")
+	want := filepath.Join("/some/path", "test.json")
+	if got != want {
+		t.Errorf("ConfigPath() = %q, want %q", got, want)
+	}
+}
+
+func TestConfigPathEmptyWorkDir(t *testing.T) {
+	cfg := &Config{
+		WorkDir: "",
+		PRDFile: "prd.json",
+	}
+
+	got := cfg.ConfigPath("test.json")
+	want := "test.json"
+	if got != want {
+		t.Errorf("ConfigPath() = %q, want %q", got, want)
+	}
+}
+
+func TestPRDPath(t *testing.T) {
+	cfg := &Config{
+		WorkDir: "/some/path",
+		PRDFile: "custom.json",
+	}
+
+	got := cfg.PRDPath()
+	want := filepath.Join("/some/path", "custom.json")
+	if got != want {
+		t.Errorf("PRDPath() = %q, want %q", got, want)
+	}
+}

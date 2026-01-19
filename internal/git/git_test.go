@@ -31,6 +31,19 @@ func TestNew(t *testing.T) {
 	if m == nil {
 		t.Fatal("New() returned nil")
 	}
+	if m.workDir != "" {
+		t.Errorf("New() workDir = %q, want empty", m.workDir)
+	}
+}
+
+func TestNewWithWorkDir(t *testing.T) {
+	m := NewWithWorkDir("/some/path")
+	if m == nil {
+		t.Fatal("NewWithWorkDir() returned nil")
+	}
+	if m.workDir != "/some/path" {
+		t.Errorf("NewWithWorkDir() workDir = %q, want %q", m.workDir, "/some/path")
+	}
 }
 
 func TestIsRepository(t *testing.T) {

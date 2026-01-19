@@ -251,9 +251,23 @@ func TestRunOpenCodeNoModel(t *testing.T) {
 }
 
 func TestDefaultCmdFunc(t *testing.T) {
-	cmd := defaultCmdFunc(context.Background(), "echo", "test")
+	cmdFunc := defaultCmdFunc("")
+	cmd := cmdFunc(context.Background(), "echo", "test")
 	if cmd == nil {
 		t.Error("defaultCmdFunc() returned nil")
+	}
+}
+
+func TestDefaultCmdFuncWithWorkDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	cmdFunc := defaultCmdFunc(tmpDir)
+	cmd := cmdFunc(context.Background(), "pwd")
+	if cmd == nil {
+		t.Error("defaultCmdFunc() returned nil")
+	}
+	rc := cmd.(*realCmd)
+	if rc.Cmd.Dir != tmpDir {
+		t.Errorf("Cmd.Dir = %q, want %q", rc.Cmd.Dir, tmpDir)
 	}
 }
 
@@ -265,7 +279,8 @@ func TestRealCmdMethods(t *testing.T) {
 }
 
 func TestRealCmdPipes(t *testing.T) {
-	cmd := defaultCmdFunc(context.Background(), "echo", "test")
+	cmdFunc := defaultCmdFunc("")
+	cmd := cmdFunc(context.Background(), "echo", "test")
 	rc := cmd.(*realCmd)
 
 	stdin, err := rc.StdinPipe()
@@ -294,7 +309,8 @@ func TestRealCmdPipes(t *testing.T) {
 }
 
 func TestRealCmdStartWait(t *testing.T) {
-	cmd := defaultCmdFunc(context.Background(), "echo", "test")
+	cmdFunc := defaultCmdFunc("")
+	cmd := cmdFunc(context.Background(), "echo", "test")
 	rc := cmd.(*realCmd)
 
 	err := rc.Start()
