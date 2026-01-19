@@ -3,6 +3,8 @@
 require_relative 'config'
 require_relative 'logger'
 require_relative 'error_handler'
+require_relative 'command_runner'
+require_relative 'json_parser'
 require_relative 'git_manager'
 require_relative 'prd_generator'
 require_relative 'story_implementer'

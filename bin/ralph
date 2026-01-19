@@ -1,20 +1,74 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'json'
 require_relative '../lib/ralph/agent'
 require_relative '../lib/ralph/cli'
 
-if __FILE__ == $PROGRAM_NAME
+MAX_AUTO_RESUME_ATTEMPTS = 10
+PRD_FILE = 'prd.json'
+
+def prd_exists?
+  File.exist?(PRD_FILE)
+end
+
+def stories_remaining?
+  return false unless prd_exists?
+
   begin
-    exit_code = Ralph::CLI.run(ARGV)
-    exit(exit_code || 0)
+    prd = JSON.parse(File.read(PRD_FILE))
+    prd['stories']&.any? { |s| s['passes'] != true }
+  rescue StandardError
+    false
+  end
+end
+
+def can_auto_resume?(count)
+  stories_remaining? && count < MAX_AUTO_RESUME_ATTEMPTS
+end
+
+def print_auto_resume(count, context = nil)
+  prefix = context ? "Auto-resuming after #{context}" : 'Auto-resuming'
+  puts "\n🔄 #{prefix} (attempt #{count}/#{MAX_AUTO_RESUME_ATTEMPTS})..."
+end
+
+def prepare_resume(delay)
+  sleep delay
+  ['--resume']
+end
+
+def run_with_auto_resume(args)
+  auto_resume_count = 0
+
+  loop do
+    exit_code = Ralph::CLI.run(args)
+    return exit_code if exit_code == Ralph::CLI::EXIT_SUCCESS
+    return exit_code if exit_code == Ralph::CLI::EXIT_FAILURE && !stories_remaining?
+
+    break exit_code unless can_auto_resume?(auto_resume_count)
+
+    auto_resume_count += 1
+    print_auto_resume(auto_resume_count)
+    args = prepare_resume(2)
   rescue Interrupt
     puts "\n\n⚠️ Interrupted by user"
-    puts "💡 Run './bin/ralph --resume' to continue"
-    exit 130
+    break 130 unless can_auto_resume?(auto_resume_count)
+
+    auto_resume_count += 1
+    print_auto_resume(auto_resume_count, 'interrupt')
+    args = prepare_resume(2)
   rescue StandardError => e
-    puts "\n❌ Fatal error: #{e.message}"
+    puts "\n❌ Error: #{e.message}"
     puts e.backtrace.first(5).map { |line| "  #{line}" }.join("\n") if ENV['DEBUG']
-    exit 1
+    break 1 unless can_auto_resume?(auto_resume_count)
+
+    auto_resume_count += 1
+    print_auto_resume(auto_resume_count, 'error')
+    args = prepare_resume(3)
   end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  exit_code = run_with_auto_resume(ARGV)
+  exit(exit_code || 0)
 end

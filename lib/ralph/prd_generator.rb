@@ -34,7 +34,7 @@ module Ralph
 
       def fetch_opencode_response(prd_prompt)
         puts "\n🚀 Sending request to OpenCode API..."
-        response = ErrorHandler.capture_command_output(prd_prompt, 'Generate PRD')
+        response = CommandRunner.capture_opencode_output(prd_prompt, 'Generate PRD')
         return nil unless response
 
         puts "\n📝 Processing OpenCode response..."
@@ -44,7 +44,7 @@ module Ralph
 
       def parse_and_validate_response(response)
         puts "\n🔧 Parsing requirements..."
-        requirements = ErrorHandler.parse_json_safely(response, 'PRD requirements')
+        requirements = JsonParser.parse_safely(response, 'PRD requirements')
         return nil unless requirements
 
         print_parsed_requirements(requirements)
@@ -98,16 +98,17 @@ module Ralph
              - Generate comprehensive user stories
              - Each story must be implementable in one iteration
              - Include acceptance criteria and priorities (1=highest)
-             - CRITICAL: Each story MUST include a test_spec with concrete validation steps
+             - CRITICAL: Each story MUST include a test_spec with guidance for writing integration tests
           #{'   '}
           3. TEST SPECIFICATION REQUIREMENTS
-             - Every story MUST have a test_spec field describing how to verify it works at RUNTIME
-             - Tests must validate actual functionality, not just that code compiles
-             - For UI features: specify user interactions and expected visual/behavioral outcomes
-             - For API integrations: specify request/response validation
-             - For libraries/dependencies: verify they work with the current runtime environment
-             - Include edge cases and error handling validation
-             - The FINAL story should ALWAYS be an integration/smoke test that validates all features work together
+             - The test_spec field provides GUIDANCE for writing actual integration test code
+             - An actual test file will be created and run for EACH story before moving to the next
+             - Tests must validate RUNTIME behavior, not just compilation
+             - For UI features: describe interactions to automate (clicks, inputs, assertions on DOM)
+             - For API integrations: describe requests to make and expected responses
+             - For setup stories: describe how to verify the setup works (e.g., app starts, imports work)
+             - Include specific assertions that can be coded (e.g., "element with class X should contain Y")
+             - Each test builds on previous tests - later stories should verify previous functionality still works
           #{'   '}
           4. OUTPUT REQUIREMENTS
              - Respond ONLY with raw JSON (no markdown, no explanation)
@@ -121,7 +122,7 @@ module Ralph
                 "title": "Story title",
                 "description": "Detailed description",
                 "acceptance_criteria": ["criterion 1", "criterion 2"],
-                "test_spec": "Concrete test steps: 1) Do X, 2) Verify Y happens, 3) Check Z renders correctly. Include specific assertions.",
+                "test_spec": "Integration test guidance: 1) Start app, 2) Navigate to X, 3) Assert element Y is visible, 4) Click Z, 5) Assert result. Be specific about selectors and expected values.",
                 "priority": 1,
                 "passes": false
               }
@@ -130,9 +131,9 @@ module Ralph
 
           CRITICAL:#{' '}
           - Return only the JSON object, nothing else.
-          - Every story MUST have a non-empty test_spec field.
-          - Test specs must be specific enough to catch runtime errors, not just compilation errors.
-          - Always include a final integration test story to validate all features work together.
+          - Every story MUST have a non-empty test_spec field with actionable test guidance.
+          - Test specs should be specific enough to write automated tests (selectors, expected values, actions).
+          - Tests are cumulative - each story's test should also verify previous stories still work.
         PROMPT
       end
 

@@ -28,7 +28,7 @@ RSpec.describe Ralph::StoryImplementer do
 
     context 'when implementation succeeds' do
       before do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return('COMPLETED: Feature implemented successfully')
       end
 
@@ -45,14 +45,14 @@ RSpec.describe Ralph::StoryImplementer do
 
     context 'when implementation fails' do
       it 'returns false for nil response' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output).and_return(nil)
 
         result = described_class.implement(story, 1, all_requirements)
         expect(result).to be false
       end
 
       it 'returns false when COMPLETED not in response' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return('Some other response')
 
         result = described_class.implement(story, 1, all_requirements)
@@ -60,7 +60,7 @@ RSpec.describe Ralph::StoryImplementer do
       end
 
       it 'does not commit changes' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return('Failed response')
 
         expect(Ralph::GitManager).not_to receive(:commit_changes)
@@ -68,14 +68,14 @@ RSpec.describe Ralph::StoryImplementer do
       end
 
       it 'logs error when response is nil' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output).and_return(nil)
         expect(Ralph::Logger).to receive(:error).with('Story implementation failed', { story: 'story-1' })
 
         described_class.implement(story, 1, all_requirements)
       end
 
       it 'prints failure message when COMPLETED not in response' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return('Some other response')
 
         expect { described_class.implement(story, 1, all_requirements) }
@@ -86,14 +86,14 @@ RSpec.describe Ralph::StoryImplementer do
     context 'process_implementation_response with nil' do
       it 'handles nil response safely' do
         # Directly test process_implementation_response with nil
-        result = described_class.send(:process_implementation_response, story, 1, nil)
+        result = described_class.send(:process_implementation_response, story, nil)
         expect(result).to be false
       end
     end
 
     context 'prompt building' do
       it 'includes story details' do
-        expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
+        expect(Ralph::CommandRunner).to receive(:capture_opencode_output) do |prompt, _op|
           expect(prompt).to include('Test Story')
           expect(prompt).to include('Implement test feature')
           expect(prompt).to include('Works correctly')
@@ -110,7 +110,7 @@ RSpec.describe Ralph::StoryImplementer do
           'stories' => [completed_story, { 'passes' => false }]
         }
 
-        expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
+        expect(Ralph::CommandRunner).to receive(:capture_opencode_output) do |prompt, _op|
           expect(prompt).to include('1/2 stories done')
           'COMPLETED: done'
         end
@@ -118,10 +118,10 @@ RSpec.describe Ralph::StoryImplementer do
         described_class.implement(story, 2, requirements)
       end
 
-      it 'instructs OpenCode to run tests' do
-        expect(Ralph::ErrorHandler).to receive(:capture_command_output) do |prompt, _op|
-          expect(prompt).to include('Run tests')
-          expect(prompt).to include('responsible for running tests')
+      it 'instructs OpenCode to write and run integration tests' do
+        expect(Ralph::CommandRunner).to receive(:capture_opencode_output) do |prompt, _op|
+          expect(prompt).to include('WRITE AN INTEGRATION TEST')
+          expect(prompt).to include('RUN THE TEST')
           'COMPLETED: done'
         end
 

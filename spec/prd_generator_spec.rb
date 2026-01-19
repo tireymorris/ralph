@@ -22,7 +22,7 @@ RSpec.describe Ralph::PrdGenerator do
   describe '.generate' do
     context 'with successful response' do
       before do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(valid_prd_response)
       end
 
@@ -51,13 +51,13 @@ RSpec.describe Ralph::PrdGenerator do
 
     context 'with invalid response' do
       it 'returns nil for nil response' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output).and_return(nil)
 
         expect(described_class.generate('prompt')).to be_nil
       end
 
       it 'returns nil for invalid JSON' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return('not json')
 
         expect(described_class.generate('prompt')).to be_nil
@@ -65,7 +65,7 @@ RSpec.describe Ralph::PrdGenerator do
 
       it 'returns nil for missing required fields' do
         incomplete = { 'project_name' => 'Test' }.to_json
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(incomplete)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -79,7 +79,7 @@ RSpec.describe Ralph::PrdGenerator do
           'stories' => []
         }.to_json
 
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -91,7 +91,7 @@ RSpec.describe Ralph::PrdGenerator do
           'stories' => 'not an array'
         }.to_json
 
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -103,7 +103,7 @@ RSpec.describe Ralph::PrdGenerator do
           'stories' => [{ 'id' => 'story-1' }]
         }.to_json
 
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -121,7 +121,7 @@ RSpec.describe Ralph::PrdGenerator do
           }]
         }.to_json
 
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -139,7 +139,7 @@ RSpec.describe Ralph::PrdGenerator do
           }]
         }.to_json
 
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output)
           .and_return(response)
 
         expect(described_class.generate('prompt')).to be_nil
@@ -148,7 +148,7 @@ RSpec.describe Ralph::PrdGenerator do
 
     context 'failure handling' do
       it 'prints failure message when PRD creation fails' do
-        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+        allow(Ralph::CommandRunner).to receive(:capture_opencode_output).and_return(nil)
 
         expect { described_class.generate('prompt') }
           .to output(/Failed to create PRD/).to_stdout
