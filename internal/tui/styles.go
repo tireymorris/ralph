@@ -21,12 +21,14 @@ var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(primaryColor).
-			MarginTop(1)
+			MarginTop(1).
+			MarginBottom(1)
 
 	subtitleStyle = lipgloss.NewStyle().
 			Foreground(subtleColor).
 			Italic(true).
-			MarginLeft(2)
+			MarginLeft(2).
+			MarginBottom(1)
 
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -61,11 +63,10 @@ var (
 			MarginBottom(1)
 
 	selectedStoryStyle = lipgloss.NewStyle().
-				PaddingLeft(2).
 				Foreground(highlightColor).
 				Bold(true).
 				Background(accentColor).
-				Padding(0, 1).
+				Padding(0, 2).
 				MarginBottom(1).
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(highlightColor)
@@ -90,7 +91,7 @@ var (
 			BorderForeground(borderColor).
 			Background(surfaceColor).
 			Foreground(textColor).
-			Padding(1, 1)
+			Padding(1, 2)
 
 	logLineStyle = lipgloss.NewStyle().
 			Foreground(subtleColor).
@@ -104,7 +105,8 @@ var (
 	helpStyle = lipgloss.NewStyle().
 			Foreground(subtleColor).
 			Italic(true).
-			MarginTop(1)
+			MarginTop(1).
+			MarginBottom(1)
 
 	progressFullStyle = lipgloss.NewStyle().
 				Foreground(successColor).
