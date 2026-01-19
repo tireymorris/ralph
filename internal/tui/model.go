@@ -46,10 +46,11 @@ func (p Phase) String() string {
 }
 
 type Model struct {
-	cfg    *config.Config
-	prompt string
-	dryRun bool
-	resume bool
+	cfg     *config.Config
+	prompt  string
+	dryRun  bool
+	resume  bool
+	verbose bool
 
 	phase        Phase
 	prd          *prd.PRD
@@ -73,7 +74,7 @@ type Model struct {
 	implementer StoryImplementer
 }
 
-func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
+func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(primaryColor)
@@ -93,6 +94,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume bool) *Model {
 		prompt:      prompt,
 		dryRun:      dryRun,
 		resume:      resume,
+		verbose:     verbose,
 		phase:       PhaseInit,
 		spinner:     s,
 		progress:    p,
@@ -161,7 +163,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 	case outputMsg:
-		m.addLog(msg.Text)
+		// Skip verbose output unless --verbose is enabled
+		if !msg.Verbose || m.verbose {
+			m.addLog(msg.Text)
+		}
 		cmds = append(cmds, m.listenForOutput())
 
 	case prdGeneratedMsg:

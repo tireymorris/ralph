@@ -35,7 +35,7 @@ func TestLoadAndResumeError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = "/nonexistent/path/prd.json"
 
-	m := NewModel(cfg, "", false, true)
+	m := NewModel(cfg, "", false, true, false)
 	msg := m.loadAndResume()
 
 	if _, ok := msg.(prdErrorMsg); !ok {
@@ -55,7 +55,7 @@ func TestLoadAndResumeSuccess(t *testing.T) {
 	cfg := &config.Config{PRDFile: prdFile}
 	prd.Save(cfg, testPRD)
 
-	m := NewModel(cfg, "", false, true)
+	m := NewModel(cfg, "", false, true, false)
 	msg := m.loadAndResume()
 
 	if genMsg, ok := msg.(prdGeneratedMsg); !ok {
@@ -67,7 +67,7 @@ func TestLoadAndResumeSuccess(t *testing.T) {
 
 func TestStartNextStoryAllCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{
 			{ID: "1", Passes: true},
@@ -86,7 +86,7 @@ func TestStartNextStoryAllCompleted(t *testing.T) {
 func TestStartNextStoryAllFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{
 			{ID: "1", Passes: false, RetryCount: 5},
@@ -104,7 +104,7 @@ func TestStartNextStoryAllFailed(t *testing.T) {
 
 func TestListenForOutputContextDone(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 
 	m.cancelFunc()
 
@@ -217,7 +217,7 @@ func TestContinueImplementationAllCompleted(t *testing.T) {
 	}
 	prd.Save(cfg, testPRD)
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = testPRD
 
 	cmd := m.continueImplementation()
@@ -234,7 +234,7 @@ func TestContinueImplementationNoNextStory(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{{ID: "1", Passes: false, RetryCount: 5}},
 	}
@@ -253,7 +253,7 @@ func TestContinueImplementationMaxIterations(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.MaxIterations = 5
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{{ID: "1", Passes: false}},
 	}
@@ -273,7 +273,7 @@ func TestSetupBranchAndStartNoBranch(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		BranchName: "",
 		Stories:    []*prd.Story{{ID: "1", Passes: true}},
@@ -304,7 +304,7 @@ func TestStartOperationResume(t *testing.T) {
 	testPRD := &prd.PRD{ProjectName: "Resume Test", Stories: []*prd.Story{{ID: "1", Title: "T", Description: "D", AcceptanceCriteria: []string{"a"}, Priority: 1}}}
 	prd.Save(cfg, testPRD)
 
-	m := NewModel(cfg, "", false, true)
+	m := NewModel(cfg, "", false, true, false)
 
 	// startOperation now returns phase change first
 	cmd := m.startOperation()
@@ -331,7 +331,7 @@ func TestStartOperationResumeError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = "/nonexistent/prd.json"
 
-	m := NewModel(cfg, "", false, true)
+	m := NewModel(cfg, "", false, true, false)
 
 	// startOperation returns phase change
 	cmd := m.startOperation()
@@ -366,7 +366,7 @@ func TestGeneratePRDSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = filepath.Join(tmpDir, "prd.json")
 
-	m := NewModel(cfg, "test prompt", false, false)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "T", Description: "D", AcceptanceCriteria: []string{"a"}, Priority: 1}}}
 	m.SetGenerator(&mockGenerator{prd: testPRD})
 
@@ -381,7 +381,7 @@ func TestGeneratePRDSuccess(t *testing.T) {
 
 func TestGeneratePRDGeneratorError(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.SetGenerator(&mockGenerator{err: errors.New("gen error")})
 
 	msg := m.generatePRD()
@@ -395,7 +395,7 @@ func TestGeneratePRDSaveError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = "/nonexistent/dir/prd.json"
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	m.SetGenerator(&mockGenerator{prd: testPRD})
 
@@ -410,7 +410,7 @@ func TestStartNextStoryWithImplementer(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{{ID: "1", Passes: false}},
 	}
@@ -431,7 +431,7 @@ func TestStartNextStoryWithImplementerError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{{ID: "1", Passes: false}},
 	}
@@ -450,7 +450,7 @@ func TestStartNextStoryWithImplementerFailure(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{{ID: "1", Passes: false}},
 	}
@@ -470,7 +470,7 @@ func TestStartOperationGenerate(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = filepath.Join(tmpDir, "prd.json")
 
-	m := NewModel(cfg, "test prompt", false, false)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	m.SetGenerator(&mockGenerator{prd: testPRD})
 
@@ -495,7 +495,7 @@ func TestStartOperationGenerate(t *testing.T) {
 
 func TestSetGenerator(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	g := &mockGenerator{}
 
 	m.SetGenerator(g)
@@ -507,7 +507,7 @@ func TestSetGenerator(t *testing.T) {
 
 func TestSetImplementer(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	i := &mockImplementer{}
 
 	m.SetImplementer(i)
@@ -522,7 +522,7 @@ func TestContinueImplementationContinue(t *testing.T) {
 	cfg.RetryAttempts = 3
 	cfg.MaxIterations = 100
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		Stories: []*prd.Story{
 			{ID: "1", Passes: false},
@@ -551,7 +551,7 @@ func TestSetupBranchAndStartWithBranch(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
 
-	m := NewModel(cfg, "test", false, false)
+	m := NewModel(cfg, "test", false, false, false)
 	m.prd = &prd.PRD{
 		BranchName: "feature/test",
 		Stories:    []*prd.Story{{ID: "1", Passes: true}},

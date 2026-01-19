@@ -24,28 +24,31 @@ type Runner struct {
 	prompt   string
 	dryRun   bool
 	resume   bool
+	verbose  bool
 	executor WorkflowExecutor
 	eventsCh chan workflow.Event
 }
 
-func NewRunner(cfg *config.Config, prompt string, dryRun, resume bool) *Runner {
+func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
 	eventsCh := make(chan workflow.Event, 100)
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,
 		dryRun:   dryRun,
 		resume:   resume,
+		verbose:  verbose,
 		eventsCh: eventsCh,
 		executor: workflow.NewExecutor(cfg, eventsCh),
 	}
 }
 
-func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume bool, exec WorkflowExecutor, eventsCh chan workflow.Event) *Runner {
+func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec WorkflowExecutor, eventsCh chan workflow.Event) *Runner {
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,
 		dryRun:   dryRun,
 		resume:   resume,
+		verbose:  verbose,
 		executor: exec,
 		eventsCh: eventsCh,
 	}
@@ -137,6 +140,10 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 			}
 
 		case workflow.EventOutput:
+			// Skip verbose output unless --verbose is enabled
+			if e.Verbose && !r.verbose {
+				continue
+			}
 			prefix := "   "
 			if e.IsErr {
 				prefix = "   [!]"
