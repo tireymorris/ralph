@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"ralph/internal/cli"
 	"ralph/internal/config"
 	"ralph/internal/prd"
 	"ralph/internal/tui"
@@ -59,14 +60,26 @@ func run() int {
 
 	cfg := config.Load()
 
-	// If run mode is specified, use stdout output
+	// If run mode is specified, use CLI (non-TUI) output
 	if runMode {
-		fmt.Printf("Running in stdout mode with model: %s\n", cfg.Model)
-		fmt.Printf("Prompt: %s\n", prompt)
-		fmt.Println("Configuration loaded successfully")
-		// In a real implementation, you'd process the prompt and output results here
-		// For now we're just showing that the configuration loaded
-		return exitSuccess
+		// Check for resume without PRD file
+		if resume && !prd.Exists(cfg) {
+			fmt.Printf("Error: No %s found to resume from\n", cfg.PRDFile)
+			fmt.Println("Run ralph with a prompt first to generate a PRD")
+			return exitFailure
+		}
+
+		// Validate PRD if resuming
+		if resume {
+			_, err := prd.Load(cfg)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				return exitFailure
+			}
+		}
+
+		runner := cli.NewRunner(cfg, prompt, dryRun, resume)
+		return runner.Run()
 	}
 
 	// Check for resume without PRD file
@@ -106,27 +119,33 @@ func run() int {
 
 func showHelp() {
 	help := `
-Ralph - Autonomous Software Development Agent (TUI)
+Ralph - Autonomous Software Development Agent
 
 Usage:
-  ralph "your feature description"           # Full implementation
-  ralph "your feature description" --dry-run # Generate PRD only
-  ralph --resume                             # Resume from existing prd.json
-  ralph run "your feature description"       # Run with stdout output
+  ralph "your feature description"               # Full implementation (TUI)
+  ralph "your feature description" --dry-run     # Generate PRD only (TUI)
+  ralph --resume                                 # Resume from existing prd.json (TUI)
+  ralph run "your feature description"           # Full implementation (stdout)
+  ralph run "your feature description" --dry-run # Generate PRD only (stdout)
+  ralph run --resume                             # Resume from existing prd.json (stdout)
 
 Options:
   --dry-run    Generate PRD only, don't implement
   --resume     Resume implementation from existing prd.json
   --help, -h   Show this help message
 
-Controls:
+Modes:
+  (default)    Interactive TUI with progress display
+  run          Non-interactive stdout output (for CI/scripts)
+
+Controls (TUI mode):
   q, Ctrl+C    Quit the application
 
 Examples:
   ralph "Add user authentication with login and registration"
   ralph "Create a REST API for managing todos" --dry-run
   ralph --resume
-  ralph run "Test stdout mode"
+  ralph run "Add unit tests for the API" --dry-run
 `
 	fmt.Println(help)
 }
