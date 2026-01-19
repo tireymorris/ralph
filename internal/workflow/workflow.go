@@ -144,7 +144,7 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 	e.emit(EventPRDGenerating{})
 	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD...", IsErr: false}})
 
-	outputCh := make(chan runner.OutputLine, 100)
+	outputCh := make(chan runner.OutputLine, 10000) // Large buffer for high-volume output
 
 	go e.forwardOutput(outputCh)
 
@@ -238,7 +238,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
 
-		outputCh := make(chan runner.OutputLine, 100)
+		outputCh := make(chan runner.OutputLine, 10000) // Large buffer for high-volume output
 		go e.forwardOutput(outputCh)
 
 		success, err := e.implementer.Implement(ctx, next, iteration, p, outputCh)

@@ -103,7 +103,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		maxLogs:     500,
 		ctx:         ctx,
 		cancelFunc:  cancel,
-		outputCh:    make(chan runner.OutputLine, 100),
+		outputCh:    make(chan runner.OutputLine, 10000), // Large buffer to handle high-volume output
 		generator:   prd.NewGenerator(cfg),
 		implementer: story.NewImplementer(cfg),
 	}

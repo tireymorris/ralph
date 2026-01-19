@@ -477,6 +477,11 @@ func TestIsVerboseLogLine(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "error log with timestamp",
+			line: "ERROR 2026-01-19T22:51:36 +1ms service=default e=Out of memory rejection",
+			want: true,
+		},
+		{
 			name: "service provider log",
 			line: "INFO 2026-01-19T22:45:58 service=provider model=test",
 			want: true,
@@ -484,6 +489,31 @@ func TestIsVerboseLogLine(t *testing.T) {
 		{
 			name: "service lsp log",
 			line: "INFO 2026-01-19T22:45:58 service=lsp initializing",
+			want: true,
+		},
+		{
+			name: "git tracking line",
+			line: " cwd=/Users/tmorris/workspace/gba git=/Users/tmorris/.local/share/opencode/snapshot/608d3c tracking",
+			want: true,
+		},
+		{
+			name: "cwd status line",
+			line: " cwd=/Users/tmorris/workspace/gba something",
+			want: true,
+		},
+		{
+			name: "stderr prefix line",
+			line: " stderr=Saved lockfile",
+			want: true,
+		},
+		{
+			name: "package check line",
+			line: "Checked 3 installs across 4 packages (no changes) [2.00ms]",
+			want: true,
+		},
+		{
+			name: "package install line",
+			line: "installed @opencode-ai/plugin@1.1.25",
 			want: true,
 		},
 		{
@@ -514,6 +544,16 @@ func TestIsVerboseLogLine(t *testing.T) {
 		{
 			name: "short line - not verbose",
 			line: "OK",
+			want: false,
+		},
+		{
+			name: "tool call with pipe - not verbose",
+			line: "|  Glob     {\"pattern\":\"src/**/*.c\"}",
+			want: false,
+		},
+		{
+			name: "tool call read - not verbose",
+			line: "|  Read     src/test_gameplay.c",
 			want: false,
 		},
 	}
