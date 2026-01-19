@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
@@ -70,8 +71,8 @@ type Model struct {
 	ctx         context.Context
 	cancelFunc  context.CancelFunc
 	outputCh    chan runner.OutputLine
-	generator   PRDGenerator
-	implementer StoryImplementer
+	generator   internal.PRDGenerator
+	implementer internal.StoryImplementer
 }
 
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
@@ -111,11 +112,11 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 	}
 }
 
-func (m *Model) SetGenerator(g PRDGenerator) {
+func (m *Model) SetGenerator(g internal.PRDGenerator) {
 	m.generator = g
 }
 
-func (m *Model) SetImplementer(i StoryImplementer) {
+func (m *Model) SetImplementer(i internal.StoryImplementer) {
 	m.implementer = i
 }
 

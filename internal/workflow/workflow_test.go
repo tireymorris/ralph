@@ -176,7 +176,39 @@ type mockGitManager struct {
 	err error
 }
 
+func (m *mockGitManager) IsRepository() bool {
+	return true
+}
+
+func (m *mockGitManager) CurrentBranch() (string, error) {
+	return "main", m.err
+}
+
+func (m *mockGitManager) BranchExists(name string) bool {
+	return false
+}
+
 func (m *mockGitManager) CreateBranch(name string) error {
+	return m.err
+}
+
+func (m *mockGitManager) Checkout(name string) error {
+	return m.err
+}
+
+func (m *mockGitManager) HasChanges() bool {
+	return true
+}
+
+func (m *mockGitManager) StageAll() error {
+	return m.err
+}
+
+func (m *mockGitManager) Commit(message string) error {
+	return m.err
+}
+
+func (m *mockGitManager) CommitStory(storyID, title, description string) error {
 	return m.err
 }
 

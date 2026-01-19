@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/git"
 	"ralph/internal/logger"
@@ -13,14 +14,10 @@ import (
 	"ralph/internal/runner"
 )
 
-type GitCommitter interface {
-	CommitStory(storyID, title, description string) error
-}
-
 type Implementer struct {
 	cfg    *config.Config
 	runner runner.CodeRunner
-	git    GitCommitter
+	git    internal.GitCommitter
 }
 
 func NewImplementer(cfg *config.Config) *Implementer {
@@ -31,7 +28,7 @@ func NewImplementer(cfg *config.Config) *Implementer {
 	}
 }
 
-func NewImplementerWithDeps(cfg *config.Config, r runner.CodeRunner, g GitCommitter) *Implementer {
+func NewImplementerWithDeps(cfg *config.Config, r runner.CodeRunner, g internal.GitCommitter) *Implementer {
 	return &Implementer{
 		cfg:    cfg,
 		runner: r,
