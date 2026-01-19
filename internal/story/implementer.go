@@ -52,7 +52,6 @@ func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration
 		story.Description,
 		story.AcceptanceCriteria,
 		story.TestSpec,
-		story.ID,
 		iteration,
 		p.CompletedCount(),
 		len(p.Stories),
