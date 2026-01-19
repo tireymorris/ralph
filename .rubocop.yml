@@ -1,29 +1,31 @@
 AllCops:
   NewCops: enable
+  TargetRubyVersion: 3.0
 
 Style/Documentation:
   Enabled: false
 
+# Allow reasonable method complexity for orchestration code
 Metrics/AbcSize:
-  Enabled: false
+  Max: 30
 
 Metrics/MethodLength:
-  Enabled: false
+  Max: 25
 
 Metrics/BlockLength:
   Enabled: false
 
 Metrics/CyclomaticComplexity:
-  Enabled: false
+  Max: 10
 
 Metrics/PerceivedComplexity:
-  Enabled: false
+  Max: 10
 
 Metrics/ClassLength:
-  Enabled: false
+  Max: 200
 
 Layout/LineLength:
-  Enabled: false
+  Max: 120
 
 Style/IfUnlessModifier:
   Enabled: false

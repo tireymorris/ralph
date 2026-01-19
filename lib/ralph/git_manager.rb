@@ -30,11 +30,19 @@ module Ralph
         `git rev-parse --abbrev-ref HEAD 2>/dev/null`.strip
       end
 
+      def no_unstaged_changes?
+        system('git diff --quiet --exit-code 2>/dev/null')
+      end
+
+      def no_staged_changes?
+        system('git diff --staged --quiet --exit-code 2>/dev/null')
+      end
+
       def commit_changes(story)
         puts '💾 Committing changes...'
 
         ErrorHandler.with_error_handling('Git commit', { story: story['id'] }) do
-          if system('git diff --quiet --exit-code 2>/dev/null') && system('git diff --staged --quiet --exit-code 2>/dev/null')
+          if no_unstaged_changes? && no_staged_changes?
             Logger.info('No changes to commit', { story: story['id'] })
             return true
           end

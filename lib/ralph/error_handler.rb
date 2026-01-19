@@ -26,63 +26,86 @@ module Ralph
       end
 
       def capture_command_output(prompt, operation, timeout: nil)
-        model = Ralph::Config.get(:model)
-        cmd = %w[opencode run]
-        cmd += ['--model', model] if model
-
         output_lines = []
         timeout ||= Ralph::Config.get(:command_timeout)
 
-        Open3.popen3(*cmd) do |stdin, stdout, stderr, wait_thr|
+        Open3.popen3(*build_opencode_command) do |stdin, stdout, stderr, wait_thr|
           stdin.write(prompt)
           stdin.close
 
-          stdout_thread = Thread.new do
-            stdout.each_line do |line|
-              puts line.encode('UTF-8', invalid: :replace, undef: :replace).strip
-              output_lines << line
-            end
-          end
+          threads = start_output_threads(stdout, stderr, output_lines)
+          return nil unless wait_for_completion(wait_thr, threads, timeout, operation)
 
-          stderr_thread = Thread.new do
-            stderr.each_line do |line|
-              puts line.encode('UTF-8', invalid: :replace, undef: :replace).strip
-            end
-          end
-
-          if timeout
-            unless wait_with_timeout(wait_thr, stdout_thread, stderr_thread, timeout)
-              puts "⏱️ Command timed out after #{timeout}s"
-              begin
-                Process.kill('TERM', wait_thr.pid)
-              rescue StandardError
-                nil
-              end
-              Logger.error('Command timeout', { operation: operation, timeout: timeout })
-              return nil
-            end
-          else
-            stdout_thread.join
-            stderr_thread.join
-          end
-
-          exit_status = wait_thr.value
-          if exit_status.success?
-            puts "✅ Completed (exit #{exit_status.exitstatus})"
-          else
-            puts "❌ Failed (exit #{exit_status.exitstatus})"
-          end
+          print_exit_status(wait_thr.value)
         end
 
-        output = output_lines.join
-        cleaned = clean_opencode_output(output)
+        finalize_output(output_lines, operation)
+      rescue StandardError => e
+        handle_capture_error(e, operation)
+      end
 
+      def build_opencode_command
+        cmd = %w[opencode run]
+        model = Ralph::Config.get(:model)
+        cmd += ['--model', model] if model
+        cmd
+      end
+
+      def start_output_threads(stdout, stderr, output_lines)
+        stdout_thread = Thread.new { stream_output(stdout, output_lines) }
+        stderr_thread = Thread.new { stream_output(stderr) }
+        { stdout: stdout_thread, stderr: stderr_thread }
+      end
+
+      def stream_output(io, collector = nil)
+        io.each_line do |line|
+          cleaned_line = line.encode('UTF-8', invalid: :replace, undef: :replace).strip
+          puts cleaned_line
+          collector&.push(line)
+        end
+      end
+
+      def wait_for_completion(wait_thr, threads, timeout, operation)
+        if timeout
+          return true if wait_with_timeout(wait_thr, threads[:stdout], threads[:stderr], timeout)
+
+          handle_timeout(wait_thr, timeout, operation)
+          false
+        else
+          threads[:stdout].join
+          threads[:stderr].join
+          true
+        end
+      end
+
+      def handle_timeout(wait_thr, timeout, operation)
+        puts "⏱️ Command timed out after #{timeout}s"
+        begin
+          Process.kill('TERM', wait_thr.pid)
+        rescue StandardError
+          nil
+        end
+        Logger.error('Command timeout', { operation: operation, timeout: timeout })
+      end
+
+      def print_exit_status(exit_status)
+        if exit_status.success?
+          puts "✅ Completed (exit #{exit_status.exitstatus})"
+        else
+          puts "❌ Failed (exit #{exit_status.exitstatus})"
+        end
+      end
+
+      def finalize_output(output_lines, operation)
+        cleaned = clean_opencode_output(output_lines.join)
         Logger.debug('Command output captured', { operation: operation, output_length: cleaned.length })
         cleaned
-      rescue StandardError => e
-        puts "❌ Error: #{e.message}"
-        puts e.backtrace.first(3).join("\n")
-        Logger.error('Command capture exception', { operation: operation, error: e.message })
+      end
+
+      def handle_capture_error(error, operation)
+        puts "❌ Error: #{error.message}"
+        puts error.backtrace.first(3).join("\n")
+        Logger.error('Command capture exception', { operation: operation, error: error.message })
         nil
       end
 
