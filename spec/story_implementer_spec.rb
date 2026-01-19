@@ -66,6 +66,29 @@ RSpec.describe Ralph::StoryImplementer do
         expect(Ralph::GitManager).not_to receive(:commit_changes)
         described_class.implement(story, 1, all_requirements)
       end
+
+      it 'logs error when response is nil' do
+        allow(Ralph::ErrorHandler).to receive(:capture_command_output).and_return(nil)
+        expect(Ralph::Logger).to receive(:error).with('Story implementation failed', { story: 'story-1' })
+
+        described_class.implement(story, 1, all_requirements)
+      end
+
+      it 'prints failure message when COMPLETED not in response' do
+        allow(Ralph::ErrorHandler).to receive(:capture_command_output)
+          .and_return('Some other response')
+
+        expect { described_class.implement(story, 1, all_requirements) }
+          .to output(/Implementation did not complete/).to_stdout
+      end
+    end
+
+    context 'process_implementation_response with nil' do
+      it 'handles nil response safely' do
+        # Directly test process_implementation_response with nil
+        result = described_class.send(:process_implementation_response, story, 1, nil)
+        expect(result).to be false
+      end
     end
 
     context 'prompt building' do

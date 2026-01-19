@@ -215,6 +215,111 @@ RSpec.describe Ralph::Agent do
           .to output(%r{1/2 stories.*2/2 stories}m).to_stdout
       end
     end
+
+    context 'when max iterations exceeded' do
+      before do
+        Ralph::Config.set(:max_iterations, 2)
+        Ralph::Config.set(:retry_attempts, 10)
+        allow(Ralph::StoryImplementer).to receive(:implement).and_return(false)
+      end
+
+      after do
+        Ralph::Config.reset!
+      end
+
+      it 'stops after max iterations' do
+        call_count = 0
+        allow(Ralph::StoryImplementer).to receive(:implement) do
+          call_count += 1
+          false
+        end
+
+        described_class.run('Test prompt')
+
+        expect(call_count).to eq(2)
+      end
+
+      it 'prints max iterations message' do
+        expect { described_class.run('Test prompt') }
+          .to output(/MAX ITERATIONS REACHED/).to_stdout
+      end
+
+      it 'returns partial exit code when some stories incomplete' do
+        result = described_class.run('Test prompt')
+        expect(result).to eq(Ralph::CLI::EXIT_PARTIAL)
+      end
+
+      it 'returns success if all stories completed before max iterations' do
+        allow(Ralph::StoryImplementer).to receive(:implement) do
+          requirements['stories'].first['passes'] = true
+          true
+        end
+        Ralph::Config.set(:max_iterations, 1)
+
+        # Need to return true on first call to complete story
+        result = described_class.run('Test prompt')
+        expect(result).to eq(Ralph::CLI::EXIT_SUCCESS)
+      end
+    end
+
+    context 'with stories having different priorities' do
+      let(:priority_requirements) do
+        {
+          'project_name' => 'Test',
+          'stories' => [
+            { 'id' => 'story-low', 'title' => 'Low Priority', 'description' => 'D', 'passes' => false,
+              'priority' => 3 },
+            { 'id' => 'story-high', 'title' => 'High Priority', 'description' => 'D', 'passes' => false,
+              'priority' => 1 },
+            { 'id' => 'story-med', 'title' => 'Med Priority', 'description' => 'D', 'passes' => false, 'priority' => 2 }
+          ]
+        }
+      end
+
+      before do
+        allow(Ralph::PrdGenerator).to receive(:generate).and_return(priority_requirements)
+      end
+
+      it 'implements stories in priority order' do
+        order = []
+        allow(Ralph::StoryImplementer).to receive(:implement) do |story, _iter, _reqs|
+          order << story['id']
+          priority_requirements['stories'].find { |s| s['id'] == story['id'] }['passes'] = true
+          true
+        end
+
+        described_class.run('Test prompt')
+
+        expect(order).to eq(%w[story-high story-med story-low])
+      end
+    end
+
+    context 'with long description' do
+      let(:long_desc_requirements) do
+        {
+          'project_name' => 'Test',
+          'stories' => [
+            {
+              'id' => 'story-1',
+              'title' => 'Story 1',
+              'description' => 'A' * 100,
+              'passes' => false,
+              'priority' => 1
+            }
+          ]
+        }
+      end
+
+      before do
+        allow(Ralph::PrdGenerator).to receive(:generate).and_return(long_desc_requirements)
+        allow(Ralph::StoryImplementer).to receive(:implement).and_return(true)
+      end
+
+      it 'truncates description with ellipsis' do
+        expect { described_class.run('Test prompt') }
+          .to output(/\.\.\./).to_stdout
+      end
+    end
   end
 
   describe '.resume' do
