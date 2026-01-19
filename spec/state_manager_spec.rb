@@ -23,6 +23,7 @@ RSpec.describe Ralph::StateManager do
 
     after do
       File.delete('test_prd.json') if File.exist?('test_prd.json')
+      File.delete('custom_prd.json') if File.exist?('custom_prd.json')
     end
 
     it 'writes requirements to PRD file' do
