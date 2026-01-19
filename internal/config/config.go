@@ -38,7 +38,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-func Load() *Config {
+func Load() (*Config, error) {
 	cfg := DefaultConfig()
 
 	// Capture the working directory where ralph was invoked
@@ -48,14 +48,16 @@ func Load() *Config {
 
 	data, err := os.ReadFile(cfg.ConfigPath("ralph.config.json"))
 	if err != nil {
-		return cfg
+		// If config file doesn't exist, use defaults and validate
+		return cfg, cfg.Validate()
 	}
 
 	var fileCfg Config
 	if err := json.Unmarshal(data, &fileCfg); err != nil {
-		return cfg
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	// Merge file config with defaults
 	if fileCfg.Model != "" {
 		cfg.Model = fileCfg.Model
 	}
@@ -75,7 +77,12 @@ func Load() *Config {
 		cfg.PRDFile = fileCfg.PRDFile
 	}
 
-	return cfg
+	// Validate the merged config
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return cfg, nil
 }
 
 // ConfigPath returns the full path to a file in the working directory
@@ -100,4 +107,27 @@ func (c *Config) ValidateModel() error {
 		}
 	}
 	return fmt.Errorf("unsupported model: %s (supported: %v)", c.Model, SupportedModels)
+}
+
+// Validate checks all configuration values for validity
+func (c *Config) Validate() error {
+	if err := c.ValidateModel(); err != nil {
+		return err
+	}
+	if c.MaxIterations <= 0 {
+		return fmt.Errorf("max_iterations must be positive, got %d", c.MaxIterations)
+	}
+	if c.RetryAttempts < 0 {
+		return fmt.Errorf("retry_attempts must be non-negative, got %d", c.RetryAttempts)
+	}
+	if c.RetryDelay < 0 {
+		return fmt.Errorf("retry_delay must be non-negative, got %d", c.RetryDelay)
+	}
+	if c.LogLevel == "" {
+		return fmt.Errorf("log_level cannot be empty")
+	}
+	if c.PRDFile == "" {
+		return fmt.Errorf("prd_file cannot be empty")
+	}
+	return nil
 }

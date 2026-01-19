@@ -41,7 +41,12 @@ func run() int {
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		fmt.Print(args.HelpText())
+		return 1
+	}
 	logger.Debug("config loaded", "model", cfg.Model, "max_iterations", cfg.MaxIterations)
 
 	if opts.Resume {
