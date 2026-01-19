@@ -148,10 +148,9 @@ func (m *Model) renderFailed() string {
 }
 
 func (m *Model) renderLogs() string {
-	if len(m.logs) == 0 {
+	viewportContent := m.logger.GetView().View()
+	if viewportContent == "" {
 		return logBoxStyle.Render("📋 Waiting for output...")
 	}
-	// Keep viewport content in sync even when logs are set directly (e.g. in tests).
-	m.refreshLogView()
-	return logBoxStyle.Render(m.logView.View())
+	return logBoxStyle.Render(viewportContent)
 }

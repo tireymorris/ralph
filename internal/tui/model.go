@@ -1,14 +1,11 @@
 package tui
 
 import (
-	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -64,15 +61,10 @@ type Model struct {
 
 	spinner  spinner.Model
 	progress progress.Model
-	logView  viewport.Model
-	logs     []string
-	maxLogs  int
 
-	ctx         context.Context
-	cancelFunc  context.CancelFunc
-	outputCh    chan runner.OutputLine
-	generator   internal.PRDGenerator
-	implementer internal.StoryImplementer
+	logger           *Logger
+	operationManager *OperationManager
+	phaseHandler     PhaseHandler
 }
 
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
@@ -86,38 +78,32 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		progress.WithSolidFill("#374151"),
 	)
 
-	v := viewport.New(80, 10)
-	// Border/padding are applied by the surrounding log panel.
-	v.Style = lipgloss.NewStyle()
-
-	ctx, cancel := context.WithCancel(context.Background())
+	logger := NewLogger(verbose)
+	operationManager := NewOperationManager(cfg, prd.NewGenerator(cfg), story.NewImplementer(cfg))
 
 	return &Model{
-		cfg:         cfg,
-		prompt:      prompt,
-		dryRun:      dryRun,
-		resume:      resume,
-		verbose:     verbose,
-		phase:       PhaseInit,
-		spinner:     s,
-		progress:    p,
-		logView:     v,
-		logs:        make([]string, 0),
-		maxLogs:     500,
-		ctx:         ctx,
-		cancelFunc:  cancel,
-		outputCh:    make(chan runner.OutputLine, 10000), // Large buffer to handle high-volume output
-		generator:   prd.NewGenerator(cfg),
-		implementer: story.NewImplementer(cfg),
+		cfg:              cfg,
+		prompt:           prompt,
+		dryRun:           dryRun,
+		resume:           resume,
+		verbose:          verbose,
+		phase:            PhaseInit,
+		spinner:          s,
+		progress:         p,
+		logger:           logger,
+		operationManager: operationManager,
+		phaseHandler:     NewInitPhaseHandler(),
 	}
 }
 
+// SetGenerator sets the PRD generator (for testing)
 func (m *Model) SetGenerator(g internal.PRDGenerator) {
-	m.generator = g
+	m.operationManager = NewOperationManager(m.cfg, g, m.operationManager.implementer)
 }
 
+// SetImplementer sets the story implementer (for testing)
 func (m *Model) SetImplementer(i internal.StoryImplementer) {
-	m.implementer = i
+	m.operationManager = NewOperationManager(m.cfg, m.operationManager.generator, i)
 }
 
 type (
@@ -134,8 +120,8 @@ type (
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		m.startOperation(),
-		m.listenForOutput(),
+		m.operationManager.StartOperation(),
+		m.operationManager.ListenForOutput(),
 		tea.WindowSize(),
 	)
 }
@@ -147,20 +133,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
 			m.quitting = true
-			if m.cancelFunc != nil {
-				m.cancelFunc()
-			}
+			m.operationManager.Cancel()
 			return m, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.logView.Width = max(20, msg.Width-6)
-		// Favor showing logs while still leaving room for the main content.
-		m.logView.Height = min(max(8, msg.Height/3), max(8, msg.Height-14))
+		m.logger.SetSize(msg.Width, msg.Height)
 		m.progress.Width = min(40, max(10, msg.Width-20))
-		m.refreshLogView()
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -168,67 +149,79 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 	case outputMsg:
-		// Skip verbose output unless --verbose is enabled
-		if !msg.Verbose || m.verbose {
-			m.addLog(msg.Text)
+		m.logger.AddOutputLine(runner.OutputLine(msg))
+		cmds = append(cmds, m.operationManager.ListenForOutput())
+
+	case phaseChangeMsg:
+		m.phase = Phase(msg)
+		m.phaseHandler = m.getPhaseHandlerForPhase(m.phase)
+		// When entering PRD generation phase, start the actual operation
+		if m.phase == PhasePRDGeneration {
+			cmds = append(cmds, func() tea.Msg {
+				return m.operationManager.RunPRDOperation(m.resume, m.prompt)
+			})
 		}
-		cmds = append(cmds, m.listenForOutput())
 
 	case prdGeneratedMsg:
 		m.prd = msg.prd
-		m.addLog(fmt.Sprintf("PRD generated: %s (%d stories)", m.prd.ProjectName, len(m.prd.Stories)))
+		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", m.prd.ProjectName, len(m.prd.Stories)))
 
 		if m.dryRun {
 			m.phase = PhaseCompleted
-			m.addLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
+			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
 		} else {
 			m.phase = PhaseImplementation
-			cmds = append(cmds, m.setupBranchAndStart())
+			cmds = append(cmds, m.operationManager.SetupBranchAndStart(m.prd.BranchName))
 		}
 
 	case prdErrorMsg:
 		m.err = msg.err
 		m.phase = PhaseFailed
-		m.addLog(fmt.Sprintf("Error: %v", msg.err))
+		m.logger.AddLog(fmt.Sprintf("Error: %v", msg.err))
 
 	case storyStartMsg:
 		m.currentStory = msg.story
 		m.iteration++
-		m.addLog(fmt.Sprintf("Starting story: %s (attempt %d/%d)",
+		m.logger.AddLog(fmt.Sprintf("Starting story: %s (attempt %d/%d)",
 			msg.story.Title, msg.story.RetryCount+1, m.cfg.RetryAttempts))
 		// Re-register the output listener for the new story's output
-		cmds = append(cmds, m.listenForOutput())
+		cmds = append(cmds, m.operationManager.ListenForOutput())
 
 	case storyCompleteMsg:
 		if msg.success {
 			m.currentStory.Passes = true
-			m.addLog(fmt.Sprintf("Story completed: %s", m.currentStory.Title))
+			m.logger.AddLog(fmt.Sprintf("Story completed: %s", m.currentStory.Title))
 		} else {
 			m.currentStory.RetryCount++
-			m.addLog(fmt.Sprintf("Story failed: %s (retry %d/%d)",
+			m.logger.AddLog(fmt.Sprintf("Story failed: %s (retry %d/%d)",
 				m.currentStory.Title, m.currentStory.RetryCount, m.cfg.RetryAttempts))
 		}
 
 		if err := prd.Save(m.cfg, m.prd); err != nil {
-			m.addLog(fmt.Sprintf("Warning: failed to save state: %v", err))
+			m.logger.AddLog(fmt.Sprintf("Warning: failed to save state: %v", err))
 		}
-		cmds = append(cmds, m.continueImplementation())
+		cmds = append(cmds, m.operationManager.ContinueImplementation(m.prd, m.iteration))
 
 	case storyErrorMsg:
-		m.addLog(fmt.Sprintf("Error: %v", msg.err))
+		m.logger.AddLog(fmt.Sprintf("Error: %v", msg.err))
 		m.currentStory.RetryCount++
-		cmds = append(cmds, m.continueImplementation())
+		cmds = append(cmds, m.operationManager.ContinueImplementation(m.prd, m.iteration))
 
-	case phaseChangeMsg:
-		m.phase = Phase(msg)
-		// When entering PRD generation phase, start the actual operation
-		if m.phase == PhasePRDGeneration {
-			cmds = append(cmds, m.runPRDOperation())
+	default:
+		// Delegate to phase handler for any remaining messages
+		if m.phaseHandler != nil {
+			model, cmd := m.phaseHandler.HandleUpdate(msg, m)
+			if model_, ok := model.(*Model); ok {
+				m = model_
+			}
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
 		}
 	}
 
 	var cmd tea.Cmd
-	m.logView, cmd = m.logView.Update(msg)
+	m.logger.Update(msg)
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
@@ -248,43 +241,19 @@ func (m *Model) ExitCode() int {
 	}
 }
 
-func (m *Model) addLog(line string) {
-	m.logs = append(m.logs, line)
-	if len(m.logs) > m.maxLogs {
-		m.logs = m.logs[1:]
-	}
-	m.refreshLogView()
-}
-
-func (m *Model) refreshLogView() {
-	wasAtBottom := m.logView.AtBottom()
-
-	w := m.logView.Width
-	if w <= 0 {
-		// Fall back to a conservative width if we haven't received a window size yet.
-		w = max(30, m.width-6)
-	}
-
-	lines := make([]string, 0, len(m.logs))
-	for _, logText := range m.logs {
-		// Truncate *before* styling so we don't cut ANSI sequences.
-		line := truncate(logText, max(10, w-2))
-		style := logLineStyle
-
-		// Colorize logs based on content
-		if strings.Contains(logText, "Error") || strings.Contains(logText, "error") {
-			style = logErrorStyle
-		} else if strings.Contains(logText, "completed") || strings.Contains(logText, "success") {
-			style = logLineStyle.Copy().Foreground(successColor)
-		} else if strings.Contains(logText, "Starting") || strings.Contains(logText, "starting") {
-			style = logLineStyle.Copy().Foreground(highlightColor)
-		}
-
-		lines = append(lines, style.Render(line))
-	}
-
-	m.logView.SetContent(strings.Join(lines, "\n"))
-	if wasAtBottom {
-		m.logView.GotoBottom()
+func (m *Model) getPhaseHandlerForPhase(phase Phase) PhaseHandler {
+	switch phase {
+	case PhaseInit:
+		return NewInitPhaseHandler()
+	case PhasePRDGeneration:
+		return NewPRDGenerationPhaseHandler()
+	case PhaseImplementation:
+		return NewImplementationPhaseHandler()
+	case PhaseCompleted:
+		return NewCompletedPhaseHandler()
+	case PhaseFailed:
+		return NewFailedPhaseHandler()
+	default:
+		return NewInitPhaseHandler()
 	}
 }
