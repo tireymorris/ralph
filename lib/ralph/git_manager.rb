@@ -18,10 +18,10 @@ module Ralph
           # Check if branch already exists
           if system("git show-ref --verify --quiet refs/heads/#{Shellwords.escape(branch_name)}")
             puts "  📌 Branch '#{branch_name}' already exists, switching to it"
-            ErrorHandler.safe_system_command("git checkout #{Shellwords.escape(branch_name)}", 'Switch branch')
+            CommandRunner.safe_system("git checkout #{Shellwords.escape(branch_name)}", 'Switch branch')
           else
             puts "  🌱 Creating new branch '#{branch_name}'"
-            ErrorHandler.safe_system_command("git checkout -b #{Shellwords.escape(branch_name)}", 'Create branch')
+            CommandRunner.safe_system("git checkout -b #{Shellwords.escape(branch_name)}", 'Create branch')
           end
         end
       end
@@ -47,7 +47,7 @@ module Ralph
             return true
           end
 
-          ErrorHandler.safe_system_command('git add .', 'Stage changes')
+          CommandRunner.safe_system('git add .', 'Stage changes')
 
           commit_title = story['title']&.to_s || 'Story implementation'
           commit_desc = story['description'].to_s
@@ -55,7 +55,7 @@ module Ralph
 
           commit_message = "feat: #{commit_title}\n\n#{commit_desc}\n\nStory: #{story_id}"
 
-          ErrorHandler.safe_system_command("git commit -m #{Shellwords.escape(commit_message)}", 'Commit changes')
+          CommandRunner.safe_system("git commit -m #{Shellwords.escape(commit_message)}", 'Commit changes')
         end
       end
     end

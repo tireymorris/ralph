@@ -29,7 +29,7 @@ RSpec.describe Ralph::GitManager do
   describe '.create_branch' do
     context 'when branch_name is nil' do
       it 'does nothing' do
-        expect(Ralph::ErrorHandler).not_to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).not_to receive(:safe_system)
         described_class.create_branch(nil)
       end
     end
@@ -42,7 +42,7 @@ RSpec.describe Ralph::GitManager do
       end
 
       it 'switches to existing branch' do
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with(%r{git checkout feature/test}, 'Switch branch')
           .and_return(true)
 
@@ -50,7 +50,7 @@ RSpec.describe Ralph::GitManager do
       end
 
       it 'prints switching message' do
-        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+        allow(Ralph::CommandRunner).to receive(:safe_system).and_return(true)
 
         expect { described_class.create_branch('feature/test') }
           .to output(/already exists, switching/).to_stdout
@@ -65,7 +65,7 @@ RSpec.describe Ralph::GitManager do
       end
 
       it 'creates new branch' do
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with(%r{git checkout -b feature/new-branch}, 'Create branch')
           .and_return(true)
 
@@ -73,7 +73,7 @@ RSpec.describe Ralph::GitManager do
       end
 
       it 'prints creating message' do
-        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+        allow(Ralph::CommandRunner).to receive(:safe_system).and_return(true)
 
         expect { described_class.create_branch('feature/test') }
           .to output(/Creating new branch/).to_stdout
@@ -82,7 +82,7 @@ RSpec.describe Ralph::GitManager do
 
     it 'escapes special characters in branch name' do
       allow_any_instance_of(Kernel).to receive(:system).and_return(false)
-      allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+      allow(Ralph::CommandRunner).to receive(:safe_system).and_return(true)
 
       # Should not raise error with special characters
       expect { described_class.create_branch('feature/test-branch') }.not_to raise_error
@@ -169,18 +169,18 @@ RSpec.describe Ralph::GitManager do
       end
 
       it 'stages and commits changes' do
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with('git add .', 'Stage changes').and_return(true)
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with(/git commit -m/, 'Commit changes').and_return(true)
 
         described_class.commit_changes(story)
       end
 
       it 'includes story details in commit message' do
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with('git add .', anything).and_return(true)
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command) do |cmd, _op|
+        expect(Ralph::CommandRunner).to receive(:safe_system) do |cmd, _op|
           expect(cmd).to start_with('git commit -m')
           # Shellwords.escape converts spaces to backslash-space
           expect(cmd).to include('Test\\ Story')
@@ -193,9 +193,9 @@ RSpec.describe Ralph::GitManager do
 
       it 'properly escapes special characters in title' do
         story['title'] = "Story's $title `with` special chars"
-        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+        allow(Ralph::CommandRunner).to receive(:safe_system).and_return(true)
 
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with(/git commit -m /, anything).and_return(true)
 
         described_class.commit_changes(story)
@@ -208,13 +208,13 @@ RSpec.describe Ralph::GitManager do
       before do
         allow(described_class).to receive(:no_unstaged_changes?).and_return(false)
         allow(described_class).to receive(:no_staged_changes?).and_return(true)
-        allow(Ralph::ErrorHandler).to receive(:safe_system_command).and_return(true)
+        allow(Ralph::CommandRunner).to receive(:safe_system).and_return(true)
       end
 
       it 'uses default values' do
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command)
+        expect(Ralph::CommandRunner).to receive(:safe_system)
           .with('git add .', anything).and_return(true)
-        expect(Ralph::ErrorHandler).to receive(:safe_system_command) do |cmd, _op|
+        expect(Ralph::CommandRunner).to receive(:safe_system) do |cmd, _op|
           expect(cmd).to start_with('git commit -m')
           # Shellwords.escape converts spaces to backslash-space
           expect(cmd).to include('Story\\ implementation')

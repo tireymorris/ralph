@@ -10,7 +10,7 @@ module Ralph
         implementation_prompt = build_implementation_prompt(story, iteration, completed, total)
 
         response = ErrorHandler.with_error_handling('Story implementation', { story: story['id'] }) do
-          ErrorHandler.capture_command_output(implementation_prompt, "Implement story: #{story['title']}")
+          CommandRunner.capture_opencode_output(implementation_prompt, "Implement story: #{story['title']}")
         end
 
         unless response
@@ -18,58 +18,93 @@ module Ralph
           return false
         end
 
-        process_implementation_response(story, iteration, response)
+        process_implementation_response(story, response)
       end
 
       private
 
       def build_implementation_prompt(story, iteration, completed, total)
-        test_spec = story['test_spec'] || 'No test spec provided - create and run appropriate tests'
-
         <<~PROMPT
           You are Ralph implementing story: #{story['title']}
 
-          Story: #{story['description']}
-          Acceptance Criteria: #{story['acceptance_criteria'].join(', ')}
-
-          VALIDATION TEST SPEC (MUST PASS):
-          #{test_spec}
+          #{story_context(story)}
 
           Context: Iteration #{iteration} (#{completed}/#{total} stories done)
 
-          Process:
-          1. Read existing code to understand patterns
-          2. Implement complete solution
-          3. CRITICAL: Run the VALIDATION TEST SPEC steps to verify the feature actually works at RUNTIME
-             - Start the dev server if needed (npm run dev)
-             - Use browser automation, curl, or manual verification commands
-             - Check for runtime errors, not just compilation
-             - Verify the feature behaves correctly, not just that code exists
-          4. Fix any runtime issues discovered during validation
-          5. Commit changes with descriptive message
+          #{implementation_process(story['id'])}
 
-          IMPORTANT:#{' '}
-          - Do NOT mark as complete if you only ran lint/build checks
-          - You MUST verify the feature works at runtime per the test spec
-          - If the test spec requires UI verification, start the dev server and test it
-          - If API calls are involved, verify they return expected data
-          - Check browser console for runtime errors
+          #{critical_requirements}
 
-          Work systematically. When the VALIDATION TEST SPEC passes and changes are committed, respond: "COMPLETED: [summary of what was validated]"
-
-          CRITICAL: Respond ONLY with the completion message, nothing else.
+          #{completion_format}
         PROMPT
       end
 
-      def process_implementation_response(story, _iteration, response)
-        if response&.include?('COMPLETED:')
+      def story_context(story)
+        test_spec = story['test_spec'] || 'No test spec provided - create and run appropriate tests'
+        <<~CONTEXT
+          Story: #{story['description']}
+          Acceptance Criteria: #{story['acceptance_criteria'].join(', ')}
+
+          Test Spec Guidelines:
+          #{test_spec}
+        CONTEXT
+      end
+
+      def implementation_process(story_id)
+        <<~PROCESS
+          IMPLEMENTATION PROCESS:
+
+          1. READ existing code to understand patterns and test setup
+          2. IMPLEMENT the feature completely
+          3. WRITE AN INTEGRATION TEST for this story:
+             - Create/update test file: tests/#{story_id}.test.{js,ts,rb,py} (match project language)
+             - Test MUST verify the feature works at RUNTIME, not just compilation
+             - Use appropriate testing framework (Playwright, Puppeteer, Vitest, Jest, RSpec, pytest, etc.)
+          4. RUN THE TEST and ensure it PASSES - do NOT proceed until tests pass
+          5. RUN ALL PREVIOUS TESTS to ensure no regressions
+          6. COMMIT changes including both implementation and test files
+        PROCESS
+      end
+
+      def critical_requirements
+        <<~REQUIREMENTS
+          CRITICAL REQUIREMENTS:
+          - You MUST write an actual test file, not just describe tests
+          - You MUST run the test and see it pass in the output
+          - Do NOT mark complete if you only ran lint/build - tests must pass
+          - The test must verify RUNTIME behavior (e.g., app starts, UI renders, API responds)
+        REQUIREMENTS
+      end
+
+      def completion_format
+        <<~FORMAT
+          When the integration test passes and changes are committed, respond:
+          "COMPLETED: [summary] | TEST: [test file path] | RESULT: [pass/fail with brief output]"
+
+          CRITICAL: Respond ONLY with the completion message, nothing else.
+        FORMAT
+      end
+
+      def process_implementation_response(story, response)
+        return handle_incomplete_response unless response&.include?('COMPLETED:')
+
+        log_response(response)
+        GitManager.commit_changes(story)
+        true
+      end
+
+      def log_response(response)
+        if response.include?('TEST:') && response.include?('RESULT:')
           puts "✓ #{response}"
-          GitManager.commit_changes(story)
-          true
         else
-          puts '❌ Implementation did not complete'
-          false
+          puts "⚠️ #{response}"
+          puts '⚠️ Warning: No test verification found in response, but marking as complete'
         end
+      end
+
+      def handle_incomplete_response
+        puts '❌ Implementation did not complete'
+        false
       end
     end
   end
