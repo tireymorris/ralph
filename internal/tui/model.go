@@ -191,6 +191,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.iteration++
 		m.addLog(fmt.Sprintf("Starting story: %s (attempt %d/%d)",
 			msg.story.Title, msg.story.RetryCount+1, m.cfg.RetryAttempts))
+		// Re-register the output listener for the new story's output
+		cmds = append(cmds, m.listenForOutput())
 
 	case storyCompleteMsg:
 		if msg.success {
