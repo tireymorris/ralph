@@ -9,7 +9,7 @@ import (
 )
 
 func Load(cfg *config.Config) (*PRD, error) {
-	data, err := os.ReadFile(cfg.PRDFile)
+	data, err := os.ReadFile(cfg.PRDPath())
 	if err != nil {
 		return nil, fmt.Errorf("failed to read PRD file: %w", err)
 	}
@@ -28,7 +28,7 @@ func Save(cfg *config.Config, p *PRD) error {
 		return fmt.Errorf("failed to marshal PRD: %w", err)
 	}
 
-	if err := os.WriteFile(cfg.PRDFile, data, 0644); err != nil {
+	if err := os.WriteFile(cfg.PRDPath(), data, 0644); err != nil {
 		return fmt.Errorf("failed to write PRD file: %w", err)
 	}
 
@@ -36,13 +36,14 @@ func Save(cfg *config.Config, p *PRD) error {
 }
 
 func Delete(cfg *config.Config) error {
-	if _, err := os.Stat(cfg.PRDFile); os.IsNotExist(err) {
+	prdPath := cfg.PRDPath()
+	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
 		return nil
 	}
-	return os.Remove(cfg.PRDFile)
+	return os.Remove(prdPath)
 }
 
 func Exists(cfg *config.Config) bool {
-	_, err := os.Stat(cfg.PRDFile)
+	_, err := os.Stat(cfg.PRDPath())
 	return err == nil
 }

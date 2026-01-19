@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 var SupportedModels = []string{
@@ -22,6 +23,7 @@ type Config struct {
 	RetryDelay    int    `json:"retry_delay"`
 	LogLevel      string `json:"log_level"`
 	PRDFile       string `json:"prd_file"`
+	WorkDir       string `json:"-"` // Working directory where ralph was invoked
 }
 
 func DefaultConfig() *Config {
@@ -38,7 +40,12 @@ func DefaultConfig() *Config {
 func Load() *Config {
 	cfg := DefaultConfig()
 
-	data, err := os.ReadFile("ralph.config.json")
+	// Capture the working directory where ralph was invoked
+	if wd, err := os.Getwd(); err == nil {
+		cfg.WorkDir = wd
+	}
+
+	data, err := os.ReadFile(cfg.ConfigPath("ralph.config.json"))
 	if err != nil {
 		return cfg
 	}
@@ -68,4 +75,17 @@ func Load() *Config {
 	}
 
 	return cfg
+}
+
+// ConfigPath returns the full path to a file in the working directory
+func (c *Config) ConfigPath(filename string) string {
+	if c.WorkDir == "" {
+		return filename
+	}
+	return filepath.Join(c.WorkDir, filename)
+}
+
+// PRDPath returns the full path to the PRD file
+func (c *Config) PRDPath() string {
+	return c.ConfigPath(c.PRDFile)
 }

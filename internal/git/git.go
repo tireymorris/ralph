@@ -6,19 +6,33 @@ import (
 	"strings"
 )
 
-type Manager struct{}
+type Manager struct {
+	workDir string
+}
 
 func New() *Manager {
 	return &Manager{}
 }
 
+func NewWithWorkDir(workDir string) *Manager {
+	return &Manager{workDir: workDir}
+}
+
+func (m *Manager) command(args ...string) *exec.Cmd {
+	cmd := exec.Command("git", args...)
+	if m.workDir != "" {
+		cmd.Dir = m.workDir
+	}
+	return cmd
+}
+
 func (m *Manager) IsRepository() bool {
-	cmd := exec.Command("git", "rev-parse", "--git-dir")
+	cmd := m.command("rev-parse", "--git-dir")
 	return cmd.Run() == nil
 }
 
 func (m *Manager) CurrentBranch() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd := m.command("rev-parse", "--abbrev-ref", "HEAD")
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -27,7 +41,7 @@ func (m *Manager) CurrentBranch() (string, error) {
 }
 
 func (m *Manager) BranchExists(name string) bool {
-	cmd := exec.Command("git", "show-ref", "--verify", "--quiet", fmt.Sprintf("refs/heads/%s", name))
+	cmd := m.command("show-ref", "--verify", "--quiet", fmt.Sprintf("refs/heads/%s", name))
 	return cmd.Run() == nil
 }
 
@@ -35,31 +49,31 @@ func (m *Manager) CreateBranch(name string) error {
 	if m.BranchExists(name) {
 		return m.Checkout(name)
 	}
-	cmd := exec.Command("git", "checkout", "-b", name)
+	cmd := m.command("checkout", "-b", name)
 	return cmd.Run()
 }
 
 func (m *Manager) Checkout(name string) error {
-	cmd := exec.Command("git", "checkout", name)
+	cmd := m.command("checkout", name)
 	return cmd.Run()
 }
 
 func (m *Manager) HasChanges() bool {
-	cmd := exec.Command("git", "diff", "--quiet", "--exit-code")
+	cmd := m.command("diff", "--quiet", "--exit-code")
 	if cmd.Run() != nil {
 		return true
 	}
-	cmd = exec.Command("git", "diff", "--staged", "--quiet", "--exit-code")
+	cmd = m.command("diff", "--staged", "--quiet", "--exit-code")
 	return cmd.Run() != nil
 }
 
 func (m *Manager) StageAll() error {
-	cmd := exec.Command("git", "add", ".")
+	cmd := m.command("add", ".")
 	return cmd.Run()
 }
 
 func (m *Manager) Commit(message string) error {
-	cmd := exec.Command("git", "commit", "-m", message)
+	cmd := m.command("commit", "-m", message)
 	return cmd.Run()
 }
 

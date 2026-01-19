@@ -121,7 +121,7 @@ func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 		eventsCh:    eventsCh,
 		generator:   prd.NewGenerator(cfg),
 		implementer: story.NewImplementer(cfg),
-		git:         git.New(),
+		git:         git.NewWithWorkDir(cfg.WorkDir),
 		storage:     &defaultPRDStorage{cfg: cfg},
 	}
 }
