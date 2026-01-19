@@ -55,6 +55,7 @@ Ralph follows a two-phase approach:
 
 - Ruby >= 3.0
 - Git
+- [opencode](https://github.com/opencode-ai/opencode) - AI coding assistant CLI
 
 ### Setup
 
