@@ -12,21 +12,18 @@ import (
 	"ralph/internal/config"
 )
 
-// OutputLine represents a line of output from a command
 type OutputLine struct {
 	Text  string
 	IsErr bool
 	Time  time.Time
 }
 
-// Result represents the result of a command execution
 type Result struct {
 	Output   string
 	ExitCode int
 	Error    error
 }
 
-// Runner executes commands
 type Runner struct {
 	cfg *config.Config
 }
@@ -35,7 +32,6 @@ func New(cfg *config.Config) *Runner {
 	return &Runner{cfg: cfg}
 }
 
-// RunOpenCode runs the opencode command with the given prompt
 func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error) {
 	args := []string{"run"}
 	if r.cfg.Model != "" {
@@ -63,17 +59,14 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// Write prompt to stdin
 	go func() {
 		defer stdin.Close()
 		io.WriteString(stdin, prompt)
 	}()
 
-	// Collect output
 	var outputBuilder strings.Builder
 	doneCh := make(chan struct{})
 
-	// Read stdout
 	go func() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -85,7 +78,6 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 		}
 	}()
 
-	// Read stderr
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
@@ -115,9 +107,7 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 	return result, nil
 }
 
-// CleanOutput removes ANSI escape codes and normalizes whitespace
 func CleanOutput(output string) string {
-	// Remove ANSI escape codes (simplified)
 	result := output
 	for strings.Contains(result, "\x1b[") {
 		start := strings.Index(result, "\x1b[")

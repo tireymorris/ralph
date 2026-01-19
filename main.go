@@ -33,7 +33,6 @@ func run() int {
 
 	cfg := config.Load()
 
-	// Validate resume state
 	if opts.Resume {
 		if !prd.Exists(cfg) {
 			fmt.Printf("Error: No %s found to resume from\n", cfg.PRDFile)

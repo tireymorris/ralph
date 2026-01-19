@@ -11,37 +11,31 @@ import (
 	"ralph/internal/story"
 )
 
-// Output represents a workflow output event
 type Output struct {
 	Text  string
 	IsErr bool
 }
 
-// Event represents a workflow event
 type Event interface {
 	isEvent()
 }
 
-// EventPRDGenerating indicates PRD generation has started
 type EventPRDGenerating struct{}
 
 func (EventPRDGenerating) isEvent() {}
 
-// EventPRDGenerated indicates PRD was successfully generated
 type EventPRDGenerated struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDGenerated) isEvent() {}
 
-// EventPRDLoaded indicates PRD was loaded from file
 type EventPRDLoaded struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDLoaded) isEvent() {}
 
-// EventStoryStarted indicates a story implementation has started
 type EventStoryStarted struct {
 	Story     *prd.Story
 	Iteration int
@@ -49,7 +43,6 @@ type EventStoryStarted struct {
 
 func (EventStoryStarted) isEvent() {}
 
-// EventStoryCompleted indicates a story was completed
 type EventStoryCompleted struct {
 	Story   *prd.Story
 	Success bool
@@ -57,39 +50,33 @@ type EventStoryCompleted struct {
 
 func (EventStoryCompleted) isEvent() {}
 
-// EventOutput represents output from the underlying command
 type EventOutput struct {
 	Output
 }
 
 func (EventOutput) isEvent() {}
 
-// EventError indicates an error occurred
 type EventError struct {
 	Err error
 }
 
 func (EventError) isEvent() {}
 
-// EventCompleted indicates all stories are done
 type EventCompleted struct{}
 
 func (EventCompleted) isEvent() {}
 
-// EventFailed indicates the workflow failed
 type EventFailed struct {
 	FailedStories []*prd.Story
 }
 
 func (EventFailed) isEvent() {}
 
-// Executor runs the workflow
 type Executor struct {
 	cfg      *config.Config
 	eventsCh chan Event
 }
 
-// NewExecutor creates a new workflow executor
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	return &Executor{
 		cfg:      cfg,
@@ -97,7 +84,6 @@ func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	}
 }
 
-// RunGenerate generates a PRD from the prompt
 func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
 	e.emit(EventPRDGenerating{})
 
@@ -123,7 +109,6 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 	return p, nil
 }
 
-// RunLoad loads an existing PRD
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	p, err := prd.Load(e.cfg)
 	if err != nil {
@@ -135,9 +120,7 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	return p, nil
 }
 
-// RunImplementation implements all stories in the PRD
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
-	// Setup branch if specified
 	if p.BranchName != "" {
 		gitMgr := git.New()
 		if err := gitMgr.CreateBranch(p.BranchName); err != nil {
@@ -158,31 +141,26 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		default:
 		}
 
-		// Check if all done
 		if p.AllCompleted() {
 			prd.Delete(e.cfg)
 			e.emit(EventCompleted{})
 			return nil
 		}
 
-		// Get next story
 		next := p.NextPendingStory(e.cfg.RetryAttempts)
 		if next == nil {
 			e.emit(EventFailed{FailedStories: p.FailedStories(e.cfg.RetryAttempts)})
 			return fmt.Errorf("all remaining stories have failed")
 		}
 
-		// Check max iterations
 		iteration++
 		if iteration > e.cfg.MaxIterations {
 			e.emit(EventFailed{FailedStories: p.FailedStories(e.cfg.RetryAttempts)})
 			return fmt.Errorf("max iterations (%d) reached", e.cfg.MaxIterations)
 		}
 
-		// Start story
 		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
 
-		// Run implementation
 		outputCh := make(chan runner.OutputLine, 100)
 		go e.forwardOutput(outputCh)
 
@@ -200,7 +178,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			e.emit(EventStoryCompleted{Story: next, Success: false})
 		}
 
-		// Save state
 		if err := prd.Save(e.cfg, p); err != nil {
 			e.emit(EventOutput{Output{
 				Text:  fmt.Sprintf("Warning: failed to save state: %v", err),

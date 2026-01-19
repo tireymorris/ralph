@@ -12,7 +12,6 @@ import (
 	"ralph/internal/workflow"
 )
 
-// Runner handles CLI (non-TUI) execution
 type Runner struct {
 	cfg    *config.Config
 	prompt string
@@ -20,7 +19,6 @@ type Runner struct {
 	resume bool
 }
 
-// NewRunner creates a new CLI runner
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume bool) *Runner {
 	return &Runner{
 		cfg:    cfg,
@@ -30,12 +28,10 @@ func NewRunner(cfg *config.Config, prompt string, dryRun, resume bool) *Runner {
 	}
 }
 
-// Run executes the CLI workflow and returns an exit code
 func (r *Runner) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Handle interrupt
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -49,11 +45,9 @@ func (r *Runner) Run() int {
 	eventsCh := make(chan workflow.Event, 100)
 	exec := workflow.NewExecutor(r.cfg, eventsCh)
 
-	// Start event handler
 	doneCh := make(chan int, 1)
 	go r.handleEvents(eventsCh, doneCh)
 
-	// Run workflow
 	var p *prd.PRD
 	var err error
 

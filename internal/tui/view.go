@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// View renders the UI
 func (m *Model) View() string {
 	if m.quitting {
 		return "Goodbye!\n"
@@ -65,14 +64,12 @@ func (m *Model) renderImplementation() string {
 
 	var b strings.Builder
 
-	// Project info
 	b.WriteString(fmt.Sprintf("📁 Project: %s\n", m.prd.ProjectName))
 	if m.prd.BranchName != "" {
 		b.WriteString(fmt.Sprintf("🌿 Branch: %s\n", m.prd.BranchName))
 	}
 	b.WriteString("\n")
 
-	// Progress bar
 	completed := m.prd.CompletedCount()
 	total := len(m.prd.Stories)
 	percent := float64(completed) / float64(total)
@@ -81,7 +78,6 @@ func (m *Model) renderImplementation() string {
 	b.WriteString(m.progress.ViewAs(percent))
 	b.WriteString("\n\n")
 
-	// Story list
 	b.WriteString("Stories:\n")
 	for _, s := range m.prd.Stories {
 		isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
@@ -145,7 +141,6 @@ func (m *Model) renderLogs() string {
 		return logBoxStyle.Render("Waiting for output...")
 	}
 
-	// Show last N lines
 	startIdx := 0
 	if len(m.logs) > 8 {
 		startIdx = len(m.logs) - 8
