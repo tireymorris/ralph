@@ -14,12 +14,14 @@ import (
 	"ralph/internal/runner"
 )
 
+// Implementer handles the implementation of individual user stories.
 type Implementer struct {
 	cfg    *config.Config
 	runner runner.CodeRunner
 	git    internal.GitCommitter
 }
 
+// NewImplementer creates a new Story Implementer with default dependencies.
 func NewImplementer(cfg *config.Config) *Implementer {
 	return &Implementer{
 		cfg:    cfg,
@@ -28,6 +30,7 @@ func NewImplementer(cfg *config.Config) *Implementer {
 	}
 }
 
+// NewImplementerWithDeps creates a new Story Implementer with custom dependencies.
 func NewImplementerWithDeps(cfg *config.Config, r runner.CodeRunner, g internal.GitCommitter) *Implementer {
 	return &Implementer{
 		cfg:    cfg,
@@ -36,6 +39,7 @@ func NewImplementerWithDeps(cfg *config.Config, r runner.CodeRunner, g internal.
 	}
 }
 
+// Implement executes the implementation of a single story using opencode.
 func (i *Implementer) Implement(ctx context.Context, story *prd.Story, iteration int, p *prd.PRD, outputCh chan<- runner.OutputLine) (bool, error) {
 	logger.Debug("implementing story",
 		"story_id", story.ID,

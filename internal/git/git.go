@@ -8,18 +8,22 @@ import (
 	"ralph/internal/errors"
 )
 
+// Manager handles git operations for Ralph.
 type Manager struct {
 	workDir string
 }
 
+// New creates a new git Manager.
 func New() *Manager {
 	return &Manager{}
 }
 
+// NewWithWorkDir creates a new git Manager with a specific working directory.
 func NewWithWorkDir(workDir string) *Manager {
 	return &Manager{workDir: workDir}
 }
 
+// command creates an exec.Cmd for git with the manager's working directory.
 func (m *Manager) command(args ...string) *exec.Cmd {
 	cmd := exec.Command("git", args...)
 	if m.workDir != "" {
@@ -28,11 +32,13 @@ func (m *Manager) command(args ...string) *exec.Cmd {
 	return cmd
 }
 
+// IsRepository checks if the current directory is a git repository.
 func (m *Manager) IsRepository() bool {
 	cmd := m.command("rev-parse", "--git-dir")
 	return cmd.Run() == nil
 }
 
+// CurrentBranch returns the name of the current git branch.
 func (m *Manager) CurrentBranch() (string, error) {
 	cmd := m.command("rev-parse", "--abbrev-ref", "HEAD")
 	out, err := cmd.Output()
@@ -42,11 +48,14 @@ func (m *Manager) CurrentBranch() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// BranchExists checks if a git branch with the given name exists.
 func (m *Manager) BranchExists(name string) bool {
 	cmd := m.command("show-ref", "--verify", "--quiet", fmt.Sprintf("refs/heads/%s", name))
 	return cmd.Run() == nil
 }
 
+// CreateBranch creates and checks out a new git branch with the given name.
+// If the branch already exists, it just checks it out.
 func (m *Manager) CreateBranch(name string) error {
 	if m.BranchExists(name) {
 		if err := m.Checkout(name); err != nil {
@@ -61,6 +70,7 @@ func (m *Manager) CreateBranch(name string) error {
 	return nil
 }
 
+// Checkout switches to the git branch with the given name.
 func (m *Manager) Checkout(name string) error {
 	cmd := m.command("checkout", name)
 	if err := cmd.Run(); err != nil {
@@ -69,6 +79,7 @@ func (m *Manager) Checkout(name string) error {
 	return nil
 }
 
+// HasChanges checks if there are any uncommitted changes in the working directory or staging area.
 func (m *Manager) HasChanges() bool {
 	cmd := m.command("diff", "--quiet", "--exit-code")
 	if cmd.Run() != nil {
@@ -78,6 +89,7 @@ func (m *Manager) HasChanges() bool {
 	return cmd.Run() != nil
 }
 
+// StageAll adds all changes in the working directory to the git staging area.
 func (m *Manager) StageAll() error {
 	cmd := m.command("add", ".")
 	if err := cmd.Run(); err != nil {
@@ -86,6 +98,7 @@ func (m *Manager) StageAll() error {
 	return nil
 }
 
+// Commit creates a git commit with the given message.
 func (m *Manager) Commit(message string) error {
 	cmd := m.command("commit", "-m", message)
 	if err := cmd.Run(); err != nil {
@@ -94,6 +107,7 @@ func (m *Manager) Commit(message string) error {
 	return nil
 }
 
+// CommitStory stages all changes and commits them with a message formatted for a story implementation.
 func (m *Manager) CommitStory(storyID, title, description string) error {
 	if !m.HasChanges() {
 		return nil

@@ -17,6 +17,7 @@ var SupportedModels = []string{
 
 const DefaultModel = "opencode/grok-code"
 
+// Config holds the configuration settings for Ralph.
 type Config struct {
 	Model         string `json:"model"`
 	MaxIterations int    `json:"max_iterations"`
@@ -27,6 +28,7 @@ type Config struct {
 	WorkDir       string `json:"-"` // Working directory where ralph was invoked
 }
 
+// DefaultConfig returns a Config instance with default values.
 func DefaultConfig() *Config {
 	return &Config{
 		Model:         DefaultModel,
@@ -38,6 +40,8 @@ func DefaultConfig() *Config {
 	}
 }
 
+// Load reads the configuration from ralph.config.json in the current directory.
+// If the file doesn't exist, it uses default values.
 func Load() (*Config, error) {
 	cfg := DefaultConfig()
 
@@ -93,7 +97,7 @@ func (c *Config) ConfigPath(filename string) string {
 	return filepath.Join(c.WorkDir, filename)
 }
 
-// PRDPath returns the full path to the PRD file
+// PRDPath returns the full path to the PRD file.
 func (c *Config) PRDPath() string {
 	return c.ConfigPath(c.PRDFile)
 }

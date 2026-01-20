@@ -13,32 +13,38 @@ import (
 	"ralph/internal/story"
 )
 
+// Output represents a line of output from workflow operations.
 type Output struct {
 	Text    string
 	IsErr   bool
 	Verbose bool // If true, only show when verbose mode is enabled
 }
 
+// Event represents workflow events that can be emitted.
 type Event interface {
 	isEvent()
 }
 
+// EventPRDGenerating is emitted when PRD generation starts.
 type EventPRDGenerating struct{}
 
 func (EventPRDGenerating) isEvent() {}
 
+// EventPRDGenerated is emitted when PRD generation completes successfully.
 type EventPRDGenerated struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDGenerated) isEvent() {}
 
+// EventPRDLoaded is emitted when an existing PRD is loaded.
 type EventPRDLoaded struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDLoaded) isEvent() {}
 
+// EventStoryStarted is emitted when story implementation begins.
 type EventStoryStarted struct {
 	Story     *prd.Story
 	Iteration int
@@ -46,6 +52,7 @@ type EventStoryStarted struct {
 
 func (EventStoryStarted) isEvent() {}
 
+// EventStoryCompleted is emitted when a story implementation finishes.
 type EventStoryCompleted struct {
 	Story   *prd.Story
 	Success bool
@@ -53,34 +60,40 @@ type EventStoryCompleted struct {
 
 func (EventStoryCompleted) isEvent() {}
 
+// EventOutput is emitted for workflow output lines.
 type EventOutput struct {
 	Output
 }
 
 func (EventOutput) isEvent() {}
 
+// EventError is emitted when an error occurs.
 type EventError struct {
 	Err error
 }
 
 func (EventError) isEvent() {}
 
+// EventCompleted is emitted when the entire workflow finishes successfully.
 type EventCompleted struct{}
 
 func (EventCompleted) isEvent() {}
 
+// EventFailed is emitted when the workflow fails with failed stories.
 type EventFailed struct {
 	FailedStories []*prd.Story
 }
 
 func (EventFailed) isEvent() {}
 
+// PRDStorage defines the interface for PRD persistence.
 type PRDStorage interface {
 	Load() (*prd.PRD, error)
 	Save(p *prd.PRD) error
 	Delete() error
 }
 
+// defaultPRDStorage implements PRDStorage using file operations.
 type defaultPRDStorage struct {
 	cfg *config.Config
 }
@@ -97,6 +110,7 @@ func (s *defaultPRDStorage) Delete() error {
 	return prd.Delete(s.cfg)
 }
 
+// Executor orchestrates the PRD generation and story implementation workflow.
 type Executor struct {
 	cfg         *config.Config
 	eventsCh    chan Event
@@ -106,6 +120,7 @@ type Executor struct {
 	storage     PRDStorage
 }
 
+// NewExecutor creates a new workflow Executor with default dependencies.
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	return &Executor{
 		cfg:         cfg,
@@ -117,6 +132,7 @@ func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	}
 }
 
+// NewExecutorWithDeps creates a new workflow Executor with custom dependencies.
 func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen internal.PRDGenerator, impl internal.StoryImplementer, g internal.GitManager, storage PRDStorage) *Executor {
 	return &Executor{
 		cfg:         cfg,
@@ -128,6 +144,7 @@ func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen internal.P
 	}
 }
 
+// RunGenerate generates a PRD from the user prompt and saves it.
 func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
 	logger.Debug("generating PRD", "prompt_length", len(prompt))
 	e.emit(EventPRDGenerating{})
@@ -158,6 +175,7 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 	return p, nil
 }
 
+// RunLoad loads an existing PRD from storage.
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	p, err := e.storage.Load()
 	if err != nil {
@@ -169,6 +187,7 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	return p, nil
 }
 
+// RunImplementation executes all pending stories in the PRD.
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	logger.Debug("starting implementation",
 		"project", p.ProjectName,
@@ -257,6 +276,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	}
 }
 
+// emit sends an event to the event channel.
 func (e *Executor) emit(event Event) {
 	if e.eventsCh != nil {
 		// Use non-blocking send to prevent deadlock if event channel is full.
@@ -272,6 +292,7 @@ func (e *Executor) emit(event Event) {
 	}
 }
 
+// forwardOutput forwards runner output lines as events.
 func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
 		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})

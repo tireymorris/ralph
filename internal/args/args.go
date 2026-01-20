@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Options holds the parsed command-line arguments for Ralph.
 type Options struct {
 	Prompt       string
 	DryRun       bool
@@ -15,6 +16,7 @@ type Options struct {
 	UnknownFlags []string // Stores unknown flags for warning
 }
 
+// Parse parses command-line arguments into an Options struct.
 func Parse(args []string) *Options {
 	opts := &Options{}
 	var promptParts []string
@@ -45,6 +47,7 @@ func Parse(args []string) *Options {
 	return opts
 }
 
+// Validate checks if the parsed options are valid.
 func (o *Options) Validate() error {
 	if o.Help {
 		return nil
@@ -57,6 +60,7 @@ func (o *Options) Validate() error {
 	return nil
 }
 
+// HelpText returns the help text for Ralph's command-line usage.
 func HelpText() string {
 	return `
 Ralph - Autonomous Software Development Agent

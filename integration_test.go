@@ -248,3 +248,62 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 		t.Errorf("Expected verbose output to contain error details, got: %s", outputStrVerbose)
 	}
 }
+
+func TestIntegrationDocumentation(t *testing.T) {
+	// 1) Run 'go doc ./...' and assert no missing documentation warnings
+	docCmd := exec.Command("go", "doc", "./...")
+	docOutput, _ := docCmd.CombinedOutput()
+	docOutputStr := string(docOutput)
+
+	// Check for documentation warnings (go doc doesn't fail on missing docs, but we can check output)
+	if strings.Contains(docOutputStr, "undocumented") || strings.Contains(docOutputStr, "missing") {
+		t.Errorf("Found missing documentation warnings in 'go doc ./...' output: %s", docOutputStr)
+	}
+
+	// 2) Run 'go build' and assert compilation succeeds
+	buildCmd := exec.Command("go", "build", "-o", "ralph-test", ".")
+	buildOutput, buildErr := buildCmd.CombinedOutput()
+	if buildErr != nil {
+		t.Fatalf("Failed to build binary: %v\nOutput: %s", buildErr, buildOutput)
+	}
+	defer os.Remove("ralph-test")
+
+	// 3) Get absolute path to binary
+	binaryPath, _ := filepath.Abs("ralph-test")
+
+	// 4) Run 'ralph --help' and assert help text is comprehensive
+	helpCmd := exec.Command(binaryPath, "--help")
+	helpOutput, helpErr := helpCmd.CombinedOutput()
+	if helpErr != nil && helpCmd.ProcessState == nil {
+		t.Fatalf("Command failed: %v", helpErr)
+	}
+	exitCode := helpCmd.ProcessState.ExitCode()
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 for --help, got %d", exitCode)
+	}
+
+	helpOutputStr := string(helpOutput)
+
+	// 5) Assert help text is comprehensive
+	requiredSections := []string{
+		"Usage:",
+		"Options:",
+		"--dry-run",
+		"--resume",
+		"--verbose",
+		"--help",
+		"Examples:",
+	}
+
+	for _, section := range requiredSections {
+		if !strings.Contains(helpOutputStr, section) {
+			t.Errorf("Help text missing required section '%s'. Full output: %s", section, helpOutputStr)
+		}
+	}
+
+	// Assert help contains multiple examples
+	if strings.Count(helpOutputStr, "ralph ") < 3 {
+		t.Errorf("Help text should contain multiple usage examples, got: %s", helpOutputStr)
+	}
+}

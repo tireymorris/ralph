@@ -14,6 +14,7 @@ import (
 	"ralph/internal/workflow"
 )
 
+// Runner executes Ralph workflows in headless mode with stdout output.
 type Runner struct {
 	cfg      *config.Config
 	prompt   string
@@ -24,6 +25,7 @@ type Runner struct {
 	eventsCh chan workflow.Event
 }
 
+// NewRunner creates a new CLI Runner with default dependencies.
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
 	eventsCh := make(chan workflow.Event, 10000) // Large buffer to handle high-volume output
 	return &Runner{
@@ -37,6 +39,7 @@ func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) 
 	}
 }
 
+// NewRunnerWithExecutor creates a new CLI Runner with a custom executor.
 func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec internal.WorkflowRunner, eventsCh chan workflow.Event) *Runner {
 	return &Runner{
 		cfg:      cfg,
@@ -49,6 +52,7 @@ func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, ve
 	}
 }
 
+// Run executes the CLI workflow and returns an exit code.
 func (r *Runner) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
