@@ -13,8 +13,6 @@ var (
 	level         = new(slog.LevelVar)
 )
 
-// Init initializes the global logger with the specified verbosity.
-// If verbose is true, debug-level logs are shown.
 func Init(verbose bool) {
 	once.Do(func() {
 		if verbose {
@@ -32,7 +30,6 @@ func Init(verbose bool) {
 	})
 }
 
-// InitWithWriter initializes the logger with a custom writer (useful for testing).
 func InitWithWriter(w io.Writer, verbose bool) {
 	if verbose {
 		level.Set(slog.LevelDebug)
@@ -48,7 +45,6 @@ func InitWithWriter(w io.Writer, verbose bool) {
 	defaultLogger = slog.New(handler)
 }
 
-// SetVerbose changes the log level dynamically.
 func SetVerbose(verbose bool) {
 	if verbose {
 		level.Set(slog.LevelDebug)
@@ -57,7 +53,6 @@ func SetVerbose(verbose bool) {
 	}
 }
 
-// get returns the logger, initializing with defaults if needed.
 func get() *slog.Logger {
 	if defaultLogger == nil {
 		Init(false)
@@ -65,27 +60,22 @@ func get() *slog.Logger {
 	return defaultLogger
 }
 
-// Debug logs a debug message (only shown with --verbose).
 func Debug(msg string, args ...any) {
 	get().Debug(msg, args...)
 }
 
-// Info logs an info message.
 func Info(msg string, args ...any) {
 	get().Info(msg, args...)
 }
 
-// Warn logs a warning message.
 func Warn(msg string, args ...any) {
 	get().Warn(msg, args...)
 }
 
-// Error logs an error message.
 func Error(msg string, args ...any) {
 	get().Error(msg, args...)
 }
 
-// With returns a logger with additional context attributes.
 func With(args ...any) *slog.Logger {
 	return get().With(args...)
 }
