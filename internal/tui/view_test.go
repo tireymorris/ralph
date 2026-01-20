@@ -191,11 +191,11 @@ func TestRenderHeaderPrimaryColor(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 
 	header := m.renderHeader()
-	// Assert output contains ANSI color escape sequences for primary color (#8B5CF6)
-	// Primary color is background in headerStyle, RGB 139,92,246
-	expectedEscape := "\x1b[48;2;139;92;246m"
+	// Assert output contains ANSI color escape sequences for primary color (#A855F7)
+	// Primary color is background in headerStyle, RGB 168,85,247
+	expectedEscape := "\x1b[48;2;168;85;247m"
 	if !strings.Contains(header, expectedEscape) {
-		t.Errorf("renderHeader() should contain ANSI escape for primary color #8B5CF6, got: %q", header)
+		t.Errorf("renderHeader() should contain ANSI escape for primary color #A855F7, got: %q", header)
 	}
 	// Verify no color-related panics occur - this is implicit as the function call succeeded
 }
@@ -230,9 +230,9 @@ func TestRenderLogsStyling(t *testing.T) {
 		t.Error("renderLogs() output should contain rounded border characters")
 	}
 
-	// Verify background surface color (#1F2937) is applied correctly
-	// #1F2937 is rgb(31,41,55), ANSI 24-bit background \x1b[48;2;31;40;55m
-	if !strings.Contains(logs, "\x1b[48;2;31;40;55m") {
+	// Verify background surface color (#111827) is applied correctly
+	// #111827 is rgb(17,24,39), ANSI 24-bit background \x1b[48;2;17;24;39m
+	if !strings.Contains(logs, "\x1b[48;2;17;24;39m") {
 		t.Error("renderLogs() output should contain surface color background ANSI sequence")
 	}
 }

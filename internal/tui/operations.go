@@ -105,7 +105,7 @@ func (om *OperationManager) generatePRD(prompt string) tea.Msg {
 }
 
 // SetupBranchAndStart sets up git branch and starts implementation
-func (om *OperationManager) SetupBranchAndStart(branchName string) tea.Cmd {
+func (om *OperationManager) SetupBranchAndStart(branchName string, p *prd.PRD) tea.Cmd {
 	// Capture values to avoid race conditions
 	workDir := om.cfg.WorkDir
 
@@ -117,7 +117,7 @@ func (om *OperationManager) SetupBranchAndStart(branchName string) tea.Cmd {
 				om.outputCh <- runner.OutputLine{Text: fmt.Sprintf("Warning: failed to create branch: %v", err), IsErr: true}
 			}
 		}
-		return om.startNextStory(nil, 1) // iteration starts at 1
+		return om.startNextStory(p, 1) // iteration starts at 1
 	}
 }
 
