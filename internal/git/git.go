@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"ralph/internal/errors"
 )
 
 type Manager struct {
@@ -35,7 +37,7 @@ func (m *Manager) CurrentBranch() (string, error) {
 	cmd := m.command("rev-parse", "--abbrev-ref", "HEAD")
 	out, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return "", errors.GitError{Op: "current branch", Err: err}
 	}
 	return strings.TrimSpace(string(out)), nil
 }
@@ -47,15 +49,24 @@ func (m *Manager) BranchExists(name string) bool {
 
 func (m *Manager) CreateBranch(name string) error {
 	if m.BranchExists(name) {
-		return m.Checkout(name)
+		if err := m.Checkout(name); err != nil {
+			return errors.GitError{Op: "checkout", Err: err}
+		}
+		return nil
 	}
 	cmd := m.command("checkout", "-b", name)
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.GitError{Op: "create branch", Err: err}
+	}
+	return nil
 }
 
 func (m *Manager) Checkout(name string) error {
 	cmd := m.command("checkout", name)
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.GitError{Op: "checkout", Err: err}
+	}
+	return nil
 }
 
 func (m *Manager) HasChanges() bool {
@@ -69,12 +80,18 @@ func (m *Manager) HasChanges() bool {
 
 func (m *Manager) StageAll() error {
 	cmd := m.command("add", ".")
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.GitError{Op: "stage all", Err: err}
+	}
+	return nil
 }
 
 func (m *Manager) Commit(message string) error {
 	cmd := m.command("commit", "-m", message)
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.GitError{Op: "commit", Err: err}
+	}
+	return nil
 }
 
 func (m *Manager) CommitStory(storyID, title, description string) error {
@@ -83,9 +100,12 @@ func (m *Manager) CommitStory(storyID, title, description string) error {
 	}
 
 	if err := m.StageAll(); err != nil {
-		return fmt.Errorf("failed to stage changes: %w", err)
+		return errors.GitError{Op: "staging", Err: err}
 	}
 
 	message := fmt.Sprintf("feat: %s\n\n%s\n\nStory: %s", title, description, storyID)
-	return m.Commit(message)
+	if err := m.Commit(message); err != nil {
+		return errors.GitError{Op: "committing", Err: err}
+	}
+	return nil
 }

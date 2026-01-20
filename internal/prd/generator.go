@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"ralph/internal/config"
+	"ralph/internal/errors"
 	"ralph/internal/logger"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
@@ -39,24 +40,24 @@ func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh ch
 	result, err := g.runner.RunOpenCode(ctx, prdPrompt, outputCh)
 	if err != nil {
 		logger.Error("opencode run failed", "error", err)
-		return nil, fmt.Errorf("failed to run opencode: %w", err)
+		return nil, errors.OpencodeError{Op: "execution", Err: err}
 	}
 
 	if result.Error != nil {
 		logger.Error("opencode returned error", "error", result.Error)
-		return nil, fmt.Errorf("opencode error: %w", result.Error)
+		return nil, errors.OpencodeError{Op: "execution", Err: result.Error}
 	}
 
 	logger.Debug("parsing PRD response", "response_length", len(result.Output))
 	p, err := parseResponse(result.Output)
 	if err != nil {
 		logger.Error("failed to parse PRD response", "error", err)
-		return nil, fmt.Errorf("failed to parse PRD: %w", err)
+		return nil, err
 	}
 
 	if err := validate(p); err != nil {
 		logger.Error("PRD validation failed", "error", err)
-		return nil, fmt.Errorf("invalid PRD: %w", err)
+		return nil, errors.PRDError{Op: "validation", Err: err}
 	}
 
 	sort.Slice(p.Stories, func(i, j int) bool {
@@ -76,7 +77,7 @@ func parseResponse(response string) (*PRD, error) {
 
 	start := strings.Index(response, "{")
 	if start == -1 {
-		return nil, fmt.Errorf("no JSON object found in response")
+		return nil, errors.PRDError{Op: "parsing", Err: fmt.Errorf("no JSON object found in response")}
 	}
 
 	// Use json.Decoder to properly parse JSON, handling all edge cases
@@ -89,11 +90,11 @@ func parseResponse(response string) (*PRD, error) {
 		// with proper string handling as a fallback
 		end := findMatchingBrace(response, start)
 		if end == -1 {
-			return nil, fmt.Errorf("no complete JSON object found in response: %w", err)
+			return nil, errors.PRDError{Op: "parsing", Err: fmt.Errorf("no complete JSON object found in response: %w", err)}
 		}
 
 		if err := json.Unmarshal([]byte(response[start:end]), &p); err != nil {
-			return nil, fmt.Errorf("failed to parse JSON: %w", err)
+			return nil, errors.PRDError{Op: "parsing", Err: fmt.Errorf("failed to parse JSON: %w", err)}
 		}
 	}
 

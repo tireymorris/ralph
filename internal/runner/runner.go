@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"ralph/internal/config"
+	"ralph/internal/errors"
 	"ralph/internal/logger"
 )
 
@@ -92,16 +93,16 @@ func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<-
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+		return nil, errors.OpencodeError{Op: "setup", Err: fmt.Errorf("failed to get stdout pipe: %w", err)}
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get stderr pipe: %w", err)
+		return nil, errors.OpencodeError{Op: "setup", Err: fmt.Errorf("failed to get stderr pipe: %w", err)}
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start command: %w", err)
+		return nil, errors.OpencodeError{Op: "setup", Err: fmt.Errorf("failed to start command: %w", err)}
 	}
 
 	var outputBuilder strings.Builder
