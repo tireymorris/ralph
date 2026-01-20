@@ -73,7 +73,6 @@ func (m *Model) renderImplementation() string {
 
 	var b strings.Builder
 
-	// Project info section - clean lines without box
 	projectLabel := labelStyle.Render("Project")
 	projectValue := valueStyle.Render(m.prd.ProjectName)
 	b.WriteString(infoStyle.Render(projectLabel + " " + projectValue))
@@ -86,7 +85,6 @@ func (m *Model) renderImplementation() string {
 		b.WriteString("\n")
 	}
 
-	// Progress section - standalone progress bar
 	completed := m.prd.CompletedCount()
 	total := len(m.prd.Stories)
 	percent := float64(completed) / float64(total)
@@ -98,7 +96,6 @@ func (m *Model) renderImplementation() string {
 	b.WriteString(infoStyle.Render(m.progress.ViewAs(percent)))
 	b.WriteString("\n\n")
 
-	// Stories section
 	b.WriteString(titleStyle.Render("Stories"))
 	b.WriteString("\n")
 	for _, s := range m.prd.Stories {

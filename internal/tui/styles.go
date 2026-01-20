@@ -3,17 +3,14 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	// Enhanced color palette with vibrant, modern colors
-	primaryColor   = lipgloss.Color("#A855F7") // Vibrant purple
-	primaryDark    = lipgloss.Color("#7C3AED") // Darker purple for depth
-	successColor   = lipgloss.Color("#10B981") // Emerald green
-	errorColor     = lipgloss.Color("#EF4444") // Bright red
-	warningColor   = lipgloss.Color("#F59E0B") // Amber
-	mutedColor     = lipgloss.Color("#9CA3AF") // Medium gray
-	highlightColor = lipgloss.Color("#3B82F6") // Bright blue
-	infoColor      = lipgloss.Color("#06B6D4") // Cyan
-
-	// Additional colors for enhanced visual design
+	primaryColor    = lipgloss.Color("#A855F7")
+	primaryDark     = lipgloss.Color("#7C3AED")
+	successColor    = lipgloss.Color("#10B981")
+	errorColor      = lipgloss.Color("#EF4444")
+	warningColor    = lipgloss.Color("#F59E0B")
+	mutedColor      = lipgloss.Color("#9CA3AF")
+	highlightColor  = lipgloss.Color("#3B82F6")
+	infoColor       = lipgloss.Color("#06B6D4")
 	accentColor     = lipgloss.Color("#C084FC") // Light purple accent
 	accentLight     = lipgloss.Color("#E9D5FF") // Very light purple
 	surfaceColor    = lipgloss.Color("#111827") // Darker surface for better contrast
@@ -24,7 +21,6 @@ var (
 	textSecondary   = lipgloss.Color("#D1D5DB") // Secondary text
 	subtleColor     = lipgloss.Color("#6B7280") // Subtle text
 
-	// Compact header badge style (no border)
 	headerStyle = lipgloss.NewStyle().
 			MarginTop(1).
 			MarginBottom(1)
@@ -39,7 +35,6 @@ var (
 			Foreground(mutedColor).
 			MarginLeft(1)
 
-	// Section title style
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(accentColor).
@@ -47,12 +42,10 @@ var (
 			MarginBottom(1).
 			PaddingLeft(2)
 
-	// Clean info style without border (for project info, progress)
 	infoStyle = lipgloss.NewStyle().
 			Foreground(textColor).
 			PaddingLeft(2)
 
-	// Label and value styles for key-value pairs
 	labelStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
@@ -63,7 +56,6 @@ var (
 	mutedStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
-	// Box style kept only for content that needs visual containment
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(borderColor).
@@ -71,7 +63,6 @@ var (
 			Padding(1, 2).
 			MarginBottom(1)
 
-	// Clean phase style with left accent border
 	phaseStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(accentColor).
@@ -118,7 +109,6 @@ var (
 				BorderLeft(true).
 				BorderRight(false)
 
-	// Log box - keep bordered for scrollable content
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(borderColor).
@@ -136,8 +126,8 @@ var (
 			PaddingLeft(1)
 
 	logSuccessStyle = lipgloss.NewStyle().
-				Foreground(successColor).
-				PaddingLeft(1)
+			Foreground(successColor).
+			PaddingLeft(1)
 
 	logInfoStyle = lipgloss.NewStyle().
 			Foreground(infoColor).
