@@ -72,13 +72,13 @@ type Model struct {
 // NewModel creates a new TUI model with the given configuration.
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
 	s := spinner.New()
-	s.Spinner = spinner.Jump
-	s.Style = lipgloss.NewStyle().Foreground(primaryColor)
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(accentColor)
 
 	p := progress.New(
-		progress.WithGradient("#8B5CF6", "#34D399"),
+		progress.WithGradient("#A855F7", "#10B981"),
 		progress.WithWidth(40),
-		progress.WithSolidFill("#374151"),
+		progress.WithSolidFill("#4B5563"),
 	)
 
 	logger := NewLogger(verbose)
@@ -174,7 +174,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
 		} else {
 			m.phase = PhaseImplementation
-			cmds = append(cmds, m.operationManager.SetupBranchAndStart(m.prd.BranchName))
+			cmds = append(cmds, m.operationManager.SetupBranchAndStart(m.prd.BranchName, m.prd))
 		}
 
 	case prdErrorMsg:

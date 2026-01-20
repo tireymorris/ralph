@@ -88,13 +88,16 @@ func (l *Logger) refreshLogView() {
 		line := truncate(logText, max(10, w-2))
 		style := logLineStyle
 
-		// Colorize logs based on content
-		if strings.Contains(logText, "Error") || strings.Contains(logText, "error") {
+		// Enhanced colorization for logs based on content
+		lowerText := strings.ToLower(logText)
+		if strings.Contains(lowerText, "error") || strings.Contains(lowerText, "failed") || strings.Contains(lowerText, "failure") {
 			style = logErrorStyle
-		} else if strings.Contains(logText, "completed") || strings.Contains(logText, "success") {
-			style = logLineStyle.Copy().Foreground(successColor)
-		} else if strings.Contains(logText, "Starting") || strings.Contains(logText, "starting") {
-			style = logLineStyle.Copy().Foreground(highlightColor)
+		} else if strings.Contains(lowerText, "completed") || strings.Contains(lowerText, "success") || strings.Contains(lowerText, "done") {
+			style = logSuccessStyle
+		} else if strings.Contains(lowerText, "starting") || strings.Contains(lowerText, "generating") || strings.Contains(lowerText, "running") {
+			style = logInfoStyle
+		} else if strings.Contains(lowerText, "warning") || strings.Contains(lowerText, "warn") {
+			style = logLineStyle.Copy().Foreground(warningColor)
 		}
 
 		lines = append(lines, style.Render(line))

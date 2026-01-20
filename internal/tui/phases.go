@@ -62,7 +62,7 @@ func (h *PRDGenerationPhaseHandler) HandleUpdate(msg tea.Msg, m *Model) (tea.Mod
 			return m, nil
 		} else {
 			m.phase = PhaseImplementation
-			return m, m.operationManager.SetupBranchAndStart(m.prd.BranchName)
+			return m, m.operationManager.SetupBranchAndStart(m.prd.BranchName, m.prd)
 		}
 
 	case prdErrorMsg:

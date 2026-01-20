@@ -3,6 +3,8 @@ package tui
 import (
 	"fmt"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 func (m *Model) View() string {
@@ -15,7 +17,7 @@ func (m *Model) View() string {
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n")
 	b.WriteString(m.renderPhase())
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 
 	switch m.phase {
 	case PhaseInit, PhasePRDGeneration:
@@ -28,7 +30,7 @@ func (m *Model) View() string {
 		b.WriteString(m.renderFailed())
 	}
 
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 	b.WriteString(titleStyle.Render("📝 Output Logs"))
 	b.WriteString("\n")
 	b.WriteString(m.renderLogs())
@@ -39,7 +41,10 @@ func (m *Model) View() string {
 }
 
 func (m *Model) renderHeader() string {
-	return headerStyle.Render("⚡ RALPH") + subtitleStyle.Render("Autonomous software development agent")
+	title := headerTitleStyle.Render("⚡ RALPH")
+	subtitle := subtitleStyle.Render("Autonomous software development agent")
+	headerContent := title + subtitle
+	return headerStyle.Render(headerContent)
 }
 
 func (m *Model) renderPhase() string {
@@ -53,10 +58,13 @@ func (m *Model) renderPhase() string {
 }
 
 func (m *Model) renderGenerating() string {
-	return boxStyle.Render(fmt.Sprintf(
-		"📝 Prompt: %s\n\n⚡ Generating PRD from your requirements...",
-		truncate(m.prompt, 60),
-	))
+	promptLabel := inProgressStyle.Render("📝 Prompt:")
+	promptTextStyle := lipgloss.NewStyle().Foreground(textColor)
+	promptText := promptTextStyle.Render(truncate(m.prompt, 60))
+	generatingText := inProgressStyle.Render("⚡ Generating PRD from your requirements...")
+	
+	content := fmt.Sprintf("%s %s\n\n%s", promptLabel, promptText, generatingText)
+	return boxStyle.Render(content)
 }
 
 func (m *Model) renderImplementation() string {

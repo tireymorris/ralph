@@ -3,64 +3,113 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	// Modern color palette with better contrast and visual appeal
-	primaryColor   = lipgloss.Color("#8B5CF6") // Softer purple
-	successColor   = lipgloss.Color("#FF0000") // Brighter green
-	errorColor     = lipgloss.Color("#F87171") // Softer red
-	warningColor   = lipgloss.Color("#FBBF24") // Warmer yellow
-	mutedColor     = lipgloss.Color("#9CA3AF") // Lighter gray
-	highlightColor = lipgloss.Color("#60A5FA") // Lighter blue
+	// Enhanced color palette with vibrant, modern colors
+	primaryColor   = lipgloss.Color("#A855F7") // Vibrant purple
+	primaryDark    = lipgloss.Color("#7C3AED") // Darker purple for depth
+	successColor   = lipgloss.Color("#10B981") // Emerald green
+	errorColor     = lipgloss.Color("#EF4444") // Bright red
+	warningColor   = lipgloss.Color("#F59E0B") // Amber
+	mutedColor     = lipgloss.Color("#9CA3AF") // Medium gray
+	highlightColor = lipgloss.Color("#3B82F6") // Bright blue
+	infoColor      = lipgloss.Color("#06B6D4") // Cyan
 
 	// Additional colors for enhanced visual design
-	accentColor  = lipgloss.Color("#A78BFA") // Light purple accent
-	surfaceColor = lipgloss.Color("#1F2937") // Dark surface
-	borderColor  = lipgloss.Color("#374151") // Border gray
-	textColor    = lipgloss.Color("#F3F4F6") // Light text
-	subtleColor  = lipgloss.Color("#6B7280") // Subtle text
+	accentColor     = lipgloss.Color("#C084FC") // Light purple accent
+	accentLight     = lipgloss.Color("#E9D5FF") // Very light purple
+	surfaceColor    = lipgloss.Color("#111827") // Darker surface for better contrast
+	surfaceElevated = lipgloss.Color("#1F2937") // Elevated surface
+	borderColor     = lipgloss.Color("#4B5563") // Border gray
+	borderAccent    = lipgloss.Color("#7C3AED") // Accent border
+	textColor       = lipgloss.Color("#F9FAFB") // Bright white text
+	textSecondary   = lipgloss.Color("#D1D5DB") // Secondary text
+	subtleColor     = lipgloss.Color("#6B7280") // Subtle text
 
-	titleStyle = lipgloss.NewStyle().
+	// Enhanced header with gradient effect
+	headerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(primaryColor).
-			MarginTop(1).
-			MarginBottom(1)
+			Foreground(textColor).
+			Background(primaryColor).
+			Padding(0, 3).
+			MarginTop(0).
+			MarginBottom(1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(primaryDark).
+			BorderTop(true).
+			BorderBottom(true).
+			BorderLeft(true).
+			BorderRight(true)
+
+	headerTitleStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(textColor).
+				Background(primaryColor).
+				MarginRight(1)
 
 	subtitleStyle = lipgloss.NewStyle().
-			Foreground(subtleColor).
-			Italic(true).
-			MarginLeft(2).
-			MarginBottom(1)
+			Foreground(textSecondary).
+			Italic(false).
+			MarginLeft(1).
+			MarginTop(0).
+			MarginBottom(0)
 
+	// Enhanced title style with better hierarchy
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(accentColor).
+			MarginTop(1).
+			MarginBottom(1).
+			PaddingLeft(1)
+
+	// Enhanced box style with better borders
 	boxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(borderColor).
-			Background(surfaceColor).
+			BorderForeground(borderAccent).
+			Background(surfaceElevated).
 			Foreground(textColor).
 			Padding(1, 2).
-			MarginBottom(1)
+			MarginBottom(1).
+			BorderTop(true).
+			BorderBottom(true).
+			BorderLeft(true).
+			BorderRight(true)
+
+	// Enhanced phase style with more prominence
+	phaseStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(textColor).
+			Background(surfaceElevated).
+			Padding(0, 2).
+			MarginBottom(1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(accentColor).
+			BorderTop(true).
+			BorderBottom(true).
+			BorderLeft(true).
+			BorderRight(true)
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor).
 			Bold(true).
-			Background(surfaceColor)
+			Background(surfaceElevated)
 
 	errorStyle = lipgloss.NewStyle().
 			Foreground(errorColor).
 			Bold(true).
-			Background(surfaceColor)
+			Background(surfaceElevated)
 
 	warningStyle = lipgloss.NewStyle().
 			Foreground(warningColor).
 			Bold(true).
-			Background(surfaceColor)
+			Background(surfaceElevated)
 
 	inProgressStyle = lipgloss.NewStyle().
 			Foreground(highlightColor).
 			Bold(true).
-			Background(surfaceColor)
+			Background(surfaceElevated)
 
 	pendingStyle = lipgloss.NewStyle().
 			Foreground(mutedColor).
-			Background(surfaceColor)
+			Background(surfaceElevated)
 
 	storyItemStyle = lipgloss.NewStyle().
 			PaddingLeft(2).
@@ -68,38 +117,32 @@ var (
 			MarginBottom(1)
 
 	selectedStoryStyle = lipgloss.NewStyle().
-				Foreground(highlightColor).
+				Foreground(textColor).
 				Bold(true).
-				Background(accentColor).
+				Background(primaryColor).
 				Padding(0, 2).
 				MarginBottom(1).
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(highlightColor)
+				BorderForeground(accentColor).
+				BorderTop(true).
+				BorderBottom(true).
+				BorderLeft(true).
+				BorderRight(true)
 
-	headerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(textColor).
-			Background(primaryColor).
-			Padding(0, 2)
-
-	phaseStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(textColor).
-			Background(surfaceColor).
-			Padding(0, 1).
-			MarginBottom(1).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(accentColor)
-
+	// Enhanced log box with better styling
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(borderColor).
 			Background(surfaceColor).
 			Foreground(textColor).
-			Padding(1, 2)
+			Padding(1, 2).
+			BorderTop(true).
+			BorderBottom(true).
+			BorderLeft(true).
+			BorderRight(true)
 
 	logLineStyle = lipgloss.NewStyle().
-			Foreground(subtleColor).
+			Foreground(textSecondary).
 			PaddingLeft(1)
 
 	logErrorStyle = lipgloss.NewStyle().
@@ -107,11 +150,20 @@ var (
 			Bold(true).
 			PaddingLeft(1)
 
+	logSuccessStyle = lipgloss.NewStyle().
+				Foreground(successColor).
+				PaddingLeft(1)
+
+	logInfoStyle = lipgloss.NewStyle().
+			Foreground(infoColor).
+			PaddingLeft(1)
+
 	helpStyle = lipgloss.NewStyle().
 			Foreground(subtleColor).
 			Italic(true).
 			MarginTop(1).
-			MarginBottom(1)
+			MarginBottom(1).
+			PaddingLeft(1)
 
 	progressFullStyle = lipgloss.NewStyle().
 				Foreground(successColor).
