@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestIntegrationHelp(t *testing.T) {
@@ -305,5 +307,71 @@ func TestIntegrationDocumentation(t *testing.T) {
 	// Assert help contains multiple examples
 	if strings.Count(helpOutputStr, "ralph ") < 3 {
 		t.Errorf("Help text should contain multiple usage examples, got: %s", helpOutputStr)
+	}
+}
+
+func TestIntegrationGitHubActionsWorkflow(t *testing.T) {
+	// 1) Verify .github/workflows/ directory exists
+	if _, err := os.Stat(".github/workflows"); os.IsNotExist(err) {
+		t.Errorf("Expected .github/workflows directory to exist")
+	}
+
+	// 2) Assert that a workflow file (ci.yml) is present
+	workflowPath := ".github/workflows/ci.yml"
+	if _, err := os.Stat(workflowPath); os.IsNotExist(err) {
+		t.Errorf("Expected workflow file %s to exist", workflowPath)
+	}
+
+	// Read the workflow file
+	workflowContent, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("Failed to read workflow file: %v", err)
+	}
+
+	// Check YAML syntax by unmarshaling
+	var workflow map[interface{}]interface{}
+	if err := yaml.Unmarshal(workflowContent, &workflow); err != nil {
+		t.Errorf("Workflow file is not valid YAML: %v", err)
+	}
+
+	// Assert required keys
+	workflowStr := string(workflowContent)
+	requiredKeys := []string{
+		"name:",
+		"on:",
+		"push:",
+		"branches: [ main ]",
+		"pull_request:",
+		"jobs:",
+		"test:",
+		"runs-on: ubuntu-latest",
+		"steps:",
+		"actions/checkout@v4",
+		"actions/setup-go@v4",
+		"go-version: 1.24.0",
+		"run: go test ./... -cover",
+	}
+
+	for _, key := range requiredKeys {
+		if !strings.Contains(workflowStr, key) {
+			t.Errorf("Workflow file missing required key: %s", key)
+		}
+	}
+
+	// 3) Run 'go test ./... -cover' locally to ensure tests pass and coverage.out is generated
+	cmd := exec.Command("go", "test", "./...", "-cover")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("go test failed: %v\nOutput: %s", err, output)
+	}
+
+	// Assert coverage output is generated (look for "coverage:" in output)
+	if !strings.Contains(string(output), "coverage:") {
+		t.Errorf("Expected coverage output, but not found in: %s", output)
+	}
+
+	// Assert all tests passed (no "FAIL" in output)
+	if strings.Contains(string(output), "FAIL") {
+		t.Errorf("Some tests failed: %s", output)
 	}
 }
