@@ -32,12 +32,10 @@ func run() int {
 		return 1
 	}
 
-	// Warn about unknown flags
 	for _, flag := range opts.UnknownFlags {
 		fmt.Fprintf(os.Stderr, "Warning: unknown flag %q (ignored)\n", flag)
 	}
 
-	// Initialize logger with verbose flag
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
 

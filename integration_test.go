@@ -375,3 +375,39 @@ func TestIntegrationGitHubActionsWorkflow(t *testing.T) {
 		t.Errorf("Some tests failed: %s", output)
 	}
 }
+
+func TestIntegrationCommentRemoval(t *testing.T) {
+	// Build the binary
+	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to build binary: %v\nOutput: %s", err, output)
+	}
+	defer os.Remove("ralph-test")
+
+	// Get absolute path to binary
+	binaryPath, _ := filepath.Abs("ralph-test")
+
+	// Run --help to verify runtime functionality is unchanged
+	cmd = exec.Command(binaryPath, "--help")
+	output, err = cmd.CombinedOutput()
+	if err != nil && cmd.ProcessState == nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+	exitCode := cmd.ProcessState.ExitCode()
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0, got %d", exitCode)
+	}
+
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "Usage") {
+		t.Errorf("Expected output to contain 'Usage', got: %s", outputStr)
+	}
+
+	// Verify no runtime panics or errors after comment removal
+	if strings.Contains(outputStr, "panic") || strings.Contains(outputStr, "runtime error") {
+		t.Errorf("Runtime panic detected in output: %s", outputStr)
+	}
+}

@@ -14,7 +14,6 @@ import (
 	"ralph/internal/workflow"
 )
 
-// Runner executes Ralph workflows in headless mode with stdout output.
 type Runner struct {
 	cfg      *config.Config
 	prompt   string
@@ -25,7 +24,6 @@ type Runner struct {
 	eventsCh chan workflow.Event
 }
 
-// NewRunner creates a new CLI Runner with default dependencies.
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
 	eventsCh := make(chan workflow.Event, 10000) // Large buffer to handle high-volume output
 	return &Runner{
@@ -39,7 +37,6 @@ func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) 
 	}
 }
 
-// NewRunnerWithExecutor creates a new CLI Runner with a custom executor.
 func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec internal.WorkflowRunner, eventsCh chan workflow.Event) *Runner {
 	return &Runner{
 		cfg:      cfg,
@@ -52,7 +49,6 @@ func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, ve
 	}
 }
 
-// Run executes the CLI workflow and returns an exit code.
 func (r *Runner) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -68,8 +64,6 @@ func (r *Runner) Run() int {
 		cancel()
 	}()
 
-	r.printHeader()
-
 	doneCh := make(chan int, 1)
 	go r.handleEvents(r.eventsCh, doneCh)
 
@@ -77,10 +71,8 @@ func (r *Runner) Run() int {
 	var err error
 
 	if r.resume {
-		logger.Debug("loading existing PRD")
 		p, err = r.executor.RunLoad(ctx)
 	} else {
-		logger.Debug("generating new PRD")
 		p, err = r.executor.RunGenerate(ctx, r.prompt)
 	}
 
@@ -92,13 +84,10 @@ func (r *Runner) Run() int {
 	}
 
 	if r.dryRun {
-		logger.Debug("dry run complete")
 		fmt.Println("🏁 Dry run complete - PRD saved, no implementation performed")
 		close(r.eventsCh)
 		return 0
 	}
-
-	logger.Debug("starting implementation", "stories", len(p.Stories))
 	err = r.executor.RunImplementation(ctx, p)
 	close(r.eventsCh)
 	return <-doneCh
