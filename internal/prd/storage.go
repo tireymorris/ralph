@@ -8,7 +8,6 @@ import (
 	"ralph/internal/config"
 )
 
-// Load reads a PRD from the file system.
 func Load(cfg *config.Config) (*PRD, error) {
 	data, err := os.ReadFile(cfg.PRDPath())
 	if err != nil {
@@ -23,7 +22,6 @@ func Load(cfg *config.Config) (*PRD, error) {
 	return &p, nil
 }
 
-// Save writes a PRD to the file system.
 func Save(cfg *config.Config, p *PRD) error {
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
@@ -37,7 +35,6 @@ func Save(cfg *config.Config, p *PRD) error {
 	return nil
 }
 
-// Delete removes the PRD file from the file system.
 func Delete(cfg *config.Config) error {
 	prdPath := cfg.PRDPath()
 	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
@@ -46,7 +43,6 @@ func Delete(cfg *config.Config) error {
 	return os.Remove(prdPath)
 }
 
-// Exists checks if the PRD file exists on the file system.
 func Exists(cfg *config.Config) bool {
 	_, err := os.Stat(cfg.PRDPath())
 	return err == nil

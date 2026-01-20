@@ -14,13 +14,11 @@ import (
 	"ralph/internal/runner"
 )
 
-// Generator handles the generation of PRDs from user prompts.
 type Generator struct {
 	cfg    *config.Config
 	runner runner.CodeRunner
 }
 
-// NewGenerator creates a new PRD Generator with default runner.
 func NewGenerator(cfg *config.Config) *Generator {
 	return &Generator{
 		cfg:    cfg,
@@ -28,7 +26,6 @@ func NewGenerator(cfg *config.Config) *Generator {
 	}
 }
 
-// NewGeneratorWithRunner creates a new PRD Generator with a custom runner.
 func NewGeneratorWithRunner(cfg *config.Config, r runner.CodeRunner) *Generator {
 	return &Generator{
 		cfg:    cfg,
@@ -36,7 +33,6 @@ func NewGeneratorWithRunner(cfg *config.Config, r runner.CodeRunner) *Generator 
 	}
 }
 
-// Generate creates a PRD from the user prompt by calling opencode.
 func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh chan<- runner.OutputLine) (*PRD, error) {
 	logger.Debug("generating PRD prompt", "user_prompt_length", len(userPrompt))
 	prdPrompt := prompt.PRDGeneration(userPrompt)
@@ -76,7 +72,6 @@ func (g *Generator) Generate(ctx context.Context, userPrompt string, outputCh ch
 	return p, nil
 }
 
-// parseResponse extracts and parses a PRD from the opencode response string.
 func parseResponse(response string) (*PRD, error) {
 	response = strings.TrimSpace(response)
 
@@ -148,7 +143,6 @@ func findMatchingBrace(s string, start int) int {
 	return -1
 }
 
-// validate checks that the PRD has all required fields and valid data.
 func validate(p *PRD) error {
 	if p.ProjectName == "" {
 		return fmt.Errorf("missing project_name")
