@@ -31,7 +31,7 @@ func (m *Model) View() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(titleStyle.Render("📝 Output Logs"))
+	b.WriteString(titleStyle.Render("Output Logs"))
 	b.WriteString("\n")
 	b.WriteString(m.renderLogs())
 	b.WriteString("\n")
@@ -41,10 +41,9 @@ func (m *Model) View() string {
 }
 
 func (m *Model) renderHeader() string {
-	title := headerTitleStyle.Render("⚡ RALPH")
+	title := headerTitleStyle.Render("RALPH")
 	subtitle := subtitleStyle.Render("Autonomous software development agent")
-	headerContent := title + subtitle
-	return headerStyle.Render(headerContent)
+	return headerStyle.Render(title + subtitle)
 }
 
 func (m *Model) renderPhase() string {
@@ -58,13 +57,13 @@ func (m *Model) renderPhase() string {
 }
 
 func (m *Model) renderGenerating() string {
-	promptLabel := inProgressStyle.Render("📝 Prompt:")
+	promptLabel := labelStyle.Render("Prompt")
 	promptTextStyle := lipgloss.NewStyle().Foreground(textColor)
 	promptText := promptTextStyle.Render(truncate(m.prompt, 60))
-	generatingText := inProgressStyle.Render("⚡ Generating PRD from your requirements...")
-	
-	content := fmt.Sprintf("%s %s\n\n%s", promptLabel, promptText, generatingText)
-	return boxStyle.Render(content)
+	generatingText := inProgressStyle.Render("Generating PRD from your requirements...")
+
+	content := fmt.Sprintf("%s %s\n\n%s %s", promptLabel, promptText, m.spinner.View(), generatingText)
+	return infoStyle.Render(content)
 }
 
 func (m *Model) renderImplementation() string {
@@ -74,39 +73,44 @@ func (m *Model) renderImplementation() string {
 
 	var b strings.Builder
 
-	// Project info section
-	projectInfo := fmt.Sprintf("📁 Project: %s", m.prd.ProjectName)
-	if m.prd.BranchName != "" {
-		projectInfo += fmt.Sprintf(" | 🌿 Branch: %s", m.prd.BranchName)
-	}
-	b.WriteString(boxStyle.Render(projectInfo))
+	// Project info section - clean lines without box
+	projectLabel := labelStyle.Render("Project")
+	projectValue := valueStyle.Render(m.prd.ProjectName)
+	b.WriteString(infoStyle.Render(projectLabel + " " + projectValue))
 	b.WriteString("\n")
 
-	// Progress section
+	if m.prd.BranchName != "" {
+		branchLabel := labelStyle.Render("Branch")
+		branchValue := valueStyle.Render(m.prd.BranchName)
+		b.WriteString(infoStyle.Render(branchLabel + " " + branchValue))
+		b.WriteString("\n")
+	}
+
+	// Progress section - standalone progress bar
 	completed := m.prd.CompletedCount()
 	total := len(m.prd.Stories)
 	percent := float64(completed) / float64(total)
 
-	progressSection := fmt.Sprintf("📊 Progress: %d/%d stories completed", completed, total)
-	b.WriteString(boxStyle.Render(progressSection + "\n" + m.progress.ViewAs(percent)))
+	progressLabel := labelStyle.Render("Progress")
+	progressValue := mutedStyle.Render(fmt.Sprintf("%d/%d stories", completed, total))
+	b.WriteString(infoStyle.Render(progressLabel + " " + progressValue))
 	b.WriteString("\n")
+	b.WriteString(infoStyle.Render(m.progress.ViewAs(percent)))
+	b.WriteString("\n\n")
 
 	// Stories section
-	b.WriteString(titleStyle.Render("📋 Stories"))
+	b.WriteString(titleStyle.Render("Stories"))
+	b.WriteString("\n")
 	for _, s := range m.prd.Stories {
 		isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
 		icon := getStatusIcon(s.Passes, isCurrentStory, s.RetryCount, m.cfg.RetryAttempts)
 		status := getStatusText(s.Passes, isCurrentStory, s.RetryCount, m.cfg.RetryAttempts)
 
-		var prefix string
 		if isCurrentStory {
-			prefix = iconWorking + " "
-		}
-
-		line := fmt.Sprintf("%s%s %s [%s]", prefix, icon, s.Title, status)
-		if isCurrentStory {
+			line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
 			b.WriteString(selectedStoryStyle.Render(line))
 		} else {
+			line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
 			b.WriteString(storyItemStyle.Render(line))
 		}
 		b.WriteString("\n")
@@ -119,46 +123,59 @@ func (m *Model) renderCompleted() string {
 	var b strings.Builder
 
 	if m.dryRun {
-		b.WriteString(successStyle.Render(iconSuccess + " Dry run completed!\n\n"))
-		b.WriteString(fmt.Sprintf("📄 PRD saved to: %s\n", m.cfg.PRDFile))
-		b.WriteString("💡 Run without --dry-run to implement, or use --resume.\n")
+		b.WriteString(successStyle.Render(iconSuccess + " Dry run completed!"))
+		b.WriteString("\n\n")
+		b.WriteString(labelStyle.Render("PRD saved to") + " " + valueStyle.Render(m.cfg.PRDFile))
+		b.WriteString("\n")
+		b.WriteString(mutedStyle.Render("Run without --dry-run to implement, or use --resume."))
+		b.WriteString("\n")
 	} else if m.prd != nil {
-		b.WriteString(successStyle.Render(iconSuccess + " All stories completed!\n\n"))
-		b.WriteString(fmt.Sprintf("📁 Project: %s\n", m.prd.ProjectName))
-		b.WriteString(fmt.Sprintf("📊 Stories: %d completed\n", len(m.prd.Stories)))
-		b.WriteString(fmt.Sprintf("🔄 Iterations: %d\n", m.iteration))
+		b.WriteString(successStyle.Render(iconSuccess + " All stories completed!"))
+		b.WriteString("\n\n")
+		b.WriteString(labelStyle.Render("Project") + " " + valueStyle.Render(m.prd.ProjectName))
+		b.WriteString("\n")
+		b.WriteString(labelStyle.Render("Stories") + " " + valueStyle.Render(fmt.Sprintf("%d completed", len(m.prd.Stories))))
+		b.WriteString("\n")
+		b.WriteString(labelStyle.Render("Iterations") + " " + valueStyle.Render(fmt.Sprintf("%d", m.iteration)))
+		b.WriteString("\n")
 	}
 
-	return boxStyle.Render(b.String())
+	return infoStyle.Render(b.String())
 }
 
 func (m *Model) renderFailed() string {
 	var b strings.Builder
 
-	b.WriteString(errorStyle.Render(iconFailed + " Implementation failed\n\n"))
+	b.WriteString(errorStyle.Render(iconFailed + " Implementation failed"))
+	b.WriteString("\n\n")
 
 	if m.err != nil {
-		b.WriteString(fmt.Sprintf("❌ Error: %v\n", m.err))
+		b.WriteString(labelStyle.Render("Error") + " " + errorStyle.Render(fmt.Sprintf("%v", m.err)))
+		b.WriteString("\n")
 	}
 
 	if m.prd != nil {
 		failed := m.prd.FailedStories(m.cfg.RetryAttempts)
 		if len(failed) > 0 {
-			b.WriteString(fmt.Sprintf("\n%s Failed stories (%d):\n", iconWarning, len(failed)))
+			b.WriteString("\n")
+			b.WriteString(warningStyle.Render(fmt.Sprintf("%s Failed stories (%d):", iconWarning, len(failed))))
+			b.WriteString("\n")
 			for _, s := range failed {
-				b.WriteString(fmt.Sprintf("  • %s (%d attempts)\n", s.Title, s.RetryCount))
+				b.WriteString(fmt.Sprintf("    %s %s (%d attempts)\n", iconFailed, s.Title, s.RetryCount))
 			}
 		}
-		b.WriteString("\n💡 Run with --resume to retry after fixing issues.\n")
+		b.WriteString("\n")
+		b.WriteString(mutedStyle.Render("Run with --resume to retry after fixing issues."))
+		b.WriteString("\n")
 	}
 
-	return boxStyle.Render(b.String())
+	return infoStyle.Render(b.String())
 }
 
 func (m *Model) renderLogs() string {
 	viewportContent := m.logger.GetView().View()
 	if viewportContent == "" {
-		return logBoxStyle.Render("📋 Waiting for output...")
+		return logBoxStyle.Render(mutedStyle.Render("Waiting for output..."))
 	}
 	return logBoxStyle.Render(viewportContent)
 }
