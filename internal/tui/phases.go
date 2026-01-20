@@ -34,8 +34,6 @@ func NewInitPhaseHandler() *InitPhaseHandler {
 }
 
 func (h *InitPhaseHandler) HandleUpdate(msg tea.Msg, m *Model) (tea.Model, tea.Cmd) {
-	// In init phase, we mostly delegate to the main update logic
-	// but phase-specific handling can be added here
 	return m, nil
 }
 
@@ -134,7 +132,6 @@ func NewCompletedPhaseHandler() *CompletedPhaseHandler {
 }
 
 func (h *CompletedPhaseHandler) HandleUpdate(msg tea.Msg, m *Model) (tea.Model, tea.Cmd) {
-	// In completed phase, only handle quit commands
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
@@ -160,7 +157,6 @@ func NewFailedPhaseHandler() *FailedPhaseHandler {
 }
 
 func (h *FailedPhaseHandler) HandleUpdate(msg tea.Msg, m *Model) (tea.Model, tea.Cmd) {
-	// In failed phase, only handle quit commands
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "q" || msg.String() == "ctrl+c" {

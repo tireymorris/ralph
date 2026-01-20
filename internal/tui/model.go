@@ -158,7 +158,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case phaseChangeMsg:
 		m.phase = Phase(msg)
 		m.phaseHandler = m.getPhaseHandlerForPhase(m.phase)
-		// When entering PRD generation phase, start the actual operation
 		if m.phase == PhasePRDGeneration {
 			cmds = append(cmds, func() tea.Msg {
 				return m.operationManager.RunPRDOperation(m.resume, m.prompt)

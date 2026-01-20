@@ -411,3 +411,44 @@ func TestIntegrationCommentRemoval(t *testing.T) {
 		t.Errorf("Runtime panic detected in output: %s", outputStr)
 	}
 }
+
+func TestIntegrationCommentCleanupTUIPackages(t *testing.T) {
+	// Test that removing obvious comments from tui and workflow packages doesn't break functionality
+	// This test verifies runtime behavior remains intact after comment cleanup
+
+	// Build the binary
+	cmd := exec.Command("go", "build", "-o", "ralph-clean", ".")
+	cmd.Dir = "."
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to build binary after comment removal: %v\nOutput: %s", err, output)
+	}
+	defer os.Remove("ralph-clean")
+
+	// Get absolute path to binary
+	binaryPath, _ := filepath.Abs("ralph-clean")
+
+	// Run --help to verify basic functionality works
+	cmd = exec.Command(binaryPath, "--help")
+	output, err = cmd.CombinedOutput()
+	if err != nil && cmd.ProcessState == nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+	exitCode := cmd.ProcessState.ExitCode()
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0, got %d", exitCode)
+	}
+
+	outputStr := string(output)
+	if !strings.Contains(outputStr, "Usage") {
+		t.Errorf("Expected output to contain 'Usage', got: %s", outputStr)
+	}
+
+	// Run unit tests for modified packages to ensure they still pass
+	cmd = exec.Command("go", "test", "./internal/tui", "./internal/workflow")
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Unit tests failed after comment removal: %v\nOutput: %s", err, output)
+	}
+}
