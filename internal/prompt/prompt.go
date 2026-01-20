@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// PRDGeneration returns the prompt for generating a PRD from user requirements
 func PRDGeneration(userPrompt string) string {
 	return fmt.Sprintf(`You are Ralph, an autonomous software development agent. Your task is to implement: %s
 
@@ -61,7 +60,6 @@ CRITICAL:
 - Tests are cumulative - each story's test should also verify previous stories still work.`, userPrompt)
 }
 
-// StoryImplementation returns the prompt for implementing a single story
 func StoryImplementation(title, description string, acceptanceCriteria []string, testSpec string, iteration, completed, total int) string {
 	if testSpec == "" {
 		testSpec = "No test spec provided - create and run appropriate tests"
