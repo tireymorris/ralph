@@ -125,6 +125,83 @@ ralph run --resume --verbose
 
 ```
 Usage:
+   ralph "your feature description"               # Full implementation (TUI)
+   ralph "your feature description" --dry-run     # Generate PRD only (TUI)
+   ralph --resume                                 # Resume from existing prd.json (TUI)
+   ralph run "your feature description"           # Full implementation (stdout)
+   ralph run "your feature description" --dry-run # Generate PRD only (stdout)
+   ralph run --resume                             # Headless, resume
+
+Options:
+   --dry-run      Generate PRD only, don't implement
+   --resume       Resume implementation from existing prd.json
+   --verbose, -v  Enable debug logging
+   --help, -h     Show this help message
+
+Modes:
+   (default)    Interactive TUI with progress display
+   run          Non-interactive stdout output (for CI/scripts)
+
+Controls (TUI mode):
+   q, Ctrl+C    Quit the application
+
+Examples:
+   ralph "Add user authentication with login and registration"
+   ralph "Create a REST API for managing todos" --dry-run
+   ralph --resume
+   ralph run "Add unit tests for the API" --dry-run
+   ralph run "Add feature" --verbose
+```
+
+### Usage Examples
+
+#### Basic Feature Implementation
+```bash
+# Implement a complete feature with TUI progress display
+ralph "Add a contact form with validation and email sending"
+
+# Use headless mode for CI/CD pipelines
+ralph run "Add API rate limiting" --verbose
+```
+
+#### Iterative Development
+```bash
+# Generate PRD first to review stories before implementation
+ralph "Build a blog system with posts, comments, and admin panel" --dry-run
+
+# Implement after reviewing the generated prd.json
+ralph --resume
+```
+
+#### Configuration Examples
+```bash
+# Use a custom model for code generation
+echo '{"model": "opencode/grok-code"}' > ralph.config.json
+ralph "Add dark mode toggle to the UI"
+
+# Increase retry attempts for complex features
+echo '{"max_iterations": 100, "retry_attempts": 5}' > ralph.config.json
+ralph "Implement complex data visualization charts"
+```
+
+#### Common Patterns
+```bash
+# API Development
+ralph "Create REST API endpoints for user management"
+
+# UI Components
+ralph "Add a modal dialog for user confirmation"
+
+# Database Integration
+ralph "Add PostgreSQL database support with migrations"
+
+# Testing
+ralph "Add comprehensive test suite with mocking"
+
+# Configuration
+ralph "Add environment-based configuration loading"
+```
+Usage:
   ralph "your feature description"               # Interactive TUI
   ralph "your feature description" --dry-run     # Generate PRD only (TUI)
   ralph --resume                                 # Resume from prd.json (TUI)

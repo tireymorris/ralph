@@ -16,6 +16,7 @@ import (
 	"ralph/internal/story"
 )
 
+// Phase represents the current phase of the TUI workflow.
 type Phase int
 
 const (
@@ -43,6 +44,7 @@ func (p Phase) String() string {
 	}
 }
 
+// Model represents the state of the TUI application.
 type Model struct {
 	cfg     *config.Config
 	prompt  string
@@ -67,6 +69,7 @@ type Model struct {
 	phaseHandler     PhaseHandler
 }
 
+// NewModel creates a new TUI model with the given configuration.
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
 	s := spinner.New()
 	s.Spinner = spinner.Jump

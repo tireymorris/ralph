@@ -17,6 +17,7 @@ import (
 
 // Note: io import kept for CmdInterface
 
+// OutputLine represents a line of output from a command execution.
 type OutputLine struct {
 	Text    string
 	IsErr   bool
@@ -24,21 +25,25 @@ type OutputLine struct {
 	Verbose bool // If true, only show when verbose mode is enabled
 }
 
+// Result contains the output and exit information from a command execution.
 type Result struct {
 	Output   string
 	ExitCode int
 	Error    error
 }
 
+// CodeRunner defines the interface for running code generation commands.
 type CodeRunner interface {
 	RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error)
 }
 
+// Runner implements CodeRunner using the opencode CLI.
 type Runner struct {
 	cfg     *config.Config
 	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
 }
 
+// CmdInterface wraps exec.Cmd methods for testing.
 type CmdInterface interface {
 	StdinPipe() (io.WriteCloser, error)
 	StdoutPipe() (io.ReadCloser, error)
@@ -67,10 +72,12 @@ func defaultCmdFunc(workDir string) func(ctx context.Context, name string, args 
 	}
 }
 
+// New creates a new Runner with the given configuration.
 func New(cfg *config.Config) *Runner {
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 }
 
+// RunOpenCode executes the opencode command with the given prompt and streams output.
 func (r *Runner) RunOpenCode(ctx context.Context, prompt string, outputCh chan<- OutputLine) (*Result, error) {
 	args := []string{"run", "--print-logs"}
 	if r.cfg.Model != "" {
