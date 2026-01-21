@@ -35,7 +35,7 @@ func TestPRDGeneration(t *testing.T) {
 			name:       "instructs to analyze existing test conventions",
 			userPrompt: "Add feature",
 			mustInclude: []string{
-				"Analyze existing test files to understand naming conventions",
+				"Locate and examine existing test files to understand testing framework, naming conventions, and patterns",
 				"Tests should follow existing project conventions",
 			},
 		},
