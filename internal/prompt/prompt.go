@@ -20,13 +20,14 @@ Follow this process:
    - Generate comprehensive user stories
    - Each story must be implementable in one iteration
    - Include acceptance criteria and priorities (1=highest)
-   - CRITICAL: Each story MUST include a test_spec with guidance for writing integration tests
+   - CRITICAL: Each story MUST include a test_spec with guidance for writing tests for that specific feature
    
 3. TEST SPECIFICATION REQUIREMENTS
-   - The test_spec field provides GUIDANCE for writing actual integration test code
+   - The test_spec field provides GUIDANCE for writing test code for the specific feature
    - An actual test file will be created and run for EACH story before moving to the next
    - Tests must validate RUNTIME behavior, not just compilation
    - IMPORTANT: Tests should follow existing project conventions (file location, naming, framework)
+   - IMPORTANT: Name tests after the FEATURE being tested (e.g., "entity_discovery_tool_spec.rb" not "integration_spec.rb")
    - For UI features: describe interactions to automate (clicks, inputs, assertions on DOM)
    - For API integrations: describe requests to make and expected responses
    - For setup stories: describe how to verify the setup works (e.g., app starts, imports work)
@@ -46,7 +47,7 @@ Required JSON format:
       "title": "Story title",
       "description": "Detailed description",
       "acceptance_criteria": ["criterion 1", "criterion 2"],
-      "test_spec": "Integration test guidance: 1) Start app, 2) Navigate to X, 3) Assert element Y is visible, 4) Click Z, 5) Assert result.",
+      "test_spec": "Test guidance: 1) Call the feature method, 2) Assert expected return value, 3) Verify side effects if any.",
       "priority": 1,
       "passes": false
     }
@@ -77,28 +78,30 @@ Context: Iteration %d (%d/%d stories done)
 
 IMPLEMENTATION PROCESS:
 
-1. READ existing code to understand patterns and test setup
-   - Look for existing test files to understand naming conventions and test framework
-   - Check for test directories, config files (jest.config, vitest.config, pytest.ini, etc.)
-2. IMPLEMENT the feature completely
-3. WRITE AN INTEGRATION TEST for this story:
-   - FOLLOW EXISTING TEST CONVENTIONS in the project (file naming, location, framework)
-   - If no tests exist, use standard conventions for the language/framework
+1. FIND THE RELEVANT CODE - search for the specific feature/module named in the story title
+   - Search for the CLASS, MODULE, or FUNCTION name from the story (e.g., "EntityDiscoveryTool", "UserService")
+   - Find existing test files for THAT SPECIFIC module (e.g., entity_discovery_tool_spec.rb, user_service_test.py)
+   - Do NOT search for generic terms like "integration" or "test" - search for the FEATURE NAME
+2. READ the existing code and its test file to understand patterns
+   - Note the test framework, naming conventions, and test structure
+3. IMPLEMENT the feature completely
+4. WRITE A TEST for this story:
+   - Put the test in the SAME test file as other tests for this module (or create one following naming conventions)
    - Test MUST verify the feature works at RUNTIME, not just compilation
-   - DO NOT use generic names like "story-1.test.js" - use descriptive names that match project conventions
-   - Examples: "units.test.js", "test_temperature_conversion.py", "units_spec.rb"
-4. RUN THE TEST and ensure it PASSES - do NOT proceed until tests pass
-5. RUN ALL PREVIOUS TESTS to ensure no regressions
-6. COMMIT changes including both implementation and test files
+   - Use descriptive test names that match project conventions
+5. RUN THE TEST and ensure it PASSES - do NOT proceed until tests pass
+6. RUN ALL PREVIOUS TESTS to ensure no regressions
+7. COMMIT changes including both implementation and test files
 
 CRITICAL REQUIREMENTS:
+- Search for the SPECIFIC FEATURE NAME in the story, not generic terms
 - You MUST write an actual test file, not just describe tests
 - You MUST run the test and see it pass in the output
 - Do NOT mark complete if you only ran lint/build - tests must pass
 - The test must verify RUNTIME behavior (e.g., app starts, UI renders, API responds)
 - FOLLOW EXISTING TEST PATTERNS - do not create story-X.test.{ext} files
 
-When the integration test passes and changes are committed, respond:
+When the test passes and changes are committed, respond:
 "COMPLETED: [summary] | TEST: [test file path] | RESULT: [pass/fail with brief output]"
 
 CRITICAL: Respond ONLY with the completion message, nothing else.`,
