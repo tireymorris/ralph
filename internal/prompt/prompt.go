@@ -10,33 +10,45 @@ func PRDGeneration(userPrompt string) string {
 
 Follow this process:
 
-1. PROJECT ANALYSIS
-   - Scan current directory to understand existing codebase
-   - Identify technology stack, patterns, conventions
-   - Note dependencies, tests, build setup
-   - IMPORTANT: Analyze existing test files to understand naming conventions and test patterns
-   
-2. CREATE PRD
-   - Generate comprehensive user stories
-   - Each story must be implementable in one iteration
-   - Include acceptance criteria and priorities (1=highest)
-   - CRITICAL: Each story MUST include a test_spec with guidance for writing tests for that specific feature
-   
-3. TEST SPECIFICATION REQUIREMENTS
-   - The test_spec field provides GUIDANCE for writing test code for the specific feature
+1. COMPREHENSIVE PROJECT ANALYSIS
+   - First, list all files in the current directory to understand the project structure
+   - Read key configuration and documentation files: README.md, package.json, go.mod, Cargo.toml, pyproject.toml, requirements.txt, etc.
+   - Identify the technology stack by examining file extensions, build files, and dependencies
+   - Find and read the main entry point files (main.go, app.py, index.js, etc.)
+   - Locate and examine existing test files to understand testing framework, naming conventions, and patterns
+   - Search for existing source code files to understand code organization and patterns
+   - Note any build scripts, CI/CD configurations, and deployment setups
+   - Analyze the existing codebase thoroughly to understand how features are implemented
+
+2. DETAILED IMPLEMENTATION PLANNING
+   - Based on the codebase analysis, create a detailed plan for implementing the requested feature
+   - Identify which existing files need to be modified or extended
+   - Determine what new files need to be created
+   - Consider dependencies, imports, and integration points
+   - Plan the implementation order to ensure each story builds on previous ones
+
+3. CREATE PRD
+   - Generate comprehensive, actionable user stories based on the thorough codebase analysis
+   - Each story must be implementable in one iteration and should leverage existing patterns
+   - Include detailed acceptance criteria that can be verified
+   - Set priorities based on dependencies and logical implementation order (1=highest)
+   - CRITICAL: Each story MUST include a specific test_spec with guidance for writing runtime tests
+
+4. TEST SPECIFICATION REQUIREMENTS
+   - The test_spec field provides GUIDANCE for writing actual test code for the specific feature
    - An actual test file will be created and run for EACH story before moving to the next
    - Tests must validate RUNTIME behavior, not just compilation
    - IMPORTANT: Tests should follow existing project conventions (file location, naming, framework)
-   - IMPORTANT: Name tests after the FEATURE being tested (e.g., "entity_discovery_tool_spec.rb" not "integration_spec.rb")
+   - IMPORTANT: Name tests after the FEATURE being tested (e.g., "user_authentication_test.go" not "integration_test.go")
    - For UI features: describe interactions to automate (clicks, inputs, assertions on DOM)
    - For API integrations: describe requests to make and expected responses
    - For setup stories: describe how to verify the setup works (e.g., app starts, imports work)
-   - Include specific assertions that can be coded (e.g., "element with class X should contain Y")
+   - Include specific assertions that can be coded (e.g., "response status should be 200", "element with class X should contain Y")
    - Each test builds on previous tests - later stories should verify previous functionality still works
-   
-4. OUTPUT REQUIREMENTS
+
+5. OUTPUT REQUIREMENTS
    - Respond ONLY with raw JSON (no markdown, no explanation)
-   
+
 Required JSON format:
 {
   "project_name": "descriptive project name",
@@ -45,19 +57,21 @@ Required JSON format:
     {
       "id": "story-1",
       "title": "Story title",
-      "description": "Detailed description",
+      "description": "Detailed description based on codebase analysis",
       "acceptance_criteria": ["criterion 1", "criterion 2"],
-      "test_spec": "Test guidance: 1) Call the feature method, 2) Assert expected return value, 3) Verify side effects if any.",
+      "test_spec": "Test guidance: 1) Perform specific action, 2) Assert expected behavior, 3) Verify integration points.",
       "priority": 1,
       "passes": false
     }
   ]
 }
 
-CRITICAL: 
+CRITICAL:
+- Perform thorough codebase exploration before generating the PRD
+- Ensure stories are based on actual project structure and existing patterns
 - Return only the JSON object, nothing else.
-- Every story MUST have a non-empty test_spec field with actionable test guidance.
-- Test specs should be specific enough to write automated tests (selectors, expected values, actions).
+- Every story MUST have a non-empty test_spec field with actionable, specific test guidance.
+- Test specs should be detailed enough to write and run automated tests.
 - Tests are cumulative - each story's test should also verify previous stories still work.`, userPrompt)
 }
 
