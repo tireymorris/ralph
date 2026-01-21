@@ -82,7 +82,7 @@ func TestStoryImplementation(t *testing.T) {
 				"Test login flow",
 				"Iteration 1",
 				"0/3",
-				"FOLLOW EXISTING TEST CONVENTIONS",
+				"FOLLOW EXISTING TEST PATTERNS",
 			},
 		},
 		{
@@ -120,9 +120,9 @@ func TestStoryImplementation(t *testing.T) {
 			completed:          0,
 			total:              1,
 			mustInclude: []string{
-				"FOLLOW EXISTING TEST CONVENTIONS",
-				"DO NOT use generic names like",
-				"story-1.test.js",
+				"FOLLOW EXISTING TEST PATTERNS",
+				"Search for the SPECIFIC FEATURE NAME",
+				"Do NOT search for generic terms",
 			},
 		},
 	}
