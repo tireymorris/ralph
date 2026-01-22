@@ -27,12 +27,12 @@ func setupGitRepo(t *testing.T) (string, func()) {
 }
 
 func TestNew(t *testing.T) {
-	m := New()
+	m := NewWithWorkDir("")
 	if m == nil {
-		t.Fatal("New() returned nil")
+		t.Fatal("NewWithWorkDir(\"\") returned nil")
 	}
 	if m.workDir != "" {
-		t.Errorf("New() workDir = %q, want empty", m.workDir)
+		t.Errorf("NewWithWorkDir(\"\") workDir = %q, want empty", m.workDir)
 	}
 }
 
@@ -50,7 +50,7 @@ func TestIsRepository(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 	if !m.IsRepository() {
 		t.Error("IsRepository() = false in git repo")
 	}
@@ -62,7 +62,7 @@ func TestIsRepositoryNonRepo(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	m := New()
+	m := NewWithWorkDir("")
 	if m.IsRepository() {
 		t.Error("IsRepository() = true in non-git dir")
 	}
@@ -72,7 +72,7 @@ func TestCurrentBranch(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 	branch, err := m.CurrentBranch()
 	if err != nil {
 		t.Fatalf("CurrentBranch() error = %v", err)
@@ -86,7 +86,7 @@ func TestBranchExists(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	branch, _ := m.CurrentBranch()
 	if !m.BranchExists(branch) {
@@ -102,7 +102,7 @@ func TestCreateBranch(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	err := m.CreateBranch("feature/test")
 	if err != nil {
@@ -119,7 +119,7 @@ func TestCreateBranchExisting(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 	m.CreateBranch("feature/existing")
 
 	origBranch, _ := m.CurrentBranch()
@@ -140,7 +140,7 @@ func TestCheckout(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 	m.CreateBranch("feature/checkout-test")
 	m.Checkout("main")
 
@@ -159,7 +159,7 @@ func TestHasChanges(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	if m.HasChanges() {
 		t.Error("HasChanges() = true on clean repo")
@@ -177,7 +177,7 @@ func TestHasChangesUnstaged(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile("initial.txt", []byte("modified"), 0644)
 
@@ -190,7 +190,7 @@ func TestStageAll(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile("staged.txt", []byte("staged"), 0644)
 
@@ -204,7 +204,7 @@ func TestCommit(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile("commit.txt", []byte("commit"), 0644)
 	m.StageAll()
@@ -223,7 +223,7 @@ func TestCommitStory(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile("story.txt", []byte("story"), 0644)
 
@@ -241,7 +241,7 @@ func TestCommitStoryNoChanges(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	err := m.CommitStory("story-1", "Test", "Desc")
 	if err != nil {
@@ -253,7 +253,7 @@ func TestCommitStoryMessage(t *testing.T) {
 	dir, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile(filepath.Join(dir, "feature.txt"), []byte("feature"), 0644)
 
@@ -273,7 +273,7 @@ func TestCurrentBranchError(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	m := New()
+	m := NewWithWorkDir("")
 	_, err := m.CurrentBranch()
 	if err == nil {
 		t.Error("CurrentBranch() should error in non-git directory")
@@ -288,7 +288,7 @@ func TestCommitStoryStageError(t *testing.T) {
 
 	os.WriteFile("file.txt", []byte("content"), 0644)
 
-	m := New()
+	m := NewWithWorkDir("")
 	err := m.CommitStory("s1", "Title", "Desc")
 	if err == nil {
 		t.Error("CommitStory() should error when git commands fail")
@@ -299,7 +299,7 @@ func TestCommitStoryCommitError(t *testing.T) {
 	_, cleanup := setupGitRepo(t)
 	defer cleanup()
 
-	m := New()
+	m := NewWithWorkDir("")
 
 	os.WriteFile("test.txt", []byte("test"), 0644)
 	m.StageAll()

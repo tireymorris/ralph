@@ -54,32 +54,6 @@ func TestNewRunnerVerbose(t *testing.T) {
 	}
 }
 
-func TestPrintHeader(t *testing.T) {
-	cfg := config.DefaultConfig()
-	cfg.Model = "test-model"
-	r := NewRunner(cfg, "test", false, false, false)
-
-	old := os.Stdout
-	rr, w, _ := os.Pipe()
-	os.Stdout = w
-
-	r.printHeader()
-
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(rr)
-	output := buf.String()
-
-	if !strings.Contains(output, "Ralph") {
-		t.Error("printHeader() should contain Ralph")
-	}
-	if !strings.Contains(output, "test-model") {
-		t.Error("printHeader() should contain model name")
-	}
-}
-
 func TestPrintStories(t *testing.T) {
 	cfg := config.DefaultConfig()
 	r := NewRunner(cfg, "test", false, false, false)

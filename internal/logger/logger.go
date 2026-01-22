@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"io"
 	"log/slog"
 	"os"
 	"sync"
@@ -30,29 +29,6 @@ func Init(verbose bool) {
 	})
 }
 
-func InitWithWriter(w io.Writer, verbose bool) {
-	if verbose {
-		level.Set(slog.LevelDebug)
-	} else {
-		level.Set(slog.LevelInfo)
-	}
-
-	opts := &slog.HandlerOptions{
-		Level: level,
-	}
-
-	handler := slog.NewTextHandler(w, opts)
-	defaultLogger = slog.New(handler)
-}
-
-func SetVerbose(verbose bool) {
-	if verbose {
-		level.Set(slog.LevelDebug)
-	} else {
-		level.Set(slog.LevelInfo)
-	}
-}
-
 func get() *slog.Logger {
 	if defaultLogger == nil {
 		Init(false)
@@ -74,8 +50,4 @@ func Warn(msg string, args ...any) {
 
 func Error(msg string, args ...any) {
 	get().Error(msg, args...)
-}
-
-func With(args ...any) *slog.Logger {
-	return get().With(args...)
 }
