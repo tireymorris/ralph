@@ -93,11 +93,6 @@ func (r *Runner) Run() int {
 	return <-doneCh
 }
 
-func (r *Runner) printHeader() {
-	fmt.Printf("🤖 Ralph - Autonomous Software Development Agent\n")
-	fmt.Printf("   Model: %s\n\n", r.cfg.Model)
-}
-
 func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int) {
 	exitCode := 0
 

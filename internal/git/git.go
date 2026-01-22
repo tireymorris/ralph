@@ -12,10 +12,6 @@ type Manager struct {
 	workDir string
 }
 
-func New() *Manager {
-	return &Manager{}
-}
-
 func NewWithWorkDir(workDir string) *Manager {
 	return &Manager{workDir: workDir}
 }
