@@ -88,20 +88,18 @@ Create `ralph.config.json` in your project root:
 
 ```json
 {
-  "model": "opencode/grok-code",
+  "model": "opencode/big-pickle",
   "max_iterations": 50,
   "retry_attempts": 3,
-  "retry_delay": 5,
   "prd_file": "prd.json"
 }
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `model` | `opencode/grok-code` | AI model for code generation |
+| `model` | `opencode/big-pickle` | AI model for code generation |
 | `max_iterations` | `50` | Maximum total implementation iterations |
 | `retry_attempts` | `3` | Max retries per story before failing |
-| `retry_delay` | `5` | Seconds between retries |
 | `prd_file` | `prd.json` | PRD filename |
 
 ### Supported Models

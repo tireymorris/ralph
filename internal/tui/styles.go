@@ -52,13 +52,6 @@ var (
 	mutedStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
-	boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(borderColor).
-			Foreground(textColor).
-			Padding(1, 2).
-			MarginBottom(1)
-
 	phaseStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(accentColor).

@@ -64,12 +64,11 @@ func (l *Logger) GetView() viewport.Model {
 	return l.logView
 }
 
-// Update handles viewport updates
-func (l *Logger) Update(msg interface{}) viewport.Model {
+// Update handles viewport updates and returns any command
+func (l *Logger) Update(msg interface{}) (viewport.Model, interface{}) {
 	var cmd interface{}
 	l.logView, cmd = l.logView.Update(msg)
-	_ = cmd // Ignore cmd for now
-	return l.logView
+	return l.logView, cmd
 }
 
 // refreshLogView updates the viewport content with styled logs

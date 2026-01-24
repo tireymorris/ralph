@@ -18,9 +18,6 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.RetryAttempts != 3 {
 		t.Errorf("RetryAttempts = %d, want 3", cfg.RetryAttempts)
 	}
-	if cfg.RetryDelay != 5 {
-		t.Errorf("RetryDelay = %d, want 5", cfg.RetryDelay)
-	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "prd.json")
 	}
@@ -105,7 +102,6 @@ func TestLoadFullConfig(t *testing.T) {
 		"model": "opencode/glm-4.7-free",
 		"max_iterations": 100,
 		"retry_attempts": 5,
-		"retry_delay": 10,
 		"prd_file": "custom.json"
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "ralph.config.json"), []byte(configContent), 0644)
@@ -124,9 +120,6 @@ func TestLoadFullConfig(t *testing.T) {
 	if cfg.RetryAttempts != 5 {
 		t.Errorf("RetryAttempts = %d, want 5", cfg.RetryAttempts)
 	}
-	if cfg.RetryDelay != 10 {
-		t.Errorf("RetryDelay = %d, want 10", cfg.RetryDelay)
-	}
 	if cfg.PRDFile != "custom.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "custom.json")
 	}
@@ -142,7 +135,6 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 		"model": "",
 		"max_iterations": 0,
 		"retry_attempts": 0,
-		"retry_delay": 0,
 		"prd_file": ""
 	}`
 	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
@@ -160,9 +152,6 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 	}
 	if cfg.RetryAttempts != 3 {
 		t.Errorf("RetryAttempts = %d, want default 3", cfg.RetryAttempts)
-	}
-	if cfg.RetryDelay != 5 {
-		t.Errorf("RetryDelay = %d, want default 5", cfg.RetryDelay)
 	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want default %q", cfg.PRDFile, "prd.json")
@@ -284,7 +273,6 @@ func TestValidate(t *testing.T) {
 				Model:         "invalid-model",
 				MaxIterations: 50,
 				RetryAttempts: 3,
-				RetryDelay:    5,
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -295,7 +283,6 @@ func TestValidate(t *testing.T) {
 				Model:         DefaultModel,
 				MaxIterations: -1,
 				RetryAttempts: 3,
-				RetryDelay:    5,
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -306,7 +293,6 @@ func TestValidate(t *testing.T) {
 				Model:         DefaultModel,
 				MaxIterations: 0,
 				RetryAttempts: 3,
-				RetryDelay:    5,
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -317,18 +303,6 @@ func TestValidate(t *testing.T) {
 				Model:         DefaultModel,
 				MaxIterations: 50,
 				RetryAttempts: -1,
-				RetryDelay:    5,
-				PRDFile:       "prd.json",
-			},
-			wantErr: true,
-		},
-		{
-			name: "negative retry_delay",
-			config: &Config{
-				Model:         DefaultModel,
-				MaxIterations: 50,
-				RetryAttempts: 3,
-				RetryDelay:    -1,
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -339,7 +313,6 @@ func TestValidate(t *testing.T) {
 				Model:         DefaultModel,
 				MaxIterations: 50,
 				RetryAttempts: 3,
-				RetryDelay:    5,
 				PRDFile:       "",
 			},
 			wantErr: true,
