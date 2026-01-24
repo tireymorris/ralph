@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -97,7 +96,6 @@ type (
 	prdGeneratedMsg struct{ prd *prd.PRD }
 	prdErrorMsg     struct{ err error }
 	phaseChangeMsg  Phase
-	tickMsg         time.Time
 )
 
 func (m *Model) Init() tea.Cmd {
@@ -162,7 +160,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.operationManager.ListenForEvents())
 	}
 
-	m.logger.Update(msg)
+	_, logCmd := m.logger.Update(msg)
+	if cmd, ok := logCmd.(tea.Cmd); ok && cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
