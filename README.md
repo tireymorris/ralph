@@ -106,10 +106,9 @@ Create `ralph.config.json` in your project root:
 
 ### Supported Models
 
-- `opencode/big-pickle`
+- `opencode/big-pickle` (default)
 - `opencode/glm-4.7-free`
 - `opencode/gpt-5-nano`
-- `opencode/grok-code` (default)
 - `opencode/minimax-m2.1-free`
 
 ## PRD Format
