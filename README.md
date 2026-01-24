@@ -119,6 +119,7 @@ Ralph generates `prd.json`:
 {
   "project_name": "User Authentication System",
   "branch_name": "feature/user-authentication",
+  "context": "Go 1.21 with standard testing. Main code in cmd/ and internal/. Tests alongside code as _test.go files. Run with 'go test ./...'. Uses chi router for HTTP.",
   "stories": [
     {
       "id": "story-1",
@@ -139,6 +140,7 @@ Ralph generates `prd.json`:
 
 | Field | Description |
 |-------|-------------|
+| `context` | Cached codebase context (language, structure, patterns) passed to each story |
 | `id` | Unique story identifier |
 | `title` | Short descriptive title |
 | `description` | Detailed implementation requirements |
