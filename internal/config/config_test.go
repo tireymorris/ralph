@@ -21,9 +21,6 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.RetryDelay != 5 {
 		t.Errorf("RetryDelay = %d, want 5", cfg.RetryDelay)
 	}
-	if cfg.LogLevel != "info" {
-		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "info")
-	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "prd.json")
 	}
@@ -109,7 +106,6 @@ func TestLoadFullConfig(t *testing.T) {
 		"max_iterations": 100,
 		"retry_attempts": 5,
 		"retry_delay": 10,
-		"log_level": "debug",
 		"prd_file": "custom.json"
 	}`
 	os.WriteFile(filepath.Join(tmpDir, "ralph.config.json"), []byte(configContent), 0644)
@@ -131,9 +127,6 @@ func TestLoadFullConfig(t *testing.T) {
 	if cfg.RetryDelay != 10 {
 		t.Errorf("RetryDelay = %d, want 10", cfg.RetryDelay)
 	}
-	if cfg.LogLevel != "debug" {
-		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "debug")
-	}
 	if cfg.PRDFile != "custom.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "custom.json")
 	}
@@ -150,7 +143,6 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 		"max_iterations": 0,
 		"retry_attempts": 0,
 		"retry_delay": 0,
-		"log_level": "",
 		"prd_file": ""
 	}`
 	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
@@ -171,9 +163,6 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 	}
 	if cfg.RetryDelay != 5 {
 		t.Errorf("RetryDelay = %d, want default 5", cfg.RetryDelay)
-	}
-	if cfg.LogLevel != "info" {
-		t.Errorf("LogLevel = %q, want default %q", cfg.LogLevel, "info")
 	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want default %q", cfg.PRDFile, "prd.json")
@@ -296,7 +285,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				RetryDelay:    5,
-				LogLevel:      "info",
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -308,7 +296,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: -1,
 				RetryAttempts: 3,
 				RetryDelay:    5,
-				LogLevel:      "info",
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -320,7 +307,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 0,
 				RetryAttempts: 3,
 				RetryDelay:    5,
-				LogLevel:      "info",
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -332,7 +318,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: -1,
 				RetryDelay:    5,
-				LogLevel:      "info",
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -344,19 +329,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				RetryDelay:    -1,
-				LogLevel:      "info",
-				PRDFile:       "prd.json",
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty log_level",
-			config: &Config{
-				Model:         DefaultModel,
-				MaxIterations: 50,
-				RetryAttempts: 3,
-				RetryDelay:    5,
-				LogLevel:      "",
 				PRDFile:       "prd.json",
 			},
 			wantErr: true,
@@ -368,7 +340,6 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				RetryDelay:    5,
-				LogLevel:      "info",
 				PRDFile:       "",
 			},
 			wantErr: true,
