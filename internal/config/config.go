@@ -21,7 +21,6 @@ type Config struct {
 	MaxIterations int    `json:"max_iterations"`
 	RetryAttempts int    `json:"retry_attempts"`
 	RetryDelay    int    `json:"retry_delay"`
-	LogLevel      string `json:"log_level"`
 	PRDFile       string `json:"prd_file"`
 	WorkDir       string `json:"-"`
 }
@@ -32,7 +31,6 @@ func DefaultConfig() *Config {
 		MaxIterations: 50,
 		RetryAttempts: 3,
 		RetryDelay:    5,
-		LogLevel:      "info",
 		PRDFile:       "prd.json",
 	}
 }
@@ -65,9 +63,6 @@ func Load() (*Config, error) {
 	}
 	if fileCfg.RetryDelay > 0 {
 		cfg.RetryDelay = fileCfg.RetryDelay
-	}
-	if fileCfg.LogLevel != "" {
-		cfg.LogLevel = fileCfg.LogLevel
 	}
 	if fileCfg.PRDFile != "" {
 		cfg.PRDFile = fileCfg.PRDFile
@@ -112,9 +107,6 @@ func (c *Config) Validate() error {
 	}
 	if c.RetryDelay < 0 {
 		return fmt.Errorf("retry_delay must be non-negative, got %d", c.RetryDelay)
-	}
-	if c.LogLevel == "" {
-		return fmt.Errorf("log_level cannot be empty")
 	}
 	if c.PRDFile == "" {
 		return fmt.Errorf("prd_file cannot be empty")

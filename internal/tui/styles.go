@@ -3,23 +3,19 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	primaryColor    = lipgloss.Color("#A855F7")
-	primaryDark     = lipgloss.Color("#7C3AED")
-	successColor    = lipgloss.Color("#10B981")
-	errorColor      = lipgloss.Color("#EF4444")
-	warningColor    = lipgloss.Color("#F59E0B")
-	mutedColor      = lipgloss.Color("#9CA3AF")
-	highlightColor  = lipgloss.Color("#3B82F6")
-	infoColor       = lipgloss.Color("#06B6D4")
-	accentColor     = lipgloss.Color("#C084FC") // Light purple accent
-	accentLight     = lipgloss.Color("#E9D5FF") // Very light purple
-	surfaceColor    = lipgloss.Color("#111827") // Darker surface for better contrast
-	surfaceElevated = lipgloss.Color("#1F2937") // Elevated surface
-	borderColor     = lipgloss.Color("#4B5563") // Border gray
-	borderAccent    = lipgloss.Color("#7C3AED") // Accent border
-	textColor       = lipgloss.Color("#F9FAFB") // Bright white text
-	textSecondary   = lipgloss.Color("#D1D5DB") // Secondary text
-	subtleColor     = lipgloss.Color("#6B7280") // Subtle text
+	primaryColor   = lipgloss.Color("#A855F7")
+	successColor   = lipgloss.Color("#10B981")
+	errorColor     = lipgloss.Color("#EF4444")
+	warningColor   = lipgloss.Color("#F59E0B")
+	mutedColor     = lipgloss.Color("#9CA3AF")
+	highlightColor = lipgloss.Color("#3B82F6")
+	infoColor      = lipgloss.Color("#06B6D4")
+	accentColor    = lipgloss.Color("#C084FC")
+	surfaceColor   = lipgloss.Color("#111827")
+	borderColor    = lipgloss.Color("#4B5563")
+	textColor      = lipgloss.Color("#F9FAFB")
+	textSecondary  = lipgloss.Color("#D1D5DB")
+	subtleColor    = lipgloss.Color("#6B7280")
 
 	headerStyle = lipgloss.NewStyle().
 			MarginTop(1).
@@ -138,12 +134,6 @@ var (
 			MarginTop(1).
 			PaddingLeft(2)
 
-	progressFullStyle = lipgloss.NewStyle().
-				Foreground(successColor).
-				Bold(true)
-
-	progressEmptyStyle = lipgloss.NewStyle().
-				Foreground(borderColor)
 )
 
 const (
@@ -152,7 +142,6 @@ const (
 	iconCompleted  = "●"
 	iconFailed     = "✗"
 	iconSuccess    = "✓"
-	iconWorking    = "⚡"
 	iconWarning    = "⚠"
 )
 
