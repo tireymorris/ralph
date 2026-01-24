@@ -7,6 +7,7 @@ import (
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
+	"ralph/internal/workflow"
 )
 
 func TestPhaseString(t *testing.T) {
@@ -56,9 +57,6 @@ func TestNewModel(t *testing.T) {
 	}
 	if m.logger == nil {
 		t.Error("logger should not be nil")
-	}
-	if m.phaseHandler == nil {
-		t.Error("phaseHandler should not be nil")
 	}
 }
 
@@ -224,93 +222,6 @@ func TestUpdatePRDErrorMsg(t *testing.T) {
 	}
 }
 
-func TestUpdateStoryStartMsg(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.iteration = 0
-
-	story := &prd.Story{ID: "1", Title: "Test Story"}
-	newModel, _ := m.Update(storyStartMsg{story: story})
-
-	if model, ok := newModel.(*Model); ok {
-		if model.currentStory != story {
-			t.Error("currentStory should be set")
-		}
-		if model.iteration != 1 {
-			t.Errorf("iteration = %d, want 1", model.iteration)
-		}
-	}
-}
-
-func TestUpdateStoryCompleteMsgSuccess(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.PRDFile = tmpDir + "/prd.json"
-
-	m := NewModel(cfg, "test", false, false, false)
-	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
-	m.currentStory = story
-	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
-
-	newModel, _ := m.Update(storyCompleteMsg{success: true})
-
-	if model, ok := newModel.(*Model); ok {
-		if !model.currentStory.Passes {
-			t.Error("story should be marked as passing")
-		}
-	}
-}
-
-func TestUpdateStoryCompleteMsgSaveError(t *testing.T) {
-	cfg := config.DefaultConfig()
-	cfg.PRDFile = "/nonexistent/dir/prd.json"
-
-	m := NewModel(cfg, "test", false, false, false)
-	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
-	m.currentStory = story
-	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
-
-	m.Update(storyCompleteMsg{success: true})
-}
-
-func TestUpdateStoryCompleteMsgFailure(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.PRDFile = tmpDir + "/prd.json"
-
-	m := NewModel(cfg, "test", false, false, false)
-	story := &prd.Story{ID: "1", Title: "Test", Passes: false, RetryCount: 0}
-	m.currentStory = story
-	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
-
-	newModel, _ := m.Update(storyCompleteMsg{success: false})
-
-	if model, ok := newModel.(*Model); ok {
-		if model.currentStory.RetryCount != 1 {
-			t.Errorf("retry count = %d, want 1", model.currentStory.RetryCount)
-		}
-	}
-}
-
-func TestUpdateStoryErrorMsg(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.PRDFile = tmpDir + "/prd.json"
-
-	m := NewModel(cfg, "test", false, false, false)
-	story := &prd.Story{ID: "1", Title: "Test", Passes: false, RetryCount: 0}
-	m.currentStory = story
-	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
-
-	newModel, _ := m.Update(storyErrorMsg{err: &testErrorType{msg: "error"}})
-
-	if model, ok := newModel.(*Model); ok {
-		if model.currentStory.RetryCount != 1 {
-			t.Errorf("retry count = %d, want 1", model.currentStory.RetryCount)
-		}
-	}
-}
-
 func TestUpdatePhaseChangeMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
@@ -331,6 +242,139 @@ func TestUpdateSpinnerTickMsg(t *testing.T) {
 	_, cmd := m.Update(m.spinner.Tick())
 	if cmd == nil {
 		t.Error("spinner tick should return a command")
+	}
+}
+
+func TestHandleWorkflowEventPRDGenerating(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventPRDGenerating{})
+}
+
+func TestHandleWorkflowEventPRDGenerated(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
+	m.handleWorkflowEvent(workflow.EventPRDGenerated{PRD: testPRD})
+
+	if m.prd != testPRD {
+		t.Error("prd should be set")
+	}
+}
+
+func TestHandleWorkflowEventPRDLoaded(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Passes: true}}}
+	m.handleWorkflowEvent(workflow.EventPRDLoaded{PRD: testPRD})
+
+	if m.prd != testPRD {
+		t.Error("prd should be set")
+	}
+}
+
+func TestHandleWorkflowEventStoryStarted(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	story := &prd.Story{ID: "1", Title: "Test Story"}
+	m.handleWorkflowEvent(workflow.EventStoryStarted{Story: story, Iteration: 5})
+
+	if m.currentStory != story {
+		t.Error("currentStory should be set")
+	}
+	if m.iteration != 5 {
+		t.Errorf("iteration = %d, want 5", m.iteration)
+	}
+}
+
+func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
+	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
+	m.handleWorkflowEvent(workflow.EventStoryCompleted{Story: story, Success: true})
+
+	if !m.prd.Stories[0].Passes {
+		t.Error("story should be marked as passing")
+	}
+}
+
+func TestHandleWorkflowEventStoryCompletedFailure(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
+	m.handleWorkflowEvent(workflow.EventStoryCompleted{Story: story, Success: false})
+}
+
+func TestHandleWorkflowEventCompleted(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventCompleted{})
+
+	if m.phase != PhaseCompleted {
+		t.Errorf("phase = %v, want PhaseCompleted", m.phase)
+	}
+}
+
+func TestHandleWorkflowEventFailed(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventFailed{FailedStories: []*prd.Story{{ID: "1"}}})
+
+	if m.phase != PhaseFailed {
+		t.Errorf("phase = %v, want PhaseFailed", m.phase)
+	}
+}
+
+func TestHandleWorkflowEventError(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventError{Err: &testErrorType{msg: "error"}})
+}
+
+func TestHandleWorkflowEventOutput(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "test", IsErr: false}})
+}
+
+func TestHandleWorkflowEventOutputVerboseFiltered(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+}
+
+func TestHandleWorkflowEventOutputVerboseShown(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, true)
+
+	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+}
+
+func TestUpdateWorkflowEventMsg(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+
+	newModel, cmd := m.Update(workflowEventMsg{event: workflow.EventCompleted{}})
+
+	if model, ok := newModel.(*Model); ok {
+		if model.phase != PhaseCompleted {
+			t.Errorf("phase = %v, want PhaseCompleted", model.phase)
+		}
+	}
+	if cmd == nil {
+		t.Error("should return command to listen for more events")
 	}
 }
 

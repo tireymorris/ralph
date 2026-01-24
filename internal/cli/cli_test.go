@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -81,7 +80,7 @@ func TestPrintStories(t *testing.T) {
 	if !strings.Contains(output, "Story 1") {
 		t.Error("printStories() should contain story titles")
 	}
-	if !strings.Contains(output, "✅") {
+	if !strings.Contains(output, "[x]") {
 		t.Error("printStories() should show completed status")
 	}
 }
@@ -248,7 +247,6 @@ func TestHandleEventsOutput(t *testing.T) {
 
 func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 	cfg := config.DefaultConfig()
-	// verbose = false, so verbose output should be filtered
 	r := NewRunner(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
@@ -260,9 +258,7 @@ func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 
 	go r.handleEvents(eventsCh, doneCh)
 
-	// Send verbose output (should be filtered)
 	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "service bus log", IsErr: false, Verbose: true}}
-	// Send normal output (should be shown)
 	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "tool call output", IsErr: false, Verbose: false}}
 	close(eventsCh)
 
@@ -285,7 +281,6 @@ func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 
 func TestHandleEventsVerboseOutputShown(t *testing.T) {
 	cfg := config.DefaultConfig()
-	// verbose = true, so all output should be shown
 	r := NewRunner(cfg, "test", false, false, true)
 
 	eventsCh := make(chan workflow.Event, 10)
@@ -297,7 +292,6 @@ func TestHandleEventsVerboseOutputShown(t *testing.T) {
 
 	go r.handleEvents(eventsCh, doneCh)
 
-	// Send verbose output (should be shown because verbose=true)
 	eventsCh <- workflow.EventOutput{Output: workflow.Output{Text: "service bus log", IsErr: false, Verbose: true}}
 	close(eventsCh)
 
@@ -425,156 +419,4 @@ type testErr struct {
 
 func (e *testErr) Error() string {
 	return e.msg
-}
-
-type mockExecutor struct {
-	genPRD    *prd.PRD
-	genErr    error
-	loadPRD   *prd.PRD
-	loadErr   error
-	implErr   error
-	eventsCh  chan workflow.Event
-	implEvent workflow.Event
-}
-
-func (m *mockExecutor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
-	return m.genPRD, m.genErr
-}
-
-func (m *mockExecutor) RunLoad(ctx context.Context) (*prd.PRD, error) {
-	return m.loadPRD, m.loadErr
-}
-
-func (m *mockExecutor) RunImplementation(ctx context.Context, p *prd.PRD) error {
-	if m.eventsCh != nil && m.implEvent != nil {
-		m.eventsCh <- m.implEvent
-	}
-	return m.implErr
-}
-
-func TestRunGenerateError(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	exec := &mockExecutor{genErr: &testErr{msg: "gen error"}}
-
-	r := NewRunnerWithExecutor(cfg, "test", false, false, false, exec, eventsCh)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	code := r.Run()
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 1 {
-		t.Errorf("Run() with gen error = %d, want 1", code)
-	}
-}
-
-func TestRunLoadError(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	exec := &mockExecutor{loadErr: &testErr{msg: "load error"}}
-
-	r := NewRunnerWithExecutor(cfg, "", false, true, false, exec, eventsCh)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	code := r.Run()
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 1 {
-		t.Errorf("Run() with load error = %d, want 1", code)
-	}
-}
-
-func TestRunDryRun(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	testPRD := &prd.PRD{ProjectName: "Test"}
-	exec := &mockExecutor{genPRD: testPRD}
-
-	r := NewRunnerWithExecutor(cfg, "test", true, false, false, exec, eventsCh)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	code := r.Run()
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 0 {
-		t.Errorf("Run() with dry run = %d, want 0", code)
-	}
-}
-
-func TestRunImplementation(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	testPRD := &prd.PRD{ProjectName: "Test"}
-	exec := &mockExecutor{
-		genPRD:    testPRD,
-		eventsCh:  eventsCh,
-		implEvent: workflow.EventCompleted{},
-	}
-
-	r := NewRunnerWithExecutor(cfg, "test", false, false, false, exec, eventsCh)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	code := r.Run()
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 0 {
-		t.Errorf("Run() with implementation = %d, want 0", code)
-	}
-}
-
-func TestRunResume(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	testPRD := &prd.PRD{ProjectName: "Test"}
-	exec := &mockExecutor{loadPRD: testPRD}
-
-	r := NewRunnerWithExecutor(cfg, "", true, true, false, exec, eventsCh)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	code := r.Run()
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 0 {
-		t.Errorf("Run() with resume dry run = %d, want 0", code)
-	}
-}
-
-func TestNewRunnerWithExecutor(t *testing.T) {
-	cfg := config.DefaultConfig()
-	eventsCh := make(chan workflow.Event, 10)
-	exec := &mockExecutor{}
-
-	r := NewRunnerWithExecutor(cfg, "test", true, false, false, exec, eventsCh)
-
-	if r == nil {
-		t.Fatal("NewRunnerWithExecutor() returned nil")
-	}
-	if r.executor != exec {
-		t.Error("executor not set correctly")
-	}
 }

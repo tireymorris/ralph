@@ -4,47 +4,39 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal"
 	"ralph/internal/config"
-	"ralph/internal/git"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
+	"ralph/internal/prompt"
 	"ralph/internal/runner"
-	"ralph/internal/story"
 )
 
-// Output represents a line of output from workflow operations.
 type Output struct {
 	Text    string
 	IsErr   bool
-	Verbose bool // If true, only show when verbose mode is enabled
+	Verbose bool
 }
 
-// Event represents workflow events that can be emitted.
 type Event interface {
 	isEvent()
 }
 
-// EventPRDGenerating is emitted when PRD generation starts.
 type EventPRDGenerating struct{}
 
 func (EventPRDGenerating) isEvent() {}
 
-// EventPRDGenerated is emitted when PRD generation completes successfully.
 type EventPRDGenerated struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDGenerated) isEvent() {}
 
-// EventPRDLoaded is emitted when an existing PRD is loaded.
 type EventPRDLoaded struct {
 	PRD *prd.PRD
 }
 
 func (EventPRDLoaded) isEvent() {}
 
-// EventStoryStarted is emitted when story implementation begins.
 type EventStoryStarted struct {
 	Story     *prd.Story
 	Iteration int
@@ -52,7 +44,6 @@ type EventStoryStarted struct {
 
 func (EventStoryStarted) isEvent() {}
 
-// EventStoryCompleted is emitted when a story implementation finishes.
 type EventStoryCompleted struct {
 	Story   *prd.Story
 	Success bool
@@ -60,101 +51,60 @@ type EventStoryCompleted struct {
 
 func (EventStoryCompleted) isEvent() {}
 
-// EventOutput is emitted for workflow output lines.
 type EventOutput struct {
 	Output
 }
 
 func (EventOutput) isEvent() {}
 
-// EventError is emitted when an error occurs.
 type EventError struct {
 	Err error
 }
 
 func (EventError) isEvent() {}
 
-// EventCompleted is emitted when the entire workflow finishes successfully.
 type EventCompleted struct{}
 
 func (EventCompleted) isEvent() {}
 
-// EventFailed is emitted when the workflow fails with failed stories.
 type EventFailed struct {
 	FailedStories []*prd.Story
 }
 
 func (EventFailed) isEvent() {}
 
-// PRDStorage defines the interface for PRD persistence.
-type PRDStorage interface {
-	Load() (*prd.PRD, error)
-	Save(p *prd.PRD) error
-	Delete() error
-}
-
-// defaultPRDStorage implements PRDStorage using file operations.
-type defaultPRDStorage struct {
-	cfg *config.Config
-}
-
-func (s *defaultPRDStorage) Load() (*prd.PRD, error) {
-	return prd.Load(s.cfg)
-}
-
-func (s *defaultPRDStorage) Save(p *prd.PRD) error {
-	return prd.Save(s.cfg, p)
-}
-
-func (s *defaultPRDStorage) Delete() error {
-	return prd.Delete(s.cfg)
-}
-
-// Executor orchestrates the PRD generation and story implementation workflow.
 type Executor struct {
-	cfg         *config.Config
-	eventsCh    chan Event
-	generator   internal.PRDGenerator
-	implementer internal.StoryImplementer
-	git         internal.GitManager
-	storage     PRDStorage
+	cfg      *config.Config
+	eventsCh chan Event
+	runner   *runner.Runner
 }
 
-// NewExecutor creates a new workflow Executor with default dependencies.
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	return &Executor{
-		cfg:         cfg,
-		eventsCh:    eventsCh,
-		generator:   prd.NewGenerator(cfg),
-		implementer: story.NewImplementer(cfg),
-		git:         git.NewWithWorkDir(cfg.WorkDir),
-		storage:     &defaultPRDStorage{cfg: cfg},
+		cfg:      cfg,
+		eventsCh: eventsCh,
+		runner:   runner.New(cfg),
 	}
 }
 
-// NewExecutorWithDeps creates a new workflow Executor with custom dependencies.
-func NewExecutorWithDeps(cfg *config.Config, eventsCh chan Event, gen internal.PRDGenerator, impl internal.StoryImplementer, g internal.GitManager, storage PRDStorage) *Executor {
+func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r *runner.Runner) *Executor {
 	return &Executor{
-		cfg:         cfg,
-		eventsCh:    eventsCh,
-		generator:   gen,
-		implementer: impl,
-		git:         g,
-		storage:     storage,
+		cfg:      cfg,
+		eventsCh: eventsCh,
+		runner:   r,
 	}
 }
 
-// RunGenerate generates a PRD from the user prompt and saves it.
-func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, error) {
-	logger.Debug("generating PRD", "prompt_length", len(prompt))
+func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {
+	logger.Debug("generating PRD", "prompt_length", len(userPrompt))
 	e.emit(EventPRDGenerating{})
-	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD...", IsErr: false}})
+	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD..."}})
 
-	outputCh := make(chan runner.OutputLine, 10000) // Large buffer for high-volume output
-
+	outputCh := make(chan runner.OutputLine, 10000)
 	go e.forwardOutput(outputCh)
 
-	p, err := e.generator.Generate(ctx, prompt, outputCh)
+	prdPrompt := prompt.PRDGeneration(userPrompt, e.cfg.PRDFile, "feature")
+	err := e.runner.Run(ctx, prdPrompt, outputCh)
 	close(outputCh)
 
 	if err != nil {
@@ -163,21 +113,20 @@ func (e *Executor) RunGenerate(ctx context.Context, prompt string) (*prd.PRD, er
 		return nil, err
 	}
 
-	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
-
-	if err := e.storage.Save(p); err != nil {
-		logger.Error("failed to save PRD", "error", err)
-		e.emit(EventError{Err: err})
+	p, err := prd.Load(e.cfg)
+	if err != nil {
+		logger.Error("failed to load generated PRD", "error", err)
+		e.emit(EventError{Err: fmt.Errorf("opencode did not create valid %s: %w", e.cfg.PRDFile, err)})
 		return nil, err
 	}
 
+	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDGenerated{PRD: p})
 	return p, nil
 }
 
-// RunLoad loads an existing PRD from storage.
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
-	p, err := e.storage.Load()
+	p, err := prd.Load(e.cfg)
 	if err != nil {
 		e.emit(EventError{Err: err})
 		return nil, err
@@ -187,24 +136,12 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	return p, nil
 }
 
-// RunImplementation executes all pending stories in the PRD.
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	logger.Debug("starting implementation",
 		"project", p.ProjectName,
 		"branch", p.BranchName,
 		"total_stories", len(p.Stories),
 		"completed", p.CompletedCount())
-
-	if p.BranchName != "" {
-		logger.Debug("creating branch", "branch", p.BranchName)
-		if err := e.git.CreateBranch(p.BranchName); err != nil {
-			logger.Warn("failed to create branch", "branch", p.BranchName, "error", err)
-			e.emit(EventOutput{Output{
-				Text:  fmt.Sprintf("Warning: failed to create branch: %v", err),
-				IsErr: true,
-			}})
-		}
-	}
 
 	iteration := 0
 
@@ -216,9 +153,14 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		default:
 		}
 
+		p, err := prd.Load(e.cfg)
+		if err != nil {
+			logger.Warn("failed to reload PRD", "error", err)
+		}
+
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
-			e.storage.Delete()
+			prd.Delete(e.cfg)
 			e.emit(EventCompleted{})
 			return nil
 		}
@@ -246,53 +188,64 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
 
-		outputCh := make(chan runner.OutputLine, 10000) // Large buffer for high-volume output
+		outputCh := make(chan runner.OutputLine, 10000)
 		go e.forwardOutput(outputCh)
 
-		success, err := e.implementer.Implement(ctx, next, iteration, p, outputCh)
+		storyPrompt := prompt.StoryImplementation(
+			next.ID,
+			next.Title,
+			next.Description,
+			next.AcceptanceCriteria,
+			next.TestSpec,
+			e.cfg.PRDFile,
+			iteration,
+			p.CompletedCount(),
+			len(p.Stories),
+		)
+
+		err = e.runner.Run(ctx, storyPrompt, outputCh)
 		close(outputCh)
 
 		if err != nil {
-			logger.Debug("story implementation error", "story_id", next.ID, "error", err)
-			next.RetryCount++
+			logger.Debug("opencode returned error", "story_id", next.ID, "error", err)
+		}
+
+		updatedPRD, loadErr := prd.Load(e.cfg)
+		if loadErr != nil {
+			logger.Warn("failed to reload PRD after story", "error", loadErr)
 			e.emit(EventStoryCompleted{Story: next, Success: false})
-		} else if success {
-			logger.Debug("story completed successfully", "story_id", next.ID)
-			next.Passes = true
-			e.emit(EventStoryCompleted{Story: next, Success: true})
+			continue
+		}
+
+		updatedStory := updatedPRD.GetStory(next.ID)
+		if updatedStory != nil && updatedStory.Passes {
+			logger.Debug("story marked as completed", "story_id", next.ID)
+			e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
 		} else {
-			logger.Debug("story failed", "story_id", next.ID, "retry_count", next.RetryCount+1)
-			next.RetryCount++
+			logger.Debug("story not completed", "story_id", next.ID)
+			if updatedStory != nil && updatedStory.RetryCount == next.RetryCount {
+				updatedStory.RetryCount++
+				if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
+					logger.Warn("failed to save retry count", "error", saveErr)
+				}
+			}
 			e.emit(EventStoryCompleted{Story: next, Success: false})
 		}
 
-		if err := e.storage.Save(p); err != nil {
-			logger.Warn("failed to save state", "error", err)
-			e.emit(EventOutput{Output{
-				Text:  fmt.Sprintf("Warning: failed to save state: %v", err),
-				IsErr: true,
-			}})
-		}
+		p = updatedPRD
 	}
 }
 
-// emit sends an event to the event channel.
 func (e *Executor) emit(event Event) {
 	if e.eventsCh != nil {
-		// Use non-blocking send to prevent deadlock if event channel is full.
-		// In practice, the channel is buffered (100) and consumers should keep up,
-		// but this prevents blocking the workflow if they don't.
 		select {
 		case e.eventsCh <- event:
-			// Event sent successfully
 		default:
-			// Channel full, log and drop the event to prevent deadlock
 			logger.Warn("event channel full, dropping event", "event_type", fmt.Sprintf("%T", event))
 		}
 	}
 }
 
-// forwardOutput forwards runner output lines as events.
 func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
 		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})
