@@ -9,14 +9,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
-	"ralph/internal/story"
+	"ralph/internal/workflow"
 )
 
-// Phase represents the current phase of the TUI workflow.
 type Phase int
 
 const (
@@ -44,7 +42,6 @@ func (p Phase) String() string {
 	}
 }
 
-// Model represents the state of the TUI application.
 type Model struct {
 	cfg     *config.Config
 	prompt  string
@@ -66,10 +63,8 @@ type Model struct {
 
 	logger           *Logger
 	operationManager *OperationManager
-	phaseHandler     PhaseHandler
 }
 
-// NewModel creates a new TUI model with the given configuration.
 func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -82,7 +77,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 	)
 
 	logger := NewLogger(verbose)
-	operationManager := NewOperationManager(cfg, prd.NewGenerator(cfg), story.NewImplementer(cfg))
+	operationManager := NewOperationManager(cfg)
 
 	return &Model{
 		cfg:              cfg,
@@ -95,36 +90,21 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		progress:         p,
 		logger:           logger,
 		operationManager: operationManager,
-		phaseHandler:     NewInitPhaseHandler(),
 	}
 }
 
-// SetGenerator sets the PRD generator (for testing)
-func (m *Model) SetGenerator(g internal.PRDGenerator) {
-	m.operationManager = NewOperationManager(m.cfg, g, m.operationManager.implementer)
-}
-
-// SetImplementer sets the story implementer (for testing)
-func (m *Model) SetImplementer(i internal.StoryImplementer) {
-	m.operationManager = NewOperationManager(m.cfg, m.operationManager.generator, i)
-}
-
 type (
-	outputMsg        runner.OutputLine
-	prdGeneratedMsg  struct{ prd *prd.PRD }
-	prdErrorMsg      struct{ err error }
-	storyStartMsg    struct{ story *prd.Story }
-	storyCompleteMsg struct{ success bool }
-	storyErrorMsg    struct{ err error }
-	phaseChangeMsg   Phase
-	tickMsg          time.Time
+	prdGeneratedMsg struct{ prd *prd.PRD }
+	prdErrorMsg     struct{ err error }
+	phaseChangeMsg  Phase
+	tickMsg         time.Time
 )
 
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
 		m.operationManager.StartOperation(),
-		m.operationManager.ListenForOutput(),
+		m.operationManager.ListenForEvents(),
 		tea.WindowSize(),
 	)
 }
@@ -151,13 +131,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 
-	case outputMsg:
-		m.logger.AddOutputLine(runner.OutputLine(msg))
-		cmds = append(cmds, m.operationManager.ListenForOutput())
-
 	case phaseChangeMsg:
 		m.phase = Phase(msg)
-		m.phaseHandler = m.getPhaseHandlerForPhase(m.phase)
 		if m.phase == PhasePRDGeneration {
 			cmds = append(cmds, func() tea.Msg {
 				return m.operationManager.RunPRDOperation(m.resume, m.prompt)
@@ -166,14 +141,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case prdGeneratedMsg:
 		m.prd = msg.prd
-		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", m.prd.ProjectName, len(m.prd.Stories)))
+		m.logger.AddLog(fmt.Sprintf("PRD: %s (%d stories)", m.prd.ProjectName, len(m.prd.Stories)))
 
 		if m.dryRun {
 			m.phase = PhaseCompleted
 			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
 		} else {
 			m.phase = PhaseImplementation
-			cmds = append(cmds, m.operationManager.SetupBranchAndStart(m.prd.BranchName, m.prd))
+			cmds = append(cmds, m.operationManager.StartImplementation(m.prd))
+			cmds = append(cmds, m.operationManager.ListenForEvents())
 		}
 
 	case prdErrorMsg:
@@ -181,52 +157,68 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.phase = PhaseFailed
 		m.logger.AddLog(fmt.Sprintf("Error: %v", msg.err))
 
-	case storyStartMsg:
-		m.currentStory = msg.story
-		m.iteration++
-		m.logger.AddLog(fmt.Sprintf("Starting story: %s (attempt %d/%d)",
-			msg.story.Title, msg.story.RetryCount+1, m.cfg.RetryAttempts))
-		// Re-register the output listener for the new story's output
-		cmds = append(cmds, m.operationManager.ListenForOutput())
+	case workflowEventMsg:
+		cmds = append(cmds, m.handleWorkflowEvent(msg.event))
+		cmds = append(cmds, m.operationManager.ListenForEvents())
+	}
 
-	case storyCompleteMsg:
-		if msg.success {
-			m.currentStory.Passes = true
-			m.logger.AddLog(fmt.Sprintf("Story completed: %s", m.currentStory.Title))
+	m.logger.Update(msg)
+
+	return m, tea.Batch(cmds...)
+}
+
+func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
+	switch e := event.(type) {
+	case workflow.EventPRDGenerating:
+		m.logger.AddLog("Generating PRD...")
+
+	case workflow.EventPRDGenerated:
+		m.prd = e.PRD
+		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", e.PRD.ProjectName, len(e.PRD.Stories)))
+
+	case workflow.EventPRDLoaded:
+		m.prd = e.PRD
+		m.logger.AddLog(fmt.Sprintf("Loaded PRD: %s (%d/%d completed)",
+			e.PRD.ProjectName, e.PRD.CompletedCount(), len(e.PRD.Stories)))
+
+	case workflow.EventStoryStarted:
+		m.currentStory = e.Story
+		m.iteration = e.Iteration
+		m.logger.AddLog(fmt.Sprintf("Starting: %s (attempt %d/%d)",
+			e.Story.Title, e.Story.RetryCount+1, m.cfg.RetryAttempts))
+
+	case workflow.EventStoryCompleted:
+		if e.Success {
+			m.logger.AddLog(fmt.Sprintf("Completed: %s", e.Story.Title))
+			if m.prd != nil {
+				if s := m.prd.GetStory(e.Story.ID); s != nil {
+					s.Passes = true
+				}
+			}
 		} else {
-			m.currentStory.RetryCount++
-			m.logger.AddLog(fmt.Sprintf("Story failed: %s (retry %d/%d)",
-				m.currentStory.Title, m.currentStory.RetryCount, m.cfg.RetryAttempts))
+			m.logger.AddLog(fmt.Sprintf("Failed: %s", e.Story.Title))
 		}
 
-		if err := prd.Save(m.cfg, m.prd); err != nil {
-			m.logger.AddLog(fmt.Sprintf("Warning: failed to save state: %v", err))
+	case workflow.EventOutput:
+		if !e.Verbose || m.verbose {
+			m.logger.AddOutputLine(runner.OutputLine{Text: e.Text, IsErr: e.IsErr})
 		}
-		cmds = append(cmds, m.operationManager.ContinueImplementation(m.prd, m.iteration))
 
-	case storyErrorMsg:
-		m.logger.AddLog(fmt.Sprintf("Error: %v", msg.err))
-		m.currentStory.RetryCount++
-		cmds = append(cmds, m.operationManager.ContinueImplementation(m.prd, m.iteration))
+	case workflow.EventError:
+		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
 
-	default:
-		// Delegate to phase handler for any remaining messages
-		if m.phaseHandler != nil {
-			model, cmd := m.phaseHandler.HandleUpdate(msg, m)
-			if model_, ok := model.(*Model); ok {
-				m = model_
-			}
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
+	case workflow.EventCompleted:
+		m.phase = PhaseCompleted
+		m.logger.AddLog("All stories completed!")
+
+	case workflow.EventFailed:
+		m.phase = PhaseFailed
+		if len(e.FailedStories) > 0 {
+			m.logger.AddLog(fmt.Sprintf("Failed: %d stories exceeded retry limit", len(e.FailedStories)))
 		}
 	}
 
-	var cmd tea.Cmd
-	m.logger.Update(msg)
-	cmds = append(cmds, cmd)
-
-	return m, tea.Batch(cmds...)
+	return nil
 }
 
 func (m *Model) ExitCode() int {
@@ -240,22 +232,5 @@ func (m *Model) ExitCode() int {
 		return 1
 	default:
 		return 1
-	}
-}
-
-func (m *Model) getPhaseHandlerForPhase(phase Phase) PhaseHandler {
-	switch phase {
-	case PhaseInit:
-		return NewInitPhaseHandler()
-	case PhasePRDGeneration:
-		return NewPRDGenerationPhaseHandler()
-	case PhaseImplementation:
-		return NewImplementationPhaseHandler()
-	case PhaseCompleted:
-		return NewCompletedPhaseHandler()
-	case PhaseFailed:
-		return NewFailedPhaseHandler()
-	default:
-		return NewInitPhaseHandler()
 	}
 }

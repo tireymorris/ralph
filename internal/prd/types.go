@@ -61,3 +61,12 @@ func (p *PRD) AllCompleted() bool {
 	}
 	return true
 }
+
+func (p *PRD) GetStory(id string) *Story {
+	for _, story := range p.Stories {
+		if story.ID == id {
+			return story
+		}
+	}
+	return nil
+}

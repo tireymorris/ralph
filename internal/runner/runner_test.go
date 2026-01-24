@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os/exec"
 	"strings"
 	"testing"
 
@@ -26,16 +25,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-type mockWriteCloser struct {
-	io.Writer
-	closed bool
-}
-
-func (m *mockWriteCloser) Close() error {
-	m.closed = true
-	return nil
-}
-
 type mockReadCloser struct {
 	*strings.Reader
 	closed bool
@@ -47,20 +36,12 @@ func (m *mockReadCloser) Close() error {
 }
 
 type mockCmd struct {
-	stdinErr  error
 	stdoutErr error
 	stderrErr error
 	startErr  error
 	waitErr   error
 	stdout    string
 	stderr    string
-}
-
-func (m *mockCmd) StdinPipe() (io.WriteCloser, error) {
-	if m.stdinErr != nil {
-		return nil, m.stdinErr
-	}
-	return &mockWriteCloser{Writer: &strings.Builder{}}, nil
 }
 
 func (m *mockCmd) StdoutPipe() (io.ReadCloser, error) {
@@ -85,7 +66,7 @@ func (m *mockCmd) Wait() error {
 	return m.waitErr
 }
 
-func TestRunOpenCodeSuccess(t *testing.T) {
+func TestRunSuccess(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
 	r := New(cfg)
 
@@ -94,16 +75,13 @@ func TestRunOpenCodeSuccess(t *testing.T) {
 		return mock
 	}
 
-	result, err := r.RunOpenCode(context.Background(), "test prompt", nil)
+	err := r.Run(context.Background(), "test prompt", nil)
 	if err != nil {
-		t.Fatalf("RunOpenCode() error = %v", err)
-	}
-	if result == nil {
-		t.Fatal("Result should not be nil")
+		t.Fatalf("Run() error = %v", err)
 	}
 }
 
-func TestRunOpenCodeWithOutputChannel(t *testing.T) {
+func TestRunWithOutputChannel(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
 	r := New(cfg)
 
@@ -113,19 +91,13 @@ func TestRunOpenCodeWithOutputChannel(t *testing.T) {
 	}
 
 	outputCh := make(chan OutputLine, 100)
-	result, err := r.RunOpenCode(context.Background(), "test", outputCh)
+	err := r.Run(context.Background(), "test", outputCh)
 	if err != nil {
-		t.Fatalf("RunOpenCode() error = %v", err)
-	}
-	if result == nil {
-		t.Fatal("Result should not be nil")
+		t.Fatalf("Run() error = %v", err)
 	}
 }
 
-// Note: TestRunOpenCodeStdinError was removed because RunOpenCode
-// passes the prompt as a command-line argument, not via stdin.
-
-func TestRunOpenCodeStdoutError(t *testing.T) {
+func TestRunStdoutError(t *testing.T) {
 	cfg := &config.Config{}
 	r := New(cfg)
 
@@ -134,13 +106,13 @@ func TestRunOpenCodeStdoutError(t *testing.T) {
 		return mock
 	}
 
-	_, err := r.RunOpenCode(context.Background(), "test", nil)
+	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
-		t.Error("RunOpenCode() should error on stdout failure")
+		t.Error("Run() should error on stdout failure")
 	}
 }
 
-func TestRunOpenCodeStderrError(t *testing.T) {
+func TestRunStderrError(t *testing.T) {
 	cfg := &config.Config{}
 	r := New(cfg)
 
@@ -149,13 +121,13 @@ func TestRunOpenCodeStderrError(t *testing.T) {
 		return mock
 	}
 
-	_, err := r.RunOpenCode(context.Background(), "test", nil)
+	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
-		t.Error("RunOpenCode() should error on stderr failure")
+		t.Error("Run() should error on stderr failure")
 	}
 }
 
-func TestRunOpenCodeStartError(t *testing.T) {
+func TestRunStartError(t *testing.T) {
 	cfg := &config.Config{}
 	r := New(cfg)
 
@@ -164,13 +136,13 @@ func TestRunOpenCodeStartError(t *testing.T) {
 		return mock
 	}
 
-	_, err := r.RunOpenCode(context.Background(), "test", nil)
+	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
-		t.Error("RunOpenCode() should error on start failure")
+		t.Error("Run() should error on start failure")
 	}
 }
 
-func TestRunOpenCodeWaitError(t *testing.T) {
+func TestRunWaitError(t *testing.T) {
 	cfg := &config.Config{}
 	r := New(cfg)
 
@@ -179,46 +151,13 @@ func TestRunOpenCodeWaitError(t *testing.T) {
 		return mock
 	}
 
-	result, err := r.RunOpenCode(context.Background(), "test", nil)
-	if err != nil {
-		t.Fatalf("RunOpenCode() should not return error, got %v", err)
-	}
-	if result.Error == nil {
-		t.Error("Result.Error should be set")
+	err := r.Run(context.Background(), "test", nil)
+	if err == nil {
+		t.Error("Run() should return error on wait failure")
 	}
 }
 
-type exitError struct {
-	code int
-}
-
-func (e *exitError) Error() string {
-	return "exit error"
-}
-
-func (e *exitError) ExitCode() int {
-	return e.code
-}
-
-func TestRunOpenCodeExitError(t *testing.T) {
-	cfg := &config.Config{}
-	r := New(cfg)
-
-	mock := &mockCmd{waitErr: &exec.ExitError{}}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
-
-	result, err := r.RunOpenCode(context.Background(), "test", nil)
-	if err != nil {
-		t.Fatalf("RunOpenCode() should not return error, got %v", err)
-	}
-	if result.Error != nil {
-		t.Error("Result.Error should be nil for exit error")
-	}
-}
-
-func TestRunOpenCodeNoModel(t *testing.T) {
+func TestRunNoModel(t *testing.T) {
 	cfg := &config.Config{Model: ""}
 	r := New(cfg)
 
@@ -229,7 +168,7 @@ func TestRunOpenCodeNoModel(t *testing.T) {
 		return mock
 	}
 
-	r.RunOpenCode(context.Background(), "test", nil)
+	r.Run(context.Background(), "test", nil)
 
 	for _, arg := range capturedArgs {
 		if arg == "--model" {
@@ -259,25 +198,10 @@ func TestDefaultCmdFuncWithWorkDir(t *testing.T) {
 	}
 }
 
-func TestRealCmdMethods(t *testing.T) {
-	rc := &realCmd{Cmd: nil}
-	if rc == nil {
-		t.Error("realCmd should not be nil")
-	}
-}
-
 func TestRealCmdPipes(t *testing.T) {
 	cmdFunc := defaultCmdFunc("")
 	cmd := cmdFunc(context.Background(), "echo", "test")
 	rc := cmd.(*realCmd)
-
-	stdin, err := rc.StdinPipe()
-	if err != nil {
-		t.Errorf("StdinPipe() error = %v", err)
-	}
-	if stdin != nil {
-		stdin.Close()
-	}
 
 	stdout, err := rc.StdoutPipe()
 	if err != nil {
@@ -312,117 +236,6 @@ func TestRealCmdStartWait(t *testing.T) {
 	}
 }
 
-func TestCleanOutput(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		expect string
-	}{
-		{
-			name:   "no escape codes",
-			input:  "plain text",
-			expect: "plain text",
-		},
-		{
-			name:   "simple escape code",
-			input:  "\x1b[31mred\x1b[0m",
-			expect: "red",
-		},
-		{
-			name:   "multiple escape codes",
-			input:  "\x1b[1m\x1b[32mbold green\x1b[0m normal",
-			expect: "bold green normal",
-		},
-		{
-			name:   "cursor movement",
-			input:  "\x1b[2Kmoved\x1b[1A",
-			expect: "moved",
-		},
-		{
-			name:   "whitespace trimming",
-			input:  "  \n  trimmed  \n  ",
-			expect: "trimmed",
-		},
-		{
-			name:   "complex escape sequence",
-			input:  "\x1b[38;5;196mcolored\x1b[0m",
-			expect: "colored",
-		},
-		{
-			name:   "empty string",
-			input:  "",
-			expect: "",
-		},
-		{
-			name:   "only escape codes",
-			input:  "\x1b[0m\x1b[1m\x1b[32m",
-			expect: "",
-		},
-		{
-			name:   "escape at end",
-			input:  "text\x1b[0m",
-			expect: "text",
-		},
-		{
-			name:   "incomplete escape sequence",
-			input:  "text\x1b[",
-			expect: "text",
-		},
-		{
-			name:   "OSC sequence with BEL terminator",
-			input:  "\x1b]0;window title\x07text here",
-			expect: "text here",
-		},
-		{
-			name:   "OSC sequence with ST terminator",
-			input:  "\x1b]0;window title\x1b\\text here",
-			expect: "text here",
-		},
-		{
-			name:   "mixed CSI and OSC sequences",
-			input:  "\x1b]0;title\x07\x1b[32mgreen\x1b[0m",
-			expect: "green",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := CleanOutput(tt.input)
-			if got != tt.expect {
-				t.Errorf("CleanOutput() = %q, want %q", got, tt.expect)
-			}
-		})
-	}
-}
-
-func TestIsCSITerminator(t *testing.T) {
-	tests := []struct {
-		input byte
-		want  bool
-	}{
-		{'A', true},
-		{'Z', true},
-		{'a', true},
-		{'z', true},
-		{'m', true},
-		{'K', true},
-		{'0', false},
-		{'9', false},
-		{';', false},
-		{'[', false},
-		{' ', false},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.input), func(t *testing.T) {
-			got := isCSITerminator(tt.input)
-			if got != tt.want {
-				t.Errorf("isCSITerminator(%q) = %v, want %v", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestOutputLine(t *testing.T) {
 	line := OutputLine{
 		Text:  "test output",
@@ -437,25 +250,7 @@ func TestOutputLine(t *testing.T) {
 	}
 }
 
-func TestResult(t *testing.T) {
-	result := Result{
-		Output:   "output text",
-		ExitCode: 1,
-		Error:    nil,
-	}
-
-	if result.Output != "output text" {
-		t.Errorf("Output = %q, want %q", result.Output, "output text")
-	}
-	if result.ExitCode != 1 {
-		t.Errorf("ExitCode = %d, want 1", result.ExitCode)
-	}
-	if result.Error != nil {
-		t.Errorf("Error = %v, want nil", result.Error)
-	}
-}
-
-func TestIsVerboseLogLine(t *testing.T) {
+func TestIsVerboseLine(t *testing.T) {
 	tests := []struct {
 		name string
 		line string
@@ -532,11 +327,6 @@ func TestIsVerboseLogLine(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "COMPLETED marker - not verbose",
-			line: "COMPLETED: done",
-			want: false,
-		},
-		{
 			name: "empty line - not verbose",
 			line: "",
 			want: false,
@@ -546,23 +336,13 @@ func TestIsVerboseLogLine(t *testing.T) {
 			line: "OK",
 			want: false,
 		},
-		{
-			name: "tool call with pipe - not verbose",
-			line: "|  Glob     {\"pattern\":\"src/**/*.c\"}",
-			want: false,
-		},
-		{
-			name: "tool call read - not verbose",
-			line: "|  Read     src/test_gameplay.c",
-			want: false,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isVerboseLogLine(tt.line)
+			got := isVerboseLine(tt.line)
 			if got != tt.want {
-				t.Errorf("isVerboseLogLine(%q) = %v, want %v", tt.line, got, tt.want)
+				t.Errorf("isVerboseLine(%q) = %v, want %v", tt.line, got, tt.want)
 			}
 		})
 	}

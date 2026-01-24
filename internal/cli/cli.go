@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"ralph/internal"
 	"ralph/internal/config"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
@@ -20,12 +19,12 @@ type Runner struct {
 	dryRun   bool
 	resume   bool
 	verbose  bool
-	executor internal.WorkflowRunner
+	executor *workflow.Executor
 	eventsCh chan workflow.Event
 }
 
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
-	eventsCh := make(chan workflow.Event, 10000) // Large buffer to handle high-volume output
+	eventsCh := make(chan workflow.Event, 10000)
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,
@@ -34,18 +33,6 @@ func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) 
 		verbose:  verbose,
 		eventsCh: eventsCh,
 		executor: workflow.NewExecutor(cfg, eventsCh),
-	}
-}
-
-func NewRunnerWithExecutor(cfg *config.Config, prompt string, dryRun, resume, verbose bool, exec internal.WorkflowRunner, eventsCh chan workflow.Event) *Runner {
-	return &Runner{
-		cfg:      cfg,
-		prompt:   prompt,
-		dryRun:   dryRun,
-		resume:   resume,
-		verbose:  verbose,
-		executor: exec,
-		eventsCh: eventsCh,
 	}
 }
 
@@ -84,10 +71,11 @@ func (r *Runner) Run() int {
 	}
 
 	if r.dryRun {
-		fmt.Println("🏁 Dry run complete - PRD saved, no implementation performed")
+		fmt.Println("Dry run complete - PRD saved, no implementation performed")
 		close(r.eventsCh)
 		return 0
 	}
+
 	err = r.executor.RunImplementation(ctx, p)
 	close(r.eventsCh)
 	return <-doneCh
@@ -99,56 +87,54 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 	for event := range eventsCh {
 		switch e := event.(type) {
 		case workflow.EventPRDGenerating:
-			fmt.Println("📝 Generating PRD...")
+			fmt.Println("Generating PRD...")
 
 		case workflow.EventPRDGenerated:
-			fmt.Printf("✅ PRD generated: %s (%d stories)\n", e.PRD.ProjectName, len(e.PRD.Stories))
-			fmt.Printf("   Saved to: %s\n\n", r.cfg.PRDFile)
+			fmt.Printf("PRD generated: %s (%d stories)\n", e.PRD.ProjectName, len(e.PRD.Stories))
+			fmt.Printf("Saved to: %s\n\n", r.cfg.PRDFile)
 			r.printStories(e.PRD)
 
 		case workflow.EventPRDLoaded:
-			fmt.Printf("📂 Loaded PRD: %s (%d stories, %d completed)\n\n",
+			fmt.Printf("Loaded PRD: %s (%d stories, %d completed)\n\n",
 				e.PRD.ProjectName, len(e.PRD.Stories), e.PRD.CompletedCount())
 			r.printStories(e.PRD)
 
 		case workflow.EventStoryStarted:
-			fmt.Printf("▶️  Story: %s (attempt %d/%d)\n",
+			fmt.Printf("Story: %s (attempt %d/%d)\n",
 				e.Story.Title, e.Story.RetryCount+1, r.cfg.RetryAttempts)
 
 		case workflow.EventStoryCompleted:
 			if e.Success {
-				fmt.Printf("   ✅ Completed\n\n")
+				fmt.Printf("  Completed\n\n")
 			} else {
-				fmt.Printf("   ❌ Failed (will retry)\n\n")
+				fmt.Printf("  Failed (will retry)\n\n")
 			}
 
 		case workflow.EventOutput:
-			// Skip verbose output unless --verbose is enabled
 			if e.Verbose && !r.verbose {
 				continue
 			}
-			prefix := "   "
+			prefix := "  "
 			if e.IsErr {
-				prefix = "   [!]"
+				prefix = "  [!]"
 			}
 			fmt.Printf("%s %s\n", prefix, e.Text)
-			// Flush stdout for real-time streaming
 			os.Stdout.Sync()
 
 		case workflow.EventError:
-			fmt.Printf("❌ Error: %v\n", e.Err)
+			fmt.Printf("Error: %v\n", e.Err)
 			exitCode = 1
 
 		case workflow.EventCompleted:
-			fmt.Println("🎉 All stories completed successfully!")
+			fmt.Println("All stories completed successfully!")
 			exitCode = 0
 
 		case workflow.EventFailed:
-			fmt.Println("❌ Implementation failed")
+			fmt.Println("Implementation failed")
 			if len(e.FailedStories) > 0 {
 				fmt.Printf("\nFailed stories (%d):\n", len(e.FailedStories))
 				for _, s := range e.FailedStories {
-					fmt.Printf("   • %s (%d attempts)\n", s.Title, s.RetryCount)
+					fmt.Printf("  - %s (%d attempts)\n", s.Title, s.RetryCount)
 				}
 				fmt.Println("\nRun with --resume to retry after fixing issues.")
 			}
@@ -160,13 +146,13 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 }
 
 func (r *Runner) printStories(p *prd.PRD) {
-	fmt.Println("📋 Stories:")
+	fmt.Println("Stories:")
 	for _, s := range p.Stories {
-		status := "⬜"
+		status := "[ ]"
 		if s.Passes {
-			status = "✅"
+			status = "[x]"
 		}
-		fmt.Printf("   %s [P%d] %s\n", status, s.Priority, s.Title)
+		fmt.Printf("  %s [P%d] %s\n", status, s.Priority, s.Title)
 	}
 	fmt.Println()
 }
