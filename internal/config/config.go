@@ -11,11 +11,10 @@ var SupportedModels = []string{
 	"opencode/big-pickle",
 	"opencode/glm-4.7-free",
 	"opencode/gpt-5-nano",
-	"opencode/grok-code",
 	"opencode/minimax-m2.1-free",
 }
 
-const DefaultModel = "opencode/grok-code"
+const DefaultModel = "opencode/big-pickle"
 
 type Config struct {
 	Model         string `json:"model"`
