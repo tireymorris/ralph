@@ -82,7 +82,14 @@ PROCESS:
 3. Run tests and ensure they pass
 4. Commit changes with message: "feat: %s"
 5. Update %s - set "passes": true for story "%s"
-6. If you created new utilities, patterns, or discovered important info for future stories, update the "context" field in %s
+
+CONTEXT UPDATES (IMPORTANT):
+After completing this story, you MUST update the "context" field in %s if you:
+- Created new modules, classes, or utilities that future stories should reuse
+- Established patterns (e.g., validation approach, error handling style)
+- Added helpers, mixins, or shared functionality
+- Discovered project conventions not previously documented
+Append new information to the existing context. This helps future stories avoid re-reading code.
 
 CRITICAL: You MUST update %s to mark the story as complete when done.
 If tests fail, increment "retry_count" in %s for this story instead.
