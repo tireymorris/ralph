@@ -1,6 +1,7 @@
 {
   "project_name": "Example Project",
   "branch_name": "feature/example-feature",
+  "context": "Ruby 3.2 with RSpec for testing. Main code in lib/, tests in spec/. Run tests with 'bundle exec rspec'. Follow existing patterns in lib/game.rb for new features.",
   "stories": [
     {
       "id": "story-1",

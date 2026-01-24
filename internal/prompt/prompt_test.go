@@ -21,9 +21,11 @@ func TestPRDGeneration(t *testing.T) {
 			mustInclude: []string{
 				"Add authentication",
 				"project_name",
+				"context",
 				"stories",
 				"prd.json",
 				"feature/",
+				"CONTEXT FIELD REQUIREMENTS",
 			},
 		},
 		{
@@ -68,19 +70,22 @@ func TestStoryImplementation(t *testing.T) {
 		description        string
 		acceptanceCriteria []string
 		testSpec           string
+		context            string
 		prdFile            string
 		iteration          int
 		completed          int
 		total              int
 		mustInclude        []string
+		mustNotInclude     []string
 	}{
 		{
-			name:               "basic story",
+			name:               "basic story without context",
 			storyID:            "story-1",
 			title:              "Add login",
 			description:        "Implement login functionality",
 			acceptanceCriteria: []string{"User can login", "Error on bad credentials"},
 			testSpec:           "Test login flow",
+			context:            "",
 			prdFile:            "prd.json",
 			iteration:          1,
 			completed:          0,
@@ -96,6 +101,26 @@ func TestStoryImplementation(t *testing.T) {
 				"0/3",
 				"prd.json",
 			},
+			mustNotInclude: []string{"CODEBASE CONTEXT"},
+		},
+		{
+			name:               "story with context",
+			storyID:            "story-1",
+			title:              "Add feature",
+			description:        "Implement feature",
+			acceptanceCriteria: []string{"Works"},
+			testSpec:           "Test it",
+			context:            "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'.",
+			prdFile:            "prd.json",
+			iteration:          1,
+			completed:          0,
+			total:              2,
+			mustInclude: []string{
+				"CODEBASE CONTEXT",
+				"Ruby 3.2 with RSpec",
+				"Tests in spec/ directory",
+				"bundle exec rspec",
+			},
 		},
 		{
 			name:               "empty test spec uses default",
@@ -104,6 +129,7 @@ func TestStoryImplementation(t *testing.T) {
 			description:        "Desc",
 			acceptanceCriteria: []string{"AC"},
 			testSpec:           "",
+			context:            "",
 			prdFile:            "prd.json",
 			iteration:          2,
 			completed:          1,
@@ -119,6 +145,7 @@ func TestStoryImplementation(t *testing.T) {
 			description:        "D",
 			acceptanceCriteria: []string{"A", "B", "C"},
 			testSpec:           "spec",
+			context:            "",
 			prdFile:            "prd.json",
 			iteration:          1,
 			completed:          0,
@@ -135,6 +162,7 @@ func TestStoryImplementation(t *testing.T) {
 				tt.description,
 				tt.acceptanceCriteria,
 				tt.testSpec,
+				tt.context,
 				tt.prdFile,
 				tt.iteration,
 				tt.completed,
@@ -143,6 +171,11 @@ func TestStoryImplementation(t *testing.T) {
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {
 					t.Errorf("StoryImplementation() missing %q in:\n%s", phrase, result)
+				}
+			}
+			for _, phrase := range tt.mustNotInclude {
+				if strings.Contains(result, phrase) {
+					t.Errorf("StoryImplementation() should not contain %q", phrase)
 				}
 			}
 		})

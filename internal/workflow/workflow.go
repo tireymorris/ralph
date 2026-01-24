@@ -197,6 +197,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			next.Description,
 			next.AcceptanceCriteria,
 			next.TestSpec,
+			p.Context,
 			e.cfg.PRDFile,
 			iteration,
 			p.CompletedCount(),

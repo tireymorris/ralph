@@ -14,6 +14,7 @@ type Story struct {
 type PRD struct {
 	ProjectName string   `json:"project_name"`
 	BranchName  string   `json:"branch_name,omitempty"`
+	Context     string   `json:"context,omitempty"`
 	Stories     []*Story `json:"stories"`
 }
 
