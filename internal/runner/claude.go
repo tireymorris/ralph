@@ -28,7 +28,10 @@ func NewClaude(cfg *config.Config) *ClaudeRunner {
 }
 
 func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	args := []string{"--print"}
+	args := []string{
+		"--print",
+		"--dangerously-skip-permissions",
+	}
 	if r.cfg.Model != "" {
 		args = append(args, "--model", strings.TrimPrefix(r.cfg.Model, "claude-code/"))
 	}
