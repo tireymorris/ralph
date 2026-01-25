@@ -174,164 +174,6 @@ func TestClaudeRunWaitError(t *testing.T) {
 	}
 }
 
-func TestIsClaudeVerboseLine(t *testing.T) {
-	tests := []struct {
-		name string
-		line string
-		want bool
-	}{
-		{
-			name: "debug log",
-			line: "[DEBUG] Initializing session",
-			want: true,
-		},
-		{
-			name: "info log",
-			line: "[INFO] Model loaded",
-			want: true,
-		},
-		{
-			name: "warn log",
-			line: "[WARN] Rate limit approaching",
-			want: true,
-		},
-		{
-			name: "error log",
-			line: "[ERROR] Connection failed",
-			want: true,
-		},
-		{
-			name: "trace log",
-			line: "TRACE: Processing request",
-			want: true,
-		},
-		{
-			name: "tool execution",
-			line: "Tool execution: read_file",
-			want: true,
-		},
-		{
-			name: "API request",
-			line: "API request: POST /v1/messages",
-			want: true,
-		},
-		{
-			name: "API response",
-			line: "API response: 200 OK",
-			want: true,
-		},
-		{
-			name: "token usage",
-			line: "Token usage: 1234 input, 567 output",
-			want: true,
-		},
-		{
-			name: "process ID",
-			line: "Process ID: 12345",
-			want: true,
-		},
-		{
-			name: "working directory",
-			line: "Working directory: /Users/test/project",
-			want: true,
-		},
-		{
-			name: "git repository",
-			line: "Git repository: /Users/test/project",
-			want: true,
-		},
-		{
-			name: "session ID",
-			line: "Session ID: sess_1234567890",
-			want: true,
-		},
-		{
-			name: "model info",
-			line: "Model: claude-3.5-sonnet",
-			want: true,
-		},
-		{
-			name: "temperature",
-			line: "Temperature: 0.7",
-			want: true,
-		},
-		{
-			name: "max tokens",
-			line: "Max tokens: 4096",
-			want: true,
-		},
-		{
-			name: "duration",
-			line: "duration=1.234s",
-			want: true,
-		},
-		{
-			name: "status",
-			line: "status=completed",
-			want: true,
-		},
-		{
-			name: "bytes",
-			line: "bytes=1024",
-			want: true,
-		},
-		{
-			name: "files",
-			line: "files=5",
-			want: true,
-		},
-		{
-			name: "request ID",
-			line: "request_id=req_1234567890",
-			want: true,
-		},
-		{
-			name: "timestamp",
-			line: "timestamp=2023-01-01T00:00:00Z",
-			want: true,
-		},
-		{
-			name: "tree line with pipe",
-			line: " ├─ Reading file",
-			want: true,
-		},
-		{
-			name: "tree line with corner",
-			line: " └─ Complete",
-			want: true,
-		},
-		{
-			name: "regular output - not verbose",
-			line: "Implementing feature...",
-			want: false,
-		},
-		{
-			name: "error output - not verbose",
-			line: "Error: something went wrong",
-			want: false,
-		},
-		{
-			name: "empty line - not verbose",
-			line: "",
-			want: false,
-		},
-		{
-			name: "simple output - not verbose",
-			line: "Hello, world!",
-			want: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isClaudeVerboseLine(tt.line)
-			if got != tt.want {
-				t.Errorf("isClaudeVerboseLine(%q) = %v, want %v", tt.line, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestClaudeOutputLineVerboseField(t *testing.T) {
 	line := OutputLine{
 		Text:    "[DEBUG] test output",
@@ -372,5 +214,118 @@ func TestClaudeRunOutputTimestamps(t *testing.T) {
 		if time.Since(line.Time) > time.Second*10 {
 			t.Errorf("Line %d timestamp is too old: %v", i, line.Time)
 		}
+	}
+}
+
+func TestParseClaudeStreamJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantLen     int
+		wantText    string
+		wantVerbose bool
+		wantErr     bool
+	}{
+		{
+			name:        "system init event",
+			input:       `{"type":"system","subtype":"init"}`,
+			wantLen:     1,
+			wantText:    "Claude initialized",
+			wantVerbose: true,
+		},
+		{
+			name:        "assistant text",
+			input:       `{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world"}]}}`,
+			wantLen:     1,
+			wantText:    "Hello world",
+			wantVerbose: false,
+		},
+		{
+			name:        "assistant tool use",
+			input:       `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read"}]}}`,
+			wantLen:     1,
+			wantText:    "Using tool: Read",
+			wantVerbose: false,
+		},
+		{
+			name:        "user tool result",
+			input:       `{"type":"user"}`,
+			wantLen:     1,
+			wantText:    "Tool completed",
+			wantVerbose: true,
+		},
+		{
+			name:        "result success",
+			input:       `{"type":"result","subtype":"success"}`,
+			wantLen:     1,
+			wantText:    "Task completed successfully",
+			wantVerbose: true,
+		},
+		{
+			name:     "result error",
+			input:    `{"type":"result","subtype":"error"}`,
+			wantLen:  1,
+			wantText: "Task failed",
+			wantErr:  true,
+		},
+		{
+			name:        "invalid JSON returns raw line",
+			input:       `not valid json`,
+			wantLen:     1,
+			wantText:    "not valid json",
+			wantVerbose: true,
+		},
+		{
+			name:    "empty text content ignored",
+			input:   `{"type":"assistant","message":{"content":[{"type":"text","text":""}]}}`,
+			wantLen: 0,
+		},
+		{
+			name:    "multiple content items",
+			input:   `{"type":"assistant","message":{"content":[{"type":"text","text":"First"},{"type":"tool_use","name":"Edit"},{"type":"text","text":"Second"}]}}`,
+			wantLen: 3,
+		},
+		{
+			name:    "unknown type returns empty",
+			input:   `{"type":"unknown"}`,
+			wantLen: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outputs := parseClaudeStreamJSON(tt.input)
+
+			if len(outputs) != tt.wantLen {
+				t.Errorf("parseClaudeStreamJSON() returned %d outputs, want %d", len(outputs), tt.wantLen)
+				return
+			}
+
+			if tt.wantLen > 0 && tt.wantText != "" {
+				if outputs[0].Text != tt.wantText {
+					t.Errorf("Text = %q, want %q", outputs[0].Text, tt.wantText)
+				}
+				if outputs[0].Verbose != tt.wantVerbose {
+					t.Errorf("Verbose = %v, want %v", outputs[0].Verbose, tt.wantVerbose)
+				}
+				if outputs[0].IsErr != tt.wantErr {
+					t.Errorf("IsErr = %v, want %v", outputs[0].IsErr, tt.wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestParseClaudeStreamJSONTimestamps(t *testing.T) {
+	before := time.Now()
+	outputs := parseClaudeStreamJSON(`{"type":"assistant","message":{"content":[{"type":"text","text":"test"}]}}`)
+	after := time.Now()
+
+	if len(outputs) != 1 {
+		t.Fatalf("Expected 1 output, got %d", len(outputs))
+	}
+
+	if outputs[0].Time.Before(before) || outputs[0].Time.After(after) {
+		t.Errorf("Timestamp %v not between %v and %v", outputs[0].Time, before, after)
 	}
 }
