@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,6 +38,47 @@ func TestSupportedModels(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("DefaultModel %q not in SupportedModels", DefaultModel)
+	}
+
+	// Test Claude Code models are present
+	claudeModels := []string{
+		"claude-code/claude-3.5-sonnet",
+		"claude-code/claude-3.5-haiku",
+		"claude-code/claude-3-opus",
+	}
+
+	for _, model := range claudeModels {
+		found := false
+		for _, supported := range SupportedModels {
+			if supported == model {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Claude Code model %q not in SupportedModels", model)
+		}
+	}
+
+	// Test OpenCode models are still present (backward compatibility)
+	opencodeModels := []string{
+		"opencode/big-pickle",
+		"opencode/glm-4.7-free",
+		"opencode/gpt-5-nano",
+		"opencode/minimax-m2.1-free",
+	}
+
+	for _, model := range opencodeModels {
+		found := false
+		for _, supported := range SupportedModels {
+			if supported == model {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("OpenCode model %q not in SupportedModels (backward compatibility)", model)
+		}
 	}
 }
 
@@ -234,6 +276,21 @@ func TestValidateModel(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "valid claude code model - sonnet",
+			model:   "claude-code/claude-3.5-sonnet",
+			wantErr: false,
+		},
+		{
+			name:    "valid claude code model - haiku",
+			model:   "claude-code/claude-3.5-haiku",
+			wantErr: false,
+		},
+		{
+			name:    "valid claude code model - opus",
+			model:   "claude-code/claude-3-opus",
+			wantErr: false,
+		},
+		{
 			name:    "invalid model",
 			model:   "invalid-model",
 			wantErr: true,
@@ -342,5 +399,89 @@ func TestLoadInvalidConfig(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Error("Load() should return error for invalid model")
+	}
+}
+
+func TestLoadClaudeCodeConfig(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	tests := []struct {
+		name    string
+		model   string
+		wantErr bool
+	}{
+		{
+			name:    "claude sonnet model",
+			model:   "claude-code/claude-3.5-sonnet",
+			wantErr: false,
+		},
+		{
+			name:    "claude haiku model",
+			model:   "claude-code/claude-3.5-haiku",
+			wantErr: false,
+		},
+		{
+			name:    "claude opus model",
+			model:   "claude-code/claude-3-opus",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			configContent := fmt.Sprintf(`{"model": "%s"}`, tt.model)
+			os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+
+			cfg, err := Load()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Load() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr {
+				if cfg.Model != tt.model {
+					t.Errorf("Model = %q, want %q", cfg.Model, tt.model)
+				}
+				// Verify other defaults are maintained
+				if cfg.MaxIterations != 50 {
+					t.Errorf("MaxIterations = %d, want default 50", cfg.MaxIterations)
+				}
+				if cfg.RetryAttempts != 3 {
+					t.Errorf("RetryAttempts = %d, want default 3", cfg.RetryAttempts)
+				}
+			}
+		})
+	}
+}
+
+func TestBackwardCompatibilityOpenCodeModels(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	opencodeModels := []string{
+		"opencode/big-pickle",
+		"opencode/glm-4.7-free",
+		"opencode/gpt-5-nano",
+		"opencode/minimax-m2.1-free",
+	}
+
+	for _, model := range opencodeModels {
+		t.Run("opencode_model_"+model, func(t *testing.T) {
+			configContent := fmt.Sprintf(`{"model": "%s"}`, model)
+			os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load() error = %v, want nil", err)
+			}
+
+			if cfg.Model != model {
+				t.Errorf("Model = %q, want %q", cfg.Model, model)
+			}
+		})
 	}
 }
