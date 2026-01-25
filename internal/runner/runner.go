@@ -58,6 +58,17 @@ func defaultCmdFunc(workDir string) func(ctx context.Context, name string, args 
 	}
 }
 
+func defaultCmdFuncNoStdin(workDir string) func(ctx context.Context, name string, args ...string) CmdInterface {
+	return func(ctx context.Context, name string, args ...string) CmdInterface {
+		cmd := exec.CommandContext(ctx, name, args...)
+		if workDir != "" {
+			cmd.Dir = workDir
+		}
+		cmd.Stdin = nil
+		return &realCmd{cmd}
+	}
+}
+
 func isClaudeCodeModel(model string) bool {
 	return strings.HasPrefix(model, "claude-code/")
 }
