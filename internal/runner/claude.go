@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -70,36 +69,14 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 
 	go func() {
 		defer wg.Done()
-		scanner := bufio.NewScanner(stdout)
-		buf := make([]byte, 0, 64*1024)
-		scanner.Buffer(buf, 1024*1024)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if outputCh != nil {
-				parsed := parseClaudeStreamJSON(line)
-				for _, out := range parsed {
-					outputCh <- out
-				}
-			}
-		}
+		readPipeLines(stdout, outputCh, parseClaudeStreamJSON)
 	}()
 
 	go func() {
 		defer wg.Done()
-		scanner := bufio.NewScanner(stderr)
-		buf := make([]byte, 0, 64*1024)
-		scanner.Buffer(buf, 1024*1024)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if outputCh != nil {
-				outputCh <- OutputLine{
-					Text:    line,
-					IsErr:   true,
-					Time:    time.Now(),
-					Verbose: true,
-				}
-			}
-		}
+		readPipeLines(stderr, outputCh, func(line string) []OutputLine {
+			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: true}}
+		})
 	}()
 
 	wg.Wait()
@@ -171,50 +148,4 @@ func parseClaudeStreamJSON(line string) []OutputLine {
 	}
 
 	return outputs
-}
-
-func isClaudeVerboseLine(line string) bool {
-	if len(line) == 0 {
-		return false
-	}
-
-	verbosePatterns := []string{
-		"[DEBUG]",
-		"[INFO]",
-		"[WARN]",
-		"[ERROR]",
-		"TRACE:",
-		"Tool execution:",
-		"API request:",
-		"API response:",
-		"Token usage:",
-		"Process ID:",
-		"Working directory:",
-		"Git repository:",
-		"Session ID:",
-		"Model:",
-		"Temperature:",
-		"Max tokens:",
-		"duration=",
-		"status=",
-		"bytes=",
-		"files=",
-		"request_id=",
-		"timestamp=",
-	}
-
-	for _, pattern := range verbosePatterns {
-		if strings.Contains(line, pattern) {
-			return true
-		}
-	}
-
-	if strings.HasPrefix(line, " ") && len(line) > 1 {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "|") || strings.HasPrefix(trimmed, "└") || strings.HasPrefix(trimmed, "├") {
-			return true
-		}
-	}
-
-	return false
 }

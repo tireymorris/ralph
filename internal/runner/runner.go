@@ -69,6 +69,21 @@ func defaultCmdFuncNoStdin(workDir string) func(ctx context.Context, name string
 	}
 }
 
+type LineTransformer func(line string) []OutputLine
+
+func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) {
+	scanner := bufio.NewScanner(pipe)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	for scanner.Scan() {
+		if outputCh != nil {
+			for _, out := range transform(scanner.Text()) {
+				outputCh <- out
+			}
+		}
+	}
+}
+
 func isClaudeCodeModel(model string) bool {
 	return strings.HasPrefix(model, "claude-code/")
 }
@@ -128,38 +143,16 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 
 	go func() {
 		defer wg.Done()
-		scanner := bufio.NewScanner(stdout)
-		buf := make([]byte, 0, 64*1024)
-		scanner.Buffer(buf, 1024*1024)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if outputCh != nil {
-				outputCh <- OutputLine{
-					Text:    line,
-					IsErr:   false,
-					Time:    time.Now(),
-					Verbose: isVerboseLine(line),
-				}
-			}
-		}
+		readPipeLines(stdout, outputCh, func(line string) []OutputLine {
+			return []OutputLine{{Text: line, IsErr: false, Time: time.Now(), Verbose: isVerboseLine(line)}}
+		})
 	}()
 
 	go func() {
 		defer wg.Done()
-		scanner := bufio.NewScanner(stderr)
-		buf := make([]byte, 0, 64*1024)
-		scanner.Buffer(buf, 1024*1024)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if outputCh != nil {
-				outputCh <- OutputLine{
-					Text:    line,
-					IsErr:   true,
-					Time:    time.Now(),
-					Verbose: isVerboseLine(line),
-				}
-			}
-		}
+		readPipeLines(stderr, outputCh, func(line string) []OutputLine {
+			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: isVerboseLine(line)}}
+		})
 	}()
 
 	wg.Wait()
