@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ralph/internal/config"
 	"ralph/internal/logger"
@@ -10,6 +11,8 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
 )
+
+const maxJSONRepairAttempts = 2
 
 type Output struct {
 	Text    string
@@ -115,9 +118,19 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 
 	p, err := prd.Load(e.cfg)
 	if err != nil {
-		logger.Error("failed to load generated PRD", "error", err)
-		e.emit(EventError{Err: fmt.Errorf("opencode did not create valid %s: %w", e.cfg.PRDFile, err)})
-		return nil, err
+		if isJSONParseError(err) {
+			logger.Warn("PRD has JSON syntax error, attempting repair", "error", err)
+			p, err = e.repairPRD(ctx, err)
+			if err != nil {
+				logger.Error("failed to repair PRD", "error", err)
+				e.emit(EventError{Err: err})
+				return nil, err
+			}
+		} else {
+			logger.Error("failed to load generated PRD", "error", err)
+			e.emit(EventError{Err: fmt.Errorf("opencode did not create valid %s: %w", e.cfg.PRDFile, err)})
+			return nil, err
+		}
 	}
 
 	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
@@ -128,8 +141,17 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	p, err := prd.Load(e.cfg)
 	if err != nil {
-		e.emit(EventError{Err: err})
-		return nil, err
+		if isJSONParseError(err) {
+			logger.Warn("PRD has JSON syntax error, attempting repair", "error", err)
+			p, err = e.repairPRD(ctx, err)
+			if err != nil {
+				e.emit(EventError{Err: err})
+				return nil, err
+			}
+		} else {
+			e.emit(EventError{Err: err})
+			return nil, err
+		}
 	}
 
 	e.emit(EventPRDLoaded{PRD: p})
@@ -213,9 +235,15 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		updatedPRD, loadErr := prd.Load(e.cfg)
 		if loadErr != nil {
-			logger.Warn("failed to reload PRD after story", "error", loadErr)
-			e.emit(EventStoryCompleted{Story: next, Success: false})
-			continue
+			if isJSONParseError(loadErr) {
+				logger.Warn("PRD corrupted during story, attempting repair", "error", loadErr)
+				updatedPRD, loadErr = e.repairPRD(ctx, loadErr)
+			}
+			if loadErr != nil {
+				logger.Warn("failed to reload PRD after story", "error", loadErr)
+				e.emit(EventStoryCompleted{Story: next, Success: false})
+				continue
+			}
 		}
 
 		updatedStory := updatedPRD.GetStory(next.ID)
@@ -251,4 +279,44 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
 		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})
 	}
+}
+
+func isJSONParseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "invalid character") ||
+		strings.Contains(errStr, "unexpected end of JSON") ||
+		strings.Contains(errStr, "cannot unmarshal")
+}
+
+func (e *Executor) repairPRD(ctx context.Context, parseErr error) (*prd.PRD, error) {
+	for attempt := 1; attempt <= maxJSONRepairAttempts; attempt++ {
+		logger.Debug("attempting to repair PRD JSON", "attempt", attempt, "error", parseErr.Error())
+		e.emit(EventOutput{Output{Text: fmt.Sprintf("Attempting to repair malformed JSON (attempt %d)...", attempt)}})
+
+		outputCh := make(chan runner.OutputLine, 10000)
+		go e.forwardOutput(outputCh)
+
+		repairPrompt := prompt.JSONRepair(e.cfg.PRDFile, parseErr.Error())
+		err := e.runner.Run(ctx, repairPrompt, outputCh)
+		close(outputCh)
+
+		if err != nil {
+			logger.Warn("repair attempt failed", "attempt", attempt, "error", err)
+			continue
+		}
+
+		p, loadErr := prd.Load(e.cfg)
+		if loadErr == nil {
+			logger.Debug("PRD JSON repaired successfully")
+			e.emit(EventOutput{Output{Text: "JSON repaired successfully"}})
+			return p, nil
+		}
+
+		parseErr = loadErr
+	}
+
+	return nil, fmt.Errorf("failed to repair PRD JSON after %d attempts: %w", maxJSONRepairAttempts, parseErr)
 }
