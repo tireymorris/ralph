@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewClaude(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	r := NewClaude(cfg)
 
 	if r == nil {
@@ -26,7 +26,7 @@ func TestNewClaude(t *testing.T) {
 }
 
 func TestClaudeRunWithModel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	r := NewClaude(cfg)
 
 	var capturedArgs []string
@@ -41,7 +41,7 @@ func TestClaudeRunWithModel(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	expectedArgs := []string{"--print", "--model", "claude-3.5-sonnet", "test prompt"}
+	expectedArgs := []string{"--print", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
 	}
@@ -77,7 +77,7 @@ func TestClaudeRunNoModel(t *testing.T) {
 }
 
 func TestClaudeRunWithOutputChannel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-haiku"}
+	cfg := &config.Config{Model: "claude-code/haiku"}
 	r := NewClaude(cfg)
 
 	mock := &mockCmd{stdout: "line1\nline2", stderr: "err1"}
@@ -151,7 +151,7 @@ func TestClaudeRunStartError(t *testing.T) {
 	if err == nil {
 		t.Error("Run() should error on start failure")
 	}
-	if !strings.Contains(err.Error(), "start claude-code") {
+	if !strings.Contains(err.Error(), "start claude") {
 		t.Errorf("Expected start error, got %v", err)
 	}
 }
@@ -169,8 +169,8 @@ func TestClaudeRunWaitError(t *testing.T) {
 	if err == nil {
 		t.Error("Run() should return error on wait failure")
 	}
-	if !strings.Contains(err.Error(), "claude-code failed") {
-		t.Errorf("Expected claude-code failed error, got %v", err)
+	if !strings.Contains(err.Error(), "claude failed") {
+		t.Errorf("Expected claude failed error, got %v", err)
 	}
 }
 
@@ -345,7 +345,7 @@ func TestClaudeOutputLineVerboseField(t *testing.T) {
 }
 
 func TestClaudeRunOutputTimestamps(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	r := NewClaude(cfg)
 
 	mock := &mockCmd{stdout: "test output line", stderr: ""}

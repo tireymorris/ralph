@@ -42,9 +42,9 @@ func TestSupportedModels(t *testing.T) {
 
 	// Test Claude Code models are present
 	claudeModels := []string{
-		"claude-code/claude-3.5-sonnet",
-		"claude-code/claude-3.5-haiku",
-		"claude-code/claude-3-opus",
+		"claude-code/sonnet",
+		"claude-code/haiku",
+		"claude-code/opus",
 	}
 
 	for _, model := range claudeModels {
@@ -277,17 +277,17 @@ func TestValidateModel(t *testing.T) {
 		},
 		{
 			name:    "valid claude code model - sonnet",
-			model:   "claude-code/claude-3.5-sonnet",
+			model:   "claude-code/sonnet",
 			wantErr: false,
 		},
 		{
 			name:    "valid claude code model - haiku",
-			model:   "claude-code/claude-3.5-haiku",
+			model:   "claude-code/haiku",
 			wantErr: false,
 		},
 		{
 			name:    "valid claude code model - opus",
-			model:   "claude-code/claude-3-opus",
+			model:   "claude-code/opus",
 			wantErr: false,
 		},
 		{
@@ -415,17 +415,17 @@ func TestLoadClaudeCodeConfig(t *testing.T) {
 	}{
 		{
 			name:    "claude sonnet model",
-			model:   "claude-code/claude-3.5-sonnet",
+			model:   "claude-code/sonnet",
 			wantErr: false,
 		},
 		{
 			name:    "claude haiku model",
-			model:   "claude-code/claude-3.5-haiku",
+			model:   "claude-code/haiku",
 			wantErr: false,
 		},
 		{
 			name:    "claude opus model",
-			model:   "claude-code/claude-3-opus",
+			model:   "claude-code/opus",
 			wantErr: false,
 		},
 	}
