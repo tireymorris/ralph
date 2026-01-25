@@ -17,7 +17,7 @@ var SupportedModels = []string{
 	"claude-code/opus",
 }
 
-const DefaultModel = "claude-code/sonnet"
+const DefaultModel = "opencode/big-pickle"
 
 type Config struct {
 	Model         string `json:"model"`

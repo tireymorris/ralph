@@ -466,10 +466,10 @@ func TestNewWithDefaultModel(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Should return ClaudeRunner for default model (claude-code/sonnet)
-	_, ok := runner.(*ClaudeRunner)
+	// Should return OpenCode Runner for default model (opencode/big-pickle)
+	_, ok := runner.(*Runner)
 	if !ok {
-		t.Errorf("New() returned %T, want *ClaudeRunner for default model", runner)
+		t.Errorf("New() returned %T, want *Runner for default model", runner)
 	}
 }
 
