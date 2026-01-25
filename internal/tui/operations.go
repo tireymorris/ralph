@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/config"
+	"ralph/internal/constants"
 	"ralph/internal/prd"
 	"ralph/internal/workflow"
 )
@@ -20,7 +21,7 @@ type OperationManager struct {
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
 	ctx, cancel := context.WithCancel(context.Background())
-	eventsCh := make(chan workflow.Event, 10000)
+	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
 
 	return &OperationManager{
 		cfg:        cfg,
