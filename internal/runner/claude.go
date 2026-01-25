@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -30,6 +31,8 @@ func NewClaude(cfg *config.Config) *ClaudeRunner {
 func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
 	args := []string{
 		"--print",
+		"--verbose",
+		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
 	if r.cfg.Model != "" {
@@ -73,11 +76,9 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		for scanner.Scan() {
 			line := scanner.Text()
 			if outputCh != nil {
-				outputCh <- OutputLine{
-					Text:    line,
-					IsErr:   false,
-					Time:    time.Now(),
-					Verbose: isClaudeVerboseLine(line),
+				parsed := parseClaudeStreamJSON(line)
+				for _, out := range parsed {
+					outputCh <- out
 				}
 			}
 		}
@@ -95,7 +96,7 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 					Text:    line,
 					IsErr:   true,
 					Time:    time.Now(),
-					Verbose: isClaudeVerboseLine(line),
+					Verbose: true,
 				}
 			}
 		}
@@ -114,6 +115,62 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 
 	logger.Debug("claude completed successfully")
 	return nil
+}
+
+type claudeStreamEvent struct {
+	Type    string `json:"type"`
+	Subtype string `json:"subtype,omitempty"`
+	Message struct {
+		Content []struct {
+			Type  string `json:"type"`
+			Text  string `json:"text,omitempty"`
+			Name  string `json:"name,omitempty"`
+			Input any    `json:"input,omitempty"`
+		} `json:"content"`
+	} `json:"message,omitempty"`
+	Result string `json:"result,omitempty"`
+}
+
+func parseClaudeStreamJSON(line string) []OutputLine {
+	var event claudeStreamEvent
+	if err := json.Unmarshal([]byte(line), &event); err != nil {
+		return []OutputLine{{Text: line, Time: time.Now(), Verbose: true}}
+	}
+
+	var outputs []OutputLine
+	now := time.Now()
+
+	switch event.Type {
+	case "system":
+		if event.Subtype == "init" {
+			outputs = append(outputs, OutputLine{Text: "Claude initialized", Time: now, Verbose: true})
+		}
+	case "assistant":
+		for _, content := range event.Message.Content {
+			switch content.Type {
+			case "text":
+				if content.Text != "" {
+					outputs = append(outputs, OutputLine{Text: content.Text, Time: now})
+				}
+			case "tool_use":
+				outputs = append(outputs, OutputLine{
+					Text:    fmt.Sprintf("Using tool: %s", content.Name),
+					Time:    now,
+					Verbose: false,
+				})
+			}
+		}
+	case "user":
+		outputs = append(outputs, OutputLine{Text: "Tool completed", Time: now, Verbose: true})
+	case "result":
+		if event.Subtype == "success" {
+			outputs = append(outputs, OutputLine{Text: "Task completed successfully", Time: now, Verbose: true})
+		} else if event.Subtype == "error" {
+			outputs = append(outputs, OutputLine{Text: "Task failed", Time: now, IsErr: true})
+		}
+	}
+
+	return outputs
 }
 
 func isClaudeVerboseLine(line string) bool {

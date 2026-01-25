@@ -585,7 +585,7 @@ func TestIntegrationClaudeModelExecution(t *testing.T) {
 	}
 
 	// Verify Claude-specific arguments
-	expectedArgs := []string{"--print", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
+	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
 	}
