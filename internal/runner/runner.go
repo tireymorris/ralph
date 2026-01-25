@@ -15,16 +15,6 @@ import (
 	"ralph/internal/logger"
 )
 
-const (
-	// ScannerBufferSize is the maximum line size for reading AI output.
-	// Set to 1MB to handle very long output lines.
-	ScannerBufferSize = 1024 * 1024
-
-	// PipeReaderCount is the number of goroutines to spawn for reading
-	// subprocess stdout and stderr pipes.
-	PipeReaderCount = 2
-)
-
 type RunnerInterface interface {
 	Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error
 }
