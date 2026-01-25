@@ -23,7 +23,7 @@ var _ RunnerInterface = (*ClaudeRunner)(nil)
 func NewClaude(cfg *config.Config) *ClaudeRunner {
 	return &ClaudeRunner{
 		cfg:     cfg,
-		CmdFunc: defaultCmdFunc(cfg.WorkDir),
+		CmdFunc: defaultCmdFuncNoStdin(cfg.WorkDir),
 	}
 }
 
