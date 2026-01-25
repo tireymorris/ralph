@@ -29,6 +29,45 @@ func (r *ClaudeRunner) CommandName() string {
 	return "claude"
 }
 
+// IsInternalLog determines if a line contains Claude Code-specific internal log patterns.
+// Claude Code outputs structured JSON, so most stderr lines are considered internal logs.
+func (r *ClaudeRunner) IsInternalLog(line string) bool {
+	// For Claude Code, most stderr output contains internal debugging information
+	// unless it's clearly an error message we want to show to user
+	isUserErr := isUserError(line)
+	return !isUserErr
+}
+
+// isUserError determines if a line represents a user-facing error that should be shown
+// rather than filtered as internal logging.
+func isUserError(line string) bool {
+	// Define patterns that indicate user-facing errors we should display
+	userErrorPatterns := []string{
+		"error:",
+		"failed:",
+		"cannot:",
+		"unable:",
+		"permission denied",
+		"file not found",
+		"no such file",
+		"invalid",
+		"error",  // General error (without colon)
+		"failed", // General failed (without colon)
+		"cannot", // General cannot (without colon)
+		"unable", // General unable (without colon)
+	}
+
+	// Convert to lowercase for case-insensitive matching
+	lowerLine := strings.ToLower(line)
+	for _, pattern := range userErrorPatterns {
+		if strings.Contains(lowerLine, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func NewClaude(cfg *config.Config) *ClaudeRunner {
 	return &ClaudeRunner{
 		cfg:     cfg,
@@ -87,7 +126,7 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	go func() {
 		defer wg.Done()
 		readPipeLines(stderr, outputCh, func(line string) []OutputLine {
-			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: true}}
+			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		})
 	}()
 
