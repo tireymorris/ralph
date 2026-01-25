@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"ralph/internal/config"
+	"ralph/internal/constants"
 	"ralph/internal/logger"
 )
 
@@ -66,7 +67,7 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(constants.PipeReaderCount)
 
 	go func() {
 		defer wg.Done()

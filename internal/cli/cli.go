@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"ralph/internal/config"
+	"ralph/internal/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/workflow"
@@ -24,7 +25,7 @@ type Runner struct {
 }
 
 func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
-	eventsCh := make(chan workflow.Event, 10000)
+	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
 	return &Runner{
 		cfg:      cfg,
 		prompt:   prompt,

@@ -6,13 +6,12 @@ import (
 	"strings"
 
 	"ralph/internal/config"
+	"ralph/internal/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
 )
-
-const maxJSONRepairAttempts = 2
 
 type Output struct {
 	Text    string
@@ -103,7 +102,7 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 	e.emit(EventPRDGenerating{})
 	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD..."}})
 
-	outputCh := make(chan runner.OutputLine, 10000)
+	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	go e.forwardOutput(outputCh)
 
 	prdPrompt := prompt.PRDGeneration(userPrompt, e.cfg.PRDFile, "feature")
@@ -213,7 +212,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
 
-		outputCh := make(chan runner.OutputLine, 10000)
+		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 		go e.forwardOutput(outputCh)
 
 		storyPrompt := prompt.StoryImplementation(
@@ -309,11 +308,11 @@ func isJSONParseError(err error) bool {
 func (e *Executor) repairPRD(ctx context.Context, parseErr error) (*prd.PRD, error) {
 	prdPath := e.cfg.PRDPath()
 
-	for attempt := 1; attempt <= maxJSONRepairAttempts; attempt++ {
+	for attempt := 1; attempt <= constants.MaxJSONRepairAttempts; attempt++ {
 		logger.Debug("attempting to repair PRD JSON", "attempt", attempt, "file", prdPath, "error", parseErr.Error())
 		e.emit(EventOutput{Output{Text: fmt.Sprintf("Attempting to repair malformed JSON in %s (attempt %d)...", prdPath, attempt)}})
 
-		outputCh := make(chan runner.OutputLine, 10000)
+		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 		go e.forwardOutput(outputCh)
 
 		repairPrompt := prompt.JSONRepair(e.cfg.PRDFile, parseErr.Error())
@@ -335,5 +334,5 @@ func (e *Executor) repairPRD(ctx context.Context, parseErr error) (*prd.PRD, err
 		parseErr = loadErr
 	}
 
-	return nil, fmt.Errorf("failed to repair PRD JSON in %s after %d attempts: %w", prdPath, maxJSONRepairAttempts, parseErr)
+	return nil, fmt.Errorf("failed to repair PRD JSON in %s after %d attempts: %w", prdPath, constants.MaxJSONRepairAttempts, parseErr)
 }

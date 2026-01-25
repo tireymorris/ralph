@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"ralph/internal/config"
+	"ralph/internal/constants"
 )
 
 // LockTimeoutError is returned when a file lock cannot be acquired within the timeout period.
@@ -34,8 +35,6 @@ func (e *VersionConflictError) Error() string {
 	return fmt.Sprintf("PRD version conflict: expected %d, got %d (concurrent modification detected)", e.Expected, e.Actual)
 }
 
-const lockTimeout = 30 * time.Second
-
 // getLockPath returns the path to the lock file for a given PRD path.
 func getLockPath(prdPath string) string {
 	return prdPath + ".lock"
@@ -47,15 +46,15 @@ func acquireSharedLock(cfg *config.Config) (*flock.Flock, error) {
 	lockPath := getLockPath(cfg.PRDPath())
 	fileLock := flock.New(lockPath)
 
-	ctx, cancel := context.WithTimeout(context.Background(), lockTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.FileLockTimeout)*time.Second)
 	defer cancel()
 
-	locked, err := fileLock.TryLockContext(ctx, 100*time.Millisecond)
+	locked, err := fileLock.TryLockContext(ctx, time.Duration(constants.FileLockRetryDelay)*time.Millisecond)
 	if err != nil {
 		return nil, fmt.Errorf("error acquiring shared lock: %w", err)
 	}
 	if !locked {
-		return nil, &LockTimeoutError{Path: lockPath, Timeout: lockTimeout}
+		return nil, &LockTimeoutError{Path: lockPath, Timeout: time.Duration(constants.FileLockTimeout) * time.Second}
 	}
 
 	return fileLock, nil
@@ -67,15 +66,15 @@ func acquireExclusiveLock(cfg *config.Config) (*flock.Flock, error) {
 	lockPath := getLockPath(cfg.PRDPath())
 	fileLock := flock.New(lockPath)
 
-	ctx, cancel := context.WithTimeout(context.Background(), lockTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.FileLockTimeout)*time.Second)
 	defer cancel()
 
-	locked, err := fileLock.TryLockContext(ctx, 100*time.Millisecond)
+	locked, err := fileLock.TryLockContext(ctx, time.Duration(constants.FileLockRetryDelay)*time.Millisecond)
 	if err != nil {
 		return nil, fmt.Errorf("error acquiring exclusive lock: %w", err)
 	}
 	if !locked {
-		return nil, &LockTimeoutError{Path: lockPath, Timeout: lockTimeout}
+		return nil, &LockTimeoutError{Path: lockPath, Timeout: time.Duration(constants.FileLockTimeout) * time.Second}
 	}
 
 	return fileLock, nil
@@ -144,7 +143,7 @@ func Save(cfg *config.Config, p *PRD) error {
 	// Create a temporary file in the same directory as the target file.
 	// This ensures that the rename operation will be atomic (same filesystem).
 	rand.Seed(time.Now().UnixNano())
-	tmpPath := filepath.Join(dir, fmt.Sprintf(".prd.tmp.%d.%d", time.Now().Unix(), rand.Intn(100000)))
+	tmpPath := filepath.Join(dir, fmt.Sprintf(".prd.tmp.%d.%d", time.Now().Unix(), rand.Intn(constants.TempFileRandomRange)))
 
 	// Write to temp file with restricted permissions (user-only read/write)
 	if err := os.WriteFile(tmpPath, data, 0600); err != nil {

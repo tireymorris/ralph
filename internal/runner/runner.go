@@ -11,7 +11,18 @@ import (
 	"time"
 
 	"ralph/internal/config"
+	"ralph/internal/constants"
 	"ralph/internal/logger"
+)
+
+const (
+	// ScannerBufferSize is the maximum line size for reading AI output.
+	// Set to 1MB to handle very long output lines.
+	ScannerBufferSize = 1024 * 1024
+
+	// PipeReaderCount is the number of goroutines to spawn for reading
+	// subprocess stdout and stderr pipes.
+	PipeReaderCount = 2
 )
 
 type RunnerInterface interface {
@@ -73,8 +84,8 @@ type LineTransformer func(line string) []OutputLine
 
 func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) {
 	scanner := bufio.NewScanner(pipe)
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
+	buf := make([]byte, 0, constants.InitialScannerBufferCapacity)
+	scanner.Buffer(buf, constants.ScannerBufferSize)
 	for scanner.Scan() {
 		if outputCh != nil {
 			for _, out := range transform(scanner.Text()) {
@@ -139,7 +150,7 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(constants.PipeReaderCount)
 
 	go func() {
 		defer wg.Done()
@@ -171,10 +182,10 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 }
 
 func isVerboseLine(line string) bool {
-	if len(line) >= 4 {
-		prefix := line[:4]
+	if len(line) >= constants.VerbosePatternMinLength {
+		prefix := line[:constants.VerbosePatternMinLength]
 		if prefix == "INFO" || prefix == "DEBU" || prefix == "WARN" || prefix == "ERRO" {
-			if len(line) > 10 && (strings.Contains(line[:min(30, len(line))], "T") && strings.Contains(line[:min(30, len(line))], ":")) {
+			if len(line) > constants.VerboseTimestampMinLength && (strings.Contains(line[:min(constants.TimestampContextLength, len(line))], "T") && strings.Contains(line[:min(constants.TimestampContextLength, len(line))], ":")) {
 				return true
 			}
 		}
