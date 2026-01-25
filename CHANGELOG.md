@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - PRD file permissions changed from 0644 to 0600 (user-only access) for better security
 - Workflow now fails fast on PRD reload errors instead of silently continuing with stale data
-- Updated default model from `opencode/big-pickle` to `claude-code/sonnet`
+- Reverted default model back to `opencode/big-pickle`
 
 ### Added
 - `Version` field to PRD struct for optimistic locking and conflict detection
