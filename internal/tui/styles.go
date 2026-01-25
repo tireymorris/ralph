@@ -126,7 +126,6 @@ var (
 			Foreground(subtleColor).
 			MarginTop(1).
 			PaddingLeft(2)
-
 )
 
 const (
