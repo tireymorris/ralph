@@ -100,7 +100,7 @@ func New(cfg *config.Config) RunnerInterface {
 
 func NewWithError(cfg *config.Config) (RunnerInterface, error) {
 	if err := cfg.ValidateModel(); err != nil {
-		return nil, fmt.Errorf("invalid model configuration: %w", err)
+		return nil, fmt.Errorf("invalid model configuration %q: %w", cfg.Model, err)
 	}
 
 	return New(cfg), nil
@@ -119,23 +119,23 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: "Starting opencode...", Time: time.Now()}
+		outputCh <- OutputLine{Text: fmt.Sprintf("Starting opencode with model %s...", r.cfg.Model), Time: time.Now()}
 	}
 
 	cmd := r.CmdFunc(ctx, "opencode", args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe: %w", err)
+		return fmt.Errorf("failed to get stdout pipe for opencode: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe: %w", err)
+		return fmt.Errorf("failed to get stderr pipe for opencode: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start opencode: %w", err)
+		return fmt.Errorf("failed to start opencode with model %s: %w", r.cfg.Model, err)
 	}
 
 	var wg sync.WaitGroup
@@ -160,13 +160,13 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("opencode exited with code", "exit_code", exitErr.ExitCode())
-			return fmt.Errorf("opencode exited with code %d", exitErr.ExitCode())
+			logger.Debug("opencode exited with code", "exit_code", exitErr.ExitCode(), "model", r.cfg.Model)
+			return fmt.Errorf("opencode with model %s exited with code %d", r.cfg.Model, exitErr.ExitCode())
 		}
-		return fmt.Errorf("opencode failed: %w", err)
+		return fmt.Errorf("opencode with model %s failed: %w", r.cfg.Model, err)
 	}
 
-	logger.Debug("opencode completed successfully")
+	logger.Debug("opencode completed successfully", "model", r.cfg.Model)
 	return nil
 }
 

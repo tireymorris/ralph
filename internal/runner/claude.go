@@ -34,8 +34,9 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
+	modelName := strings.TrimPrefix(r.cfg.Model, "claude-code/")
 	if r.cfg.Model != "" {
-		args = append(args, "--model", strings.TrimPrefix(r.cfg.Model, "claude-code/"))
+		args = append(args, "--model", modelName)
 	}
 	args = append(args, prompt)
 
@@ -45,23 +46,23 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: "Starting claude...", Time: time.Now()}
+		outputCh <- OutputLine{Text: fmt.Sprintf("Starting claude with model %s...", modelName), Time: time.Now()}
 	}
 
 	cmd := r.CmdFunc(ctx, "claude", args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe: %w", err)
+		return fmt.Errorf("failed to get stdout pipe for claude: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe: %w", err)
+		return fmt.Errorf("failed to get stderr pipe for claude: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start claude: %w", err)
+		return fmt.Errorf("failed to start claude with model %s: %w", modelName, err)
 	}
 
 	var wg sync.WaitGroup
@@ -84,13 +85,13 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("claude exited with code", "exit_code", exitErr.ExitCode())
-			return fmt.Errorf("claude exited with code %d", exitErr.ExitCode())
+			logger.Debug("claude exited with code", "exit_code", exitErr.ExitCode(), "model", modelName)
+			return fmt.Errorf("claude with model %s exited with code %d", modelName, exitErr.ExitCode())
 		}
-		return fmt.Errorf("claude failed: %w", err)
+		return fmt.Errorf("claude with model %s failed: %w", modelName, err)
 	}
 
-	logger.Debug("claude completed successfully")
+	logger.Debug("claude completed successfully", "model", modelName)
 	return nil
 }
 

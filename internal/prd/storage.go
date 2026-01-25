@@ -83,21 +83,28 @@ func acquireExclusiveLock(cfg *config.Config) (*flock.Flock, error) {
 
 // Load reads and parses the PRD from disk with a shared lock to prevent concurrent modifications.
 func Load(cfg *config.Config) (*PRD, error) {
+	prdPath := cfg.PRDPath()
+
 	// Acquire shared lock (allows multiple concurrent readers)
 	fileLock, err := acquireSharedLock(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to acquire lock for reading: %w", err)
+		return nil, fmt.Errorf("failed to acquire lock for reading %q: %w", prdPath, err)
 	}
 	defer fileLock.Unlock()
 
-	data, err := os.ReadFile(cfg.PRDPath())
+	data, err := os.ReadFile(prdPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read PRD file: %w", err)
+		return nil, fmt.Errorf("failed to read PRD file %q: %w", prdPath, err)
 	}
 
 	var p PRD
 	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, fmt.Errorf("failed to parse PRD: %w", err)
+		return nil, fmt.Errorf("failed to parse PRD file %q: %w", prdPath, err)
+	}
+
+	// Validate loaded PRD data
+	if err := p.Validate(); err != nil {
+		return nil, fmt.Errorf("PRD validation failed for %q: %w", prdPath, err)
 	}
 
 	return &p, nil
@@ -110,10 +117,17 @@ func Load(cfg *config.Config) (*PRD, error) {
 // 2. No concurrent reads or writes occur during the save operation (exclusive lock)
 // 3. Concurrent modifications can be detected via version numbers (optimistic locking)
 func Save(cfg *config.Config, p *PRD) error {
+	prdPath := cfg.PRDPath()
+
+	// Validate PRD before saving
+	if err := p.Validate(); err != nil {
+		return fmt.Errorf("PRD validation failed before saving %q: %w", prdPath, err)
+	}
+
 	// Acquire exclusive lock (blocks all readers and other writers)
 	fileLock, err := acquireExclusiveLock(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to acquire lock for writing: %w", err)
+		return fmt.Errorf("failed to acquire lock for writing %q: %w", prdPath, err)
 	}
 	defer fileLock.Unlock()
 
@@ -122,10 +136,9 @@ func Save(cfg *config.Config, p *PRD) error {
 
 	data, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal PRD: %w", err)
+		return fmt.Errorf("failed to marshal PRD %q (version %d): %w", prdPath, p.Version, err)
 	}
 
-	prdPath := cfg.PRDPath()
 	dir := filepath.Dir(prdPath)
 
 	// Create a temporary file in the same directory as the target file.
@@ -135,15 +148,17 @@ func Save(cfg *config.Config, p *PRD) error {
 
 	// Write to temp file with restricted permissions (user-only read/write)
 	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
-		return fmt.Errorf("failed to write temporary PRD file: %w", err)
+		return fmt.Errorf("failed to write temporary PRD file %q: %w", tmpPath, err)
 	}
 
 	// Atomic rename: this is atomic on Unix/Linux/macOS as long as both files
 	// are on the same filesystem (which they are, since we used the same dir).
 	if err := os.Rename(tmpPath, prdPath); err != nil {
 		// Clean up temp file on error
-		os.Remove(tmpPath)
-		return fmt.Errorf("failed to atomically replace PRD file: %w", err)
+		if removeErr := os.Remove(tmpPath); removeErr != nil {
+			// Log cleanup error but don't override original error
+		}
+		return fmt.Errorf("failed to atomically replace PRD file %q from temporary %q: %w", prdPath, tmpPath, err)
 	}
 
 	return nil
@@ -154,7 +169,10 @@ func Delete(cfg *config.Config) error {
 	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
 		return nil
 	}
-	return os.Remove(prdPath)
+	if err := os.Remove(prdPath); err != nil {
+		return fmt.Errorf("failed to delete PRD file %q: %w", prdPath, err)
+	}
+	return nil
 }
 
 func Exists(cfg *config.Config) bool {
