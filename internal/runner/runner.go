@@ -19,6 +19,7 @@ type RunnerInterface interface {
 	Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error
 	RunnerName() string
 	CommandName() string
+	IsInternalLog(line string) bool
 }
 
 type OutputLine struct {
@@ -117,6 +118,12 @@ func (r *Runner) CommandName() string {
 	return "opencode"
 }
 
+// IsInternalLog determines if a line contains OpenCode-specific internal log patterns
+// that should be filtered out as verbose noise rather than shown to the user.
+func (r *Runner) IsInternalLog(line string) bool {
+	return isOpenCodeInternalLog(line)
+}
+
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
 	args := []string{"run", "--print-logs"}
 	if r.cfg.Model != "" {
@@ -157,14 +164,14 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	go func() {
 		defer wg.Done()
 		readPipeLines(stdout, outputCh, func(line string) []OutputLine {
-			return []OutputLine{{Text: line, IsErr: false, Time: time.Now(), Verbose: isVerboseLine(line)}}
+			return []OutputLine{{Text: line, IsErr: false, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		})
 	}()
 
 	go func() {
 		defer wg.Done()
 		readPipeLines(stderr, outputCh, func(line string) []OutputLine {
-			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: isVerboseLine(line)}}
+			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		})
 	}()
 
@@ -190,7 +197,9 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	return nil
 }
 
-func isVerboseLine(line string) bool {
+// isOpenCodeInternalLog determines if a line contains OpenCode-specific internal log patterns
+// that should be filtered out as verbose noise rather than shown to the user.
+func isOpenCodeInternalLog(line string) bool {
 	if len(line) >= constants.VerbosePatternMinLength {
 		prefix := line[:constants.VerbosePatternMinLength]
 		if prefix == "INFO" || prefix == "DEBU" || prefix == "WARN" || prefix == "ERRO" {
@@ -200,7 +209,7 @@ func isVerboseLine(line string) bool {
 		}
 	}
 
-	verbosePatterns := []string{
+	internalLogPatterns := []string{
 		"service=bus",
 		"type=message.",
 		"publishing",
@@ -222,7 +231,7 @@ func isVerboseLine(line string) bool {
 		"Saved lockfile",
 	}
 
-	for _, pattern := range verbosePatterns {
+	for _, pattern := range internalLogPatterns {
 		if strings.Contains(line, pattern) {
 			return true
 		}

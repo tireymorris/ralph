@@ -257,7 +257,7 @@ func TestOutputLine(t *testing.T) {
 	}
 }
 
-func TestIsVerboseLine(t *testing.T) {
+func TestOpenCodeInternalLogDetection(t *testing.T) {
 	tests := []struct {
 		name string
 		line string
@@ -319,27 +319,27 @@ func TestIsVerboseLine(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "tool call output - not verbose",
+			name: "tool call output - not internal log",
 			line: "Running tool: read_file",
 			want: false,
 		},
 		{
-			name: "regular output - not verbose",
+			name: "regular output - not internal log",
 			line: "Implementing feature...",
 			want: false,
 		},
 		{
-			name: "error output - not verbose",
+			name: "error output - not internal log",
 			line: "Error: something went wrong",
 			want: false,
 		},
 		{
-			name: "empty line - not verbose",
+			name: "empty line - not internal log",
 			line: "",
 			want: false,
 		},
 		{
-			name: "short line - not verbose",
+			name: "short line - not internal log",
 			line: "OK",
 			want: false,
 		},
@@ -347,9 +347,9 @@ func TestIsVerboseLine(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isVerboseLine(tt.line)
+			got := isOpenCodeInternalLog(tt.line)
 			if got != tt.want {
-				t.Errorf("isVerboseLine(%q) = %v, want %v", tt.line, got, tt.want)
+				t.Errorf("isOpenCodeInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
 			}
 		})
 	}
@@ -634,6 +634,51 @@ func TestIntegrationOpenCodeModelExecution(t *testing.T) {
 	for i, expected := range expectedArgs {
 		if capturedArgs[i] != expected {
 			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
+		}
+	}
+}
+
+func TestRunnerInterfaceIsInternalLog(t *testing.T) {
+	// Test OpenCode runner
+	openCodeCfg := &config.Config{Model: "opencode/big-pickle"}
+	openCodeRunner := New(openCodeCfg)
+
+	// Test internal log detection for OpenCode
+	tests := []struct {
+		line string
+		want bool
+	}{
+		{"service=bus starting", true},
+		{"Regular output", false},
+		{"INFO 2026-01-19T22:45:58 service=provider test", true},
+	}
+
+	for _, tt := range tests {
+		got := openCodeRunner.IsInternalLog(tt.line)
+		if got != tt.want {
+			t.Errorf("OpenCodeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
+		}
+	}
+
+	// Test Claude runner
+	claudeCfg := &config.Config{Model: "claude-code/sonnet"}
+	claudeRunner := New(claudeCfg)
+
+	// Test internal log detection for Claude (should treat most stderr as internal)
+	claudeTests := []struct {
+		line string
+		want bool
+	}{
+		{"debug info", true},
+		{"Error: file not found", false}, // User-facing error
+		{"Failed to load", false},        // User-facing error
+		{"loading config", true},
+	}
+
+	for _, tt := range claudeTests {
+		got := claudeRunner.IsInternalLog(tt.line)
+		if got != tt.want {
+			t.Errorf("ClaudeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
 		}
 	}
 }

@@ -329,3 +329,74 @@ func TestParseClaudeStreamJSONTimestamps(t *testing.T) {
 		t.Errorf("Timestamp %v not between %v and %v", outputs[0].Time, before, after)
 	}
 }
+
+func TestClaudeRunnerIsInternalLog(t *testing.T) {
+	cfg := &config.Config{Model: "claude-code/sonnet"}
+	r := NewClaude(cfg)
+
+	tests := []struct {
+		name string
+		line string
+		want bool
+	}{
+		{
+			name: "debug info - internal log",
+			line: "loading configuration",
+			want: true,
+		},
+		{
+			name: "status info - internal log",
+			line: "checking permissions",
+			want: true,
+		},
+		{
+			name: "error message - user facing",
+			line: "Error: file not found",
+			want: false,
+		},
+		{
+			name: "failed message - user facing",
+			line: "Failed to connect to server",
+			want: false,
+		},
+		{
+			name: "cannot message - user facing",
+			line: "Cannot access file",
+			want: false,
+		},
+		{
+			name: "unable message - user facing",
+			line: "Unable to create directory",
+			want: false,
+		},
+		{
+			name: "permission denied - user facing",
+			line: "Permission denied",
+			want: false,
+		},
+		{
+			name: "invalid input - user facing",
+			line: "Invalid input format",
+			want: false,
+		},
+		{
+			name: "generic debug - internal log",
+			line: "[DEBUG] processing request",
+			want: true,
+		},
+		{
+			name: "empty line - internal log",
+			line: "",
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := r.IsInternalLog(tt.line)
+			if got != tt.want {
+				t.Errorf("ClaudeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
+			}
+		})
+	}
+}
