@@ -79,7 +79,7 @@ func (EventFailed) isEvent() {}
 type Executor struct {
 	cfg      *config.Config
 	eventsCh chan Event
-	runner   *runner.Runner
+	runner   runner.RunnerInterface
 }
 
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
@@ -90,7 +90,7 @@ func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {
 	}
 }
 
-func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r *runner.Runner) *Executor {
+func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r runner.RunnerInterface) *Executor {
 	return &Executor{
 		cfg:      cfg,
 		eventsCh: eventsCh,

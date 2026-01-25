@@ -17,10 +17,17 @@ func TestNew(t *testing.T) {
 	if r == nil {
 		t.Fatal("New() returned nil")
 	}
-	if r.cfg != cfg {
+
+	// Test with concrete Runner type since test-model is not a claude-code model
+	runner, ok := r.(*Runner)
+	if !ok {
+		t.Fatalf("New() returned %T, want *Runner", r)
+	}
+
+	if runner.cfg != cfg {
 		t.Error("New() did not set config correctly")
 	}
-	if r.CmdFunc == nil {
+	if runner.CmdFunc == nil {
 		t.Error("CmdFunc should not be nil")
 	}
 }
@@ -68,7 +75,7 @@ func (m *mockCmd) Wait() error {
 
 func TestRunSuccess(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{stdout: "output line", stderr: ""}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -83,7 +90,7 @@ func TestRunSuccess(t *testing.T) {
 
 func TestRunWithOutputChannel(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{stdout: "line1\nline2", stderr: "err1"}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -99,7 +106,7 @@ func TestRunWithOutputChannel(t *testing.T) {
 
 func TestRunStdoutError(t *testing.T) {
 	cfg := &config.Config{}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{stdoutErr: errors.New("stdout error")}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -114,7 +121,7 @@ func TestRunStdoutError(t *testing.T) {
 
 func TestRunStderrError(t *testing.T) {
 	cfg := &config.Config{}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{stderrErr: errors.New("stderr error")}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -129,7 +136,7 @@ func TestRunStderrError(t *testing.T) {
 
 func TestRunStartError(t *testing.T) {
 	cfg := &config.Config{}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{startErr: errors.New("start error")}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -144,7 +151,7 @@ func TestRunStartError(t *testing.T) {
 
 func TestRunWaitError(t *testing.T) {
 	cfg := &config.Config{}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	mock := &mockCmd{waitErr: errors.New("wait error")}
 	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
@@ -159,7 +166,7 @@ func TestRunWaitError(t *testing.T) {
 
 func TestRunNoModel(t *testing.T) {
 	cfg := &config.Config{Model: ""}
-	r := New(cfg)
+	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 
 	var capturedArgs []string
 	mock := &mockCmd{}
@@ -357,5 +364,276 @@ func TestOutputLineVerboseField(t *testing.T) {
 
 	if !line.Verbose {
 		t.Error("Verbose = false, want true")
+	}
+}
+
+func TestIsClaudeCodeModel(t *testing.T) {
+	tests := []struct {
+		name  string
+		model string
+		want  bool
+	}{
+		{
+			name:  "claude-3.5-sonnet",
+			model: "claude-code/claude-3.5-sonnet",
+			want:  true,
+		},
+		{
+			name:  "claude-3.5-haiku",
+			model: "claude-code/claude-3.5-haiku",
+			want:  true,
+		},
+		{
+			name:  "claude-3-opus",
+			model: "claude-code/claude-3-opus",
+			want:  true,
+		},
+		{
+			name:  "opencode big-pickle",
+			model: "opencode/big-pickle",
+			want:  false,
+		},
+		{
+			name:  "opencode gpt-5-nano",
+			model: "opencode/gpt-5-nano",
+			want:  false,
+		},
+		{
+			name:  "empty model",
+			model: "",
+			want:  false,
+		},
+		{
+			name:  "partial claude prefix",
+			model: "claude",
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isClaudeCodeModel(tt.model)
+			if got != tt.want {
+				t.Errorf("isClaudeCodeModel(%q) = %v, want %v", tt.model, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewReturnsClaudeRunner(t *testing.T) {
+	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	runner := New(cfg)
+
+	if runner == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Check that we got a ClaudeRunner
+	claudeRunner, ok := runner.(*ClaudeRunner)
+	if !ok {
+		t.Errorf("New() returned %T, want *ClaudeRunner", runner)
+	}
+
+	if claudeRunner.cfg != cfg {
+		t.Error("ClaudeRunner config not set correctly")
+	}
+}
+
+func TestNewReturnsOpenCodeRunner(t *testing.T) {
+	cfg := &config.Config{Model: "opencode/big-pickle"}
+	runner := New(cfg)
+
+	if runner == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Check that we got an OpenCode Runner
+	openCodeRunner, ok := runner.(*Runner)
+	if !ok {
+		t.Errorf("New() returned %T, want *Runner", runner)
+	}
+
+	if openCodeRunner.cfg != cfg {
+		t.Error("Runner config not set correctly")
+	}
+}
+
+func TestNewWithDefaultModel(t *testing.T) {
+	cfg := &config.Config{Model: config.DefaultModel}
+	runner := New(cfg)
+
+	if runner == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	// Should return OpenCode runner for default model
+	_, ok := runner.(*Runner)
+	if !ok {
+		t.Errorf("New() returned %T, want *Runner for default model", runner)
+	}
+}
+
+func TestNewWithErrorValidClaudeModel(t *testing.T) {
+	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	runner, err := NewWithError(cfg)
+
+	if err != nil {
+		t.Fatalf("NewWithError() error = %v", err)
+	}
+
+	if runner == nil {
+		t.Fatal("NewWithError() returned nil runner")
+	}
+
+	_, ok := runner.(*ClaudeRunner)
+	if !ok {
+		t.Errorf("NewWithError() returned %T, want *ClaudeRunner", runner)
+	}
+}
+
+func TestNewWithErrorValidOpenCodeModel(t *testing.T) {
+	cfg := &config.Config{Model: "opencode/big-pickle"}
+	runner, err := NewWithError(cfg)
+
+	if err != nil {
+		t.Fatalf("NewWithError() error = %v", err)
+	}
+
+	if runner == nil {
+		t.Fatal("NewWithError() returned nil runner")
+	}
+
+	_, ok := runner.(*Runner)
+	if !ok {
+		t.Errorf("NewWithError() returned %T, want *Runner", runner)
+	}
+}
+
+func TestNewWithErrorInvalidModel(t *testing.T) {
+	cfg := &config.Config{Model: "invalid-model"}
+	runner, err := NewWithError(cfg)
+
+	if err == nil {
+		t.Error("NewWithError() should return error for invalid model")
+	}
+
+	if runner != nil {
+		t.Error("NewWithError() should return nil runner for invalid model")
+	}
+
+	expectedMsg := "invalid model configuration"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("Error message = %v, want to contain %v", err.Error(), expectedMsg)
+	}
+}
+
+func TestModelSwitchingBetweenRuns(t *testing.T) {
+	// Test Claude Code model
+	claudeCfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	runner1 := New(claudeCfg)
+
+	_, ok1 := runner1.(*ClaudeRunner)
+	if !ok1 {
+		t.Errorf("First New() call returned %T, want *ClaudeRunner", runner1)
+	}
+
+	// Test OpenCode model in second run
+	openCodeCfg := &config.Config{Model: "opencode/gpt-5-nano"}
+	runner2 := New(openCodeCfg)
+
+	_, ok2 := runner2.(*Runner)
+	if !ok2 {
+		t.Errorf("Second New() call returned %T, want *Runner", runner2)
+	}
+
+	// Test switching back to Claude Code
+	runner3 := New(claudeCfg)
+	_, ok3 := runner3.(*ClaudeRunner)
+	if !ok3 {
+		t.Errorf("Third New() call returned %T, want *ClaudeRunner", runner3)
+	}
+}
+
+func TestIntegrationClaudeModelExecution(t *testing.T) {
+	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	runner := New(cfg)
+
+	// Mock the command execution for Claude runner
+	var capturedName string
+	var capturedArgs []string
+	mock := &mockCmd{stdout: "claude output", stderr: ""}
+
+	// Type assert to ClaudeRunner to set the mock
+	claudeRunner, ok := runner.(*ClaudeRunner)
+	if !ok {
+		t.Fatalf("Expected *ClaudeRunner, got %T", runner)
+	}
+
+	claudeRunner.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		capturedName = name
+		capturedArgs = args
+		return mock
+	}
+
+	err := runner.Run(context.Background(), "test prompt", nil)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if capturedName != "claude-code" {
+		t.Errorf("Expected command 'claude-code', got %q", capturedName)
+	}
+
+	// Verify Claude-specific arguments
+	expectedArgs := []string{"--print", "--model", "claude-3.5-sonnet", "test prompt"}
+	if len(capturedArgs) != len(expectedArgs) {
+		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
+	}
+	for i, expected := range expectedArgs {
+		if capturedArgs[i] != expected {
+			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
+		}
+	}
+}
+
+func TestIntegrationOpenCodeModelExecution(t *testing.T) {
+	cfg := &config.Config{Model: "opencode/big-pickle"}
+	runner := New(cfg)
+
+	// Mock the command execution for OpenCode runner
+	var capturedName string
+	var capturedArgs []string
+	mock := &mockCmd{stdout: "opencode output", stderr: ""}
+
+	// Type assert to Runner to set the mock
+	openCodeRunner, ok := runner.(*Runner)
+	if !ok {
+		t.Fatalf("Expected *Runner, got %T", runner)
+	}
+
+	openCodeRunner.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		capturedName = name
+		capturedArgs = args
+		return mock
+	}
+
+	err := runner.Run(context.Background(), "test prompt", nil)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if capturedName != "opencode" {
+		t.Errorf("Expected command 'opencode', got %q", capturedName)
+	}
+
+	// Verify OpenCode-specific arguments
+	expectedArgs := []string{"run", "--print-logs", "--model", "opencode/big-pickle", "test prompt"}
+	if len(capturedArgs) != len(expectedArgs) {
+		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
+	}
+	for i, expected := range expectedArgs {
+		if capturedArgs[i] != expected {
+			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
+		}
 	}
 }
