@@ -52,6 +52,23 @@ STORY REQUIREMENTS:
 Write the PRD file now.`, userPrompt, prdFile, prdFile, branchPrefix)
 }
 
+func JSONRepair(prdFile, parseError string) string {
+	return fmt.Sprintf(`The file %s contains invalid JSON that failed to parse.
+
+Error: %s
+
+Read %s, find and fix the JSON syntax error, then save the corrected file.
+
+Common issues to check:
+- Missing or extra commas between fields/array elements
+- Misplaced brackets ] or braces }
+- Unclosed strings
+- Trailing commas before closing brackets
+
+Fix the JSON syntax error while preserving all the data. Do not change any content, only fix the syntax.`,
+		prdFile, parseError, prdFile)
+}
+
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, testSpec, context, prdFile string, iteration, completed, total int) string {
 	if testSpec == "" {
 		testSpec = "Create and run appropriate tests"
