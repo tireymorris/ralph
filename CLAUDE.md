@@ -10,14 +10,15 @@
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Component Details](#component-details)
-4. [Critical Issues](#critical-issues)
-5. [Code Quality Issues](#code-quality-issues)
-6. [Security Concerns](#security-concerns)
-7. [Missing Features](#missing-features)
-8. [Architectural Critiques](#architectural-critiques)
-9. [Recommendations](#recommendations)
-10. [Testing Strategy](#testing-strategy)
-11. [File Reference](#file-reference)
+4. [Fixed Issues](#fixed-issues) ✅ NEW
+5. [Critical Issues](#critical-issues)
+6. [Code Quality Issues](#code-quality-issues)
+7. [Security Concerns](#security-concerns)
+8. [Missing Features](#missing-features)
+9. [Architectural Critiques](#architectural-critiques)
+10. [Recommendations](#recommendations)
+11. [Testing Strategy](#testing-strategy)
+12. [File Reference](#file-reference)
 
 ---
 
@@ -389,9 +390,73 @@ Emits typed events for UI/CLI updates:
 
 ---
 
+## Fixed Issues ✅
+
+### 1. Race Conditions and Data Integrity - FIXED (2026-01-24)
+
+**Original Severity**: CRITICAL
+**Status**: ✅ RESOLVED
+
+**Solution Implemented**:
+The race condition bug has been fixed with a defense-in-depth approach:
+
+1. **Atomic File Writes** (`storage.go`)
+   - Writes to temporary file first (`.prd.tmp.{timestamp}.{random}`)
+   - Atomic rename using `os.Rename()` (atomic on Unix/Linux/macOS)
+   - File permissions changed to `0600` (user-only read/write)
+   - Temp files cleaned up on error
+   - Prevents corruption from crashes or partial writes
+
+2. **File Locking** (`storage.go`)
+   - Added `github.com/gofrs/flock` dependency
+   - `Load()` acquires shared lock (concurrent reads OK)
+   - `Save()` acquires exclusive lock (serializes all access during writes)
+   - 30-second timeout on lock acquisition
+   - `LockTimeoutError` type for timeout handling
+   - Locks released via defer (guaranteed cleanup)
+   - Prevents concurrent modification races
+
+3. **Optimistic Locking with Versioning** (`types.go`, `storage.go`)
+   - Added `Version int64` field to PRD struct
+   - Automatically incremented on each `Save()`
+   - Version conflicts logged as warnings in workflow
+   - Backwards compatible (old PRDs without version default to 0)
+   - Detects unexpected modifications
+
+4. **Fixed Silent Error Handling** (`workflow.go`)
+   - Removed silent error swallowing (lines 180-181, 244-246)
+   - PRD reload failures now fatal (fail fast principle)
+   - All errors properly wrapped with context
+   - Version conflict detection and logging added
+
+**Testing**:
+- Comprehensive test suite in `storage_test.go`
+- All tests pass with `-race` flag (no race conditions detected)
+- Concurrent read test: 10 goroutines reading simultaneously ✓
+- Concurrent write test: 10 goroutines writing (serialized correctly) ✓
+- Atomic write tests: temp file cleanup, permissions ✓
+- Version increment tests: verified persistence ✓
+- Backwards compatibility tests: old format PRDs still load ✓
+
+**Impact**:
+- ✅ No more data corruption from concurrent access
+- ✅ No more lost retry counts or story completion status
+- ✅ File always in consistent state (never partially written)
+- ✅ Clear error messages on lock failures
+- ✅ Production-ready file handling
+
+---
+
 ## Critical Issues
 
-### 1. Race Conditions and Data Integrity ⚠️ CRITICAL
+### 1. Race Conditions and Data Integrity - ✅ FIXED
+
+**Status**: This issue has been resolved. See [Fixed Issues](#fixed-issues) section above for complete details.
+
+<details>
+<summary>Original Issue Description (Historical Reference)</summary>
+
+**Original Severity**: CRITICAL (NOW FIXED)
 
 **Severity**: HIGH
 **Impact**: Data corruption, lost updates, incorrect retry counts
@@ -440,7 +505,16 @@ func Save(cfg *config.Config, p *PRD) error {
 }
 ```
 
-### 2. Silent Error Swallowing ⚠️ CRITICAL
+</details>
+
+### 2. Silent Error Swallowing - ✅ FIXED
+
+**Status**: This issue has been resolved as part of the race condition fix. See [Fixed Issues](#fixed-issues) section.
+
+<details>
+<summary>Original Issue Description (Historical Reference)</summary>
+
+**Original Severity**: CRITICAL (NOW FIXED)
 
 **Severity**: HIGH
 **Impact**: Operates on stale data, potentially infinite loops, incorrect behavior
