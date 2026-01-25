@@ -30,20 +30,20 @@ func NewClaude(cfg *config.Config) *ClaudeRunner {
 func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
 	args := []string{"--print"}
 	if r.cfg.Model != "" {
-		args = append(args, "--model", strings.TrimPrefix(r.cfg.Model, "claude-code/"))
+		args = append(args, "--model", strings.TrimPrefix(r.cfg.Model, "claude/"))
 	}
 	args = append(args, prompt)
 
-	logger.Debug("invoking claude-code",
+	logger.Debug("invoking claude",
 		"model", r.cfg.Model,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: "Starting claude-code...", Time: time.Now()}
+		outputCh <- OutputLine{Text: "Starting claude...", Time: time.Now()}
 	}
 
-	cmd := r.CmdFunc(ctx, "claude-code", args...)
+	cmd := r.CmdFunc(ctx, "claude", args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -56,7 +56,7 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start claude-code: %w", err)
+		return fmt.Errorf("failed to start claude: %w", err)
 	}
 
 	var wg sync.WaitGroup
@@ -103,13 +103,13 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("claude-code exited with code", "exit_code", exitErr.ExitCode())
-			return fmt.Errorf("claude-code exited with code %d", exitErr.ExitCode())
+			logger.Debug("claude exited with code", "exit_code", exitErr.ExitCode())
+			return fmt.Errorf("claude exited with code %d", exitErr.ExitCode())
 		}
-		return fmt.Errorf("claude-code failed: %w", err)
+		return fmt.Errorf("claude failed: %w", err)
 	}
 
-	logger.Debug("claude-code completed successfully")
+	logger.Debug("claude completed successfully")
 	return nil
 }
 
