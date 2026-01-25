@@ -14,6 +14,10 @@ import (
 	"ralph/internal/logger"
 )
 
+type RunnerInterface interface {
+	Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error
+}
+
 type OutputLine struct {
 	Text    string
 	IsErr   bool
@@ -25,6 +29,8 @@ type Runner struct {
 	cfg     *config.Config
 	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
 }
+
+var _ RunnerInterface = (*Runner)(nil)
 
 type CmdInterface interface {
 	StdoutPipe() (io.ReadCloser, error)
@@ -52,8 +58,26 @@ func defaultCmdFunc(workDir string) func(ctx context.Context, name string, args 
 	}
 }
 
-func New(cfg *config.Config) *Runner {
+func isClaudeCodeModel(model string) bool {
+	return strings.HasPrefix(model, "claude-code/")
+}
+
+func New(cfg *config.Config) RunnerInterface {
+	if isClaudeCodeModel(cfg.Model) {
+		logger.Debug("using Claude Code runner", "model", cfg.Model)
+		return NewClaude(cfg)
+	}
+
+	logger.Debug("using OpenCode runner", "model", cfg.Model)
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+}
+
+func NewWithError(cfg *config.Config) (RunnerInterface, error) {
+	if err := cfg.ValidateModel(); err != nil {
+		return nil, fmt.Errorf("invalid model configuration: %w", err)
+	}
+
+	return New(cfg), nil
 }
 
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {

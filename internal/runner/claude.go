@@ -18,6 +18,8 @@ type ClaudeRunner struct {
 	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
 }
 
+var _ RunnerInterface = (*ClaudeRunner)(nil)
+
 func NewClaude(cfg *config.Config) *ClaudeRunner {
 	return &ClaudeRunner{
 		cfg:     cfg,
