@@ -50,7 +50,11 @@ func (o *Options) Validate() error {
 	}
 
 	if !o.Resume && o.Prompt == "" {
-		return fmt.Errorf("please provide a prompt or use --resume")
+		return fmt.Errorf("prompt required when not resuming: provide a prompt or use --resume flag")
+	}
+
+	if len(o.UnknownFlags) > 0 {
+		return fmt.Errorf("unknown flags provided: %v", o.UnknownFlags)
 	}
 
 	return nil

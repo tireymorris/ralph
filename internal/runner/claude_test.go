@@ -169,7 +169,7 @@ func TestClaudeRunWaitError(t *testing.T) {
 	if err == nil {
 		t.Error("Run() should return error on wait failure")
 	}
-	if !strings.Contains(err.Error(), "claude failed") {
+	if !strings.Contains(err.Error(), "claude with model") && !strings.Contains(err.Error(), "claude failed") {
 		t.Errorf("Expected claude failed error, got %v", err)
 	}
 }

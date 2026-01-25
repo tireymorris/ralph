@@ -27,7 +27,7 @@ func run() int {
 	}
 
 	if err := opts.Validate(); err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		fmt.Print(args.HelpText())
 		return 1
 	}
@@ -41,7 +41,7 @@ func run() int {
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading configuration: %v\n", err)
 		fmt.Print(args.HelpText())
 		return 1
 	}
@@ -49,12 +49,12 @@ func run() int {
 
 	if opts.Resume {
 		if !prd.Exists(cfg) {
-			fmt.Printf("Error: No %s found to resume from\n", cfg.PRDFile)
+			fmt.Fprintf(os.Stderr, "Error: No %s found to resume from\n", cfg.PRDFile)
 			fmt.Println("Run ralph with a prompt first to generate a PRD")
 			return 1
 		}
 		if _, err := prd.Load(cfg); err != nil {
-			fmt.Printf("Error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error loading existing PRD %s: %v\n", cfg.PRDFile, err)
 			return 1
 		}
 	}
@@ -72,7 +72,7 @@ func runTUI(cfg *config.Config, opts *args.Options) int {
 
 	finalModel, err := p.Run()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
 		return 1
 	}
 

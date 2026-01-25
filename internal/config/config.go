@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var SupportedModels = []string{
@@ -43,14 +44,19 @@ func Load() (*Config, error) {
 		cfg.WorkDir = wd
 	}
 
-	data, err := os.ReadFile(cfg.ConfigPath("ralph.config.json"))
+	configPath := cfg.ConfigPath("ralph.config.json")
+	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return cfg, cfg.Validate()
+		// If config file doesn't exist, return default config
+		if os.IsNotExist(err) {
+			return cfg, cfg.Validate()
+		}
+		return nil, fmt.Errorf("failed to read config file %q: %w", configPath, err)
 	}
 
 	var fileCfg Config
 	if err := json.Unmarshal(data, &fileCfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
+		return nil, fmt.Errorf("failed to parse config file %q: %w", configPath, err)
 	}
 
 	if fileCfg.Model != "" {
@@ -95,7 +101,7 @@ func (c *Config) ValidateModel() error {
 
 func (c *Config) Validate() error {
 	if err := c.ValidateModel(); err != nil {
-		return err
+		return fmt.Errorf("invalid model configuration: %w", err)
 	}
 	if c.MaxIterations <= 0 {
 		return fmt.Errorf("max_iterations must be positive, got %d", c.MaxIterations)
@@ -106,5 +112,17 @@ func (c *Config) Validate() error {
 	if c.PRDFile == "" {
 		return fmt.Errorf("prd_file cannot be empty")
 	}
+
+	// Validate PRD file path for security (prevent path traversal)
+	if filepath.Base(c.PRDFile) != c.PRDFile {
+		return fmt.Errorf("prd_file must be a simple filename, got path %q", c.PRDFile)
+	}
+	if filepath.IsAbs(c.PRDFile) {
+		return fmt.Errorf("prd_file cannot be an absolute path, got %q", c.PRDFile)
+	}
+	if strings.Contains(c.PRDFile, "..") {
+		return fmt.Errorf("prd_file cannot contain path traversal, got %q", c.PRDFile)
+	}
+
 	return nil
 }
