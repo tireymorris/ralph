@@ -41,7 +41,7 @@ func TestClaudeRunWithModel(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	expectedArgs := []string{"--print", "--model", "sonnet", "test prompt"}
+	expectedArgs := []string{"--print", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
 	}
@@ -65,7 +65,7 @@ func TestClaudeRunNoModel(t *testing.T) {
 
 	r.Run(context.Background(), "test", nil)
 
-	expectedArgs := []string{"--print", "test"}
+	expectedArgs := []string{"--print", "--dangerously-skip-permissions", "test"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
 	}
