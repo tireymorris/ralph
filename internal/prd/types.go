@@ -12,7 +12,7 @@ type Story struct {
 }
 
 type PRD struct {
-	Version     int64    `json:"version"`               // Incremented on each save for optimistic locking
+	Version     int64    `json:"version"` // Incremented on each save for optimistic locking
 	ProjectName string   `json:"project_name"`
 	BranchName  string   `json:"branch_name,omitempty"`
 	Context     string   `json:"context,omitempty"`

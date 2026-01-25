@@ -374,13 +374,13 @@ func TestIsClaudeCodeModel(t *testing.T) {
 		want  bool
 	}{
 		{
-			name:  "claude-3.5-sonnet",
-			model: "claude-code/claude-3.5-sonnet",
+			name:  "sonnet",
+			model: "claude-code/sonnet",
 			want:  true,
 		},
 		{
-			name:  "claude-3.5-haiku",
-			model: "claude-code/claude-3.5-haiku",
+			name:  "haiku",
+			model: "claude-code/haiku",
 			want:  true,
 		},
 		{
@@ -421,7 +421,7 @@ func TestIsClaudeCodeModel(t *testing.T) {
 }
 
 func TestNewReturnsClaudeRunner(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner := New(cfg)
 
 	if runner == nil {
@@ -466,15 +466,15 @@ func TestNewWithDefaultModel(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Should return OpenCode runner for default model
-	_, ok := runner.(*Runner)
+	// Should return ClaudeRunner for default model (claude-code/sonnet)
+	_, ok := runner.(*ClaudeRunner)
 	if !ok {
-		t.Errorf("New() returned %T, want *Runner for default model", runner)
+		t.Errorf("New() returned %T, want *ClaudeRunner for default model", runner)
 	}
 }
 
 func TestNewWithErrorValidClaudeModel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner, err := NewWithError(cfg)
 
 	if err != nil {
@@ -529,7 +529,7 @@ func TestNewWithErrorInvalidModel(t *testing.T) {
 
 func TestModelSwitchingBetweenRuns(t *testing.T) {
 	// Test Claude Code model
-	claudeCfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	claudeCfg := &config.Config{Model: "claude-code/sonnet"}
 	runner1 := New(claudeCfg)
 
 	_, ok1 := runner1.(*ClaudeRunner)
@@ -555,7 +555,7 @@ func TestModelSwitchingBetweenRuns(t *testing.T) {
 }
 
 func TestIntegrationClaudeModelExecution(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/claude-3.5-sonnet"}
+	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner := New(cfg)
 
 	// Mock the command execution for Claude runner
@@ -580,12 +580,12 @@ func TestIntegrationClaudeModelExecution(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	if capturedName != "claude-code" {
+	if capturedName != "claude" {
 		t.Errorf("Expected command 'claude-code', got %q", capturedName)
 	}
 
 	// Verify Claude-specific arguments
-	expectedArgs := []string{"--print", "--model", "claude-3.5-sonnet", "test prompt"}
+	expectedArgs := []string{"--print", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
 	}
