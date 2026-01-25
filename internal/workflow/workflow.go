@@ -177,7 +177,9 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		p, err := prd.Load(e.cfg)
 		if err != nil {
-			logger.Warn("failed to reload PRD", "error", err)
+			logger.Error("failed to reload PRD", "error", err)
+			e.emit(EventError{Err: fmt.Errorf("cannot continue without PRD: %w", err)})
+			return fmt.Errorf("failed to reload PRD: %w", err)
 		}
 
 		if p.AllCompleted() {
@@ -240,10 +242,21 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				updatedPRD, loadErr = e.repairPRD(ctx, loadErr)
 			}
 			if loadErr != nil {
-				logger.Warn("failed to reload PRD after story", "error", loadErr)
-				e.emit(EventStoryCompleted{Story: next, Success: false})
-				continue
+				logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", next.ID)
+				e.emit(EventError{Err: fmt.Errorf("failed to reload PRD: %w", loadErr)})
+				return fmt.Errorf("failed to reload PRD after story %s: %w", next.ID, loadErr)
 			}
+		}
+
+		// Check for version conflicts (unexpected jumps indicate concurrent modification)
+		if p.Version > 0 && updatedPRD.Version > p.Version+1 {
+			logger.Warn("PRD version jumped unexpectedly",
+				"previous", p.Version,
+				"current", updatedPRD.Version,
+				"expected", p.Version+1,
+				"story_id", next.ID)
+			e.emit(EventOutput{Output{Text: fmt.Sprintf(
+				"Warning: PRD was modified externally (version %d → %d)", p.Version, updatedPRD.Version)}})
 		}
 
 		updatedStory := updatedPRD.GetStory(next.ID)
