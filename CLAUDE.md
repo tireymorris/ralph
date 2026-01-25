@@ -1,6 +1,6 @@
 # Claude Code Context - Ralph Project
 
-**Last Updated**: 2026-01-24
+**Last Updated**: 2026-01-25
 **Analysis Date**: 2026-01-24
 
 ---
@@ -10,15 +10,13 @@
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Component Details](#component-details)
-4. [Fixed Issues](#fixed-issues) ✅ NEW
-5. [Critical Issues](#critical-issues)
-6. [Code Quality Issues](#code-quality-issues)
-7. [Security Concerns](#security-concerns)
-8. [Missing Features](#missing-features)
-9. [Architectural Critiques](#architectural-critiques)
-10. [Recommendations](#recommendations)
-11. [Testing Strategy](#testing-strategy)
-12. [File Reference](#file-reference)
+4. [Key Strengths](#key-strengths)
+5. [Minor Areas for Improvement](#minor-areas-for-improvement)
+6. [Missing Features](#missing-features)
+7. [Architectural Critiques](#architectural-critiques)
+8. [Recommendations](#recommendations)
+9. [Testing Strategy](#testing-strategy)
+10. [File Reference](#file-reference)
 
 ---
 
@@ -56,9 +54,9 @@ Ralph operates in two phases:
 - `opencode/minimax-m2.1-free`
 
 **Claude Code Models**:
-- `claude-code/claude-3.5-sonnet`
-- `claude-code/claude-3.5-haiku`
-- `claude-code/claude-3-opus`
+- `claude-code/sonnet`
+- `claude-code/haiku`
+- `claude-code/opus`
 
 ---
 
@@ -154,7 +152,7 @@ CLI/TUI Layer → Workflow Orchestration → Runner (AI Integration) → Storage
 
 ### 2. Configuration System (`internal/config/config.go`)
 
-**Location**: `internal/config/config.go` (111 lines)
+**Location**: `internal/config/config.go` (128 lines)
 
 **Purpose**: Loads and manages configuration from `ralph.config.json`
 
@@ -180,8 +178,6 @@ CLI/TUI Layer → Workflow Orchestration → Runner (AI Integration) → Storage
 - `retry_attempts` must be >= 0
 - `prd_file` cannot be empty
 
-**ISSUE**: No validation for path traversal in `prd_file` (see Security Concerns)
-
 ### 3. Prompt Generation (`internal/prompt/prompt.go`)
 
 **Location**: `internal/prompt/prompt.go` (128 lines)
@@ -202,8 +198,8 @@ CLI/TUI Layer → Workflow Orchestration → Runner (AI Integration) → Storage
 ### 4. Runner Layer (`internal/runner/`)
 
 **Location**:
-- `internal/runner/runner.go` (209 lines) - OpenCode runner
-- `internal/runner/claude.go` (160 lines) - Claude Code runner
+- `internal/runner/runner.go` (241 lines) - OpenCode runner
+- `internal/runner/claude.go` (209 lines) - Claude Code runner
 
 **Purpose**: Executes external AI CLI tools (OpenCode or Claude Code)
 
@@ -233,8 +229,8 @@ type RunnerInterface interface {
 ### 5. PRD Management (`internal/prd/`)
 
 **Location**:
-- `internal/prd/types.go` (74 lines) - Data models
-- `internal/prd/storage.go` (50 lines) - File I/O
+- `internal/prd/types.go` (137 lines) - Data models
+- `internal/prd/storage.go` (180 lines) - File I/O
 
 **Data Models**:
 ```go
@@ -272,7 +268,7 @@ type PRD struct {
 
 ### 6. Workflow Executor (`internal/workflow/workflow.go`)
 
-**Location**: `internal/workflow/workflow.go` (322 lines)
+**Location**: `internal/workflow/workflow.go` (338 lines)
 
 **Purpose**: Orchestrates the entire PRD generation and implementation process
 
@@ -418,7 +414,7 @@ The codebase implements enterprise-grade file handling with multiple layers of p
    - Clear error messages for version conflicts
 
 **Testing**:
-- Comprehensive test suite in `storage_test.go` (12 test functions)
+- Comprehensive test suite in `storage_test.go` (15 test functions)
 - All tests pass with `-race` flag (no race conditions detected)
 - Concurrent access tests: 10+ goroutines reading/writing simultaneously ✅
 - Atomic write validation: temp cleanup, permissions, error handling ✅
@@ -508,32 +504,7 @@ const (
 
 ## Minor Areas for Improvement
 
----
-
-## Minor Areas for Improvement
-
-### 1. Inconsistent Logging
-
-**Location**: `workflow.go:233`
-
-```go
-logger.Debug("opencode returned error", "story_id", next.ID, "error", err)
-```
-
-**Problem**: Logs "opencode" even when using Claude Code runner.
-
-**Fix**: Use generic term like "ai runner" or "runner".
-
-### 2. Magic Numbers
-
-**Locations**:
-- `workflow.go:106,213`: `10000` buffer size - should be constant
-- `runner.go:122`: `1024*1024` buffer size - no constant defined
-- `workflow.go:15`: `maxJSONRepairAttempts = 2` - should be configurable
-
-**Recommendation**: Define constants with explanatory comments.
-
-### 3. Error Context Enhancement
+### 1. Error Context Enhancement
 
 **Problem**: Some errors could benefit from additional context about which operation failed.
 
@@ -543,7 +514,7 @@ logger.Debug("opencode returned error", "story_id", next.ID, "error", err)
 
 **Recommendation**: Consider adding more context to error messages where helpful.
 
-### 4. Test Coverage Optimization
+### 2. Test Coverage Optimization
 
 **Current Status**: Already comprehensive with 61.5% overall coverage, many packages >90%
 
@@ -736,45 +707,6 @@ func (e *Executor) saveMetrics(metrics *SessionMetrics) error {
     data, _ := json.MarshalIndent(metrics, "", "  ")
     path := e.cfg.ConfigPath("ralph.metrics.json")
     return os.WriteFile(path, data, 0644)
-}
-```
-
-### 5. Dry-Run Not Implemented
-
-**Problem**: `--dry-run` flag exists but doesn't actually skip AI execution.
-
-**Affected Code**:
-- `args.go`: Defines `DryRun` flag
-- `workflow.go`: Doesn't check dry-run mode
-
-**Expected Behavior**: In dry-run mode:
-- Generate PRD but don't implement stories
-- Show what would be done without doing it
-- Validate prompts and configuration
-
-**Recommendation**: Implement dry-run logic.
-
-**Example Fix**:
-```go
-// In workflow.go
-type Executor struct {
-    cfg      *config.Config
-    eventsCh chan Event
-    runner   runner.RunnerInterface
-    dryRun   bool  // Add this
-}
-
-func (e *Executor) RunImplementation(ctx context.Context, p *PRD) error {
-    // ... existing setup
-
-    if e.dryRun {
-        logger.Info("dry-run mode: skipping AI execution")
-        e.emit(EventOutput{Output{Text: fmt.Sprintf(
-            "[DRY RUN] Would implement story: %s", next.Title)}})
-        continue
-    }
-
-    // ... actual implementation
 }
 ```
 
@@ -1050,10 +982,7 @@ func (m *Model) RecoverFromCrash() error {
 
 | Priority | Category | Item | Estimated Effort | Impact |
 |----------|----------|------|------------------|--------|
-| P1 | Quality | Fix inconsistent logging | 1 hour | Low |
-| P1 | Quality | Define constants for magic numbers | 30 min | Low |
 | P1 | Quality | Add error context to errors | 2 hours | Low |
-| P2 | Feature | Implement dry-run mode | 2 hours | Low |
 | P2 | Feature | Add progress persistence | 3-4 hours | Medium |
 | P2 | Feature | Add story dependencies | 1-2 days | Medium |
 | P3 | Feature | Add metrics/observability | 1-2 days | Medium |
@@ -1159,32 +1088,35 @@ func CreateTestStory(id string, priority int, passes bool) *prd.Story {
     │   └── cli.go (159 lines)            # Headless runner
     │
     ├── config/
-    │   └── config.go (111 lines)         # Configuration management
+    │   └── config.go (128 lines)         # Configuration management
+    │
+    ├── constants/
+    │   └── constants.go (49 lines)       # Shared constants
     │
     ├── logger/
     │   └── logger.go (54 lines)          # Logging
     │
     ├── prd/
-    │   ├── types.go (74 lines)           # PRD data models
-    │   └── storage.go (50 lines)         # File I/O
+    │   ├── types.go (137 lines)          # PRD data models
+    │   └── storage.go (180 lines)        # File I/O
     │
     ├── prompt/
     │   └── prompt.go (128 lines)         # Prompt templates
     │
     ├── runner/
-    │   ├── runner.go (209 lines)         # OpenCode runner
-    │   └── claude.go (160 lines)         # Claude Code runner
+    │   ├── runner.go (241 lines)         # OpenCode runner
+    │   └── claude.go (209 lines)         # Claude Code runner
     │
     ├── tui/
     │   ├── model.go (238 lines)          # Bubbletea model
     │   ├── view.go (179 lines)           # TUI rendering
     │   ├── operations.go (88 lines)      # Async operations
     │   ├── styles.go (~150 lines)        # Styling
-    │   ├── logger.go (~3KB)              # Output logging
-    │   └── utils.go                      # Utilities
+    │   ├── logger.go (~109 lines)        # Output logging
+    │   └── utils.go (11 lines)           # Utilities
     │
     └── workflow/
-        └── workflow.go (322 lines)       # Orchestration engine
+        └── workflow.go (338 lines)       # Orchestration engine
 ```
 
 ### Key Files to Review
@@ -1222,9 +1154,8 @@ When making changes, pay special attention to these files:
 - Good use of Go idioms and standard library
 
 ### Minor Areas for Improvement ⚠️
-- Some inconsistent logging (mentions specific runner names)
-- Magic numbers could be extracted to named constants
 - Error messages could benefit from additional context in some cases
+- Test coverage for workflow package could be improved (currently 31.5%)
 
 ### Best Suited For
 - Production use
@@ -1235,8 +1166,8 @@ When making changes, pay special attention to these files:
 
 ### Recommendations
 
-1. **Minor**: Address logging inconsistencies and extract magic numbers
-2. **Medium**: Consider missing features (dry-run mode, rollback mechanism)
+1. **Minor**: Add more context to error messages where helpful
+2. **Medium**: Consider missing features (rollback mechanism, progress persistence)
 3. **Long-term**: Evaluate architectural improvements (SQLite storage, API SDKs)
 
 ---
