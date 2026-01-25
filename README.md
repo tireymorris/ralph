@@ -28,7 +28,7 @@ Ralph follows a two-phase approach:
 
 - Go 1.21+
 - Git
-- [opencode](https://github.com/opencode-ai/opencode) CLI
+- [opencode](https://github.com/opencode-ai/opencode) CLI **OR** [Claude Code](https://github.com/anthropics/claude-code) CLI
 
 ### Install
 
@@ -95,19 +95,35 @@ Create `ralph.config.json` in your project root:
 }
 ```
 
+For Claude Code models:
+```json
+{
+  "model": "claude-code/claude-3.5-sonnet",
+  "max_iterations": 50,
+  "retry_attempts": 3,
+  "prd_file": "prd.json"
+}
+```
+
 | Option | Default | Description |
 |--------|---------|-------------|
-| `model` | `opencode/big-pickle` | AI model for code generation |
+| `model` | `opencode/big-pickle` | AI model for code generation (OpenCode or Claude Code) |
 | `max_iterations` | `50` | Maximum total implementation iterations |
 | `retry_attempts` | `3` | Max retries per story before failing |
 | `prd_file` | `prd.json` | PRD filename |
 
 ### Supported Models
 
+#### OpenCode Models
 - `opencode/big-pickle` (default)
 - `opencode/glm-4.7-free`
 - `opencode/gpt-5-nano`
 - `opencode/minimax-m2.1-free`
+
+#### Claude Code Models
+- `claude-code/claude-3.5-sonnet`
+- `claude-code/claude-3.5-haiku`
+- `claude-code/claude-3-opus`
 
 ## PRD Format
 
@@ -191,11 +207,16 @@ ralph --resume
 ralph run "your prompt" --verbose
 ```
 
-### Missing OpenCode
+### Missing AI CLI Tools
 
 ```bash
+# For OpenCode models
 which opencode
 opencode --version
+
+# For Claude Code models
+which claude-code
+claude-code --version
 ```
 
 ## License

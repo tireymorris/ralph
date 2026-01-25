@@ -78,6 +78,12 @@ Modes:
   (default)    Interactive TUI with progress display
   run          Non-interactive stdout output (for CI/scripts)
 
+AI Models:
+  Supports OpenCode and Claude Code CLI models.
+  Configure model in ralph.config.json:
+  - OpenCode: "opencode/big-pickle" (default), "opencode/glm-4.7-free", etc.
+  - Claude Code: "claude-code/claude-3.5-sonnet", "claude-code/claude-3.5-haiku", etc.
+
 Controls (TUI mode):
   q, Ctrl+C    Quit the application
 
