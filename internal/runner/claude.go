@@ -21,6 +21,14 @@ type ClaudeRunner struct {
 
 var _ RunnerInterface = (*ClaudeRunner)(nil)
 
+func (r *ClaudeRunner) RunnerName() string {
+	return "Claude Code"
+}
+
+func (r *ClaudeRunner) CommandName() string {
+	return "claude"
+}
+
 func NewClaude(cfg *config.Config) *ClaudeRunner {
 	return &ClaudeRunner{
 		cfg:     cfg,
@@ -41,29 +49,31 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	}
 	args = append(args, prompt)
 
-	logger.Debug("invoking claude",
+	logger.Debug("invoking AI runner",
+		"runner", r.RunnerName(),
+		"command", r.CommandName(),
 		"model", r.cfg.Model,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting claude with model %s...", modelName), Time: time.Now()}
+		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), modelName), Time: time.Now()}
 	}
 
-	cmd := r.CmdFunc(ctx, "claude", args...)
+	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe for claude: %w", err)
+		return fmt.Errorf("failed to get stdout pipe for %s: %w", r.CommandName(), err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe for claude: %w", err)
+		return fmt.Errorf("failed to get stderr pipe for %s: %w", r.CommandName(), err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start claude with model %s: %w", modelName, err)
+		return fmt.Errorf("failed to start %s with model %s: %w", r.CommandName(), modelName, err)
 	}
 
 	var wg sync.WaitGroup
@@ -86,13 +96,20 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("claude exited with code", "exit_code", exitErr.ExitCode(), "model", modelName)
-			return fmt.Errorf("claude with model %s exited with code %d", modelName, exitErr.ExitCode())
+			logger.Debug("AI runner exited with code",
+				"runner", r.RunnerName(),
+				"command", r.CommandName(),
+				"exit_code", exitErr.ExitCode(),
+				"model", modelName)
+			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), modelName, exitErr.ExitCode())
 		}
-		return fmt.Errorf("claude with model %s failed: %w", modelName, err)
+		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), modelName, err)
 	}
 
-	logger.Debug("claude completed successfully", "model", modelName)
+	logger.Debug("AI runner completed successfully",
+		"runner", r.RunnerName(),
+		"command", r.CommandName(),
+		"model", modelName)
 	return nil
 }
 
