@@ -17,6 +17,8 @@ import (
 
 type RunnerInterface interface {
 	Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error
+	RunnerName() string
+	CommandName() string
 }
 
 type OutputLine struct {
@@ -107,6 +109,14 @@ func NewWithError(cfg *config.Config) (RunnerInterface, error) {
 	return New(cfg), nil
 }
 
+func (r *Runner) RunnerName() string {
+	return "OpenCode"
+}
+
+func (r *Runner) CommandName() string {
+	return "opencode"
+}
+
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
 	args := []string{"run", "--print-logs"}
 	if r.cfg.Model != "" {
@@ -114,29 +124,31 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	}
 	args = append(args, prompt)
 
-	logger.Debug("invoking opencode",
+	logger.Debug("invoking AI runner",
+		"runner", r.RunnerName(),
+		"command", r.CommandName(),
 		"model", r.cfg.Model,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting opencode with model %s...", r.cfg.Model), Time: time.Now()}
+		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), r.cfg.Model), Time: time.Now()}
 	}
 
-	cmd := r.CmdFunc(ctx, "opencode", args...)
+	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe for opencode: %w", err)
+		return fmt.Errorf("failed to get stdout pipe for %s: %w", r.CommandName(), err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe for opencode: %w", err)
+		return fmt.Errorf("failed to get stderr pipe for %s: %w", r.CommandName(), err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start opencode with model %s: %w", r.cfg.Model, err)
+		return fmt.Errorf("failed to start %s with model %s: %w", r.CommandName(), r.cfg.Model, err)
 	}
 
 	var wg sync.WaitGroup
@@ -161,13 +173,20 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("opencode exited with code", "exit_code", exitErr.ExitCode(), "model", r.cfg.Model)
-			return fmt.Errorf("opencode with model %s exited with code %d", r.cfg.Model, exitErr.ExitCode())
+			logger.Debug("AI runner exited with code",
+				"runner", r.RunnerName(),
+				"command", r.CommandName(),
+				"exit_code", exitErr.ExitCode(),
+				"model", r.cfg.Model)
+			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), r.cfg.Model, exitErr.ExitCode())
 		}
-		return fmt.Errorf("opencode with model %s failed: %w", r.cfg.Model, err)
+		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), r.cfg.Model, err)
 	}
 
-	logger.Debug("opencode completed successfully", "model", r.cfg.Model)
+	logger.Debug("AI runner completed successfully",
+		"runner", r.RunnerName(),
+		"command", r.CommandName(),
+		"model", r.cfg.Model)
 	return nil
 }
 
