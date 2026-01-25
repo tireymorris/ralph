@@ -1,0 +1,66 @@
+{
+  "project_name": "Claude Code Integration Support",
+  "branch_name": "feature/claude-code-support",
+  "context": "Go 1.24 with standard testing framework. Project follows clean architecture with internal/ package structure. Main entry point in main.go. Configuration via ralph.config.json. Uses Bubbletea for TUI and exec for subprocess management. Current implementation supports OpenCode CLI via internal/runner/runner.go and Claude Code CLI via internal/runner/claude.go. Tests located alongside source files as *_test.go. Run tests with 'go test ./...'. Uses Charm Bubbletea libraries for UI components, JSON for PRD storage, and follows Go naming conventions (camelCase for variables, PascalCase for types). Existing abstractions: CmdInterface for subprocess execution, Config struct for settings, PRD struct for story management. Claude Code runner adapter implements same interface as OpenCode runner with appropriate CLI argument handling (--print and --model flags) and output parsing. RunnerInterface abstraction enables automatic adapter selection based on model prefix (claude-code/ vs opencode/). Use runner.New(cfg) for factory pattern with automatic detection, or runner.NewWithError(cfg) for validation with error handling. Claude Code models detected via strings.HasPrefix(model, \"claude-code/\").",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Add Claude Code model configuration",
+      "description": "Extend config system to support Claude Code models alongside existing OpenCode models. Update SupportedModels list and add Claude Code specific configuration options.",
+      "acceptance_criteria": [
+        "SupportedModels includes Claude Code model options",
+        "Config validation accepts Claude Code models",
+        "Existing OpenCode models continue to work unchanged"
+      ],
+      "test_spec": "Unit test: 1) Verify Claude Code models are in SupportedModels, 2) Test config validation with Claude models, 3) Test backward compatibility with OpenCode models",
+      "priority": 1,
+      "passes": true,
+      "retry_count": 0
+    },
+    {
+      "id": "story-2", 
+      "title": "Create Claude Code runner adapter",
+      "description": "Implement Claude Code command execution adapter that implements the existing CmdInterface. Handle Claude Code CLI arguments and output parsing to match OpenCode interface.",
+      "acceptance_criteria": [
+        "Claude Code adapter implements CmdInterface",
+        "Supports --print and --model flags for Claude CLI",
+        "Output parsing matches existing OutputLine format",
+        "Error handling aligns with OpenCode runner"
+      ],
+      "test_spec": "Unit test: 1) Mock Claude Code command execution, 2) Verify stdout/stderr pipe handling, 3) Test argument construction for Claude CLI, 4) Verify error handling",
+      "priority": 2,
+      "passes": true,
+      "retry_count": 0
+    },
+    {
+      "id": "story-3",
+      "title": "Integrate Claude Code runner into main flow",
+      "description": "Modify runner.go to detect Claude Code models and use appropriate adapter. Ensure seamless switching between OpenCode and Claude Code based on config model.",
+      "acceptance_criteria": [
+        "Runner detects Claude Code models automatically",
+        "Correct adapter selected based on model configuration",
+        "Fallback behavior for unsupported models",
+        "Verbose logging shows which runner is used"
+      ],
+      "test_spec": "Integration test: 1) Test with Claude Code model config, 2) Test with OpenCode model config, 3) Test model switching between runs, 4) Verify error handling for invalid models",
+      "priority": 3,
+      "passes": true,
+      "retry_count": 0
+    },
+    {
+      "id": "story-4",
+      "title": "Update documentation and help text",
+      "description": "Update README.md and help text to document Claude Code support. Include installation instructions, configuration examples, and usage patterns for Claude Code.",
+      "acceptance_criteria": [
+        "README mentions Claude Code support",
+        "Configuration examples include Claude models",
+        "Installation instructions include Claude Code CLI",
+        "Help text references Claude Code option"
+      ],
+      "test_spec": "Manual test: 1) Verify README updates are accurate, 2) Check help text includes Claude Code info, 3) Follow installation instructions to verify they work",
+      "priority": 4,
+      "passes": true,
+      "retry_count": 0
+    }
+  ]
+}
