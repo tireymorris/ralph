@@ -12,12 +12,12 @@ var SupportedModels = []string{
 	"opencode/glm-4.7-free",
 	"opencode/gpt-5-nano",
 	"opencode/minimax-m2.1-free",
-	"claude-code/claude-3.5-sonnet",
-	"claude-code/claude-3.5-haiku",
-	"claude-code/claude-3-opus",
+	"claude-code/sonnet",
+	"claude-code/haiku",
+	"claude-code/opus",
 }
 
-const DefaultModel = "claude-code/claude-3.5-sonnet"
+const DefaultModel = "claude-code/sonnet"
 
 type Config struct {
 	Model         string `json:"model"`
