@@ -237,56 +237,6 @@ func TestRenderLogsStyling(t *testing.T) {
 	}
 }
 
-func _TestViewTypographyAndSpacing(t *testing.T) {
-	// Ensure colors and styles are enabled for the test
-	lipgloss.SetColorProfile(termenv.TrueColor)
-
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", false, false, false)
-	m.phase = PhaseImplementation
-	m.prd = &prd.PRD{
-		ProjectName: "Test Project",
-		BranchName:  "feature/typography",
-		Stories: []*prd.Story{
-			{ID: "1", Title: "Story One", Passes: true},
-			{ID: "2", Title: "Story Two", Passes: false},
-		},
-	}
-	m.currentStory = m.prd.Stories[1]
-	m.width = 80
-	m.height = 24
-
-	view := m.View()
-
-	// Verify title style renders with bold ANSI codes
-	// ANSI bold escape sequence in combination with colors is \x1b[1;...
-	if !strings.Contains(view, "\x1b[1;") {
-		t.Error("View() should contain ANSI bold escape sequences for titles")
-	}
-
-	// Verify properly spaced elements with expected padding
-	// Check that titles have margin spacing
-	if !strings.Contains(view, "📋 Stories") {
-		t.Error("View() should contain Stories section title")
-	}
-	// Verify sections are properly separated (check for spacing before titles)
-	if !strings.Contains(view, "\n\x1b[1;") {
-		t.Error("View() should have proper spacing before title elements")
-	}
-
-	// Check that boxes have consistent padding (all boxes should have Padding(1, 2))
-	// Verify the log box has proper padding by checking for spaces in the border area
-	if !strings.Contains(view, "📋 Waiting for output") {
-		t.Error("View() should contain log box with proper padding")
-	}
-
-	// Verify text hierarchy through styling differences
-	// Completed story should be green and bold, in-progress should be highlighted and bold
-	if !strings.Contains(view, "completed") || !strings.Contains(view, "in progress") {
-		t.Error("View() should show clear text hierarchy with different status styles")
-	}
-}
-
 type testError struct {
 	msg string
 }

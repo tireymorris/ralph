@@ -1,6 +1,7 @@
 package prd
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -61,7 +62,7 @@ func TestPRD_Validate(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PRD.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && tt.errMsg != "" && !containsString(err.Error(), tt.errMsg) {
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
 				t.Errorf("PRD.Validate() error = %v, expected to contain %q", err, tt.errMsg)
 			}
 		})
@@ -144,26 +145,9 @@ func TestStory_Validate(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Story.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && tt.errMsg != "" && !containsString(err.Error(), tt.errMsg) {
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
 				t.Errorf("Story.Validate() error = %v, expected to contain %q", err, tt.errMsg)
 			}
 		})
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > len(substr) &&
-			(s[:len(substr)] == substr ||
-				s[len(s)-len(substr):] == substr ||
-				findSubstring(s, substr))))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -32,7 +33,7 @@ func TestLoad_InvalidConfigPath(t *testing.T) {
 	}
 
 	// Check that error message contains context
-	if err != nil && !containsString(err.Error(), "invalid model configuration") {
+	if err != nil && !strings.Contains(err.Error(), "invalid model configuration") {
 		t.Errorf("Error message should contain 'invalid model configuration', got: %v", err)
 	}
 }
@@ -81,26 +82,9 @@ func TestConfig_Validate_PathTraversal(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && tt.errMsg != "" && !containsString(err.Error(), tt.errMsg) {
+			if err != nil && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
 				t.Errorf("Config.Validate() error = %v, expected to contain %q", err, tt.errMsg)
 			}
 		})
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > len(substr) &&
-			(s[:len(substr)] == substr ||
-				s[len(s)-len(substr):] == substr ||
-				findSubstring(s, substr))))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

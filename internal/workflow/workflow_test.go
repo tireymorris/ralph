@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -712,7 +713,7 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	for len(ch) > 0 {
 		e := <-ch
 		if eo, ok := e.(EventOutput); ok {
-			if len(eo.Text) > 0 && (contains(eo.Text, "version") || contains(eo.Text, "modified")) {
+			if len(eo.Text) > 0 && (strings.Contains(eo.Text, "version") || strings.Contains(eo.Text, "modified")) {
 				foundWarning = true
 			}
 		}
@@ -720,19 +721,6 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	if !foundWarning {
 		t.Log("Note: version conflict warning may be logged rather than emitted as event")
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // Test RunLoad with malformed JSON triggers repair

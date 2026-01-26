@@ -249,7 +249,10 @@ func TestHandleWorkflowEventPRDGenerating(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	m.handleWorkflowEvent(workflow.EventPRDGenerating{})
+	cmd := m.handleWorkflowEvent(workflow.EventPRDGenerating{})
+	if cmd != nil {
+		t.Error("EventPRDGenerating should return nil cmd")
+	}
 }
 
 func TestHandleWorkflowEventPRDGenerated(t *testing.T) {
@@ -310,6 +313,10 @@ func TestHandleWorkflowEventStoryCompletedFailure(t *testing.T) {
 
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
 	m.handleWorkflowEvent(workflow.EventStoryCompleted{Story: story, Success: false})
+
+	if story.Passes {
+		t.Error("story should remain not passing on failure")
+	}
 }
 
 func TestHandleWorkflowEventCompleted(t *testing.T) {
@@ -338,28 +345,42 @@ func TestHandleWorkflowEventError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	m.handleWorkflowEvent(workflow.EventError{Err: &testErrorType{msg: "error"}})
+	cmd := m.handleWorkflowEvent(workflow.EventError{Err: &testErrorType{msg: "error"}})
+	if cmd != nil {
+		t.Error("EventError should return nil cmd")
+	}
 }
 
 func TestHandleWorkflowEventOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "test", IsErr: false}})
+	cmd := m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "test", IsErr: false}})
+	if cmd != nil {
+		t.Error("EventOutput should return nil cmd")
+	}
 }
 
 func TestHandleWorkflowEventOutputVerboseFiltered(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false) // verbose=false
 
-	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+	// Verbose output on non-verbose model should not panic
+	cmd := m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+	if cmd != nil {
+		t.Error("EventOutput should return nil cmd")
+	}
 }
 
 func TestHandleWorkflowEventOutputVerboseShown(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, true)
+	m := NewModel(cfg, "test", false, false, true) // verbose=true
 
-	m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+	// Verbose output on verbose model should not panic
+	cmd := m.handleWorkflowEvent(workflow.EventOutput{Output: workflow.Output{Text: "verbose", IsErr: false, Verbose: true}})
+	if cmd != nil {
+		t.Error("EventOutput should return nil cmd")
+	}
 }
 
 func TestUpdateWorkflowEventMsg(t *testing.T) {
