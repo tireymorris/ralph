@@ -220,7 +220,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			next.Title,
 			next.Description,
 			next.AcceptanceCriteria,
-			next.TestSpec,
+			p.TestSpec,
 			p.Context,
 			e.cfg.PRDFile,
 			iteration,

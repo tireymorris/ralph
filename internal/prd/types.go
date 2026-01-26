@@ -14,7 +14,6 @@ type Story struct {
 	Title              string   `json:"title"`
 	Description        string   `json:"description"`
 	AcceptanceCriteria []string `json:"acceptance_criteria"`
-	TestSpec           string   `json:"test_spec,omitempty"`
 	Priority           int      `json:"priority"`
 	Passes             bool     `json:"passes"`
 	RetryCount         int      `json:"retry_count"`
@@ -25,6 +24,7 @@ type PRD struct {
 	ProjectName string   `json:"project_name"`
 	BranchName  string   `json:"branch_name,omitempty"`
 	Context     string   `json:"context,omitempty"`
+	TestSpec    string   `json:"test_spec,omitempty"` // Holistic test spec covering all stories
 	Stories     []*Story `json:"stories"`
 }
 

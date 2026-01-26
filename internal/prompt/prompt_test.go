@@ -110,7 +110,7 @@ func TestStoryImplementation(t *testing.T) {
 		title              string
 		description        string
 		acceptanceCriteria []string
-		testSpec           string
+		featureTestSpec    string
 		context            string
 		prdFile            string
 		iteration          int
@@ -120,12 +120,12 @@ func TestStoryImplementation(t *testing.T) {
 		mustNotInclude     []string
 	}{
 		{
-			name:               "basic story without context",
+			name:               "basic story without context or test spec",
 			storyID:            "story-1",
 			title:              "Add login",
 			description:        "Implement login functionality",
 			acceptanceCriteria: []string{"User can login", "Error on bad credentials"},
-			testSpec:           "Test login flow",
+			featureTestSpec:    "",
 			context:            "",
 			prdFile:            "prd.json",
 			iteration:          1,
@@ -137,20 +137,19 @@ func TestStoryImplementation(t *testing.T) {
 				"Implement login functionality",
 				"User can login",
 				"Error on bad credentials",
-				"Test login flow",
 				"Iteration 1",
 				"0/3",
 				"prd.json",
 			},
-			mustNotInclude: []string{"CODEBASE CONTEXT"},
+			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC"},
 		},
 		{
-			name:               "story with context",
+			name:               "story with context and feature test spec",
 			storyID:            "story-1",
 			title:              "Add feature",
 			description:        "Implement feature",
 			acceptanceCriteria: []string{"Works"},
-			testSpec:           "Test it",
+			featureTestSpec:    "Test end-to-end: 1) Login works, 2) Errors handled",
 			context:            "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'.",
 			prdFile:            "prd.json",
 			iteration:          1,
@@ -161,22 +160,9 @@ func TestStoryImplementation(t *testing.T) {
 				"Ruby 3.2 with RSpec",
 				"Tests in spec/ directory",
 				"bundle exec rspec",
-			},
-		},
-		{
-			name:               "empty test spec uses default",
-			storyID:            "story-2",
-			title:              "Feature",
-			description:        "Desc",
-			acceptanceCriteria: []string{"AC"},
-			testSpec:           "",
-			context:            "",
-			prdFile:            "prd.json",
-			iteration:          2,
-			completed:          1,
-			total:              2,
-			mustInclude: []string{
-				"Create and run appropriate tests",
+				"FEATURE TEST SPEC",
+				"Test end-to-end",
+				"holistic",
 			},
 		},
 		{
@@ -185,7 +171,7 @@ func TestStoryImplementation(t *testing.T) {
 			title:              "T",
 			description:        "D",
 			acceptanceCriteria: []string{"A", "B", "C"},
-			testSpec:           "spec",
+			featureTestSpec:    "",
 			context:            "",
 			prdFile:            "prd.json",
 			iteration:          1,
@@ -202,7 +188,7 @@ func TestStoryImplementation(t *testing.T) {
 				tt.title,
 				tt.description,
 				tt.acceptanceCriteria,
-				tt.testSpec,
+				tt.featureTestSpec,
 				tt.context,
 				tt.prdFile,
 				tt.iteration,
