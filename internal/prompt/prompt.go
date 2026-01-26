@@ -58,7 +58,13 @@ STORY REQUIREMENTS:
 - Create the git branch specified in branch_name
 - Stories should build on each other logically
 
-Write the PRD file now.`, userPrompt, prdFile, prdFile, branchPrefix)
+YOUR TASK:
+1. Analyze the codebase
+2. Create the git branch
+3. Write the PRD file to %s
+4. STOP - do not implement any stories
+
+Do NOT start implementing stories. Only write the PRD file and stop.`, userPrompt, prdFile, prdFile, branchPrefix, prdFile)
 }
 
 func JSONRepair(prdFile, parseError string) string {
