@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -101,20 +100,3 @@ func TestRunResumeValidPRDHeadless(t *testing.T) {
 	}
 }
 
-func TestRunDryRunHeadless(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test that requires opencode")
-	}
-	origArgs := os.Args
-	origDir, _ := os.Getwd()
-
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	os.WriteFile(filepath.Join(tmpDir, "ralph.config.json"), []byte(`{"model":"test"}`), 0644)
-
-	os.Args = []string{"ralph", "run", "test", "--dry-run"}
-	defer func() {
-		os.Args = origArgs
-		os.Chdir(origDir)
-	}()
-}
