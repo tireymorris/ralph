@@ -2,16 +2,15 @@
   "project_name": "Example Project",
   "branch_name": "feature/example-feature",
   "context": "Ruby 3.2 with RSpec for testing. Main code in lib/, tests in spec/. Run tests with 'bundle exec rspec'. Follow existing patterns in lib/game.rb for new features.",
+  "test_spec": "Test the feature end-to-end: 1) Valid input produces expected output, 2) Invalid input returns appropriate errors, 3) Edge cases handled correctly",
   "stories": [
     {
       "id": "story-1",
       "title": "Example story title",
-      "description": "Detailed description of what needs to be implemented",
+      "description": "What to implement in this step",
       "acceptance_criteria": [
-        "Criterion 1",
-        "Criterion 2"
+        "Done when X works"
       ],
-      "test_spec": "How to test this story - specific test guidance",
       "priority": 1,
       "passes": false,
       "retry_count": 0

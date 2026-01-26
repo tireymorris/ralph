@@ -18,13 +18,13 @@ REQUIRED OUTPUT - Write this exact JSON structure to %s:
   "project_name": "descriptive name",
   "branch_name": "%s/descriptive-branch-name",
   "context": "Captured codebase context (see below)",
+  "test_spec": "Holistic test specification (see below)",
   "stories": [
     {
       "id": "story-1",
       "title": "Short title",
-      "description": "Detailed implementation requirements",
-      "acceptance_criteria": ["criterion 1", "criterion 2"],
-      "test_spec": "How to test this story",
+      "description": "What to implement",
+      "acceptance_criteria": ["done when X works"],
       "priority": 1,
       "passes": false,
       "retry_count": 0
@@ -42,9 +42,18 @@ The "context" field must capture everything a developer needs to work on this co
 - Any existing utilities, helpers, or abstractions that should be reused
 Keep it concise but complete - this context will be provided to agents implementing each story.
 
+TEST_SPEC FIELD REQUIREMENTS:
+The "test_spec" field defines how to test the ENTIRE feature holistically:
+- Focus on end-to-end behavior, not individual story testing
+- Define 3-5 key test scenarios that verify the feature works correctly
+- Include both happy path and important edge cases
+- Tests should be written once and cover the full implementation
+- Do NOT create separate test suites per story - one cohesive test approach
+
 STORY REQUIREMENTS:
-- Each story must be implementable in one iteration
-- Include test_spec with specific test guidance for each story
+- Stories are implementation steps, NOT separate features requiring separate tests
+- Keep stories small and focused on implementation milestones
+- acceptance_criteria should be 1-2 simple "done when" conditions
 - Set priority based on dependencies (1 = implement first)
 - Create the git branch specified in branch_name
 - Stories should build on each other logically
@@ -69,11 +78,7 @@ Fix the JSON syntax error while preserving all the data. Do not change any conte
 		prdFile, parseError, prdFile)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, testSpec, context, prdFile string, iteration, completed, total int) string {
-	if testSpec == "" {
-		testSpec = "Create and run appropriate tests"
-	}
-
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, context, prdFile string, iteration, completed, total int) string {
 	contextSection := ""
 	if context != "" {
 		contextSection = fmt.Sprintf(`
@@ -83,22 +88,35 @@ CODEBASE CONTEXT:
 `, context)
 	}
 
-	return fmt.Sprintf(`Implement story "%s" (ID: %s)
+	testSection := ""
+	if featureTestSpec != "" {
+		testSection = fmt.Sprintf(`
+FEATURE TEST SPEC (holistic - covers all stories):
 %s
+
+`, featureTestSpec)
+	}
+
+	return fmt.Sprintf(`Implement story "%s" (ID: %s)
+%s%s
 STORY DETAILS:
 - Title: %s
 - Description: %s
-- Acceptance Criteria: %s
-- Test Guidance: %s
+- Done when: %s
 
 PROGRESS: Iteration %d, %d/%d stories completed
 
 PROCESS:
-1. Implement the feature completely using the codebase context above
-2. Write tests following existing project patterns
-3. Run tests and ensure they pass
+1. Implement the story using the codebase context above
+2. If this story completes testable functionality, add tests per the feature test spec
+3. Run existing tests to ensure nothing is broken
 4. Commit changes with message: "feat: %s"
 5. Update %s - set "passes": true for story "%s"
+
+TESTING GUIDANCE:
+- Tests should cover the feature holistically, not each story individually
+- Only add new tests when this story completes functionality worth testing
+- Avoid duplicating test coverage across stories
 
 CONTEXT UPDATES (IMPORTANT):
 After completing this story, you MUST update the "context" field in %s if you:
@@ -114,10 +132,10 @@ If tests fail, increment "retry_count" in %s for this story instead.
 Implement now.`,
 		title, storyID,
 		contextSection,
+		testSection,
 		title,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
-		testSpec,
 		iteration, completed, total,
 		title,
 		prdFile, storyID,

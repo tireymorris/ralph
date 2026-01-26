@@ -19,13 +19,13 @@ func TestContextFieldRoundTrip(t *testing.T) {
 		ProjectName: "Test Project",
 		BranchName:  "feature/test",
 		Context:     "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'. Main code in lib/.",
+		TestSpec:    "Test end-to-end that the feature works correctly",
 		Stories: []*prd.Story{
 			{
 				ID:                 "story-1",
 				Title:              "Add feature",
 				Description:        "Implement the feature",
 				AcceptanceCriteria: []string{"Works correctly"},
-				TestSpec:           "Test it works",
 				Priority:           1,
 				Passes:             false,
 				RetryCount:         0,

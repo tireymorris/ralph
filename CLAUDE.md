@@ -76,6 +76,7 @@ type PRD struct {
     ProjectName string   `json:"project_name"`
     BranchName  string   `json:"branch_name,omitempty"`
     Context     string   `json:"context,omitempty"`
+    TestSpec    string   `json:"test_spec,omitempty"` // Holistic test spec for entire feature
     Stories     []*Story `json:"stories"`
 }
 

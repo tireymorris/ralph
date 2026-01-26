@@ -24,7 +24,6 @@ func TestSaveAndLoad(t *testing.T) {
 				Title:              "Test Story",
 				Description:        "A test story",
 				AcceptanceCriteria: []string{"criterion 1"},
-				TestSpec:           "test spec",
 				Priority:           1,
 				Passes:             false,
 				RetryCount:         0,
