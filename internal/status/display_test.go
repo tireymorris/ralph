@@ -158,6 +158,157 @@ func TestDisplay(t *testing.T) {
 	})
 }
 
+func TestDisplay_EmptyStories(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := &config.Config{
+		PRDFile:       "empty_prd.json",
+		RetryAttempts: 3,
+		WorkDir:       tmpDir,
+	}
+
+	// Create a PRD with empty stories array
+	testPRD := &prd.PRD{
+		ProjectName: "Empty Project",
+		Stories:     []*prd.Story{},
+	}
+
+	err := prd.Save(cfg, testPRD)
+	if err != nil {
+		t.Fatalf("Failed to save test PRD: %v", err)
+	}
+
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
+
+	err = Display(cfg)
+	w.Close()
+	buf.ReadFrom(r)
+
+	if err != nil {
+		t.Errorf("Display() returned error: %v", err)
+	}
+
+	output := buf.String()
+	expectedCounts := "Stories: 0 total, 0 completed, 0 pending, 0 failed\n"
+	if !containsString(output, expectedCounts) {
+		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	}
+}
+
+func TestDisplay_AllCompletedStories(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := &config.Config{
+		PRDFile:       "all_completed_prd.json",
+		RetryAttempts: 3,
+		WorkDir:       tmpDir,
+	}
+
+	// Create a PRD with all completed stories
+	testPRD := &prd.PRD{
+		ProjectName: "All Completed Project",
+		Stories: []*prd.Story{
+			{
+				ID:       "story-1",
+				Title:    "First completed",
+				Priority: 1,
+				Passes:   true,
+			},
+			{
+				ID:       "story-2",
+				Title:    "Second completed",
+				Priority: 2,
+				Passes:   true,
+			},
+		},
+	}
+
+	err := prd.Save(cfg, testPRD)
+	if err != nil {
+		t.Fatalf("Failed to save test PRD: %v", err)
+	}
+
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
+
+	err = Display(cfg)
+	w.Close()
+	buf.ReadFrom(r)
+
+	if err != nil {
+		t.Errorf("Display() returned error: %v", err)
+	}
+
+	output := buf.String()
+	expectedCounts := "Stories: 2 total, 2 completed, 0 pending, 0 failed\n"
+	if !containsString(output, expectedCounts) {
+		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	}
+}
+
+func TestDisplay_AllFailedStories(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := &config.Config{
+		PRDFile:       "all_failed_prd.json",
+		RetryAttempts: 2,
+		WorkDir:       tmpDir,
+	}
+
+	// Create a PRD with all failed stories
+	testPRD := &prd.PRD{
+		ProjectName: "All Failed Project",
+		Stories: []*prd.Story{
+			{
+				ID:         "story-1",
+				Title:      "First failed",
+				Priority:   1,
+				Passes:     false,
+				RetryCount: 2,
+			},
+			{
+				ID:         "story-2",
+				Title:      "Second failed",
+				Priority:   2,
+				Passes:     false,
+				RetryCount: 3,
+			},
+		},
+	}
+
+	err := prd.Save(cfg, testPRD)
+	if err != nil {
+		t.Fatalf("Failed to save test PRD: %v", err)
+	}
+
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
+
+	err = Display(cfg)
+	w.Close()
+	buf.ReadFrom(r)
+
+	if err != nil {
+		t.Errorf("Display() returned error: %v", err)
+	}
+
+	output := buf.String()
+	expectedCounts := "Stories: 2 total, 0 completed, 0 pending, 2 failed\n"
+	if !containsString(output, expectedCounts) {
+		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	}
+}
+
 func TestDisplayWithCorruptedPRD(t *testing.T) {
 	tmpDir := t.TempDir()
 
