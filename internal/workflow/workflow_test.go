@@ -431,26 +431,65 @@ func setupTestPRDFile(t *testing.T, dir string, p *prd.PRD) *config.Config {
 	return cfg
 }
 
-// Test isJSONParseError helper function
-func TestIsJSONParseError(t *testing.T) {
+// Test isPRDActionable heuristic
+func TestIsPRDActionable(t *testing.T) {
+	cfg := config.DefaultConfig()
+	exec := NewExecutorWithRunner(cfg, nil, newMockRunner())
+
 	tests := []struct {
 		name string
-		err  error
+		prd  *prd.PRD
 		want bool
 	}{
-		{"nil error", nil, false},
-		{"generic error", errors.New("something went wrong"), false},
-		{"invalid character", errors.New("invalid character 'x' looking for beginning"), false},
-		{"unexpected end of JSON", errors.New("unexpected end of JSON input"), false},
-		{"cannot unmarshal", errors.New("cannot unmarshal string into Go value"), false},
-		{"wrapped invalid character", errors.New("parse error: invalid character '}'"), false},
+		{
+			name: "actionable - specific description",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Add login endpoint at /api/login"},
+			}},
+			want: true,
+		},
+		{
+			name: "not actionable - vague optimize without quantification",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Optimize the codebase"},
+			}},
+			want: false,
+		},
+		{
+			name: "actionable - optimize with quantification",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Optimize the prompt from 650 to 200 words"},
+			}},
+			want: true,
+		},
+		{
+			name: "not actionable - vague improve",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Improve error handling"},
+			}},
+			want: false,
+		},
+		{
+			name: "actionable - refactor with specifics",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Refactor validation to extract helper functions"},
+			}},
+			want: true,
+		},
+		{
+			name: "actionable - no vague terms at all",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Add user authentication with JWT tokens"},
+			}},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isJSONParseError(tt.err)
+			got := exec.isPRDActionable(tt.prd)
 			if got != tt.want {
-				t.Errorf("isJSONParseError(%v) = %v, want %v", tt.err, got, tt.want)
+				t.Errorf("isPRDActionable() = %v, want %v", got, tt.want)
 			}
 		})
 	}

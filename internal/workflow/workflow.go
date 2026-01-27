@@ -277,14 +277,10 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	}
 }
 
-func isJSONParseError(err error) bool {
-	return false // JSON repair removed - rely on AI native capabilities
-}
-
 func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.PRD, error) {
-	maxIterations := 3
+	const maxValidationIterations = 3
 
-	for iteration := 0; iteration < maxIterations; iteration++ {
+	for iteration := 0; iteration < maxValidationIterations; iteration++ {
 		if e.isPRDActionable(p) {
 			logger.Debug("PRD is actionable", "iteration", iteration)
 			return p, nil
@@ -296,11 +292,14 @@ func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.
 		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 		go e.forwardOutput(outputCh)
 
-		validationPrompt := prompt.PRDValidation(p.ToJSON())
+		validationPrompt := prompt.PRDValidation(p.ToJSON(), e.cfg.PRDFile, p.Context)
 		err := e.runner.Run(ctx, validationPrompt, outputCh)
 		close(outputCh)
 
 		if err != nil {
+			if ctx.Err() != nil {
+				return p, ctx.Err()
+			}
 			logger.Warn("PRD validation attempt failed", "iteration", iteration+1, "error", err)
 			continue
 		}
@@ -314,38 +313,37 @@ func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.
 		}
 	}
 
-	logger.Debug("PRD validation completed", "final_actionable", e.isPRDActionable(p))
+	if !e.isPRDActionable(p) {
+		logger.Warn("PRD still not fully actionable after validation, proceeding anyway")
+		e.emit(EventOutput{Output{Text: "Warning: PRD may contain vague requirements, proceeding with best effort."}})
+	}
+
 	return p, nil
 }
 
+// isPRDActionable checks for clearly vague story descriptions that lack any
+// quantification. This is intentionally conservative — it only flags stories
+// that use vague verbs with zero quantifying context.
 func (e *Executor) isPRDActionable(p *prd.PRD) bool {
-	vagueTerms := []string{"simplify", "optimize", "reduce", "improve", "enhance"}
+	vagueVerbs := []string{"simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"}
 
 	for _, story := range p.Stories {
 		desc := strings.ToLower(story.Description)
 
-		// Check for vague terms without quantification
-		for _, term := range vagueTerms {
-			if strings.Contains(desc, term) {
-				if !strings.Contains(desc, "%") &&
-					!strings.Contains(desc, "lines") &&
-					!strings.Contains(desc, "words") &&
-					!strings.Contains(desc, "from") &&
-					!strings.Contains(desc, "to") {
-					return false
+		for _, verb := range vagueVerbs {
+			if !strings.Contains(desc, verb) {
+				continue
+			}
+			// Vague verb found — check if ANY quantification or specificity exists
+			hasQuantification := false
+			quantifiers := []string{"%", "lines", "words", "bytes", "functions", "from", "to", "remove", "delete", "replace", "rename", "move", "extract", "inline", "split", "merge"}
+			for _, q := range quantifiers {
+				if strings.Contains(desc, q) {
+					hasQuantification = true
+					break
 				}
 			}
-		}
-
-		// Check acceptance criteria are testable
-		for _, ac := range story.AcceptanceCriteria {
-			acLower := strings.ToLower(ac)
-			if !strings.Contains(acLower, "verify") &&
-				!strings.Contains(acLower, "test") &&
-				!strings.Contains(acLower, "measure") &&
-				!strings.Contains(acLower, "when") &&
-				!strings.Contains(acLower, "count") &&
-				!strings.Contains(acLower, "length") {
+			if !hasQuantification {
 				return false
 			}
 		}
