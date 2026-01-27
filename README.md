@@ -51,6 +51,7 @@ go install .
 ralph "your feature description"               # Interactive TUI
 ralph "your feature description" --dry-run     # Generate PRD only (TUI)
 ralph --resume                                 # Resume from prd.json (TUI)
+ralph status                                   # Show PRD progress
 ralph run "your feature description"           # Headless mode
 ralph run "your feature description" --dry-run # Headless, PRD only
 ralph run --resume                             # Headless, resume
@@ -69,8 +70,9 @@ ralph run --resume                             # Headless, resume
 # Basic feature implementation
 ralph "Add user authentication with login and registration"
 
-# Generate PRD first, then implement
+# Generate PRD first, review, then implement
 ralph "Build a blog system" --dry-run
+ralph status
 ralph --resume
 
 # CI/CD usage
@@ -201,8 +203,8 @@ ralph --resume
 
 ### Failed Stories
 
-1. Check `prd.json` for failed stories
-2. Review output for error details  
+1. Run `ralph status` to see which stories failed
+2. Review output for error details
 3. Fix issues manually
 4. Resume with `ralph --resume`
 
