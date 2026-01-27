@@ -138,13 +138,7 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 		return nil, fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)
 	}
 
-	// Validate and improve PRD until actionable
-	p, err = e.validateAndImprovePRD(ctx, p)
-	if err != nil {
-		logger.Warn("PRD validation failed, proceeding with original", "error", err)
-	}
-
-	logger.Debug("PRD generated and validated", "project", p.ProjectName, "stories", len(p.Stories))
+	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDGenerated{PRD: p})
 	return p, nil
 }
@@ -291,120 +285,6 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
 		e.emit(EventOutput{Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})
 	}
-}
-
-func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.PRD, error) {
-	const maxValidationIterations = 3
-
-	for iteration := 0; iteration < maxValidationIterations; iteration++ {
-		if e.isPRDActionable(p) {
-			logger.Debug("PRD is actionable", "iteration", iteration)
-			return p, nil
-		}
-
-		logger.Debug("improving PRD", "iteration", iteration+1)
-		e.emit(EventOutput{Output{Text: fmt.Sprintf("Improving PRD for actionability (iteration %d)...", iteration+1)}})
-
-		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-		go e.forwardOutput(outputCh)
-
-		validationPrompt := prompt.PRDValidation(p.ToJSON(), e.cfg.PRDFile, p.Context)
-		err := e.runner.Run(ctx, validationPrompt, outputCh)
-		close(outputCh)
-
-		if err != nil {
-			if ctx.Err() != nil {
-				return p, ctx.Err()
-			}
-			logger.Warn("PRD validation attempt failed", "iteration", iteration+1, "error", err)
-			continue
-		}
-
-		updatedPRD, loadErr := prd.Load(e.cfg)
-		if loadErr == nil {
-			p = updatedPRD
-			logger.Debug("PRD improved", "iteration", iteration+1)
-		} else {
-			logger.Warn("failed to load improved PRD", "iteration", iteration+1, "error", loadErr)
-		}
-	}
-
-	if !e.isPRDActionable(p) {
-		logger.Warn("PRD still not fully actionable after validation, proceeding anyway")
-		e.emit(EventOutput{Output{Text: "Warning: PRD may contain vague requirements, proceeding with best effort."}})
-	}
-
-	return p, nil
-}
-
-// isPRDActionable checks for clearly vague story descriptions and acceptance
-// criteria that lack any quantification. This is intentionally conservative —
-// it only flags stories that use vague terms with zero quantifying context.
-func (e *Executor) isPRDActionable(p *prd.PRD) bool {
-	vagueVerbs := []string{"simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"}
-	vagueAdjectives := []string{"proper", "appropriate", "comprehensive", "good", "correct", "consistent", "clean", "robust"}
-	quantifiers := []string{"%", "lines", "words", "bytes", "functions", "from", "to", "remove", "delete", "replace", "rename", "move", "extract", "inline", "split", "merge"}
-
-	for _, story := range p.Stories {
-		if hasVagueTerms(story.Description, vagueVerbs, quantifiers) {
-			return false
-		}
-		for _, ac := range story.AcceptanceCriteria {
-			if hasVagueTerms(ac, vagueVerbs, quantifiers) {
-				return false
-			}
-			if hasVagueTerms(ac, vagueAdjectives, quantifiers) {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-// hasVagueTerms checks if text contains any of the vague terms as whole
-// words without any quantifying context.
-func hasVagueTerms(text string, vagueTerms, quantifiers []string) bool {
-	lower := strings.ToLower(text)
-	for _, term := range vagueTerms {
-		if !containsWord(lower, term) {
-			continue
-		}
-		hasQuantification := false
-		for _, q := range quantifiers {
-			if strings.Contains(lower, q) {
-				hasQuantification = true
-				break
-			}
-		}
-		if !hasQuantification {
-			return true
-		}
-	}
-	return false
-}
-
-// containsWord checks if text contains word as a whole word (not as a
-// substring of a larger word like "incorrect" containing "correct").
-func containsWord(text, word string) bool {
-	idx := 0
-	for {
-		i := strings.Index(text[idx:], word)
-		if i < 0 {
-			return false
-		}
-		pos := idx + i
-		end := pos + len(word)
-		leftOK := pos == 0 || !isLetter(text[pos-1])
-		rightOK := end == len(text) || !isLetter(text[end])
-		if leftOK && rightOK {
-			return true
-		}
-		idx = pos + len(word)
-	}
-}
-
-func isLetter(b byte) bool {
-	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 // isEmptyCodebase checks whether the working directory contains any source

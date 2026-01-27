@@ -431,70 +431,6 @@ func setupTestPRDFile(t *testing.T, dir string, p *prd.PRD) *config.Config {
 	return cfg
 }
 
-// Test isPRDActionable heuristic
-func TestIsPRDActionable(t *testing.T) {
-	cfg := config.DefaultConfig()
-	exec := NewExecutorWithRunner(cfg, nil, newMockRunner())
-
-	tests := []struct {
-		name string
-		prd  *prd.PRD
-		want bool
-	}{
-		{
-			name: "actionable - specific description",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add login endpoint at /api/login"},
-			}},
-			want: true,
-		},
-		{
-			name: "not actionable - vague optimize without quantification",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Optimize the codebase"},
-			}},
-			want: false,
-		},
-		{
-			name: "actionable - optimize with quantification",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Optimize the prompt from 650 to 200 words"},
-			}},
-			want: true,
-		},
-		{
-			name: "not actionable - vague improve",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Improve error handling"},
-			}},
-			want: false,
-		},
-		{
-			name: "actionable - refactor with specifics",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Refactor validation to extract helper functions"},
-			}},
-			want: true,
-		},
-		{
-			name: "actionable - no vague terms at all",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add user authentication with JWT tokens"},
-			}},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := exec.isPRDActionable(tt.prd)
-			if got != tt.want {
-				t.Errorf("isPRDActionable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 // Test RunGenerate success path
 func TestRunGenerateSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -906,76 +842,6 @@ func TestIsEmptyCodebase(t *testing.T) {
 	})
 }
 
-func TestIsPRDActionableVagueCriteria(t *testing.T) {
-	cfg := config.DefaultConfig()
-	exec := NewExecutorWithRunner(cfg, nil, newMockRunner())
-
-	tests := []struct {
-		name string
-		prd  *prd.PRD
-		want bool
-	}{
-		{
-			name: "vague acceptance criteria - proper",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add error handling", AcceptanceCriteria: []string{"Proper error handling implemented"}},
-			}},
-			want: false,
-		},
-		{
-			name: "vague acceptance criteria - comprehensive",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add tests", AcceptanceCriteria: []string{"Comprehensive test coverage"}},
-			}},
-			want: false,
-		},
-		{
-			name: "specific acceptance criteria",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add error handling", AcceptanceCriteria: []string{"Returns 400 status with error message for invalid input"}},
-			}},
-			want: true,
-		},
-		{
-			name: "vague verb in acceptance criteria",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add endpoint", AcceptanceCriteria: []string{"Optimize query performance"}},
-			}},
-			want: false,
-		},
-		{
-			name: "vague adjective with quantifier passes",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add tests", AcceptanceCriteria: []string{"Comprehensive tests covering 90% of lines"}},
-			}},
-			want: true,
-		},
-		{
-			name: "substring of vague word is not flagged - incorrect",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add login", AcceptanceCriteria: []string{"Returns 401 for incorrect password"}},
-			}},
-			want: true,
-		},
-		{
-			name: "substring of vague word is not flagged - improvement",
-			prd: &prd.PRD{Stories: []*prd.Story{
-				{Description: "Add feature", AcceptanceCriteria: []string{"Shows improvement message after save"}},
-			}},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := exec.isPRDActionable(tt.prd)
-			if got != tt.want {
-				t.Errorf("isPRDActionable() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestRunGenerateNoPRDFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -997,36 +863,5 @@ func TestRunGenerateNoPRDFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "did not generate") {
 		t.Errorf("error should mention 'did not generate', got: %v", err)
-	}
-}
-
-func TestContainsWord(t *testing.T) {
-	tests := []struct {
-		text string
-		word string
-		want bool
-	}{
-		{"proper error handling", "proper", true},
-		{"this is improper", "proper", false},
-		{"incorrect password", "correct", false},
-		{"correct password", "correct", true},
-		{"the improvement is good", "improve", false},
-		{"improve the code", "improve", true},
-		{"comprehensive tests", "comprehensive", true},
-		{"clean code", "clean", true},
-		{"unclean code", "clean", false},
-		{"", "test", false},
-		{"test", "test", true},
-		{"test.", "test", true},
-		{"(test)", "test", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.text+"_"+tt.word, func(t *testing.T) {
-			got := containsWord(tt.text, tt.word)
-			if got != tt.want {
-				t.Errorf("containsWord(%q, %q) = %v, want %v", tt.text, tt.word, got, tt.want)
-			}
-		})
 	}
 }

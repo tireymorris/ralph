@@ -17,11 +17,10 @@ ralph run "Add user authentication" --dry-run
 
 ## How It Works
 
-Ralph follows a three-phase approach:
+Ralph follows a two-phase approach:
 
-1. **PRD Generation** - Analyzes your prompt and codebase to generate structured user stories with acceptance criteria
-2. **PRD Validation** - Validates the PRD for actionability, replacing vague requirements with specific metrics (up to 3 iterations)
-3. **Implementation Loop** - Iteratively implements each story by priority, writes tests, runs tests, and commits changes
+1. **PRD Generation** - Analyzes your prompt and codebase to generate a high-quality PRD with specific, measurable user stories and acceptance criteria. The prompt includes detailed instructions to avoid vague requirements and ensure implementation-ready specifications.
+2. **Implementation Loop** - Iteratively implements each story by priority, writes tests, runs tests, and commits changes
 
 ## Installation
 
