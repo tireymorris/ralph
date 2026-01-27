@@ -86,6 +86,11 @@ func TestParse(t *testing.T) {
 			args:     []string{"--foo", "-x", "prompt", "--bar"},
 			expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}},
 		},
+		{
+			name:     "status command",
+			args:     []string{"status"},
+			expected: Options{Status: true},
+		},
 	}
 
 	for _, tt := range tests {
@@ -108,6 +113,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.Help != tt.expected.Help {
 				t.Errorf("Help = %v, want %v", got.Help, tt.expected.Help)
+			}
+			if got.Status != tt.expected.Status {
+				t.Errorf("Status = %v, want %v", got.Status, tt.expected.Status)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -153,6 +161,16 @@ func TestValidate(t *testing.T) {
 			opts:    Options{DryRun: true},
 			wantErr: true,
 		},
+		{
+			name:    "status command without prompt is valid",
+			opts:    Options{Status: true},
+			wantErr: false,
+		},
+		{
+			name:    "status with prompt still valid",
+			opts:    Options{Status: true, Prompt: "extra"},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -177,6 +195,8 @@ func TestHelpText(t *testing.T) {
 		"-v",
 		"--help",
 		"run",
+		"status",
+		"Commands:",
 		"Examples:",
 	}
 
