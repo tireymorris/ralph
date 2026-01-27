@@ -361,12 +361,12 @@ func (e *Executor) isPRDActionable(p *prd.PRD) bool {
 	return true
 }
 
-// hasVagueTerms checks if text contains any of the vague terms without
-// any quantifying context.
+// hasVagueTerms checks if text contains any of the vague terms as whole
+// words without any quantifying context.
 func hasVagueTerms(text string, vagueTerms, quantifiers []string) bool {
 	lower := strings.ToLower(text)
 	for _, term := range vagueTerms {
-		if !strings.Contains(lower, term) {
+		if !containsWord(lower, term) {
 			continue
 		}
 		hasQuantification := false
@@ -381,6 +381,30 @@ func hasVagueTerms(text string, vagueTerms, quantifiers []string) bool {
 		}
 	}
 	return false
+}
+
+// containsWord checks if text contains word as a whole word (not as a
+// substring of a larger word like "incorrect" containing "correct").
+func containsWord(text, word string) bool {
+	idx := 0
+	for {
+		i := strings.Index(text[idx:], word)
+		if i < 0 {
+			return false
+		}
+		pos := idx + i
+		end := pos + len(word)
+		leftOK := pos == 0 || !isLetter(text[pos-1])
+		rightOK := end == len(text) || !isLetter(text[end])
+		if leftOK && rightOK {
+			return true
+		}
+		idx = pos + len(word)
+	}
+}
+
+func isLetter(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 // isEmptyCodebase checks whether the working directory contains any source
