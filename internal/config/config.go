@@ -1,10 +1,10 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -41,32 +41,32 @@ func Load() (*Config, error) {
 		cfg.WorkDir = wd
 	}
 
-	configPath := cfg.ConfigPath("ralph.config.json")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		// If config file doesn't exist, return default config
-		if os.IsNotExist(err) {
-			return cfg, cfg.Validate()
+	if model := os.Getenv("RALPH_MODEL"); model != "" {
+		cfg.Model = model
+	}
+
+	if maxIterStr := os.Getenv("RALPH_MAX_ITERATIONS"); maxIterStr != "" {
+		maxIter, err := strconv.Atoi(maxIterStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid RALPH_MAX_ITERATIONS value %q: %w", maxIterStr, err)
 		}
-		return nil, fmt.Errorf("failed to read config file %q: %w", configPath, err)
+		if maxIter > 0 {
+			cfg.MaxIterations = maxIter
+		}
 	}
 
-	var fileCfg Config
-	if err := json.Unmarshal(data, &fileCfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file %q: %w", configPath, err)
+	if retryStr := os.Getenv("RALPH_RETRY_ATTEMPTS"); retryStr != "" {
+		retry, err := strconv.Atoi(retryStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid RALPH_RETRY_ATTEMPTS value %q: %w", retryStr, err)
+		}
+		if retry >= 0 {
+			cfg.RetryAttempts = retry
+		}
 	}
 
-	if fileCfg.Model != "" {
-		cfg.Model = fileCfg.Model
-	}
-	if fileCfg.MaxIterations > 0 {
-		cfg.MaxIterations = fileCfg.MaxIterations
-	}
-	if fileCfg.RetryAttempts > 0 {
-		cfg.RetryAttempts = fileCfg.RetryAttempts
-	}
-	if fileCfg.PRDFile != "" {
-		cfg.PRDFile = fileCfg.PRDFile
+	if prdFile := os.Getenv("RALPH_PRD_FILE"); prdFile != "" {
+		cfg.PRDFile = prdFile
 	}
 
 	if err := cfg.Validate(); err != nil {

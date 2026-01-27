@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,11 +72,13 @@ func TestSupportedModels(t *testing.T) {
 	}
 }
 
-func TestLoadNoFile(t *testing.T) {
+func TestLoadDefaults(t *testing.T) {
 	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
+
+	os.Clearenv()
 
 	cfg, err := Load()
 	if err != nil {
@@ -87,19 +88,30 @@ func TestLoadNoFile(t *testing.T) {
 	if cfg.Model != DefaultModel {
 		t.Errorf("Model = %q, want %q", cfg.Model, DefaultModel)
 	}
+	if cfg.MaxIterations != 50 {
+		t.Errorf("MaxIterations = %d, want 50", cfg.MaxIterations)
+	}
+	if cfg.RetryAttempts != 3 {
+		t.Errorf("RetryAttempts = %d, want 3", cfg.RetryAttempts)
+	}
+	if cfg.PRDFile != "prd.json" {
+		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "prd.json")
+	}
 }
 
-func TestLoadInvalidJSON(t *testing.T) {
+func TestLoadInvalidMaxIterations(t *testing.T) {
 	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	os.WriteFile("ralph.config.json", []byte("invalid json"), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MAX_ITERATIONS", "invalid")
+	defer os.Unsetenv("RALPH_MAX_ITERATIONS")
 
 	_, err := Load()
 	if err == nil {
-		t.Error("Load() should return error for invalid JSON")
+		t.Error("Load() should return error for invalid RALPH_MAX_ITERATIONS")
 	}
 }
 
@@ -109,8 +121,11 @@ func TestLoadPartialConfig(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	configContent := `{"model": "opencode/big-pickle"}`
-	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+	defer func() {
+		os.Unsetenv("RALPH_MODEL")
+	}()
 
 	cfg, err := Load()
 	if err != nil {
@@ -131,13 +146,17 @@ func TestLoadFullConfig(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	configContent := `{
-		"model": "opencode/big-pickle",
-		"max_iterations": 100,
-		"retry_attempts": 5,
-		"prd_file": "custom.json"
-	}`
-	os.WriteFile(filepath.Join(tmpDir, "ralph.config.json"), []byte(configContent), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+	os.Setenv("RALPH_MAX_ITERATIONS", "100")
+	os.Setenv("RALPH_RETRY_ATTEMPTS", "5")
+	os.Setenv("RALPH_PRD_FILE", "custom.json")
+	defer func() {
+		os.Unsetenv("RALPH_MODEL")
+		os.Unsetenv("RALPH_MAX_ITERATIONS")
+		os.Unsetenv("RALPH_RETRY_ATTEMPTS")
+		os.Unsetenv("RALPH_PRD_FILE")
+	}()
 
 	cfg, err := Load()
 	if err != nil {
@@ -164,30 +183,17 @@ func TestLoadZeroValuesIgnored(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	configContent := `{
-		"model": "",
-		"max_iterations": 0,
-		"retry_attempts": 0,
-		"prd_file": ""
-	}`
-	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MAX_ITERATIONS", "0")
+	defer os.Unsetenv("RALPH_MAX_ITERATIONS")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if cfg.Model != DefaultModel {
-		t.Errorf("Model = %q, want default %q", cfg.Model, DefaultModel)
-	}
 	if cfg.MaxIterations != 50 {
 		t.Errorf("MaxIterations = %d, want default 50", cfg.MaxIterations)
-	}
-	if cfg.RetryAttempts != 3 {
-		t.Errorf("RetryAttempts = %d, want default 3", cfg.RetryAttempts)
-	}
-	if cfg.PRDFile != "prd.json" {
-		t.Errorf("PRDFile = %q, want default %q", cfg.PRDFile, "prd.json")
 	}
 }
 
@@ -383,9 +389,9 @@ func TestLoadInvalidConfig(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	// Invalid model
-	configContent := `{"model": "invalid-model"}`
-	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MODEL", "invalid-model")
+	defer os.Unsetenv("RALPH_MODEL")
 
 	_, err := Load()
 	if err == nil {
@@ -423,8 +429,9 @@ func TestLoadClaudeCodeConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configContent := fmt.Sprintf(`{"model": "%s"}`, tt.model)
-			os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+			os.Clearenv()
+			os.Setenv("RALPH_MODEL", tt.model)
+			defer os.Unsetenv("RALPH_MODEL")
 
 			cfg, err := Load()
 			if (err != nil) != tt.wantErr {
@@ -435,7 +442,6 @@ func TestLoadClaudeCodeConfig(t *testing.T) {
 				if cfg.Model != tt.model {
 					t.Errorf("Model = %q, want %q", cfg.Model, tt.model)
 				}
-				// Verify other defaults are maintained
 				if cfg.MaxIterations != 50 {
 					t.Errorf("MaxIterations = %d, want default 50", cfg.MaxIterations)
 				}
@@ -447,21 +453,44 @@ func TestLoadClaudeCodeConfig(t *testing.T) {
 	}
 }
 
-func TestBackwardCompatibilityOpenCodeModels(t *testing.T) {
+func TestLoadCursorAgentConfig(t *testing.T) {
 	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	configContent := fmt.Sprintf(`{"model": "%s"}`, "opencode/big-pickle")
-	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+	os.Clearenv()
+	os.Setenv("RALPH_MODEL", "claude-code/sonnet")
+	defer os.Unsetenv("RALPH_MODEL")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if cfg.Model != "opencode/big-pickle" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
+	if cfg.Model != "claude-code/sonnet" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "claude-code/sonnet")
+	}
+	if cfg.MaxIterations != 50 {
+		t.Errorf("MaxIterations = %d, want default 50", cfg.MaxIterations)
+	}
+	if cfg.RetryAttempts != 3 {
+		t.Errorf("RetryAttempts = %d, want default 3", cfg.RetryAttempts)
+	}
+}
+
+func TestLoadInvalidRetryAttempts(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+	os.Setenv("RALPH_RETRY_ATTEMPTS", "invalid")
+	defer os.Unsetenv("RALPH_RETRY_ATTEMPTS")
+
+	_, err := Load()
+	if err == nil {
+		t.Error("Load() should return error for invalid RALPH_RETRY_ATTEMPTS")
 	}
 }

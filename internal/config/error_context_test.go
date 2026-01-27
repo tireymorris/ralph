@@ -2,26 +2,19 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestLoad_InvalidConfigPath(t *testing.T) {
-	// Create a temporary directory for testing
+	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
-	originalWd, _ := os.Getwd()
-	defer os.Chdir(originalWd)
-
-	// Change to temp directory
 	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
 
-	// Create an invalid JSON config file
-	configPath := filepath.Join(tmpDir, "ralph.config.json")
-	err := os.WriteFile(configPath, []byte(`{"model": "invalid", "max_iterations": -1}`), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test config: %v", err)
-	}
+	os.Clearenv()
+	os.Setenv("RALPH_MODEL", "invalid")
+	defer os.Unsetenv("RALPH_MODEL")
 
 	cfg, err := Load()
 	if err == nil {
@@ -32,7 +25,6 @@ func TestLoad_InvalidConfigPath(t *testing.T) {
 		t.Error("Should not have loaded invalid model")
 	}
 
-	// Check that error message contains context
 	if err != nil && !strings.Contains(err.Error(), "invalid model configuration") {
 		t.Errorf("Error message should contain 'invalid model configuration', got: %v", err)
 	}

@@ -51,17 +51,13 @@ func TestIntegrationInvalidConfig(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Create temp dir and invalid config
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "ralph.config.json")
-	os.WriteFile(configPath, []byte("invalid json"), 0644)
-
 	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run with invalid config
+	// Run with invalid config (invalid model)
 	cmd = exec.Command(binaryPath, "test prompt")
-	cmd.Dir = tmpDir
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), "RALPH_MODEL=invalid-model")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
@@ -92,21 +88,14 @@ func TestIntegrationDryRun(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Create temp dir with valid config
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "ralph.config.json")
-	configContent := `{"max_iterations":5,"retry_attempts":3}`
-	err = os.WriteFile(configPath, []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config: %v", err)
-	}
-
 	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run 'ralph run "test" --dry-run'
+	// Run 'ralph run "test" --dry-run' with env vars
+	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "test", "--dry-run")
 	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
@@ -144,20 +133,12 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Create temp dir with valid config
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "ralph.config.json")
-	configContent := `{"max_iterations":5,"retry_attempts":3}`
-	err = os.WriteFile(configPath, []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config: %v", err)
-	}
-
 	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
 	// Run 'ralph "test prompt" --dry-run' with a simulated TUI interaction
 	// We'll use expect or a similar tool to interact with the TUI
+	tmpDir := t.TempDir()
 	cmd = exec.Command("expect", "-c", `
 		spawn "`+binaryPath+`" "test prompt" --dry-run
 		expect {
@@ -167,6 +148,7 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 		expect eof
 	`)
 	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	outputStr := string(output)
 
@@ -196,21 +178,14 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Create temp dir with valid config
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "ralph.config.json")
-	configContent := `{"max_iterations":5,"retry_attempts":3}`
-	err = os.WriteFile(configPath, []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write config: %v", err)
-	}
-
 	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
 	// Run with invalid prompt that causes opencode failure
+	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure")
 	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
@@ -237,6 +212,7 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	// Run with --verbose to verify detailed error logging
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure", "--verbose")
 	cmd.Dir = tmpDir
+	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)

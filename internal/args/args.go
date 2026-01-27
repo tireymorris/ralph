@@ -95,9 +95,11 @@ Modes:
 
 AI Models:
   Supports OpenCode and Claude Code CLI models.
-  Configure model in ralph.config.json:
-  - OpenCode: "opencode/big-pickle" (default)
-  - Claude Code: "claude-code/sonnet", "claude-code/haiku", "claude-code/opus"
+  Configure via environment variables:
+  - RALPH_MODEL: "opencode/big-pickle" (default), "claude-code/sonnet", "claude-code/haiku", "claude-code/opus"
+  - RALPH_MAX_ITERATIONS: Maximum implementation iterations (default: 50)
+  - RALPH_RETRY_ATTEMPTS: Max retries per story (default: 3)
+  - RALPH_PRD_FILE: PRD filename (default: "prd.json")
 
 Controls (TUI mode):
   q, Ctrl+C    Quit the application

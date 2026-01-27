@@ -41,14 +41,21 @@ func TestRunNoArgs(t *testing.T) {
 func TestRunResumeNoPRD(t *testing.T) {
 	origArgs := os.Args
 	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
 
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
 
 	os.Args = []string{"ralph", "--resume"}
 	defer func() {
 		os.Args = origArgs
 		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
 	}()
 
 	code := run()
@@ -60,9 +67,11 @@ func TestRunResumeNoPRD(t *testing.T) {
 func TestRunResumeInvalidPRD(t *testing.T) {
 	origArgs := os.Args
 	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
 
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
 
 	os.WriteFile("prd.json", []byte("invalid json"), 0644)
 
@@ -70,6 +79,11 @@ func TestRunResumeInvalidPRD(t *testing.T) {
 	defer func() {
 		os.Args = origArgs
 		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
 	}()
 
 	code := run()
@@ -81,9 +95,11 @@ func TestRunResumeInvalidPRD(t *testing.T) {
 func TestRunResumeValidPRDHeadless(t *testing.T) {
 	origArgs := os.Args
 	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
 
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
 
 	prdContent := `{"project_name":"Test","stories":[{"id":"1","title":"T","description":"D","acceptance_criteria":["a"],"priority":1,"passes":true}]}`
 	os.WriteFile("prd.json", []byte(prdContent), 0644)
@@ -92,6 +108,11 @@ func TestRunResumeValidPRDHeadless(t *testing.T) {
 	defer func() {
 		os.Args = origArgs
 		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
 	}()
 
 	code := run()
