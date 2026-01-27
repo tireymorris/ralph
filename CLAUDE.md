@@ -17,6 +17,7 @@ go test -race ./...    # with race detection
 ./ralph run "your prompt here"       # headless mode
 ./ralph "prompt" --dry-run           # generate PRD only (no implementation)
 ./ralph --resume                     # resume from existing PRD
+./ralph status                       # show PRD progress
 ./ralph --verbose "prompt"           # debug logging
 ```
 
@@ -39,7 +40,7 @@ Create `ralph.config.json`:
 
 ```
 main.go → args → tui/cli → workflow → runner
-                                    → prd/storage
+              → status                → prd/storage
 ```
 
 | Package | Purpose |
@@ -51,6 +52,7 @@ main.go → args → tui/cli → workflow → runner
 | `internal/runner` | AI CLI execution (OpenCode/Claude Code subprocess management) |
 | `internal/prd` | PRD data models and file I/O with atomic writes and locking |
 | `internal/prompt` | Prompt templates for AI |
+| `internal/status` | Status subcommand - displays PRD progress summary |
 | `internal/config` | Configuration loading and validation |
 | `internal/constants` | Shared constants (buffer sizes, timeouts, limits) |
 | `internal/logger` | Structured logging (slog) |
