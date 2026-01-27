@@ -3,6 +3,8 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"ralph/internal/config"
@@ -100,12 +102,19 @@ func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r runner.Run
 func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {
 	logger.Debug("generating PRD", "prompt_length", len(userPrompt))
 	e.emit(EventPRDGenerating{})
+
+	isEmpty := isEmptyCodebase(e.cfg.WorkDir)
+	if isEmpty {
+		logger.Info("working directory has no source code, treating as new project", "work_dir", e.cfg.WorkDir)
+		e.emit(EventOutput{Output{Text: "Warning: Working directory appears to have no source code. PRD will be generated for a new project."}})
+	}
+
 	e.emit(EventOutput{Output{Text: "Analyzing codebase and generating PRD..."}})
 
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	go e.forwardOutput(outputCh)
 
-	prdPrompt := prompt.PRDGeneration(userPrompt, e.cfg.PRDFile, "feature")
+	prdPrompt := prompt.PRDGeneration(userPrompt, e.cfg.PRDFile, "feature", isEmpty)
 	err := e.runner.Run(ctx, prdPrompt, outputCh)
 	close(outputCh)
 
@@ -113,6 +122,13 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 		logger.Error("PRD generation failed", "error", err)
 		e.emit(EventError{Err: fmt.Errorf("PRD generation failed with model %s: %w", e.cfg.Model, err)})
 		return nil, fmt.Errorf("PRD generation failed with model %s: %w", e.cfg.Model, err)
+	}
+
+	if !prd.Exists(e.cfg) {
+		err := fmt.Errorf("AI completed but did not generate %s — it may not have understood the request", e.cfg.PRDFile)
+		logger.Error("AI did not generate PRD file", "file", e.cfg.PRDFile)
+		e.emit(EventError{Err: err})
+		return nil, err
 	}
 
 	p, err := prd.Load(e.cfg)
@@ -321,32 +337,87 @@ func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.
 	return p, nil
 }
 
-// isPRDActionable checks for clearly vague story descriptions that lack any
-// quantification. This is intentionally conservative — it only flags stories
-// that use vague verbs with zero quantifying context.
+// isPRDActionable checks for clearly vague story descriptions and acceptance
+// criteria that lack any quantification. This is intentionally conservative —
+// it only flags stories that use vague terms with zero quantifying context.
 func (e *Executor) isPRDActionable(p *prd.PRD) bool {
 	vagueVerbs := []string{"simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"}
+	vagueAdjectives := []string{"proper", "appropriate", "comprehensive", "good", "correct", "consistent", "clean", "robust"}
+	quantifiers := []string{"%", "lines", "words", "bytes", "functions", "from", "to", "remove", "delete", "replace", "rename", "move", "extract", "inline", "split", "merge"}
 
 	for _, story := range p.Stories {
-		desc := strings.ToLower(story.Description)
-
-		for _, verb := range vagueVerbs {
-			if !strings.Contains(desc, verb) {
-				continue
+		if hasVagueTerms(story.Description, vagueVerbs, quantifiers) {
+			return false
+		}
+		for _, ac := range story.AcceptanceCriteria {
+			if hasVagueTerms(ac, vagueVerbs, quantifiers) {
+				return false
 			}
-			// Vague verb found — check if ANY quantification or specificity exists
-			hasQuantification := false
-			quantifiers := []string{"%", "lines", "words", "bytes", "functions", "from", "to", "remove", "delete", "replace", "rename", "move", "extract", "inline", "split", "merge"}
-			for _, q := range quantifiers {
-				if strings.Contains(desc, q) {
-					hasQuantification = true
-					break
-				}
-			}
-			if !hasQuantification {
+			if hasVagueTerms(ac, vagueAdjectives, quantifiers) {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+// hasVagueTerms checks if text contains any of the vague terms without
+// any quantifying context.
+func hasVagueTerms(text string, vagueTerms, quantifiers []string) bool {
+	lower := strings.ToLower(text)
+	for _, term := range vagueTerms {
+		if !strings.Contains(lower, term) {
+			continue
+		}
+		hasQuantification := false
+		for _, q := range quantifiers {
+			if strings.Contains(lower, q) {
+				hasQuantification = true
+				break
+			}
+		}
+		if !hasQuantification {
+			return true
+		}
+	}
+	return false
+}
+
+// isEmptyCodebase checks whether the working directory contains any source
+// code files. Returns true if no files with common source code extensions
+// are found (skipping hidden directories).
+func isEmptyCodebase(workDir string) bool {
+	if workDir == "" {
+		return true
+	}
+
+	sourceExts := map[string]bool{
+		".go": true, ".py": true, ".js": true, ".ts": true, ".jsx": true, ".tsx": true,
+		".rb": true, ".java": true, ".rs": true, ".c": true, ".cpp": true, ".cs": true,
+		".php": true, ".swift": true, ".kt": true, ".ex": true, ".hs": true, ".scala": true,
+		".sh": true, ".ml": true, ".r": true, ".pl": true, ".lua": true, ".dart": true,
+		".vue": true, ".svelte": true, ".html": true, ".css": true, ".scss": true,
+	}
+
+	found := false
+	filepath.WalkDir(workDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil // skip unreadable dirs
+		}
+		if d.IsDir() {
+			name := d.Name()
+			if strings.HasPrefix(name, ".") || name == "node_modules" || name == "vendor" || name == "__pycache__" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(path))
+		if sourceExts[ext] {
+			found = true
+			return filepath.SkipAll
+		}
+		return nil
+	})
+
+	return !found
 }

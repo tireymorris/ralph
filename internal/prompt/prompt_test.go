@@ -7,17 +7,20 @@ import (
 
 func TestPRDGeneration(t *testing.T) {
 	tests := []struct {
-		name         string
-		userPrompt   string
-		prdFile      string
-		branchPrefix string
-		mustInclude  []string
+		name            string
+		userPrompt      string
+		prdFile         string
+		branchPrefix    string
+		isEmptyCodebase bool
+		mustInclude     []string
+		mustNotInclude  []string
 	}{
 		{
-			name:         "basic prompt",
-			userPrompt:   "Add authentication",
-			prdFile:      "prd.json",
-			branchPrefix: "feature",
+			name:            "basic prompt with existing codebase",
+			userPrompt:      "Add authentication",
+			prdFile:         "prd.json",
+			branchPrefix:    "feature",
+			isEmptyCodebase: false,
 			mustInclude: []string{
 				"Add authentication",
 				"project_name",
@@ -25,23 +28,35 @@ func TestPRDGeneration(t *testing.T) {
 				"stories",
 				"prd.json",
 				"feature/",
+				`"version": 1`,
+				"ACTUALLY observe",
+			},
+			mustNotInclude: []string{
+				"no existing source code",
 			},
 		},
 		{
-			name:         "complex prompt",
-			userPrompt:   "Build a REST API with user management and role-based access",
-			prdFile:      "prd.json",
-			branchPrefix: "feature",
+			name:            "empty codebase prompt",
+			userPrompt:      "Build a REST API",
+			prdFile:         "prd.json",
+			branchPrefix:    "feature",
+			isEmptyCodebase: true,
 			mustInclude: []string{
-				"Build a REST API with user management and role-based access",
-				"priority",
+				"Build a REST API",
+				`"version": 1`,
+				"no existing source code",
+				"Do NOT assume or invent",
+			},
+			mustNotInclude: []string{
+				"ACTUALLY observe",
 			},
 		},
 		{
-			name:         "custom prd file",
-			userPrompt:   "Add feature",
-			prdFile:      "custom.json",
-			branchPrefix: "feat",
+			name:            "custom prd file",
+			userPrompt:      "Add feature",
+			prdFile:         "custom.json",
+			branchPrefix:    "feat",
+			isEmptyCodebase: false,
 			mustInclude: []string{
 				"custom.json",
 				"feat/",
@@ -51,10 +66,15 @@ func TestPRDGeneration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := PRDGeneration(tt.userPrompt, tt.prdFile, tt.branchPrefix)
+			result := PRDGeneration(tt.userPrompt, tt.prdFile, tt.branchPrefix, tt.isEmptyCodebase)
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {
 					t.Errorf("PRDGeneration() missing %q", phrase)
+				}
+			}
+			for _, phrase := range tt.mustNotInclude {
+				if strings.Contains(result, phrase) {
+					t.Errorf("PRDGeneration() should not contain %q", phrase)
 				}
 			}
 		})

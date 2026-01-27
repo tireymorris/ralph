@@ -134,7 +134,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 }
 
 func TestPRDGenerationPromptMentionsContext(t *testing.T) {
-	result := prompt.PRDGeneration("Add auth", "prd.json", "feature")
+	result := prompt.PRDGeneration("Add auth", "prd.json", "feature", false)
 
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
