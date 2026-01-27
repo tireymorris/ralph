@@ -35,44 +35,21 @@ Write JSON to %s:
   ]
 }
 
-Requirements:
+CRITICAL QUALITY REQUIREMENTS:
 %s
 - test_spec: STRING with 3-5 holistic test scenarios (NOT array)
 - stories: implementation steps with specific, measurable requirements
-- acceptance_criteria: verifiable, specific completion conditions (avoid vague words like "proper", "appropriate", "comprehensive")
+- acceptance_criteria: MUST be verifiable and specific. NEVER use vague terms without quantification:
+  * Avoid vague verbs without metrics: "simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"
+  * If using these verbs, add quantifiable metrics (e.g., "reduce from 650 to 200 words", "optimize query to <100ms")
+  * Avoid vague adjectives without specifics: "proper", "appropriate", "comprehensive", "good", "correct", "consistent", "clean", "robust"
+  * Replace vague criteria like "proper error handling" with testable conditions like "returns 400 status with error message for invalid input"
+- description: Include concrete technical details (file paths, function names, API endpoints) where relevant
 - Priority: based on dependencies (1 = first)
 
-Task: Analyze codebase, create branch, write PRD file, STOP.`, userPrompt, prdFile, branchPrefix, contextGuidance)
-}
+Each story must be implementation-ready with specific, measurable requirements that can be verified through testing or code inspection.
 
-func PRDValidation(prdJSON, prdFile, codebaseContext string) string {
-	contextSection := ""
-	if codebaseContext != "" {
-		contextSection = fmt.Sprintf(`
-CODEBASE CONTEXT:
-%s
-`, codebaseContext)
-	}
-
-	return fmt.Sprintf(`Analyze this PRD for actionability and technical correctness:
-
-PRD:
-%s
-%s
-VALIDATION REQUIREMENTS:
-1. Each story must have specific, measurable requirements
-2. Acceptance criteria must be verifiable (not vague)
-3. Vague terms ("simplify", "optimize", "reduce", "improve") need quantifiable metrics
-4. Acceptance criteria must not use vague adjectives ("proper", "appropriate", "comprehensive", "correct", "consistent", "clean", "robust") without specifics
-5. Technical details (file paths, function names) should be present where relevant
-
-FIXES REQUIRED:
-- Replace vague terms with specific metrics
-- Replace vague acceptance criteria (e.g. "proper error handling") with testable conditions (e.g. "returns 400 status with error message for invalid input")
-- Add concrete technical details where missing
-- Ensure stories are implementation-ready
-
-Write the improved PRD as valid JSON to %s.`, prdJSON, contextSection, prdFile)
+Task: Analyze codebase, create branch, write high-quality PRD file, STOP.`, userPrompt, prdFile, branchPrefix, contextGuidance)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int) string {

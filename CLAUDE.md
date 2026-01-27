@@ -57,14 +57,13 @@ main.go → args → tui/cli → workflow → runner
 
 ## How It Works
 
-1. **PRD Generation**: User prompt → AI generates `prd.json` with stories
-2. **PRD Validation**: AI validates PRD for actionability (up to 3 iterations), replacing vague requirements with specific metrics
-3. **Implementation Loop**: For each story (by priority):
+1. **PRD Generation**: User prompt → AI generates high-quality `prd.json` with specific, measurable stories. The prompt includes detailed instructions to avoid vague terms and ensure implementation-ready requirements.
+2. **Implementation Loop**: For each story (by priority):
    - Generate story-specific prompt with codebase context and test spec
    - Run AI CLI
    - AI updates PRD with `passes: true` when complete
    - Repeat until all stories pass or max iterations reached
-4. **Completion**: PRD file is deleted on success
+3. **Completion**: PRD file is deleted on success
 
 ## Key Patterns
 
