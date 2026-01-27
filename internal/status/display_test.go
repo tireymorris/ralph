@@ -3,15 +3,34 @@ package status
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
 )
 
+// captureStdout runs fn and returns whatever it printed to stdout.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe() failed: %v", err)
+	}
+	os.Stdout = w
+	defer func() { os.Stdout = oldStdout }()
+
+	fn()
+	w.Close()
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	return buf.String()
+}
+
 func TestDisplay(t *testing.T) {
 	tmpDir := t.TempDir()
-
 	cfg := &config.Config{
 		PRDFile:       "test_prd.json",
 		RetryAttempts: 3,
@@ -19,21 +38,11 @@ func TestDisplay(t *testing.T) {
 	}
 
 	t.Run("no PRD file", func(t *testing.T) {
-		var buf bytes.Buffer
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-		defer func() { os.Stdout = oldStdout }()
-
-		err := Display(cfg)
-		w.Close()
-		buf.ReadFrom(r)
-
-		if err != nil {
-			t.Errorf("Display() returned error: %v", err)
-		}
-
-		output := buf.String()
+		output := captureStdout(t, func() {
+			if err := Display(cfg); err != nil {
+				t.Errorf("Display() returned error: %v", err)
+			}
+		})
 		expected := "No PRD file found. Run ralph with a prompt to create one.\n"
 		if output != expected {
 			t.Errorf("Expected %q, got %q", expected, output)
@@ -41,78 +50,34 @@ func TestDisplay(t *testing.T) {
 	})
 
 	t.Run("valid PRD file", func(t *testing.T) {
-		// Create a test PRD
 		testPRD := &prd.PRD{
 			ProjectName: "Test Project",
 			BranchName:  "main",
 			Stories: []*prd.Story{
-				{
-					ID:       "story-1",
-					Title:    "Completed story",
-					Priority: 1,
-					Passes:   true,
-				},
-				{
-					ID:         "story-2",
-					Title:      "Pending story",
-					Priority:   2,
-					Passes:     false,
-					RetryCount: 0,
-				},
-				{
-					ID:         "story-3",
-					Title:      "Failed story",
-					Priority:   3,
-					Passes:     false,
-					RetryCount: 3,
-				},
+				{ID: "story-1", Title: "Completed story", Priority: 1, Passes: true},
+				{ID: "story-2", Title: "Pending story", Priority: 2, Passes: false, RetryCount: 0},
+				{ID: "story-3", Title: "Failed story", Priority: 3, Passes: false, RetryCount: 3},
 			},
 		}
-
-		err := prd.Save(cfg, testPRD)
-		if err != nil {
+		if err := prd.Save(cfg, testPRD); err != nil {
 			t.Fatalf("Failed to save test PRD: %v", err)
 		}
 
-		var buf bytes.Buffer
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-		defer func() { os.Stdout = oldStdout }()
+		output := captureStdout(t, func() {
+			if err := Display(cfg); err != nil {
+				t.Errorf("Display() returned error: %v", err)
+			}
+		})
 
-		err = Display(cfg)
-		w.Close()
-		buf.ReadFrom(r)
-
-		if err != nil {
-			t.Errorf("Display() returned error: %v", err)
-		}
-
-		output := buf.String()
-
-		// Check project info line
-		expectedProject := "Project: Test Project (Branch: main)\n"
-		if output != expectedProject && len(output) > len(expectedProject) &&
-			output[:len(expectedProject)] != expectedProject {
-			t.Errorf("Expected project line %q, got %q", expectedProject, output[:len(expectedProject)])
-		}
-
-		// Check story counts line
-		expectedCounts := "Stories: 3 total, 1 completed, 1 pending, 1 failed\n"
-		if !containsString(output, expectedCounts) {
-			t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
-		}
-
-		// Check story lines
-		expectedStories := []string{
+		for _, want := range []string{
+			"Project: Test Project (Branch: main)",
+			"Stories: 3 total, 1 completed, 1 pending, 1 failed",
 			"✓ [story-1] Completed story (priority: 1)",
 			"⏳ [story-2] Pending story (priority: 2)",
 			"✗ [story-3] Failed story (priority: 3)",
-		}
-
-		for _, expectedStory := range expectedStories {
-			if !containsString(output, expectedStory) {
-				t.Errorf("Expected story line %q in output %q", expectedStory, output)
+		} {
+			if !strings.Contains(output, want) {
+				t.Errorf("output missing %q\ngot: %s", want, output)
 			}
 		}
 	})
@@ -120,247 +85,111 @@ func TestDisplay(t *testing.T) {
 	t.Run("PRD without branch name", func(t *testing.T) {
 		testPRD := &prd.PRD{
 			ProjectName: "Simple Project",
-			Stories: []*prd.Story{
-				{
-					ID:       "story-1",
-					Title:    "Only story",
-					Priority: 1,
-					Passes:   true,
-				},
-			},
+			Stories:     []*prd.Story{{ID: "story-1", Title: "Only story", Priority: 1, Passes: true}},
 		}
-
-		err := prd.Save(cfg, testPRD)
-		if err != nil {
+		if err := prd.Save(cfg, testPRD); err != nil {
 			t.Fatalf("Failed to save test PRD: %v", err)
 		}
 
-		var buf bytes.Buffer
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
-		defer func() { os.Stdout = oldStdout }()
+		output := captureStdout(t, func() {
+			if err := Display(cfg); err != nil {
+				t.Errorf("Display() returned error: %v", err)
+			}
+		})
 
-		err = Display(cfg)
-		w.Close()
-		buf.ReadFrom(r)
-
-		if err != nil {
-			t.Errorf("Display() returned error: %v", err)
+		if !strings.Contains(output, "Project: Simple Project\n") {
+			t.Errorf("expected project line without branch, got: %s", output)
 		}
-
-		output := buf.String()
-		expectedProject := "Project: Simple Project\n"
-		if output != expectedProject && len(output) > len(expectedProject) &&
-			output[:len(expectedProject)] != expectedProject {
-			t.Errorf("Expected project line %q, got %q", expectedProject, output[:len(expectedProject)])
+		if strings.Contains(output, "Branch:") {
+			t.Error("output should not contain branch info when branch is empty")
 		}
 	})
 }
 
 func TestDisplay_EmptyStories(t *testing.T) {
 	tmpDir := t.TempDir()
+	cfg := &config.Config{PRDFile: "empty_prd.json", RetryAttempts: 3, WorkDir: tmpDir}
 
-	cfg := &config.Config{
-		PRDFile:       "empty_prd.json",
-		RetryAttempts: 3,
-		WorkDir:       tmpDir,
-	}
-
-	// Create a PRD with empty stories array
-	testPRD := &prd.PRD{
-		ProjectName: "Empty Project",
-		Stories:     []*prd.Story{},
-	}
-
-	err := prd.Save(cfg, testPRD)
-	if err != nil {
+	if err := prd.Save(cfg, &prd.PRD{ProjectName: "Empty Project", Stories: []*prd.Story{}}); err != nil {
 		t.Fatalf("Failed to save test PRD: %v", err)
 	}
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
+	output := captureStdout(t, func() {
+		if err := Display(cfg); err != nil {
+			t.Errorf("Display() returned error: %v", err)
+		}
+	})
 
-	err = Display(cfg)
-	w.Close()
-	buf.ReadFrom(r)
-
-	if err != nil {
-		t.Errorf("Display() returned error: %v", err)
-	}
-
-	output := buf.String()
-	expectedCounts := "Stories: 0 total, 0 completed, 0 pending, 0 failed\n"
-	if !containsString(output, expectedCounts) {
-		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	if !strings.Contains(output, "Stories: 0 total, 0 completed, 0 pending, 0 failed") {
+		t.Errorf("expected zero counts, got: %s", output)
 	}
 }
 
 func TestDisplay_AllCompletedStories(t *testing.T) {
 	tmpDir := t.TempDir()
+	cfg := &config.Config{PRDFile: "prd.json", RetryAttempts: 3, WorkDir: tmpDir}
 
-	cfg := &config.Config{
-		PRDFile:       "all_completed_prd.json",
-		RetryAttempts: 3,
-		WorkDir:       tmpDir,
-	}
-
-	// Create a PRD with all completed stories
 	testPRD := &prd.PRD{
-		ProjectName: "All Completed Project",
+		ProjectName: "All Completed",
 		Stories: []*prd.Story{
-			{
-				ID:       "story-1",
-				Title:    "First completed",
-				Priority: 1,
-				Passes:   true,
-			},
-			{
-				ID:       "story-2",
-				Title:    "Second completed",
-				Priority: 2,
-				Passes:   true,
-			},
+			{ID: "story-1", Title: "First", Priority: 1, Passes: true},
+			{ID: "story-2", Title: "Second", Priority: 2, Passes: true},
 		},
 	}
-
-	err := prd.Save(cfg, testPRD)
-	if err != nil {
+	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("Failed to save test PRD: %v", err)
 	}
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
+	output := captureStdout(t, func() {
+		if err := Display(cfg); err != nil {
+			t.Errorf("Display() returned error: %v", err)
+		}
+	})
 
-	err = Display(cfg)
-	w.Close()
-	buf.ReadFrom(r)
-
-	if err != nil {
-		t.Errorf("Display() returned error: %v", err)
-	}
-
-	output := buf.String()
-	expectedCounts := "Stories: 2 total, 2 completed, 0 pending, 0 failed\n"
-	if !containsString(output, expectedCounts) {
-		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	if !strings.Contains(output, "Stories: 2 total, 2 completed, 0 pending, 0 failed") {
+		t.Errorf("expected all completed counts, got: %s", output)
 	}
 }
 
 func TestDisplay_AllFailedStories(t *testing.T) {
 	tmpDir := t.TempDir()
+	cfg := &config.Config{PRDFile: "prd.json", RetryAttempts: 2, WorkDir: tmpDir}
 
-	cfg := &config.Config{
-		PRDFile:       "all_failed_prd.json",
-		RetryAttempts: 2,
-		WorkDir:       tmpDir,
-	}
-
-	// Create a PRD with all failed stories
 	testPRD := &prd.PRD{
-		ProjectName: "All Failed Project",
+		ProjectName: "All Failed",
 		Stories: []*prd.Story{
-			{
-				ID:         "story-1",
-				Title:      "First failed",
-				Priority:   1,
-				Passes:     false,
-				RetryCount: 2,
-			},
-			{
-				ID:         "story-2",
-				Title:      "Second failed",
-				Priority:   2,
-				Passes:     false,
-				RetryCount: 3,
-			},
+			{ID: "story-1", Title: "First", Priority: 1, Passes: false, RetryCount: 2},
+			{ID: "story-2", Title: "Second", Priority: 2, Passes: false, RetryCount: 3},
 		},
 	}
-
-	err := prd.Save(cfg, testPRD)
-	if err != nil {
+	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("Failed to save test PRD: %v", err)
 	}
 
-	var buf bytes.Buffer
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
+	output := captureStdout(t, func() {
+		if err := Display(cfg); err != nil {
+			t.Errorf("Display() returned error: %v", err)
+		}
+	})
 
-	err = Display(cfg)
-	w.Close()
-	buf.ReadFrom(r)
-
-	if err != nil {
-		t.Errorf("Display() returned error: %v", err)
-	}
-
-	output := buf.String()
-	expectedCounts := "Stories: 2 total, 0 completed, 0 pending, 2 failed\n"
-	if !containsString(output, expectedCounts) {
-		t.Errorf("Expected counts line %q in output %q", expectedCounts, output)
+	if !strings.Contains(output, "Stories: 2 total, 0 completed, 0 pending, 2 failed") {
+		t.Errorf("expected all failed counts, got: %s", output)
 	}
 }
 
-func TestDisplayWithCorruptedPRD(t *testing.T) {
+func TestDisplay_CorruptedPRD(t *testing.T) {
 	tmpDir := t.TempDir()
+	cfg := &config.Config{PRDFile: "corrupted.json", RetryAttempts: 3, WorkDir: tmpDir}
 
-	cfg := &config.Config{
-		PRDFile:       "corrupted_prd.json",
-		RetryAttempts: 3,
-		WorkDir:       tmpDir,
-	}
-
-	// Write corrupted JSON
-	err := os.WriteFile(cfg.PRDPath(), []byte("{ invalid json"), 0644)
-	if err != nil {
+	if err := os.WriteFile(cfg.PRDPath(), []byte("{ invalid json"), 0644); err != nil {
 		t.Fatalf("Failed to write corrupted PRD: %v", err)
 	}
 
-	err = Display(cfg)
+	err := Display(cfg)
 	if err == nil {
-		t.Error("Display() should have returned error for corrupted PRD")
+		t.Fatal("Display() should return error for corrupted PRD")
 	}
-
-	expectedError := "failed to load PRD"
-	if err.Error()[:len(expectedError)] != expectedError {
-		t.Errorf("Expected error starting with %q, got %q", expectedError, err.Error())
+	if !strings.Contains(err.Error(), "failed to load PRD") {
+		t.Errorf("expected error containing 'failed to load PRD', got: %v", err)
 	}
-}
-
-func containsLine(s, substr string) bool {
-	lines := []string{s}
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
-			lines = append(lines, s[i+1:])
-		}
-	}
-	for _, line := range lines {
-		if line == substr {
-			return true
-		}
-	}
-	return false
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) &&
-		(s == substr || s[len(s)-len(substr):] == substr ||
-			containsInMiddle(s, substr))
-}
-
-func containsInMiddle(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
