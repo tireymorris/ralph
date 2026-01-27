@@ -61,6 +61,53 @@ func TestPRDGeneration(t *testing.T) {
 	}
 }
 
+func TestPRDValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		prdJSON     string
+		prdFile     string
+		context     string
+		mustInclude []string
+	}{
+		{
+			name:    "includes file path and context",
+			prdJSON: `{"project_name":"Test"}`,
+			prdFile: "prd.json",
+			context: "Go 1.21 with standard testing",
+			mustInclude: []string{
+				"prd.json",
+				"Go 1.21 with standard testing",
+				"CODEBASE CONTEXT",
+				`{"project_name":"Test"}`,
+			},
+		},
+		{
+			name:    "omits context section when empty",
+			prdJSON: `{"project_name":"Test"}`,
+			prdFile: "custom.json",
+			context: "",
+			mustInclude: []string{
+				"custom.json",
+				`{"project_name":"Test"}`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := PRDValidation(tt.prdJSON, tt.prdFile, tt.context)
+			for _, phrase := range tt.mustInclude {
+				if !strings.Contains(result, phrase) {
+					t.Errorf("PRDValidation() missing %q", phrase)
+				}
+			}
+			if tt.context == "" && strings.Contains(result, "CODEBASE CONTEXT") {
+				t.Error("PRDValidation() should not contain CODEBASE CONTEXT when context is empty")
+			}
+		})
+	}
+}
+
 func TestStoryImplementation(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -117,6 +164,11 @@ func TestStoryImplementation(t *testing.T) {
 				"Add feature",
 				"Implement feature",
 				"Works",
+				"CODEBASE CONTEXT",
+				"Ruby 3.2 with RSpec",
+				"bundle exec rspec",
+				"FEATURE TEST SPEC",
+				"Test end-to-end",
 			},
 		},
 		{

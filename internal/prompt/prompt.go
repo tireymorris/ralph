@@ -37,63 +37,77 @@ Requirements:
 Task: Analyze codebase, create branch, write PRD file, STOP.`, userPrompt, prdFile, branchPrefix)
 }
 
-func PRDValidation(prdJSON string) string {
+func PRDValidation(prdJSON, prdFile, codebaseContext string) string {
+	contextSection := ""
+	if codebaseContext != "" {
+		contextSection = fmt.Sprintf(`
+CODEBASE CONTEXT:
+%s
+`, codebaseContext)
+	}
+
 	return fmt.Sprintf(`Analyze this PRD for actionability and technical correctness:
 
 PRD:
 %s
-
-CODEBASE CONTEXT:
-- Go 1.24.0 with standard testing
-- Ralph: autonomous dev agent with Bubbletea TUI, structured logging
-- Key directories: internal/workflow (orchestration), internal/runner (AI CLI execution), internal/prd (PRD models), internal/prompt (templates)
-- Current complexity: 650-word PRD generation prompt, 350-word story prompts, 8 event types, JSON repair mechanism
-- Testing: go test ./..., go test -race ./...
-
+%s
 VALIDATION REQUIREMENTS:
-1. **Specificity Analysis**: For each story, identify:
-   - Vague terms ("simplify", "optimize", "reduce", "improve") without quantifiable metrics
-   - Missing technical details (file paths, function names, line counts)
-   - Non-testable acceptance criteria
-
-2. **Technical Accuracy**: 
-   - Verify proposed changes match actual codebase structure
-   - Check dependencies and assumptions are correct
-   - Ensure implementation scope is realistic
-
-3. **Actionability Criteria**:
-   - Each story must have specific, measurable requirements
-   - Acceptance criteria must be verifiable
-   - No ambiguous technical instructions
+1. Each story must have specific, measurable requirements
+2. Acceptance criteria must be verifiable (not vague)
+3. Vague terms ("simplify", "optimize", "reduce", "improve") need quantifiable metrics
+4. Technical details (file paths, function names) should be present where relevant
 
 FIXES REQUIRED:
-- Replace vague terms with specific metrics (e.g., "reduce prompt from 650 to 200 words")
-- Add concrete technical details (file paths, function signatures)
+- Replace vague terms with specific metrics
+- Add concrete technical details where missing
 - Make acceptance criteria testable
 - Ensure stories are implementation-ready
 
-Output the improved PRD as valid JSON.`, prdJSON)
+Write the improved PRD as valid JSON to %s.`, prdJSON, contextSection, prdFile)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, context, prdFile string, iteration, completed, total int) string {
-	return fmt.Sprintf(`Implement story: %s
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int) string {
+	contextSection := ""
+	if codebaseContext != "" {
+		contextSection = fmt.Sprintf(`
+CODEBASE CONTEXT:
+%s
+`, codebaseContext)
+	}
 
+	testSection := ""
+	if featureTestSpec != "" {
+		testSection = fmt.Sprintf(`
+FEATURE TEST SPEC:
+%s
+`, featureTestSpec)
+	}
+
+	return fmt.Sprintf(`Implement story: %s
+%s%s
 Description: %s
 Done when: %s
 
 Steps:
-1. Implement using codebase context
-2. Add tests if functionality is complete  
+1. Implement using codebase context above
+2. Add tests per feature test spec if this story completes testable functionality
 3. Run existing tests
 4. Commit changes: "feat: %s"
 5. Update %s - set "passes": true for story "%s"
+6. If tests fail, increment "retry_count" for this story in %s instead
+
+After completing this story, update the "context" field in %s if you created new modules, established patterns, or discovered conventions that future stories should know about.
 
 Progress: Iteration %d, %d/%d stories completed`,
 		title,
+		contextSection,
+		testSection,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
 		title,
 		prdFile, storyID,
+		prdFile,
+		prdFile,
 		iteration, completed, total,
 	)
 }

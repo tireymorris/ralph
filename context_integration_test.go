@@ -105,14 +105,14 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 		1, 0, 3,
 	)
 
-	if !strings.Contains(result, "Add feature") {
-		t.Error("Prompt should contain story title")
+	if !strings.Contains(result, "CODEBASE CONTEXT") {
+		t.Error("Prompt should contain 'CODEBASE CONTEXT' section")
 	}
-	if !strings.Contains(result, "Implement it") {
-		t.Error("Prompt should contain story description")
+	if !strings.Contains(result, "Go 1.21 with standard testing") {
+		t.Error("Prompt should include the context content")
 	}
-	if !strings.Contains(result, "It works") {
-		t.Error("Prompt should contain acceptance criteria")
+	if !strings.Contains(result, "go test ./...") {
+		t.Error("Prompt should include test command from context")
 	}
 }
 
