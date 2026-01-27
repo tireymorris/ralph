@@ -87,33 +87,26 @@ ralph "Add comprehensive test suite with mocking"
 
 ## Configuration
 
-Create `ralph.config.json` in your project root:
+Ralph is configured via environment variables:
 
-```json
-{
-  "model": "opencode/big-pickle",
-  "max_iterations": 50,
-  "retry_attempts": 3,
-  "prd_file": "prd.json"
-}
+```bash
+export RALPH_MODEL="opencode/big-pickle"
+export RALPH_MAX_ITERATIONS=50
+export RALPH_RETRY_ATTEMPTS=3
+export RALPH_PRD_FILE="prd.json"
 ```
 
 For Claude Code models:
-```json
-{
-  "model": "claude-code/sonnet",
-  "max_iterations": 50,
-  "retry_attempts": 3,
-  "prd_file": "prd.json"
-}
+```bash
+export RALPH_MODEL="claude-code/sonnet"
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `model` | `opencode/big-pickle` | AI model for code generation (OpenCode or Claude Code) |
-| `max_iterations` | `50` | Maximum total implementation iterations |
-| `retry_attempts` | `3` | Max retries per story before failing |
-| `prd_file` | `prd.json` | PRD filename |
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `RALPH_MODEL` | `opencode/big-pickle` | AI model for code generation (OpenCode or Claude Code) |
+| `RALPH_MAX_ITERATIONS` | `50` | Maximum total implementation iterations |
+| `RALPH_RETRY_ATTEMPTS` | `3` | Max retries per story before failing |
+| `RALPH_PRD_FILE` | `prd.json` | PRD filename |
 
 ### Supported Models
 

@@ -23,15 +23,13 @@ go test -race ./...    # with race detection
 
 ## Configuration
 
-Create `ralph.config.json`:
+Ralph is configured via environment variables:
 
-```json
-{
-  "model": "opencode/big-pickle",
-  "max_iterations": 50,
-  "retry_attempts": 3,
-  "prd_file": "prd.json"
-}
+```bash
+export RALPH_MODEL="opencode/big-pickle"
+export RALPH_MAX_ITERATIONS=50
+export RALPH_RETRY_ATTEMPTS=3
+export RALPH_PRD_FILE="prd.json"
 ```
 
 **Supported models**: `opencode/big-pickle` (default), `claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`
@@ -49,7 +47,7 @@ main.go → args → tui/cli → workflow → runner
 | `internal/cli` | Headless execution mode |
 | `internal/tui` | Interactive terminal UI (Bubbletea) |
 | `internal/workflow` | Orchestration - PRD generation and story implementation loop |
-| `internal/runner` | AI CLI execution (OpenCode/Claude Code subprocess management) |
+| `internal/runner` | AI CLI execution (OpenCode/Claude Code/Cursor Agent subprocess management) |
 | `internal/prd` | PRD data models and file I/O with atomic writes and locking |
 | `internal/prompt` | Prompt templates for AI |
 | `internal/status` | Status subcommand - displays PRD progress summary |
@@ -73,7 +71,7 @@ main.go → args → tui/cli → workflow → runner
 - **Atomic file writes**: Temp file + rename prevents corruption
 - **File locking**: `gofrs/flock` for concurrent access safety
 - **Event-driven**: Workflow emits typed events consumed by TUI/CLI
-- **Factory pattern**: `runner.New()` selects OpenCode vs Claude runner
+- **Factory pattern**: `runner.New()` selects OpenCode vs Claude vs Cursor Agent runner
 - **Optimistic locking**: PRD version field detects concurrent modifications
 - **Context cancellation**: Graceful shutdown throughout
 
