@@ -12,6 +12,7 @@ type Options struct {
 	Headless     bool
 	Verbose      bool
 	Help         bool
+	Status       bool
 	UnknownFlags []string
 }
 
@@ -31,6 +32,8 @@ func Parse(args []string) *Options {
 			opts.Verbose = true
 		case "run":
 			opts.Headless = true
+		case "status":
+			opts.Status = true
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -46,6 +49,10 @@ func Parse(args []string) *Options {
 
 func (o *Options) Validate() error {
 	if o.Help {
+		return nil
+	}
+
+	if o.Status {
 		return nil
 	}
 
@@ -68,6 +75,7 @@ Usage:
   ralph "your feature description"               # Full implementation (TUI)
   ralph "your feature description" --dry-run     # Generate PRD only (TUI)
   ralph --resume                                 # Resume from existing prd.json (TUI)
+  ralph status                                   # Show current PRD status
   ralph run "your feature description"           # Full implementation (stdout)
   ralph run "your feature description" --dry-run # Generate PRD only (stdout)
   ralph run --resume                             # Resume from existing prd.json (stdout)
@@ -77,6 +85,9 @@ Options:
   --resume       Resume implementation from existing prd.json
   --verbose, -v  Enable debug logging
   --help, -h     Show this help message
+
+Commands:
+  status        Show current PRD status and story progress
 
 Modes:
   (default)    Interactive TUI with progress display
@@ -95,6 +106,7 @@ Examples:
   ralph "Add user authentication with login and registration"
   ralph "Create a REST API for managing todos" --dry-run
   ralph --resume
+  ralph status
   ralph run "Add unit tests for the API" --dry-run
   ralph run "Add feature" --verbose
 `
