@@ -17,16 +17,17 @@ ralph run "Add user authentication" --dry-run
 
 ## How It Works
 
-Ralph follows a two-phase approach:
+Ralph follows a three-phase approach:
 
 1. **PRD Generation** - Analyzes your prompt and codebase to generate structured user stories with acceptance criteria
-2. **Implementation Loop** - Iteratively implements each story, writes tests, runs tests, and commits changes
+2. **PRD Validation** - Validates the PRD for actionability, replacing vague requirements with specific metrics (up to 3 iterations)
+3. **Implementation Loop** - Iteratively implements each story by priority, writes tests, runs tests, and commits changes
 
 ## Installation
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.24+
 - Git
 - [opencode](https://github.com/opencode-ai/opencode) CLI **OR** [Claude Code](https://github.com/anthropics/claude-code) CLI
 
@@ -98,7 +99,7 @@ Create `ralph.config.json` in your project root:
 For Claude Code models:
 ```json
 {
-  "model": "claude-code/claude-3.5-sonnet",
+  "model": "claude-code/sonnet",
   "max_iterations": 50,
   "retry_attempts": 3,
   "prd_file": "prd.json"
@@ -121,9 +122,9 @@ For Claude Code models:
 - `opencode/minimax-m2.1-free`
 
 #### Claude Code Models
-- `claude-code/claude-3.5-sonnet`
-- `claude-code/claude-3.5-haiku`
-- `claude-code/claude-3-opus`
+- `claude-code/sonnet`
+- `claude-code/haiku`
+- `claude-code/opus`
 
 ## PRD Format
 
@@ -131,9 +132,11 @@ Ralph generates `prd.json`:
 
 ```json
 {
+  "version": 1,
   "project_name": "User Authentication System",
   "branch_name": "feature/user-authentication",
-  "context": "Go 1.21 with standard testing. Main code in cmd/ and internal/. Tests alongside code as _test.go files. Run with 'go test ./...'. Uses chi router for HTTP.",
+  "context": "Go 1.24 with standard testing. Main code in cmd/ and internal/. Tests alongside code as _test.go files. Run with 'go test ./...'. Uses chi router for HTTP.",
+  "test_spec": "1) Create user and verify password hashing, 2) Login with valid/invalid credentials, 3) Session persistence across requests",
   "stories": [
     {
       "id": "story-1",
@@ -143,7 +146,6 @@ Ralph generates `prd.json`:
         "User model exists with required fields",
         "Password is securely hashed"
       ],
-      "test_spec": "Integration test: 1) Create user, 2) Verify password hashing",
       "priority": 1,
       "passes": false,
       "retry_count": 0
@@ -152,17 +154,20 @@ Ralph generates `prd.json`:
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `context` | Cached codebase context (language, structure, patterns) passed to each story |
-| `id` | Unique story identifier |
-| `title` | Short descriptive title |
-| `description` | Detailed implementation requirements |
-| `acceptance_criteria` | Conditions that must be met |
-| `test_spec` | Guidance for integration tests |
-| `priority` | Implementation order (1 = highest) |
-| `passes` | Story completion status |
-| `retry_count` | Implementation attempts |
+| Field | Level | Description |
+|-------|-------|-------------|
+| `version` | PRD | Auto-incremented on each save for optimistic locking |
+| `project_name` | PRD | Descriptive project name |
+| `branch_name` | PRD | Git branch for the feature |
+| `context` | PRD | Cached codebase context (language, structure, patterns) passed to each story |
+| `test_spec` | PRD | Holistic test scenarios covering the entire feature (string, not array) |
+| `id` | Story | Unique story identifier |
+| `title` | Story | Short descriptive title |
+| `description` | Story | Detailed implementation requirements |
+| `acceptance_criteria` | Story | Conditions that must be met |
+| `priority` | Story | Implementation order (1 = first) |
+| `passes` | Story | Story completion status |
+| `retry_count` | Story | Implementation attempts |
 
 ## Development
 
@@ -215,8 +220,8 @@ which opencode
 opencode --version
 
 # For Claude Code models
-which claude-code
-claude-code --version
+which claude
+claude --version
 ```
 
 ## License

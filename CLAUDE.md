@@ -15,6 +15,7 @@ go test -race ./...    # with race detection
 # Run
 ./ralph "your prompt here"           # TUI mode
 ./ralph run "your prompt here"       # headless mode
+./ralph "prompt" --dry-run           # generate PRD only (no implementation)
 ./ralph --resume                     # resume from existing PRD
 ./ralph --verbose "prompt"           # debug logging
 ```
@@ -37,7 +38,8 @@ Create `ralph.config.json`:
 ## Architecture
 
 ```
-main.go → args → tui/cli → workflow → runner → prd/storage
+main.go → args → tui/cli → workflow → runner
+                                    → prd/storage
 ```
 
 | Package | Purpose |
@@ -50,16 +52,19 @@ main.go → args → tui/cli → workflow → runner → prd/storage
 | `internal/prd` | PRD data models and file I/O with atomic writes and locking |
 | `internal/prompt` | Prompt templates for AI |
 | `internal/config` | Configuration loading and validation |
+| `internal/constants` | Shared constants (buffer sizes, timeouts, limits) |
 | `internal/logger` | Structured logging (slog) |
 
 ## How It Works
 
 1. **PRD Generation**: User prompt → AI generates `prd.json` with stories
-2. **Implementation Loop**: For each story (by priority):
-   - Generate story-specific prompt
+2. **PRD Validation**: AI validates PRD for actionability (up to 3 iterations), replacing vague requirements with specific metrics
+3. **Implementation Loop**: For each story (by priority):
+   - Generate story-specific prompt with codebase context and test spec
    - Run AI CLI
    - AI updates PRD with `passes: true` when complete
    - Repeat until all stories pass or max iterations reached
+4. **Completion**: PRD file is deleted on success
 
 ## Key Patterns
 
@@ -67,16 +72,18 @@ main.go → args → tui/cli → workflow → runner → prd/storage
 - **File locking**: `gofrs/flock` for concurrent access safety
 - **Event-driven**: Workflow emits typed events consumed by TUI/CLI
 - **Factory pattern**: `runner.New()` selects OpenCode vs Claude runner
+- **Optimistic locking**: PRD version field detects concurrent modifications
 - **Context cancellation**: Graceful shutdown throughout
 
 ## PRD Schema
 
 ```go
 type PRD struct {
+    Version     int64    `json:"version"`              // Incremented on each save for optimistic locking
     ProjectName string   `json:"project_name"`
     BranchName  string   `json:"branch_name,omitempty"`
     Context     string   `json:"context,omitempty"`
-    TestSpec    string   `json:"test_spec,omitempty"` // Holistic test spec for entire feature
+    TestSpec    string   `json:"test_spec,omitempty"`  // Holistic test spec for entire feature
     Stories     []*Story `json:"stories"`
 }
 
@@ -95,7 +102,7 @@ type Story struct {
 
 - `0`: All stories completed
 - `1`: Failure
-- `2`: Partial completion
+- `2`: Partial completion (TUI mode only; CLI mode returns 1 for all failures)
 
 ## Known Limitations
 
@@ -103,3 +110,5 @@ type Story struct {
 - No automatic git rollback on failed stories
 - No story dependencies (only priority ordering)
 - Stories processed sequentially (no parallelization)
+- PRD file is deleted after successful completion (not available for post-run inspection)
+- Exit code 2 (partial completion) only works in TUI mode
