@@ -950,6 +950,20 @@ func TestIsPRDActionableVagueCriteria(t *testing.T) {
 			}},
 			want: true,
 		},
+		{
+			name: "substring of vague word is not flagged - incorrect",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Add login", AcceptanceCriteria: []string{"Returns 401 for incorrect password"}},
+			}},
+			want: true,
+		},
+		{
+			name: "substring of vague word is not flagged - improvement",
+			prd: &prd.PRD{Stories: []*prd.Story{
+				{Description: "Add feature", AcceptanceCriteria: []string{"Shows improvement message after save"}},
+			}},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -983,5 +997,36 @@ func TestRunGenerateNoPRDFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "did not generate") {
 		t.Errorf("error should mention 'did not generate', got: %v", err)
+	}
+}
+
+func TestContainsWord(t *testing.T) {
+	tests := []struct {
+		text string
+		word string
+		want bool
+	}{
+		{"proper error handling", "proper", true},
+		{"this is improper", "proper", false},
+		{"incorrect password", "correct", false},
+		{"correct password", "correct", true},
+		{"the improvement is good", "improve", false},
+		{"improve the code", "improve", true},
+		{"comprehensive tests", "comprehensive", true},
+		{"clean code", "clean", true},
+		{"unclean code", "clean", false},
+		{"", "test", false},
+		{"test", "test", true},
+		{"test.", "test", true},
+		{"(test)", "test", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.text+"_"+tt.word, func(t *testing.T) {
+			got := containsWord(tt.text, tt.word)
+			if got != tt.want {
+				t.Errorf("containsWord(%q, %q) = %v, want %v", tt.text, tt.word, got, tt.want)
+			}
+		})
 	}
 }
