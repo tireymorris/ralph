@@ -11,6 +11,7 @@ import (
 	"ralph/internal/config"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
+	"ralph/internal/status"
 	"ralph/internal/tui"
 )
 
@@ -46,6 +47,14 @@ func run() int {
 		return 1
 	}
 	logger.Debug("config loaded", "model", cfg.Model, "max_iterations", cfg.MaxIterations)
+
+	if opts.Status {
+		if err := status.Display(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "Error displaying status: %v\n", err)
+			return 1
+		}
+		return 0
+	}
 
 	if opts.Resume {
 		if !prd.Exists(cfg) {
