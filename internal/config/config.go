@@ -10,9 +10,6 @@ import (
 
 var SupportedModels = []string{
 	"opencode/big-pickle",
-	"opencode/glm-4.7-free",
-	"opencode/gpt-5-nano",
-	"opencode/minimax-m2.1-free",
 	"claude-code/sonnet",
 	"claude-code/haiku",
 	"claude-code/opus",
