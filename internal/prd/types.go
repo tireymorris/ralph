@@ -1,6 +1,9 @@
 package prd
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	MaxContextSize        = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
@@ -134,4 +137,9 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	}
 
 	return nil
+}
+
+func (p *PRD) ToJSON() string {
+	data, _ := json.MarshalIndent(p, "", "  ")
+	return string(data)
 }
