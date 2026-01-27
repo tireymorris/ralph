@@ -15,10 +15,6 @@ const (
 	// subprocess stdout and stderr pipes (one for stdout, one for stderr).
 	PipeReaderCount = 2
 
-	// MaxJSONRepairAttempts is how many times we'll try to fix corrupted PRD JSON
-	// before giving up.
-	MaxJSONRepairAttempts = 2
-
 	// InitialScannerBufferCapacity is the initial capacity for scanner buffers.
 	// Set to 64KB to handle moderate line sizes without immediate resizing.
 	InitialScannerBufferCapacity = 64 * 1024

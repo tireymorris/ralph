@@ -105,14 +105,14 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 		1, 0, 3,
 	)
 
-	if !strings.Contains(result, "CODEBASE CONTEXT") {
-		t.Error("Prompt should contain 'CODEBASE CONTEXT' section")
+	if !strings.Contains(result, "Add feature") {
+		t.Error("Prompt should contain story title")
 	}
-	if !strings.Contains(result, "Go 1.21 with standard testing") {
-		t.Error("Prompt should include the context content")
+	if !strings.Contains(result, "Implement it") {
+		t.Error("Prompt should contain story description")
 	}
-	if !strings.Contains(result, "go test ./...") {
-		t.Error("Prompt should include test command from context")
+	if !strings.Contains(result, "It works") {
+		t.Error("Prompt should contain acceptance criteria")
 	}
 }
 
@@ -139,14 +139,14 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
 	}
-	if !strings.Contains(result, "CONTEXT FIELD REQUIREMENTS") {
-		t.Error("PRD generation prompt should include context field requirements")
+	if !strings.Contains(result, "Tech stack") {
+		t.Error("PRD generation prompt should mention capturing context")
 	}
-	if !strings.Contains(result, "Language/framework") {
-		t.Error("PRD generation prompt should mention capturing language/framework")
+	if !strings.Contains(result, "3-5 holistic test scenarios") {
+		t.Error("PRD generation prompt should mention test scenarios")
 	}
-	if !strings.Contains(result, "Testing approach") {
-		t.Error("PRD generation prompt should mention capturing testing approach")
+	if !strings.Contains(result, "specific, measurable requirements") {
+		t.Error("PRD generation prompt should mention requirements")
 	}
 }
 

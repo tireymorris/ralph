@@ -117,22 +117,18 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 
 	p, err := prd.Load(e.cfg)
 	if err != nil {
-		if isJSONParseError(err) {
-			logger.Warn("PRD has JSON syntax error, attempting repair", "error", err)
-			p, err = e.repairPRD(ctx, err)
-			if err != nil {
-				logger.Error("failed to repair PRD", "error", err)
-				e.emit(EventError{Err: fmt.Errorf("PRD repair failed for %s: %w", e.cfg.PRDFile, err)})
-				return nil, fmt.Errorf("PRD repair failed for %s: %w", e.cfg.PRDFile, err)
-			}
-		} else {
-			logger.Error("failed to load generated PRD", "error", err)
-			e.emit(EventError{Err: fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)})
-			return nil, fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)
-		}
+		logger.Error("failed to load generated PRD", "error", err)
+		e.emit(EventError{Err: fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)})
+		return nil, fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)
 	}
 
-	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
+	// Validate and improve PRD until actionable
+	p, err = e.validateAndImprovePRD(ctx, p)
+	if err != nil {
+		logger.Warn("PRD validation failed, proceeding with original", "error", err)
+	}
+
+	logger.Debug("PRD generated and validated", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDGenerated{PRD: p})
 	return p, nil
 }
@@ -140,19 +136,11 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 	p, err := prd.Load(e.cfg)
 	if err != nil {
-		if isJSONParseError(err) {
-			logger.Warn("PRD has JSON syntax error, attempting repair", "error", err)
-			p, err = e.repairPRD(ctx, err)
-			if err != nil {
-				e.emit(EventError{Err: fmt.Errorf("PRD repair failed for %s: %w", e.cfg.PRDFile, err)})
-				return nil, fmt.Errorf("PRD repair failed for %s: %w", e.cfg.PRDFile, err)
-			}
-		} else {
-			e.emit(EventError{Err: fmt.Errorf("failed to load PRD %s: %w", e.cfg.PRDFile, err)})
-			return nil, fmt.Errorf("failed to load PRD %s: %w", e.cfg.PRDFile, err)
-		}
+		e.emit(EventError{Err: fmt.Errorf("failed to load PRD %s: %w", e.cfg.PRDFile, err)})
+		return nil, fmt.Errorf("failed to load PRD %s: %w", e.cfg.PRDFile, err)
 	}
 
+	logger.Debug("PRD loaded", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDLoaded{PRD: p})
 	return p, nil
 }
@@ -237,16 +225,10 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		updatedPRD, loadErr := prd.Load(e.cfg)
 		if loadErr != nil {
-			if isJSONParseError(loadErr) {
-				logger.Warn("PRD corrupted during story, attempting repair", "error", loadErr, "story_id", next.ID)
-				updatedPRD, loadErr = e.repairPRD(ctx, loadErr)
-			}
-			if loadErr != nil {
-				logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", next.ID)
-				wrappedErr := fmt.Errorf("failed to reload PRD %s after story %s: %w", e.cfg.PRDFile, next.ID, loadErr)
-				e.emit(EventError{Err: wrappedErr})
-				return wrappedErr
-			}
+			logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", next.ID)
+			wrappedErr := fmt.Errorf("failed to reload PRD %s after story %s: %w", e.cfg.PRDFile, next.ID, loadErr)
+			e.emit(EventError{Err: wrappedErr})
+			return wrappedErr
 		}
 
 		// Check for version conflicts (unexpected jumps indicate concurrent modification)
@@ -296,43 +278,77 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 }
 
 func isJSONParseError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errStr := err.Error()
-	return strings.Contains(errStr, "invalid character") ||
-		strings.Contains(errStr, "unexpected end of JSON") ||
-		strings.Contains(errStr, "cannot unmarshal")
+	return false // JSON repair removed - rely on AI native capabilities
 }
 
-func (e *Executor) repairPRD(ctx context.Context, parseErr error) (*prd.PRD, error) {
-	prdPath := e.cfg.PRDPath()
+func (e *Executor) validateAndImprovePRD(ctx context.Context, p *prd.PRD) (*prd.PRD, error) {
+	maxIterations := 3
 
-	for attempt := 1; attempt <= constants.MaxJSONRepairAttempts; attempt++ {
-		logger.Debug("attempting to repair PRD JSON", "attempt", attempt, "file", prdPath, "error", parseErr.Error())
-		e.emit(EventOutput{Output{Text: fmt.Sprintf("Attempting to repair malformed JSON in %s (attempt %d)...", prdPath, attempt)}})
+	for iteration := 0; iteration < maxIterations; iteration++ {
+		if e.isPRDActionable(p) {
+			logger.Debug("PRD is actionable", "iteration", iteration)
+			return p, nil
+		}
+
+		logger.Debug("improving PRD", "iteration", iteration+1)
+		e.emit(EventOutput{Output{Text: fmt.Sprintf("Improving PRD for actionability (iteration %d)...", iteration+1)}})
 
 		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 		go e.forwardOutput(outputCh)
 
-		repairPrompt := prompt.JSONRepair(e.cfg.PRDFile, parseErr.Error())
-		err := e.runner.Run(ctx, repairPrompt, outputCh)
+		validationPrompt := prompt.PRDValidation(p.ToJSON())
+		err := e.runner.Run(ctx, validationPrompt, outputCh)
 		close(outputCh)
 
 		if err != nil {
-			logger.Warn("repair attempt failed", "attempt", attempt, "file", prdPath, "error", err)
+			logger.Warn("PRD validation attempt failed", "iteration", iteration+1, "error", err)
 			continue
 		}
 
-		p, loadErr := prd.Load(e.cfg)
+		updatedPRD, loadErr := prd.Load(e.cfg)
 		if loadErr == nil {
-			logger.Debug("PRD JSON repaired successfully", "file", prdPath)
-			e.emit(EventOutput{Output{Text: fmt.Sprintf("JSON repaired successfully in %s", prdPath)}})
-			return p, nil
+			p = updatedPRD
+			logger.Debug("PRD improved", "iteration", iteration+1)
+		} else {
+			logger.Warn("failed to load improved PRD", "iteration", iteration+1, "error", loadErr)
 		}
-
-		parseErr = loadErr
 	}
 
-	return nil, fmt.Errorf("failed to repair PRD JSON in %s after %d attempts: %w", prdPath, constants.MaxJSONRepairAttempts, parseErr)
+	logger.Debug("PRD validation completed", "final_actionable", e.isPRDActionable(p))
+	return p, nil
+}
+
+func (e *Executor) isPRDActionable(p *prd.PRD) bool {
+	vagueTerms := []string{"simplify", "optimize", "reduce", "improve", "enhance"}
+
+	for _, story := range p.Stories {
+		desc := strings.ToLower(story.Description)
+
+		// Check for vague terms without quantification
+		for _, term := range vagueTerms {
+			if strings.Contains(desc, term) {
+				if !strings.Contains(desc, "%") &&
+					!strings.Contains(desc, "lines") &&
+					!strings.Contains(desc, "words") &&
+					!strings.Contains(desc, "from") &&
+					!strings.Contains(desc, "to") {
+					return false
+				}
+			}
+		}
+
+		// Check acceptance criteria are testable
+		for _, ac := range story.AcceptanceCriteria {
+			acLower := strings.ToLower(ac)
+			if !strings.Contains(acLower, "verify") &&
+				!strings.Contains(acLower, "test") &&
+				!strings.Contains(acLower, "measure") &&
+				!strings.Contains(acLower, "when") &&
+				!strings.Contains(acLower, "count") &&
+				!strings.Contains(acLower, "length") {
+				return false
+			}
+		}
+	}
+	return true
 }

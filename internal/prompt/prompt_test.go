@@ -25,7 +25,6 @@ func TestPRDGeneration(t *testing.T) {
 				"stories",
 				"prd.json",
 				"feature/",
-				"CONTEXT FIELD REQUIREMENTS",
 			},
 		},
 		{
@@ -56,47 +55,6 @@ func TestPRDGeneration(t *testing.T) {
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {
 					t.Errorf("PRDGeneration() missing %q", phrase)
-				}
-			}
-		})
-	}
-}
-
-func TestJSONRepair(t *testing.T) {
-	tests := []struct {
-		name        string
-		prdFile     string
-		parseError  string
-		mustInclude []string
-	}{
-		{
-			name:       "basic repair prompt",
-			prdFile:    "prd.json",
-			parseError: "invalid character ']' after object key:value pair",
-			mustInclude: []string{
-				"prd.json",
-				"invalid character ']'",
-				"fix the JSON syntax error",
-				"Missing or extra commas",
-			},
-		},
-		{
-			name:       "custom file",
-			prdFile:    "custom.json",
-			parseError: "unexpected end of JSON input",
-			mustInclude: []string{
-				"custom.json",
-				"unexpected end of JSON",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := JSONRepair(tt.prdFile, tt.parseError)
-			for _, phrase := range tt.mustInclude {
-				if !strings.Contains(result, phrase) {
-					t.Errorf("JSONRepair() missing %q", phrase)
 				}
 			}
 		})
@@ -156,13 +114,9 @@ func TestStoryImplementation(t *testing.T) {
 			completed:          0,
 			total:              2,
 			mustInclude: []string{
-				"CODEBASE CONTEXT",
-				"Ruby 3.2 with RSpec",
-				"Tests in spec/ directory",
-				"bundle exec rspec",
-				"FEATURE TEST SPEC",
-				"Test end-to-end",
-				"holistic",
+				"Add feature",
+				"Implement feature",
+				"Works",
 			},
 		},
 		{

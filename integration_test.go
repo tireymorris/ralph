@@ -248,4 +248,3 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 		t.Errorf("Expected verbose output to contain error details, got: %s", outputStrVerbose)
 	}
 }
-
