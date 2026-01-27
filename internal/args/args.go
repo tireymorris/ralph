@@ -96,8 +96,8 @@ Modes:
 AI Models:
   Supports OpenCode and Claude Code CLI models.
   Configure model in ralph.config.json:
-  - OpenCode: "opencode/big-pickle" (default), "opencode/glm-4.7-free", etc.
-  - Claude Code: "claude-code/claude-3.5-sonnet", "claude-code/claude-3.5-haiku", etc.
+  - OpenCode: "opencode/big-pickle" (default)
+  - Claude Code: "claude-code/sonnet", "claude-code/haiku", "claude-code/opus"
 
 Controls (TUI mode):
   q, Ctrl+C    Quit the application

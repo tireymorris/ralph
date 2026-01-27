@@ -119,9 +119,6 @@ For Claude Code models:
 
 #### OpenCode Models
 - `opencode/big-pickle` (default)
-- `opencode/glm-4.7-free`
-- `opencode/gpt-5-nano`
-- `opencode/minimax-m2.1-free`
 
 #### Claude Code Models
 - `claude-code/sonnet`

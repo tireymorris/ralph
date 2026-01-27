@@ -394,8 +394,8 @@ func TestIsClaudeCodeModel(t *testing.T) {
 			want:  false,
 		},
 		{
-			name:  "opencode gpt-5-nano",
-			model: "opencode/gpt-5-nano",
+			name:  "opencode big-pickle",
+			model: "opencode/big-pickle",
 			want:  false,
 		},
 		{
@@ -538,7 +538,7 @@ func TestModelSwitchingBetweenRuns(t *testing.T) {
 	}
 
 	// Test OpenCode model in second run
-	openCodeCfg := &config.Config{Model: "opencode/gpt-5-nano"}
+	openCodeCfg := &config.Config{Model: "opencode/big-pickle"}
 	runner2 := New(openCodeCfg)
 
 	_, ok2 := runner2.(*Runner)

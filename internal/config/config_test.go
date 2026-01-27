@@ -60,25 +60,16 @@ func TestSupportedModels(t *testing.T) {
 		}
 	}
 
-	// Test OpenCode models are still present (backward compatibility)
-	opencodeModels := []string{
-		"opencode/big-pickle",
-		"opencode/glm-4.7-free",
-		"opencode/gpt-5-nano",
-		"opencode/minimax-m2.1-free",
+	// Test OpenCode default model is present
+	found = false
+	for _, supported := range SupportedModels {
+		if supported == "opencode/big-pickle" {
+			found = true
+			break
+		}
 	}
-
-	for _, model := range opencodeModels {
-		found := false
-		for _, supported := range SupportedModels {
-			if supported == model {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("OpenCode model %q not in SupportedModels (backward compatibility)", model)
-		}
+	if !found {
+		t.Error("opencode/big-pickle not in SupportedModels")
 	}
 }
 
@@ -141,7 +132,7 @@ func TestLoadFullConfig(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	configContent := `{
-		"model": "opencode/glm-4.7-free",
+		"model": "opencode/big-pickle",
 		"max_iterations": 100,
 		"retry_attempts": 5,
 		"prd_file": "custom.json"
@@ -153,8 +144,8 @@ func TestLoadFullConfig(t *testing.T) {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if cfg.Model != "opencode/glm-4.7-free" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/glm-4.7-free")
+	if cfg.Model != "opencode/big-pickle" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
 	}
 	if cfg.MaxIterations != 100 {
 		t.Errorf("MaxIterations = %d, want 100", cfg.MaxIterations)
@@ -462,26 +453,15 @@ func TestBackwardCompatibilityOpenCodeModels(t *testing.T) {
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
-	opencodeModels := []string{
-		"opencode/big-pickle",
-		"opencode/glm-4.7-free",
-		"opencode/gpt-5-nano",
-		"opencode/minimax-m2.1-free",
+	configContent := fmt.Sprintf(`{"model": "%s"}`, "opencode/big-pickle")
+	os.WriteFile("ralph.config.json", []byte(configContent), 0644)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	for _, model := range opencodeModels {
-		t.Run("opencode_model_"+model, func(t *testing.T) {
-			configContent := fmt.Sprintf(`{"model": "%s"}`, model)
-			os.WriteFile("ralph.config.json", []byte(configContent), 0644)
-
-			cfg, err := Load()
-			if err != nil {
-				t.Fatalf("Load() error = %v, want nil", err)
-			}
-
-			if cfg.Model != model {
-				t.Errorf("Model = %q, want %q", cfg.Model, model)
-			}
-		})
+	if cfg.Model != "opencode/big-pickle" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
 	}
 }

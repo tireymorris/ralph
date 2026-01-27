@@ -27,7 +27,7 @@ func TestRunnerNames(t *testing.T) {
 		},
 		{
 			name:        "Another OpenCode model",
-			model:       "opencode/gpt-5-nano",
+			model:       "opencode/big-pickle",
 			wantRunner:  "OpenCode",
 			wantCommand: "opencode",
 		},
