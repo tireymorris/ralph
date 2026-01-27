@@ -5,13 +5,21 @@ import (
 	"strings"
 )
 
-func PRDGeneration(userPrompt, prdFile, branchPrefix string) string {
+func PRDGeneration(userPrompt, prdFile, branchPrefix string, isEmptyCodebase bool) string {
+	contextGuidance := `- context: describe ONLY the tech stack and patterns you ACTUALLY observe in the codebase`
+	if isEmptyCodebase {
+		contextGuidance = `Note: The working directory has no existing source code. This is a new project.
+- context: describe ONLY the tech stack specified in the user's request, or state "New project - no existing codebase"
+- Do NOT assume or invent a tech stack the user did not mention`
+	}
+
 	return fmt.Sprintf(`Create a PRD for: %s
 
 Write JSON to %s:
 {
+  "version": 1,
   "project_name": "descriptive name",
-  "branch_name": "%s/descriptive-branch-name", 
+  "branch_name": "%s/descriptive-branch-name",
   "context": "Tech stack, project structure, testing approach, key patterns",
   "test_spec": "String describing 3-5 holistic test scenarios for the entire feature",
   "stories": [
@@ -28,13 +36,13 @@ Write JSON to %s:
 }
 
 Requirements:
-- context: essential technical info for implementation 
+%s
 - test_spec: STRING with 3-5 holistic test scenarios (NOT array)
 - stories: implementation steps with specific, measurable requirements
-- acceptance_criteria: verifiable completion conditions
+- acceptance_criteria: verifiable, specific completion conditions (avoid vague words like "proper", "appropriate", "comprehensive")
 - Priority: based on dependencies (1 = first)
 
-Task: Analyze codebase, create branch, write PRD file, STOP.`, userPrompt, prdFile, branchPrefix)
+Task: Analyze codebase, create branch, write PRD file, STOP.`, userPrompt, prdFile, branchPrefix, contextGuidance)
 }
 
 func PRDValidation(prdJSON, prdFile, codebaseContext string) string {
@@ -55,12 +63,13 @@ VALIDATION REQUIREMENTS:
 1. Each story must have specific, measurable requirements
 2. Acceptance criteria must be verifiable (not vague)
 3. Vague terms ("simplify", "optimize", "reduce", "improve") need quantifiable metrics
-4. Technical details (file paths, function names) should be present where relevant
+4. Acceptance criteria must not use vague adjectives ("proper", "appropriate", "comprehensive", "correct", "consistent", "clean", "robust") without specifics
+5. Technical details (file paths, function names) should be present where relevant
 
 FIXES REQUIRED:
 - Replace vague terms with specific metrics
+- Replace vague acceptance criteria (e.g. "proper error handling") with testable conditions (e.g. "returns 400 status with error message for invalid input")
 - Add concrete technical details where missing
-- Make acceptance criteria testable
 - Ensure stories are implementation-ready
 
 Write the improved PRD as valid JSON to %s.`, prdJSON, contextSection, prdFile)
