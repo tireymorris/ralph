@@ -89,7 +89,7 @@ ralph "Add comprehensive test suite with mocking"
 Ralph is configured via environment variables:
 
 ```bash
-export RALPH_MODEL="opencode/big-pickle"
+export RALPH_MODEL="opencode/kimi-k2.5-free"
 export RALPH_MAX_ITERATIONS=50
 export RALPH_RETRY_ATTEMPTS=3
 export RALPH_PRD_FILE="prd.json"
@@ -102,7 +102,7 @@ export RALPH_MODEL="claude-code/sonnet"
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `RALPH_MODEL` | `opencode/big-pickle` | AI model for code generation (OpenCode or Claude Code) |
+| `RALPH_MODEL` | `opencode/kimi-k2.5-free` | AI model for code generation (OpenCode or Claude Code) |
 | `RALPH_MAX_ITERATIONS` | `50` | Maximum total implementation iterations |
 | `RALPH_RETRY_ATTEMPTS` | `3` | Max retries per story before failing |
 | `RALPH_PRD_FILE` | `prd.json` | PRD filename |
@@ -110,7 +110,12 @@ export RALPH_MODEL="claude-code/sonnet"
 ### Supported Models
 
 #### OpenCode Models
-- `opencode/big-pickle` (default)
+- `opencode/kimi-k2.5-free` (default)
+- `opencode/big-pickle`
+- `opencode/glm-4.7-free`
+- `opencode/gpt-5-nano`
+- `opencode/minimax-m2.1-free`
+- `opencode/trinity-large-preview-free`
 
 #### Claude Code Models
 - `claude-code/sonnet`

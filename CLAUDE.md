@@ -26,13 +26,15 @@ go test -race ./...    # with race detection
 Ralph is configured via environment variables:
 
 ```bash
-export RALPH_MODEL="opencode/big-pickle"
+export RALPH_MODEL="opencode/kimi-k2.5-free"
 export RALPH_MAX_ITERATIONS=50
 export RALPH_RETRY_ATTEMPTS=3
 export RALPH_PRD_FILE="prd.json"
 ```
 
-**Supported models**: `opencode/big-pickle` (default), `claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`
+**Supported models**: `opencode/kimi-k2.5-free` (default), `opencode/big-pickle`, `opencode/glm-4.7-free`,
+`opencode/gpt-5-nano`, `opencode/minimax-m2.1-free`, `opencode/trinity-large-preview-free`,
+`claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`
 
 ## Architecture
 
