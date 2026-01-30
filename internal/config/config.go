@@ -9,13 +9,18 @@ import (
 )
 
 var SupportedModels = []string{
+	"opencode/kimi-k2.5-free",
 	"opencode/big-pickle",
+	"opencode/glm-4.7-free",
+	"opencode/gpt-5-nano",
+	"opencode/minimax-m2.1-free",
+	"opencode/trinity-large-preview-free",
 	"claude-code/sonnet",
 	"claude-code/haiku",
 	"claude-code/opus",
 }
 
-const DefaultModel = "opencode/big-pickle"
+const DefaultModel = "opencode/kimi-k2.5-free"
 
 type Config struct {
 	Model         string `json:"model"`

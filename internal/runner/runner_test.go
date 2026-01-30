@@ -466,7 +466,7 @@ func TestNewWithDefaultModel(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Should return OpenCode Runner for default model (opencode/big-pickle)
+	// Should return OpenCode Runner for default model (opencode/kimi-k2.5-free)
 	_, ok := runner.(*Runner)
 	if !ok {
 		t.Errorf("New() returned %T, want *Runner for default model", runner)
