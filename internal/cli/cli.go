@@ -1,16 +1,19 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"ralph/internal/config"
 	"ralph/internal/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
+	"ralph/internal/prompt"
 	"ralph/internal/workflow"
 )
 
@@ -24,11 +27,11 @@ type Runner struct {
 	eventsCh chan workflow.Event
 }
 
-func NewRunner(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Runner {
+func NewRunner(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Runner {
 	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
 	return &Runner{
 		cfg:      cfg,
-		prompt:   prompt,
+		prompt:   userPrompt,
 		dryRun:   dryRun,
 		resume:   resume,
 		verbose:  verbose,
@@ -55,13 +58,24 @@ func (r *Runner) Run() int {
 	doneCh := make(chan int, 1)
 	go r.handleEvents(r.eventsCh, doneCh)
 
+	// Run the full workflow in the foreground. Clarifying questions (if any)
+	// are handled inside handleEvents when EventClarifyingQuestions arrives —
+	// it reads stdin and sends answers back via the channel embedded in the
+	// event, unblocking RunClarify.
 	var p *prd.PRD
 	var err error
 
 	if r.resume {
 		p, err = r.executor.RunLoad(ctx)
 	} else {
-		p, err = r.executor.RunGenerate(ctx, r.prompt)
+		qas, clarifyErr := r.executor.RunClarify(ctx, r.prompt)
+		if clarifyErr != nil {
+			logger.Error("clarification step failed", "error", clarifyErr)
+			close(r.eventsCh)
+			<-doneCh
+			return 1
+		}
+		p, err = r.executor.RunGenerateWithAnswers(ctx, r.prompt, qas)
 	}
 
 	if err != nil {
@@ -87,6 +101,10 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 
 	for event := range eventsCh {
 		switch e := event.(type) {
+		case workflow.EventClarifyingQuestions:
+			answers := r.collectAnswersCLI(e.Questions)
+			e.AnswersCh <- answers
+
 		case workflow.EventPRDGenerating:
 			fmt.Println("Generating PRD...")
 
@@ -144,6 +162,28 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 	}
 
 	doneCh <- exitCode
+}
+
+// collectAnswersCLI prints questions to stdout and reads answers from stdin.
+// Pressing Enter with no input leaves the answer empty.
+func (r *Runner) collectAnswersCLI(questions []string) []prompt.QuestionAnswer {
+	fmt.Println()
+	fmt.Println("Before generating your PRD, please answer a few clarifying questions.")
+	fmt.Println("(Press Enter to skip a question, or Ctrl+C to abort.)")
+	fmt.Println()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	qas := make([]prompt.QuestionAnswer, 0, len(questions))
+
+	for i, q := range questions {
+		fmt.Printf("Q%d: %s\n> ", i+1, q)
+		scanner.Scan()
+		answer := strings.TrimSpace(scanner.Text())
+		qas = append(qas, prompt.QuestionAnswer{Question: q, Answer: answer})
+	}
+
+	fmt.Println()
+	return qas
 }
 
 func (r *Runner) printStories(p *prd.PRD) {

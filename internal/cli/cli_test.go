@@ -8,6 +8,7 @@ import (
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
+	"ralph/internal/prompt"
 	"ralph/internal/workflow"
 )
 
@@ -410,6 +411,117 @@ func TestHandleEventsFailedNoStories(t *testing.T) {
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
+	}
+}
+
+// TestHandleEventsClarifyingQuestions verifies that EventClarifyingQuestions
+// causes the CLI to read stdin and send answers back on AnswersCh.
+func TestHandleEventsClarifyingQuestions(t *testing.T) {
+	cfg := config.DefaultConfig()
+	r := NewRunner(cfg, "test", false, false, false)
+
+	// Pipe simulated stdin answers into the runner
+	stdinR, stdinW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	origStdin := os.Stdin
+	os.Stdin = stdinR
+	defer func() { os.Stdin = origStdin }()
+
+	// Write two answers then close (EOF)
+	go func() {
+		stdinW.WriteString("Go\n")
+		stdinW.WriteString("JWT\n")
+		stdinW.Close()
+	}()
+
+	eventsCh := make(chan workflow.Event, 10)
+	doneCh := make(chan int, 1)
+
+	// Capture stdout
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+
+	go r.handleEvents(eventsCh, doneCh)
+
+	answersCh := make(chan []prompt.QuestionAnswer, 1)
+	eventsCh <- workflow.EventClarifyingQuestions{
+		Questions: []string{"What language?", "Auth method?"},
+		AnswersCh: answersCh,
+	}
+	close(eventsCh)
+
+	<-doneCh
+	w.Close()
+	os.Stdout = old
+
+	// Check answers were sent
+	select {
+	case answers := <-answersCh:
+		if len(answers) != 2 {
+			t.Fatalf("got %d answers, want 2", len(answers))
+		}
+		if answers[0].Answer != "Go" {
+			t.Errorf("answer[0] = %q, want %q", answers[0].Answer, "Go")
+		}
+		if answers[1].Answer != "JWT" {
+			t.Errorf("answer[1] = %q, want %q", answers[1].Answer, "JWT")
+		}
+	default:
+		t.Error("no answers were sent to AnswersCh")
+	}
+}
+
+// TestHandleEventsClarifyingQuestionsEmptyAnswers verifies blank stdin lines
+// produce empty-string answers (not dropped).
+func TestHandleEventsClarifyingQuestionsEmptyAnswers(t *testing.T) {
+	cfg := config.DefaultConfig()
+	r := NewRunner(cfg, "test", false, false, false)
+
+	stdinR, stdinW, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	origStdin := os.Stdin
+	os.Stdin = stdinR
+	defer func() { os.Stdin = origStdin }()
+
+	go func() {
+		stdinW.WriteString("\n") // blank answer
+		stdinW.Close()
+	}()
+
+	eventsCh := make(chan workflow.Event, 10)
+	doneCh := make(chan int, 1)
+
+	old := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	go r.handleEvents(eventsCh, doneCh)
+
+	answersCh := make(chan []prompt.QuestionAnswer, 1)
+	eventsCh <- workflow.EventClarifyingQuestions{
+		Questions: []string{"Optional question?"},
+		AnswersCh: answersCh,
+	}
+	close(eventsCh)
+
+	<-doneCh
+	w.Close()
+	os.Stdout = old
+
+	select {
+	case answers := <-answersCh:
+		if len(answers) != 1 {
+			t.Fatalf("got %d answers, want 1", len(answers))
+		}
+		if answers[0].Answer != "" {
+			t.Errorf("answer = %q, want empty string for blank input", answers[0].Answer)
+		}
+	default:
+		t.Error("no answers were sent to AnswersCh")
 	}
 }
 
