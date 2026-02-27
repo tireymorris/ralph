@@ -5,11 +5,13 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
+	"ralph/internal/prompt"
 	"ralph/internal/runner"
 	"ralph/internal/workflow"
 )
@@ -18,6 +20,7 @@ type Phase int
 
 const (
 	PhaseInit Phase = iota
+	PhaseClarifying
 	PhasePRDGeneration
 	PhaseImplementation
 	PhaseCompleted
@@ -28,6 +31,8 @@ func (p Phase) String() string {
 	switch p {
 	case PhaseInit:
 		return "Initializing"
+	case PhaseClarifying:
+		return "Clarifying Questions"
 	case PhasePRDGeneration:
 		return "Phase 1: PRD Generation"
 	case PhaseImplementation:
@@ -59,6 +64,12 @@ type Model struct {
 
 	spinner  spinner.Model
 	progress progress.Model
+
+	// Clarifying questions state
+	clarifyQuestions []string
+	clarifyInputs    []textinput.Model
+	clarifyFocused   int
+	clarifyAnswersCh chan<- []prompt.QuestionAnswer
 
 	logger           *Logger
 	operationManager *OperationManager
@@ -96,14 +107,19 @@ type (
 	prdGeneratedMsg struct{ prd *prd.PRD }
 	prdErrorMsg     struct{ err error }
 	phaseChangeMsg  Phase
+
+	clarifyQuestionsMsg struct {
+		questions []string
+		answersCh chan<- []prompt.QuestionAnswer
+	}
 )
 
 func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		m.spinner.Tick,
-		m.operationManager.StartOperation(),
 		m.operationManager.ListenForEvents(),
 		tea.WindowSize(),
+		m.operationManager.StartFullOperation(m.resume, m.prompt),
 	)
 }
 
@@ -112,6 +128,46 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// In clarifying phase, route key events to the active input
+		if m.phase == PhaseClarifying && len(m.clarifyInputs) > 0 {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				m.operationManager.Cancel()
+				return m, tea.Quit
+			case "esc":
+				// Skip all questions, proceed with PRD generation as-is
+				submitCmds := m.submitClarifyingAnswers(nil)
+				return m, tea.Batch(submitCmds...)
+			case "tab", "down":
+				m.clarifyInputs[m.clarifyFocused].Blur()
+				m.clarifyFocused = (m.clarifyFocused + 1) % len(m.clarifyInputs)
+				m.clarifyInputs[m.clarifyFocused].Focus()
+				cmds = append(cmds, textinput.Blink)
+			case "shift+tab", "up":
+				m.clarifyInputs[m.clarifyFocused].Blur()
+				m.clarifyFocused = (m.clarifyFocused - 1 + len(m.clarifyInputs)) % len(m.clarifyInputs)
+				m.clarifyInputs[m.clarifyFocused].Focus()
+				cmds = append(cmds, textinput.Blink)
+			case "enter":
+				if m.clarifyFocused < len(m.clarifyInputs)-1 {
+					// Move to next input
+					m.clarifyInputs[m.clarifyFocused].Blur()
+					m.clarifyFocused++
+					m.clarifyInputs[m.clarifyFocused].Focus()
+					cmds = append(cmds, textinput.Blink)
+				} else {
+					// Last field — submit
+					cmds = append(cmds, m.submitClarifyingAnswers(m.buildAnswers())...)
+				}
+			default:
+				var cmd tea.Cmd
+				m.clarifyInputs[m.clarifyFocused], cmd = m.clarifyInputs[m.clarifyFocused].Update(msg)
+				cmds = append(cmds, cmd)
+			}
+			return m, tea.Batch(cmds...)
+		}
+
 		if msg.String() == "q" || msg.String() == "ctrl+c" {
 			m.quitting = true
 			m.operationManager.Cancel()
@@ -131,29 +187,24 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case phaseChangeMsg:
 		m.phase = Phase(msg)
-		if m.phase == PhasePRDGeneration {
-			cmds = append(cmds, func() tea.Msg {
-				return m.operationManager.RunPRDOperation(m.resume, m.prompt)
-			})
+
+	case clarifyQuestionsMsg:
+		m.phase = PhaseClarifying
+		m.clarifyQuestions = msg.questions
+		m.clarifyAnswersCh = msg.answersCh
+		m.clarifyFocused = 0
+		m.clarifyInputs = make([]textinput.Model, len(msg.questions))
+		for i := range m.clarifyInputs {
+			ti := textinput.New()
+			ti.Placeholder = "Your answer (press Enter to continue, Esc to skip all)"
+			ti.CharLimit = 500
+			if i == 0 {
+				ti.Focus()
+			}
+			m.clarifyInputs[i] = ti
 		}
-
-	case prdGeneratedMsg:
-		m.prd = msg.prd
-		m.logger.AddLog(fmt.Sprintf("PRD: %s (%d stories)", m.prd.ProjectName, len(m.prd.Stories)))
-
-		if m.dryRun {
-			m.phase = PhaseCompleted
-			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
-		} else {
-			m.phase = PhaseImplementation
-			cmds = append(cmds, m.operationManager.StartImplementation(m.prd))
-			cmds = append(cmds, m.operationManager.ListenForEvents())
-		}
-
-	case prdErrorMsg:
-		m.err = msg.err
-		m.phase = PhaseFailed
-		m.logger.AddLog(fmt.Sprintf("Error: %v", msg.err))
+		cmds = append(cmds, textinput.Blink)
+		cmds = append(cmds, m.operationManager.ListenForEvents())
 
 	case workflowEventMsg:
 		cmds = append(cmds, m.handleWorkflowEvent(msg.event))
@@ -168,19 +219,77 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// buildAnswers assembles QuestionAnswer pairs from the current input values.
+// Questions with empty answers are included with an empty string.
+func (m *Model) buildAnswers() []prompt.QuestionAnswer {
+	if len(m.clarifyQuestions) == 0 {
+		return nil
+	}
+	qas := make([]prompt.QuestionAnswer, len(m.clarifyQuestions))
+	for i, q := range m.clarifyQuestions {
+		answer := ""
+		if i < len(m.clarifyInputs) {
+			answer = m.clarifyInputs[i].Value()
+		}
+		qas[i] = prompt.QuestionAnswer{Question: q, Answer: answer}
+	}
+	return qas
+}
+
+// submitClarifyingAnswers sends answers (possibly nil to skip) back to the
+// workflow, transitions to the PRD generation phase, and returns the commands
+// needed to keep the event loop running (ListenForEvents must be restarted
+// since we returned early from the clarifying key-handler without re-queuing it).
+func (m *Model) submitClarifyingAnswers(qas []prompt.QuestionAnswer) []tea.Cmd {
+	if m.clarifyAnswersCh != nil {
+		m.clarifyAnswersCh <- qas
+		m.clarifyAnswersCh = nil
+	}
+	m.phase = PhasePRDGeneration
+	m.logger.AddLog("Clarifications received, generating PRD...")
+	// Must restart the event listener — the clarifying key-handler returns early
+	// and never reaches the workflowEventMsg branch that normally re-queues it.
+	return []tea.Cmd{m.operationManager.ListenForEvents()}
+}
+
 func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 	switch e := event.(type) {
+	case workflow.EventClarifyingQuestions:
+		// Convert workflow event to a TUI message so the model can render the form.
+		// We must return a command (not modify state directly in handleWorkflowEvent)
+		// because this is called from Update's workflowEventMsg branch.
+		return func() tea.Msg {
+			return clarifyQuestionsMsg{
+				questions: e.Questions,
+				answersCh: e.AnswersCh,
+			}
+		}
+
 	case workflow.EventPRDGenerating:
+		m.phase = PhasePRDGeneration
 		m.logger.AddLog("Generating PRD...")
 
 	case workflow.EventPRDGenerated:
 		m.prd = e.PRD
 		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", e.PRD.ProjectName, len(e.PRD.Stories)))
+		if m.dryRun {
+			m.phase = PhaseCompleted
+			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
+		} else {
+			m.phase = PhaseImplementation
+			return m.operationManager.StartImplementation(m.prd)
+		}
 
 	case workflow.EventPRDLoaded:
 		m.prd = e.PRD
 		m.logger.AddLog(fmt.Sprintf("Loaded PRD: %s (%d/%d completed)",
 			e.PRD.ProjectName, e.PRD.CompletedCount(), len(e.PRD.Stories)))
+		if m.dryRun {
+			m.phase = PhaseCompleted
+		} else {
+			m.phase = PhaseImplementation
+			return m.operationManager.StartImplementation(m.prd)
+		}
 
 	case workflow.EventStoryStarted:
 		m.currentStory = e.Story
@@ -207,6 +316,8 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 
 	case workflow.EventError:
 		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
+		m.err = e.Err
+		m.phase = PhaseFailed
 
 	case workflow.EventCompleted:
 		m.phase = PhaseCompleted

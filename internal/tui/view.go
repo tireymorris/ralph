@@ -22,6 +22,8 @@ func (m *Model) View() string {
 	switch m.phase {
 	case PhaseInit, PhasePRDGeneration:
 		b.WriteString(m.renderGenerating())
+	case PhaseClarifying:
+		b.WriteString(m.renderClarifying())
 	case PhaseImplementation:
 		b.WriteString(m.renderImplementation())
 	case PhaseCompleted:
@@ -35,7 +37,11 @@ func (m *Model) View() string {
 	b.WriteString("\n")
 	b.WriteString(m.renderLogs())
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("↑/↓ scroll logs • q quit • ctrl+c exit"))
+	if m.phase == PhaseClarifying {
+		b.WriteString(helpStyle.Render("Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"))
+	} else {
+		b.WriteString(helpStyle.Render("↑/↓ scroll logs • q quit • ctrl+c exit"))
+	}
 
 	return b.String()
 }
@@ -48,12 +54,55 @@ func (m *Model) renderHeader() string {
 
 func (m *Model) renderPhase() string {
 	icon := m.spinner.View()
-	if m.phase == PhaseCompleted {
+	switch m.phase {
+	case PhaseCompleted:
 		icon = iconSuccess
-	} else if m.phase == PhaseFailed {
+	case PhaseFailed:
 		icon = iconFailed
+	case PhaseClarifying:
+		icon = "?"
 	}
 	return phaseStyle.Render(fmt.Sprintf("%s %s", icon, m.phase.String()))
+}
+
+func (m *Model) renderClarifying() string {
+	if len(m.clarifyQuestions) == 0 {
+		return infoStyle.Render(mutedStyle.Render("Waiting for questions..."))
+	}
+
+	var b strings.Builder
+
+	b.WriteString(infoStyle.Render(inProgressStyle.Render("Please answer the following questions before we generate your PRD.")))
+	b.WriteString("\n")
+	b.WriteString(mutedStyle.Render("  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"))
+	b.WriteString("\n\n")
+
+	for i, q := range m.clarifyQuestions {
+		num := labelStyle.Render(fmt.Sprintf("Q%d.", i+1))
+		question := valueStyle.Render(q)
+		b.WriteString(infoStyle.Render(fmt.Sprintf("%s %s", num, question)))
+		b.WriteString("\n")
+
+		if i < len(m.clarifyInputs) {
+			inputView := m.clarifyInputs[i].View()
+			if i == m.clarifyFocused {
+				b.WriteString(infoStyle.Render(selectedStoryStyle.Render(inputView)))
+			} else {
+				b.WriteString(infoStyle.Render(storyItemStyle.Render(inputView)))
+			}
+		}
+		b.WriteString("\n\n")
+	}
+
+	lastQ := len(m.clarifyQuestions) - 1
+	if m.clarifyFocused >= lastQ {
+		b.WriteString(infoStyle.Render(successStyle.Render("Press Enter to submit and generate PRD")))
+	} else {
+		remaining := lastQ - m.clarifyFocused
+		b.WriteString(infoStyle.Render(mutedStyle.Render(fmt.Sprintf("%d question(s) remaining", remaining))))
+	}
+
+	return b.String()
 }
 
 func (m *Model) renderGenerating() string {

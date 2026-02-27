@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -77,6 +78,16 @@ type EventFailed struct {
 
 func (EventFailed) isEvent() {}
 
+// EventClarifyingQuestions is emitted when the AI has generated clarifying
+// questions. The consumer (TUI or CLI) should collect answers and send them
+// back via the AnswersCh channel.
+type EventClarifyingQuestions struct {
+	Questions []string
+	AnswersCh chan<- []prompt.QuestionAnswer
+}
+
+func (EventClarifyingQuestions) isEvent() {}
+
 type Executor struct {
 	cfg      *config.Config
 	eventsCh chan Event
@@ -99,7 +110,79 @@ func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r runner.Run
 	}
 }
 
+// questionsFile is the temporary file the AI writes clarifying questions to.
+const questionsFile = ".ralph_questions.json"
+
+// RunClarify asks the AI to generate clarifying questions about the user's
+// prompt, then emits EventClarifyingQuestions and blocks until the consumer
+// sends answers back. Returns the answers (possibly empty if skipped).
+func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error) {
+	isEmpty := isEmptyCodebase(e.cfg.WorkDir)
+
+	e.emit(EventOutput{Output{Text: "Analyzing request and generating clarifying questions..."}})
+
+	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+	go e.forwardOutput(outputCh)
+
+	clarifyPrompt := prompt.ClarifyingQuestions(userPrompt, questionsFile, isEmpty)
+	err := e.runner.Run(ctx, clarifyPrompt, outputCh)
+	close(outputCh)
+
+	if err != nil {
+		logger.Warn("clarifying questions generation failed, proceeding without", "error", err)
+		return nil, nil
+	}
+
+	// Read the questions file the AI wrote
+	qFile := filepath.Join(e.cfg.WorkDir, questionsFile)
+	data, readErr := os.ReadFile(qFile)
+	// Clean up regardless of whether read succeeded
+	os.Remove(qFile)
+
+	if readErr != nil {
+		logger.Warn("AI did not write questions file, proceeding without clarification", "file", questionsFile)
+		return nil, nil
+	}
+
+	var questions []string
+	if jsonErr := json.Unmarshal(data, &questions); jsonErr != nil {
+		logger.Warn("failed to parse questions file, proceeding without clarification", "error", jsonErr)
+		return nil, nil
+	}
+
+	if len(questions) == 0 {
+		logger.Debug("AI generated no clarifying questions")
+		return nil, nil
+	}
+
+	// Block and wait for the user's answers via the event system.
+	// Use a blocking send so the event is guaranteed to be delivered — dropping
+	// EventClarifyingQuestions would cause RunClarify to block on answersCh forever.
+	// If there is no event channel (e.g. in tests with nil channel), skip questions.
+	if e.eventsCh == nil {
+		logger.Debug("no event channel, skipping clarifying questions")
+		return nil, nil
+	}
+	answersCh := make(chan []prompt.QuestionAnswer, 1)
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case e.eventsCh <- EventClarifyingQuestions{Questions: questions, AnswersCh: answersCh}:
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case answers := <-answersCh:
+		return answers, nil
+	}
+}
+
 func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {
+	return e.RunGenerateWithAnswers(ctx, userPrompt, nil)
+}
+
+func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string, qas []prompt.QuestionAnswer) (*prd.PRD, error) {
 	logger.Debug("generating PRD", "prompt_length", len(userPrompt))
 	e.emit(EventPRDGenerating{})
 
@@ -114,7 +197,7 @@ func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	go e.forwardOutput(outputCh)
 
-	prdPrompt := prompt.PRDGeneration(userPrompt, e.cfg.PRDFile, "feature", isEmpty)
+	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, "feature", isEmpty, qas)
 	err := e.runner.Run(ctx, prdPrompt, outputCh)
 	close(outputCh)
 

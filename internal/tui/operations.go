@@ -38,26 +38,30 @@ func (om *OperationManager) Cancel() {
 	}
 }
 
-func (om *OperationManager) StartOperation() tea.Cmd {
+// StartFullOperation launches the complete PRD workflow in a background
+// goroutine: (1) clarifying questions (skipped on --resume), (2) PRD
+// generation or load, (3) implementation. All results are communicated via the
+// event channel and the returned tea.Cmd.
+//
+// For the clarifying phase the workflow blocks waiting for user answers, which
+// arrive via EventClarifyingQuestions.AnswersCh — the TUI model sends them
+// there when the user submits the form.
+func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
+		go func() {
+			if resume {
+				om.executor.RunLoad(om.ctx)
+			} else {
+				qas, err := om.executor.RunClarify(om.ctx, userPrompt)
+				if err != nil {
+					return
+				}
+				om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
+			}
+		}()
+		// Return a phase change immediately so the UI shows "Phase 1: PRD Generation"
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
-}
-
-func (om *OperationManager) RunPRDOperation(resume bool, prompt string) tea.Msg {
-	if resume {
-		p, err := om.executor.RunLoad(om.ctx)
-		if err != nil {
-			return prdErrorMsg{err: err}
-		}
-		return prdGeneratedMsg{prd: p}
-	}
-
-	p, err := om.executor.RunGenerate(om.ctx, prompt)
-	if err != nil {
-		return prdErrorMsg{err: err}
-	}
-	return prdGeneratedMsg{prd: p}
 }
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {

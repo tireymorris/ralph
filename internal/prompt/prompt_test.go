@@ -5,6 +5,109 @@ import (
 	"testing"
 )
 
+func TestClarifyingQuestions(t *testing.T) {
+	tests := []struct {
+		name            string
+		userPrompt      string
+		questionsFile   string
+		isEmptyCodebase bool
+		mustInclude     []string
+		mustNotInclude  []string
+	}{
+		{
+			name:            "existing codebase",
+			userPrompt:      "Add user authentication",
+			questionsFile:   ".ralph_questions.json",
+			isEmptyCodebase: false,
+			mustInclude: []string{
+				"Add user authentication",
+				".ralph_questions.json",
+				"existing codebase",
+				"2-5",
+				"JSON file",
+			},
+			mustNotInclude: []string{"new project"},
+		},
+		{
+			name:            "new project",
+			userPrompt:      "Build a REST API",
+			questionsFile:   ".ralph_questions.json",
+			isEmptyCodebase: true,
+			mustInclude: []string{
+				"Build a REST API",
+				"new project",
+				".ralph_questions.json",
+			},
+			mustNotInclude: []string{"existing codebase"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ClarifyingQuestions(tt.userPrompt, tt.questionsFile, tt.isEmptyCodebase)
+			for _, phrase := range tt.mustInclude {
+				if !strings.Contains(result, phrase) {
+					t.Errorf("ClarifyingQuestions() missing %q", phrase)
+				}
+			}
+			for _, phrase := range tt.mustNotInclude {
+				if strings.Contains(result, phrase) {
+					t.Errorf("ClarifyingQuestions() should not contain %q", phrase)
+				}
+			}
+		})
+	}
+}
+
+func TestPRDGenerationWithAnswers(t *testing.T) {
+	t.Run("no answers produces same output as PRDGeneration", func(t *testing.T) {
+		withNil := PRDGenerationWithAnswers("Add auth", "prd.json", "feature", false, nil)
+		without := PRDGeneration("Add auth", "prd.json", "feature", false)
+		if withNil != without {
+			t.Error("PRDGenerationWithAnswers(nil) should equal PRDGeneration()")
+		}
+	})
+
+	t.Run("answers are included in output", func(t *testing.T) {
+		qas := []QuestionAnswer{
+			{Question: "What language?", Answer: "Go"},
+			{Question: "Need auth?", Answer: "JWT"},
+		}
+		result := PRDGenerationWithAnswers("Build API", "prd.json", "feature", false, qas)
+		for _, phrase := range []string{
+			"USER CLARIFICATIONS",
+			"Q1: What language?",
+			"A1: Go",
+			"Q2: Need auth?",
+			"A2: JWT",
+		} {
+			if !strings.Contains(result, phrase) {
+				t.Errorf("PRDGenerationWithAnswers() missing %q", phrase)
+			}
+		}
+	})
+
+	t.Run("empty answers slice produces no clarifications section", func(t *testing.T) {
+		result := PRDGenerationWithAnswers("Build API", "prd.json", "feature", false, []QuestionAnswer{})
+		if strings.Contains(result, "USER CLARIFICATIONS") {
+			t.Error("empty answers should not produce USER CLARIFICATIONS section")
+		}
+	})
+
+	t.Run("answers appear before Write JSON instruction", func(t *testing.T) {
+		qas := []QuestionAnswer{{Question: "Q?", Answer: "A"}}
+		result := PRDGenerationWithAnswers("Test", "prd.json", "feature", false, qas)
+		clarIdx := strings.Index(result, "USER CLARIFICATIONS")
+		writeIdx := strings.Index(result, "Write JSON to")
+		if clarIdx == -1 {
+			t.Fatal("missing USER CLARIFICATIONS")
+		}
+		if clarIdx > writeIdx {
+			t.Error("USER CLARIFICATIONS should appear before Write JSON instruction")
+		}
+	})
+}
+
 func TestPRDGeneration(t *testing.T) {
 	tests := []struct {
 		name            string

@@ -5,7 +5,43 @@ import (
 	"strings"
 )
 
+// QuestionAnswer holds a clarifying question and the user's answer.
+type QuestionAnswer struct {
+	Question string
+	Answer   string
+}
+
+// ClarifyingQuestions generates a prompt asking the AI to produce a JSON file
+// with clarifying questions about the user's request. The AI writes a JSON
+// array of question strings to questionsFile, then stops.
+func ClarifyingQuestions(userPrompt, questionsFile string, isEmptyCodebase bool) string {
+	codebaseNote := "an existing codebase"
+	if isEmptyCodebase {
+		codebaseNote = "a new project (no existing source code)"
+	}
+
+	return fmt.Sprintf(`You are helping plan a software feature for %s.
+
+The user's request is: %s
+
+Before generating a full PRD, identify any ambiguities or missing details that would significantly affect how you design the solution. Write a JSON file at %s containing ONLY an array of clarifying question strings (no other keys):
+
+["Question 1?", "Question 2?", ...]
+
+Rules:
+- Ask 2-5 concise, specific questions
+- Only ask about things that are genuinely unclear and would change the technical approach
+- Do NOT ask about things you can reasonably infer or decide yourself
+- Do NOT ask for things already specified in the request
+- Prefer questions about: scope boundaries, integration requirements, non-functional requirements (performance/scale), or preferred approaches when multiple are equally valid
+- Write the JSON file, then STOP — do not implement anything`, codebaseNote, userPrompt, questionsFile)
+}
+
 func PRDGeneration(userPrompt, prdFile, branchPrefix string, isEmptyCodebase bool) string {
+	return PRDGenerationWithAnswers(userPrompt, prdFile, branchPrefix, isEmptyCodebase, nil)
+}
+
+func PRDGenerationWithAnswers(userPrompt, prdFile, branchPrefix string, isEmptyCodebase bool, qas []QuestionAnswer) string {
 	contextGuidance := `- context: describe ONLY the tech stack and patterns you ACTUALLY observe in the codebase`
 	if isEmptyCodebase {
 		contextGuidance = `Note: The working directory has no existing source code. This is a new project.
@@ -13,8 +49,18 @@ func PRDGeneration(userPrompt, prdFile, branchPrefix string, isEmptyCodebase boo
 - Do NOT assume or invent a tech stack the user did not mention`
 	}
 
-	return fmt.Sprintf(`Create a PRD for: %s
+	clarificationsSection := ""
+	if len(qas) > 0 {
+		var sb strings.Builder
+		sb.WriteString("\nUSER CLARIFICATIONS:\n")
+		for i, qa := range qas {
+			sb.WriteString(fmt.Sprintf("Q%d: %s\nA%d: %s\n", i+1, qa.Question, i+1, qa.Answer))
+		}
+		clarificationsSection = sb.String()
+	}
 
+	return fmt.Sprintf(`Create a PRD for: %s
+%s
 Write JSON to %s:
 {
   "version": 1,
@@ -49,7 +95,7 @@ CRITICAL QUALITY REQUIREMENTS:
 
 Each story must be implementation-ready with specific, measurable requirements that can be verified through testing or code inspection.
 
-Task: Analyze codebase, create branch, write high-quality PRD file, STOP.`, userPrompt, prdFile, branchPrefix, contextGuidance)
+Task: Analyze codebase, create branch, write high-quality PRD file, STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int) string {
