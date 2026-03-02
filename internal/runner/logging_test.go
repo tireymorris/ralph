@@ -21,7 +21,7 @@ func TestRunnerNames(t *testing.T) {
 		},
 		{
 			name:        "Claude runner returns correct names",
-			model:       "claude-code/claude-3.5-sonnet",
+			model:       "claude-code/sonnet",
 			wantRunner:  "Claude Code",
 			wantCommand: "claude",
 		},
@@ -33,7 +33,7 @@ func TestRunnerNames(t *testing.T) {
 		},
 		{
 			name:        "Another Claude model",
-			model:       "claude-code/claude-3.5-haiku",
+			model:       "claude-code/haiku",
 			wantRunner:  "Claude Code",
 			wantCommand: "claude",
 		},

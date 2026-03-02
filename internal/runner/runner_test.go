@@ -384,8 +384,8 @@ func TestIsClaudeCodeModel(t *testing.T) {
 			want:  true,
 		},
 		{
-			name:  "claude-3-opus",
-			model: "claude-code/claude-3-opus",
+			name:  "opus",
+			model: "claude-code/opus",
 			want:  true,
 		},
 		{
