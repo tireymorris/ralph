@@ -94,6 +94,7 @@ func (r *Runner) Run() int {
 	if r.dryRun {
 		fmt.Println("Dry run complete - PRD saved, no implementation performed")
 		close(r.eventsCh)
+		<-doneCh
 		return 0
 	}
 
@@ -125,6 +126,11 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 			r.printStories(e.PRD)
 
 		case workflow.EventPRDReview:
+			if r.dryRun {
+				fmt.Println("PRD ready for review")
+				fmt.Println("(Dry run - you can edit prd.json, then run with --resume to proceed)")
+				continue
+			}
 			r.promptPRDReview(e.PRD)
 			proceed := <-r.reviewResponseCh
 			if !proceed {
