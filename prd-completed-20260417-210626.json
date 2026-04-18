@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "project_name": "Ralph Concise Documentation",
+  "branch_name": "feature/concise-docs",
+  "context": "Go CLI tool. README.md is in the repo root (now 110 lines after trimming). CLI help text is defined in internal/args/args.go in the HelpText() function (lines 70-117). No automated tests cover README or help text content; correctness is verified by inspecting file content after changes. README no longer has PRD Format, Troubleshooting, or Supported Models sections.",
+  "test_spec": "1) Run 'ralph --help' and verify the AI Models section lists only the default model value and a note to see README, not all model names; 2) Verify 'ralph --help' output is 35 lines or fewer; 3) Verify README.md no longer contains a 'PRD Format' section or 'Troubleshooting' section; 4) Verify README.md no longer contains the 'Supported Models' subsection with individual model bullet lists; 5) Verify README.md retains all essential usage info (install, commands, options, configuration table) and is 110 lines or fewer",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Trim README.md",
+      "description": "Edit README.md to remove three sections and reduce overall length. Specifically: (1) Remove the entire 'PRD Format' section (currently lines 125-167), including the JSON example and the field reference table. (2) Remove the entire 'Troubleshooting' section (currently lines 188-221). (3) Remove the 'Supported Models' subsection under Configuration (lines 110-123 listing individual OpenCode and Claude Code model names) and replace it with a single sentence: 'See [opencode](https://github.com/opencode-ai/opencode) and [Claude Code](https://github.com/anthropics/claude-code) docs for available models.' (4) Trim the Building subsection under Development to only the basic build command ('go build -o ralph .'), removing the cross-compilation variants. (5) Trim the 'How It Works' section: shorten step 1 description to remove the sentence starting 'The prompt includes detailed instructions...'",
+      "acceptance_criteria": [
+        "README.md does not contain the string 'PRD Format' as a section heading",
+        "README.md does not contain the string 'Troubleshooting' as a section heading",
+        "README.md does not contain 'opencode/big-pickle' or 'claude-code/sonnet' as bullet list items",
+        "README.md does not contain 'GOOS=linux' (cross-compilation commands removed)",
+        "README.md is 110 lines or fewer",
+        "README.md retains the Configuration table with all four environment variables (RALPH_MODEL, RALPH_MAX_ITERATIONS, RALPH_RETRY_ATTEMPTS, RALPH_PRD_FILE)"
+      ],
+      "priority": 1,
+      "depends_on": [],
+      "passes": true,
+      "retry_count": 0
+    },
+    {
+      "id": "story-2",
+      "title": "Trim CLI help text",
+      "description": "Edit the HelpText() function in internal/args/args.go (lines 70-117) to shorten the 'AI Models' section. Replace the current multi-line RALPH_MODEL bullet that lists all model names with a single line: '  - RALPH_MODEL: AI model to use (default: opencode/kimi-k2.5-free; see README for all values)'. Keep the remaining three env var bullets (RALPH_MAX_ITERATIONS, RALPH_RETRY_ATTEMPTS, RALPH_PRD_FILE) unchanged.",
+      "acceptance_criteria": [
+        "Running 'ralph --help' does not print 'opencode/big-pickle' or any model name other than the default 'opencode/kimi-k2.5-free'",
+        "Running 'ralph --help' output is 35 lines or fewer (count with 'ralph --help | wc -l')",
+        "Running 'ralph --help' still prints all four RALPH_* environment variable names",
+        "The string 'see README for all values' appears in 'ralph --help' output"
+      ],
+      "priority": 2,
+      "depends_on": [],
+      "passes": true,
+      "retry_count": 0
+    }
+  ]
+}

@@ -68,17 +68,15 @@ func (o *Options) Validate() error {
 }
 
 func HelpText() string {
-	return `
-Ralph - Autonomous Software Development Agent
+	return `Ralph - Autonomous Software Development Agent
 
 Usage:
-  ralph "your feature description"               # Full implementation (TUI)
-  ralph "your feature description" --dry-run     # Generate PRD only (TUI)
-  ralph --resume                                 # Resume from existing prd.json (TUI)
+  ralph "your feature description"               # TUI mode
+  ralph "your feature description" --dry-run     # Generate PRD only
+  ralph --resume                                 # Resume from existing prd.json
   ralph status                                   # Show current PRD status
-  ralph run "your feature description"           # Full implementation (stdout)
-  ralph run "your feature description" --dry-run # Generate PRD only (stdout)
-  ralph run --resume                             # Resume from existing prd.json (stdout)
+  ralph run "your feature description"           # Headless/stdout mode
+  ralph run --resume                             # Resume (headless)
 
 Options:
   --dry-run      Generate PRD only, don't implement
@@ -86,19 +84,8 @@ Options:
   --verbose, -v  Enable debug logging
   --help, -h     Show this help message
 
-Commands:
-  status        Show current PRD status and story progress
-
-Modes:
-  (default)    Interactive TUI with progress display
-  run          Non-interactive stdout output (for CI/scripts)
-
-AI Models:
-  Supports OpenCode and Claude Code CLI models.
-  Configure via environment variables:
-  - RALPH_MODEL: "opencode/kimi-k2.5-free" (default), "opencode/big-pickle", "opencode/glm-4.7-free",
-                   "opencode/gpt-5-nano", "opencode/minimax-m2.1-free", "opencode/trinity-large-preview-free",
-                   "claude-code/sonnet", "claude-code/haiku", "claude-code/opus"
+Environment:
+  - RALPH_MODEL: AI model to use (default: opencode/kimi-k2.5-free; see README for all values)
   - RALPH_MAX_ITERATIONS: Maximum implementation iterations (default: 50)
   - RALPH_RETRY_ATTEMPTS: Max retries per story (default: 3)
   - RALPH_PRD_FILE: PRD filename (default: "prd.json")
