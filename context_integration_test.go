@@ -103,6 +103,7 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 		context,
 		"prd.json",
 		1, 0, 3,
+		nil, 1,
 	)
 
 	if !strings.Contains(result, "CODEBASE CONTEXT") {
@@ -126,6 +127,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 		"", // Empty context
 		"prd.json",
 		1, 0, 3,
+		nil, 1,
 	)
 
 	if strings.Contains(result, "CODEBASE CONTEXT") {

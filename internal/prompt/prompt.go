@@ -100,7 +100,7 @@ Each story must be implementation-ready with specific, measurable requirements t
 Task: Analyze codebase, create branch, write high-quality PRD file, STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int) string {
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int, dependsOn []string, parallelCount int) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -117,18 +117,38 @@ FEATURE TEST SPEC:
 `, featureTestSpec)
 	}
 
+	dependsSection := ""
+	if len(dependsOn) > 0 {
+		dependsSection = fmt.Sprintf(`
+DEPENDENCIES: This story depends on the following stories completing first:
+%s
+
+You must wait for these dependencies to complete before starting work on this story. Check %s to verify their "passes" status.`, strings.Join(dependsOn, ", "), prdFile)
+	}
+
+	parallelNote := ""
+	if parallelCount > 1 {
+		parallelNote = `
+PARALLEL EXECUTION: Other stories are running concurrently. Be aware of potential conflicts:
+- Coordinate with other stories via the PRD file status
+- If you need to modify the same file another story might touch, communicate via code comments or defer the conflicting change
+- Write tests in a way that doesn't depend on execution order`
+	}
+
 	return fmt.Sprintf(`Implement story: %s
-%s%s
+%s%s%s%s
 Description: %s
 Done when: %s
 
 Steps:
-1. Implement using codebase context above
-2. Add tests per feature test spec if this story completes testable functionality
-3. Run existing tests
-4. Commit changes: "feat: %s"
-5. Update %s - set "passes": true for story "%s"
-6. If tests fail, increment "retry_count" for this story in %s instead
+1. Check the PRD file %s to see which other stories are running in parallel and their status
+2. If this story has dependencies, verify they are marked "passes": true before proceeding
+3. Implement using codebase context above
+4. Add tests per feature test spec if this story completes testable functionality
+5. Run existing tests
+6. Commit changes: "feat: %s"
+7. Update %s - set "passes": true for story "%s"
+8. If tests fail, increment "retry_count" for this story in %s instead
 
 After completing this story, update the "context" field in %s if you created new modules, established patterns, or discovered conventions that future stories should know about.
 
@@ -136,8 +156,11 @@ Progress: Iteration %d, %d/%d stories completed`,
 		title,
 		contextSection,
 		testSection,
+		dependsSection,
+		parallelNote,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
+		prdFile,
 		title,
 		prdFile, storyID,
 		prdFile,
