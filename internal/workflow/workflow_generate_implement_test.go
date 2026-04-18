@@ -164,7 +164,7 @@ func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	_ = exec.RunImplementation(context.Background(), testPRD)
 
-	// Load PRD from original file (not archived)
+	// Load PRD from disk after implementation
 	prdPath := filepath.Join(tmpDir, "prd.json")
 	data, err := os.ReadFile(prdPath)
 	if err != nil {

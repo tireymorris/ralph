@@ -10,7 +10,6 @@ type PRDStore interface {
 	Load(cfg *config.Config) (*prd.PRD, error)
 	Save(cfg *config.Config, p *prd.PRD) error
 	Exists(cfg *config.Config) bool
-	Archive(cfg *config.Config) error
 }
 
 type defaultPRDStore struct{}
@@ -25,8 +24,4 @@ func (defaultPRDStore) Save(cfg *config.Config, p *prd.PRD) error {
 
 func (defaultPRDStore) Exists(cfg *config.Config) bool {
 	return prd.Exists(cfg)
-}
-
-func (defaultPRDStore) Archive(cfg *config.Config) error {
-	return prd.Archive(cfg)
 }
