@@ -9,19 +9,20 @@ import (
 	"ralph/internal/constants"
 	"ralph/internal/prd"
 	"ralph/internal/workflow"
+	"ralph/internal/workflow/events"
 )
 
 type OperationManager struct {
 	cfg        *config.Config
 	ctx        context.Context
 	cancelFunc context.CancelFunc
-	eventsCh   chan workflow.Event
+	eventsCh   chan events.Event
 	executor   *workflow.Executor
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
 	ctx, cancel := context.WithCancel(context.Background())
-	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
+	eventsCh := make(chan events.Event, constants.EventChannelBuffer)
 
 	return &OperationManager{
 		cfg:        cfg,
@@ -88,5 +89,5 @@ func (om *OperationManager) ListenForEvents() tea.Cmd {
 }
 
 type workflowEventMsg struct {
-	event workflow.Event
+	event events.Event
 }
