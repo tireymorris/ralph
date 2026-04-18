@@ -7,7 +7,13 @@ const (
 	logBiasMaxLines = 24
 )
 
-func computePaneHeights(termHeight, logLineCount, logBias int) (mainH, logH int) {
+func computePaneHeights(termHeight, logLineCount, logBias int, fullscreen scrollFocus) (mainH, logH int) {
+	if fullscreen == focusMain {
+		return termHeight - scrollChrome, 0
+	}
+	if fullscreen == focusLogs {
+		return 0, termHeight - scrollChrome
+	}
 	if termHeight < 10 {
 		h := max(4, termHeight/2)
 		return h, max(3, termHeight-h)

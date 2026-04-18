@@ -6,7 +6,7 @@ func (m *Model) applyLayout(width, height int) {
 	lc := m.logger.LogCount()
 	bias := m.logHeightBias
 
-	if m.fullscreenPane != 0 {
+	if m.fullscreenPane != focusNone {
 		if m.fullscreenPane == focusMain {
 			m.logger.SetSize(width, 0)
 			m.mainPane.Width = max(20, width-4)
@@ -25,7 +25,7 @@ func (m *Model) applyLayout(width, height int) {
 		return
 	}
 
-	mainH, logH := computePaneHeights(height, lc, bias)
+	mainH, logH := computePaneHeights(height, lc, bias, m.fullscreenPane)
 	if width == m.layoutSigW && height == m.layoutSigH && lc == m.layoutSigLogCount && bias == m.layoutSigBias {
 		return
 	}

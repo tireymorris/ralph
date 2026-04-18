@@ -276,7 +276,7 @@ func TestToggleFullscreenOff(t *testing.T) {
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
 
 	if model, ok := newModel.(*Model); ok {
-		if model.fullscreenPane != 0 {
+		if model.fullscreenPane != focusNone {
 			t.Errorf("fullscreenPane = %v, want 0 (no fullscreen)", model.fullscreenPane)
 		}
 	}
