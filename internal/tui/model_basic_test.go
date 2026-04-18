@@ -266,3 +266,19 @@ func TestToggleFullscreenOn(t *testing.T) {
 	}
 }
 
+func TestToggleFullscreenOff(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.scrollPane = focusMain
+	m.fullscreenPane = focusMain // already fullscreen
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+
+	if model, ok := newModel.(*Model); ok {
+		if model.fullscreenPane != 0 {
+			t.Errorf("fullscreenPane = %v, want 0 (no fullscreen)", model.fullscreenPane)
+		}
+	}
+}
+
