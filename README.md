@@ -1,107 +1,68 @@
 # Ralph
 
-Autonomous software development agent that transforms natural language requirements into working code through iterative user story implementation.
+Turns a natural-language goal into a PRD and implements user stories iteratively (OpenCode or Claude Code behind the scenes).
 
-## How It Works
+**Flow:** optional clarifying questions → PRD → review → implement stories (priority + dependencies, tests + commits). Failed stories roll back with `git reset --hard`. When everything passes, the PRD file (default `prd.json`) stays in place with all stories marked done; nothing renames or archives it.
 
-Ralph follows a two-phase approach:
-
-1. **PRD Generation** - Optionally asks clarifying questions, then analyzes your prompt and codebase to generate a high-quality PRD with specific, measurable user stories and acceptance criteria.
-2. **Implementation Loop** - Iteratively implements stories by priority (up to 2 in parallel, respecting declared dependencies), writes tests, runs tests, and commits changes. Failed stories are rolled back via `git reset --hard`; on success the PRD is archived to `prd-completed-<timestamp>.json`.
-
-## Installation
-
-### Prerequisites
+## Requirements
 
 - Go 1.24+
 - Git
-- [opencode](https://github.com/opencode-ai/opencode) CLI **OR** [Claude Code](https://github.com/anthropics/claude-code) CLI
+- [OpenCode](https://github.com/opencode-ai/opencode) **or** [Claude Code](https://github.com/anthropics/claude-code) CLI on `PATH`
 
-### Install
+## Install
+
+From the repository root:
 
 ```bash
-# From source
-git clone https://github.com/your-org/ralph.git
-cd ralph
-go build -o ralph .
-
-# Global install
-go install .
+go build -o ralph .   # or: go install .
 ```
 
 ## Usage
 
-### Commands
 
-```bash
-ralph "your feature description"               # Interactive TUI
-ralph "your feature description" --dry-run     # Generate PRD only (TUI)
-ralph --resume                                 # Resume from prd.json (TUI)
-ralph status                                   # Show PRD progress
-ralph run "your feature description"           # Headless mode
-ralph run "your feature description" --dry-run # Headless, PRD only
-ralph run --resume                             # Headless, resume
-```
+| Command                                          |                                      |
+| ------------------------------------------------ | ------------------------------------ |
+| `ralph "…"`                                      | TUI: full run                        |
+| `ralph "…" --dry-run`                            | TUI: PRD only                        |
+| `ralph --resume`                                 | TUI: continue from existing PRD file |
+| `ralph status`                                   | Print PRD progress                   |
+| `ralph run "…"`                                  | Headless full run                    |
+| `ralph run "…" --dry-run` / `ralph run --resume` | Headless variants                    |
 
-### Options
 
-- `--dry-run` - Generate PRD only, skip implementation
-- `--resume` - Resume implementation from existing prd.json
-- `--verbose, -v` - Enable debug logging (stderr)
-- `--help, -h` - Show help message
+**Flags:** `--dry-run`, `--resume`, `-v` / `--verbose`, `-h` / `--help`
 
-### Examples
-
-```bash
-# Basic feature implementation
-ralph "Add user authentication with login and registration"
-
-# Generate PRD first, review, then implement
-ralph "Build a blog system" --dry-run
-ralph status
-ralph --resume
-
-# CI/CD usage
-ralph run "Add API rate limiting" --verbose
-
-ralph "Create REST API endpoints for user management"
-ralph "Add PostgreSQL database support with migrations"
-```
+Typical review path: `ralph "…" --dry-run` → edit PRD → `ralph --resume`.
 
 ## Configuration
 
-Ralph is configured via environment variables:
+Environment variables (optional overrides; defaults shown):
 
-```bash
-export RALPH_MODEL="opencode/kimi-k2.5-free"
-export RALPH_MAX_ITERATIONS=50
-export RALPH_RETRY_ATTEMPTS=3
-export RALPH_PRD_FILE="prd.json"
-```
 
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `RALPH_MODEL` | `opencode/kimi-k2.5-free` | AI model for code generation (OpenCode or Claude Code) |
-| `RALPH_MAX_ITERATIONS` | `50` | Maximum total implementation iterations |
-| `RALPH_RETRY_ATTEMPTS` | `3` | Max retries per story before failing |
-| `RALPH_PRD_FILE` | `prd.json` | PRD filename |
+| Variable               | Default                   | Role                                       |
+| ---------------------- | ------------------------- | ------------------------------------------ |
+| `RALPH_MODEL`          | `opencode/kimi-k2.5-free` | Model id (must be one of the values below) |
+| `RALPH_MAX_ITERATIONS` | `50`                      | Cap on implementation iterations           |
+| `RALPH_RETRY_ATTEMPTS` | `3`                       | Retries per story before giving up         |
+| `RALPH_PRD_FILE`       | `prd.json`                | PRD filename in the working directory      |
+| `RALPH_TEST_COMMAND`   | `go test ./...`           | Command run to verify each story           |
 
-See [opencode](https://github.com/opencode-ai/opencode) and [Claude Code](https://github.com/anthropics/claude-code) docs for available models.
+
+On success the PRD is only updated in place (no rename). This repository gitignores `prd.json` by default so it stays out of `git` unless you change `.gitignore` or `RALPH_PRD_FILE`.
+
+**Supported `RALPH_MODEL` values** (from `internal/config/config.go`):
+
+OpenCode: `opencode/kimi-k2.5-free`, `opencode/big-pickle`, `opencode/glm-4.7-free`, `opencode/gpt-5-nano`, `opencode/minimax-m2.1-free`, `opencode/trinity-large-preview-free`.
+
+Claude Code: `claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`.
+
+Upstream CLI docs list how each tool maps these to real models.
 
 ## Development
 
-### Testing
-
 ```bash
-go test ./...                 # All tests
-go test ./... -cover          # With coverage
-go test ./internal/prd -v     # Verbose package tests
-go test ./... -race           # Race detector
-```
-
-### Building
-
-```bash
+go test ./...
 go build -o ralph .
 ```
 

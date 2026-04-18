@@ -38,9 +38,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
-			if err := e.store.Archive(e.cfg); err != nil {
-				logger.Warn("failed to archive PRD", "error", err)
-			}
 			e.emit(EventCompleted{})
 			return nil
 		}
