@@ -341,28 +341,66 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		updatedStory := updatedPRD.GetStory(story.ID)
 		if updatedStory != nil && updatedStory.Passes {
-			logger.Debug("story marked as completed", "story_id", story.ID)
-			e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
-		} else {
-			logger.Debug("story not completed", "story_id", story.ID)
-
-			if gitState != "" {
-				if rollbackErr := e.rollbackToState(gitState); rollbackErr != nil {
-					logger.Error("rollback failed", "error", rollbackErr, "story_id", story.ID)
-					e.emit(EventError{Err: fmt.Errorf("story %s failed and rollback failed: %w", story.ID, rollbackErr)})
-					return fmt.Errorf("story %s failed and rollback failed: %w", story.ID, rollbackErr)
-				} else {
-					logger.Info("rolled back after story failure", "story_id", story.ID, "git_state", gitState)
+			testsPass, testOutput, _ := e.runTests()
+			if testsPass {
+				logger.Debug("story marked as completed", "story_id", story.ID)
+				e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
+			} else {
+				logger.Debug("tests failed despite passes flag", "story_id", story.ID, "test_output", testOutput)
+				if gitState != "" {
+					if rollbackErr := e.rollbackToState(gitState); rollbackErr != nil {
+						logger.Error("rollback failed", "error", rollbackErr, "story_id", story.ID)
+						e.emit(EventError{Err: fmt.Errorf("story %s test verification failed and rollback failed: %w", story.ID, rollbackErr)})
+						return fmt.Errorf("story %s test verification failed and rollback failed: %w", story.ID, rollbackErr)
+					}
+					logger.Info("rolled back after test verification failure", "story_id", story.ID, "git_state", gitState)
 				}
-			}
-
-			if updatedStory != nil {
+				updatedStory.Passes = false
 				updatedStory.RetryCount++
 				if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
-					logger.Warn("failed to save retry count", "error", saveErr, "story_id", story.ID)
+					logger.Warn("failed to save after test failure", "error", saveErr, "story_id", story.ID)
 				}
+				e.emit(EventStoryCompleted{Story: updatedStory, Success: false})
 			}
-			e.emit(EventStoryCompleted{Story: story, Success: false})
+		} else {
+			testsPass, testOutput, _ := e.runTests()
+			if testsPass {
+				logger.Debug("tests pass but passes false - AI under-reported", "story_id", story.ID)
+				if gitState != "" {
+					if rollbackErr := e.rollbackToState(gitState); rollbackErr != nil {
+						logger.Error("rollback failed", "error", rollbackErr, "story_id", story.ID)
+						e.emit(EventError{Err: fmt.Errorf("story %s retry failed: %w", story.ID, rollbackErr)})
+						return fmt.Errorf("story %s retry failed: %w", story.ID, rollbackErr)
+					}
+					logger.Info("rolled back for retry after test verification", "story_id", story.ID, "git_state", gitState)
+				}
+				if updatedStory != nil {
+					updatedStory.RetryCount++
+					if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
+						logger.Warn("failed to save retry count", "error", saveErr, "story_id", story.ID)
+					}
+				}
+				e.emit(EventStoryCompleted{Story: updatedStory, Success: false})
+			} else {
+				logger.Debug("story not completed, tests failed", "story_id", story.ID, "test_output", testOutput)
+				if gitState != "" {
+					if rollbackErr := e.rollbackToState(gitState); rollbackErr != nil {
+						logger.Error("rollback failed", "error", rollbackErr, "story_id", story.ID)
+						e.emit(EventError{Err: fmt.Errorf("story %s failed and rollback failed: %w", story.ID, rollbackErr)})
+						return fmt.Errorf("story %s failed and rollback failed: %w", story.ID, rollbackErr)
+					} else {
+						logger.Info("rolled back after story failure", "story_id", story.ID, "git_state", gitState)
+					}
+				}
+
+				if updatedStory != nil {
+					updatedStory.RetryCount++
+					if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
+						logger.Warn("failed to save retry count", "error", saveErr, "story_id", story.ID)
+					}
+				}
+				e.emit(EventStoryCompleted{Story: story, Success: false})
+			}
 		}
 
 		p = updatedPRD
