@@ -338,6 +338,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 					iteration,
 					p.CompletedCount(),
 					len(p.Stories),
+					s.DependsOn,
+					len(toRun),
 				)
 
 				runErr := e.runner.Run(ctx, storyPrompt, outputCh)
