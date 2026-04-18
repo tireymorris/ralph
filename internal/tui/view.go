@@ -21,20 +21,25 @@ func (m *Model) View() string {
 		b.WriteString("\n")
 		b.WriteString(m.renderClarifying())
 	} else {
-		b.WriteString(m.mainPane.View())
+		if m.fullscreenPane != focusLogs {
+			b.WriteString(m.mainPane.View())
+		}
 	}
 
-	b.WriteString("\n")
-	b.WriteString(titleStyle.Render("Output Logs"))
-	b.WriteString("\n")
-	b.WriteString(m.renderLogs())
+	if m.fullscreenPane != focusMain {
+		b.WriteString("\n")
+		b.WriteString(titleStyle.Render("Output Logs"))
+		b.WriteString("\n")
+		b.WriteString(m.renderLogs())
+	}
+
 	b.WriteString("\n")
 	if m.phase == PhaseClarifying {
 		b.WriteString(helpStyle.Render("Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"))
 	} else if m.phase == PhasePRDReview {
-		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • [/] log height • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"))
+		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • / fullscreen • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"))
 	} else {
-		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • [/] log height • ↑/↓ scroll • q quit • ctrl+c exit"))
+		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • / fullscreen • ↑/↓ scroll • q quit • ctrl+c exit"))
 	}
 
 	return b.String()
