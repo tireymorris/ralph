@@ -1,6 +1,7 @@
 # Binary
 .ralph-bin
 ralph
+.claude/
 
 # Go
 *.exe
