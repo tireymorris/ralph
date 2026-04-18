@@ -410,6 +410,19 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	}
 }
 
+func (e *Executor) runTests() (bool, string, error) {
+	cmd := exec.Command("sh", "-c", e.cfg.TestCommand)
+	if e.cfg.WorkDir != "" {
+		cmd.Dir = e.cfg.WorkDir
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, string(output), err
+	}
+	return true, string(output), nil
+}
+
 // isEmptyCodebase checks whether the working directory contains any source
 // code files. Returns true if no files with common source code extensions
 // are found (skipping hidden directories).
