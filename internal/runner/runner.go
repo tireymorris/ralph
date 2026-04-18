@@ -33,12 +33,9 @@ type Runner struct {
 
 var _ RunnerInterface = (*Runner)(nil)
 
-func isClaudeCodeModel(model string) bool {
-	return strings.HasPrefix(model, "claude-code/")
-}
-
 func New(cfg *config.Config) RunnerInterface {
-	if isClaudeCodeModel(cfg.Model) {
+	provider := config.DetectProvider(cfg.Model)
+	if provider == config.ProviderClaudeCode {
 		logger.Debug("using Claude Code runner", "model", cfg.Model)
 		return NewClaude(cfg)
 	}

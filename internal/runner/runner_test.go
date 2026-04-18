@@ -367,59 +367,6 @@ func TestOutputLineVerboseField(t *testing.T) {
 	}
 }
 
-func TestIsClaudeCodeModel(t *testing.T) {
-	tests := []struct {
-		name  string
-		model string
-		want  bool
-	}{
-		{
-			name:  "sonnet",
-			model: "claude-code/sonnet",
-			want:  true,
-		},
-		{
-			name:  "haiku",
-			model: "claude-code/haiku",
-			want:  true,
-		},
-		{
-			name:  "opus",
-			model: "claude-code/opus",
-			want:  true,
-		},
-		{
-			name:  "opencode big-pickle",
-			model: "opencode/big-pickle",
-			want:  false,
-		},
-		{
-			name:  "opencode big-pickle",
-			model: "opencode/big-pickle",
-			want:  false,
-		},
-		{
-			name:  "empty model",
-			model: "",
-			want:  false,
-		},
-		{
-			name:  "partial claude prefix",
-			model: "claude",
-			want:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isClaudeCodeModel(tt.model)
-			if got != tt.want {
-				t.Errorf("isClaudeCodeModel(%q) = %v, want %v", tt.model, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestNewReturnsClaudeRunner(t *testing.T) {
 	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner := New(cfg)

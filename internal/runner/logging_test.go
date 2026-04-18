@@ -47,7 +47,7 @@ func TestRunnerNames(t *testing.T) {
 			}
 
 			var runner RunnerInterface
-			if isClaudeCodeModel(tt.model) {
+			if config.DetectProvider(tt.model) == config.ProviderClaudeCode {
 				runner = NewClaude(cfg)
 			} else {
 				runner = &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}

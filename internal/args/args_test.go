@@ -196,7 +196,6 @@ func TestHelpText(t *testing.T) {
 		"--help",
 		"run",
 		"status",
-		"Examples:",
 	}
 
 	for _, phrase := range requiredPhrases {

@@ -23,52 +23,30 @@ func TestDefaultConfig(t *testing.T) {
 	}
 }
 
-func TestSupportedModels(t *testing.T) {
-	if len(SupportedModels) == 0 {
-		t.Error("SupportedModels should not be empty")
+func TestDetectProvider(t *testing.T) {
+	tests := []struct {
+		name   string
+		model  string
+		expect Provider
+	}{
+		{"claude-code prefix", "claude-code/sonnet", ProviderClaudeCode},
+		{"claude-code haiku", "claude-code/haiku", ProviderClaudeCode},
+		{"claude-code opus", "claude-code/opus", ProviderClaudeCode},
+		{"opencode prefix", "opencode/kimi-k2.5-free", ProviderOpenCode},
+		{"opencode-go prefix", "opencode-go/qwen3.6-plus", ProviderOpenCode},
+		{"anthropic prefix", "anthropic/claude-3-5-sonnet-20240620", ProviderOpenCode},
+		{"ollama prefix", "ollama/llama3.2:3b", ProviderOpenCode},
+		{"unknown provider", "invalid-model", ProviderUnknown},
+		{"empty string", "", ProviderUnknown},
 	}
 
-	found := false
-	for _, m := range SupportedModels {
-		if m == DefaultModel {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Errorf("DefaultModel %q not in SupportedModels", DefaultModel)
-	}
-
-	// Test Claude Code models are present
-	claudeModels := []string{
-		"claude-code/sonnet",
-		"claude-code/haiku",
-		"claude-code/opus",
-	}
-
-	for _, model := range claudeModels {
-		found := false
-		for _, supported := range SupportedModels {
-			if supported == model {
-				found = true
-				break
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DetectProvider(tt.model)
+			if got != tt.expect {
+				t.Errorf("DetectProvider(%q) = %v, want %v", tt.model, got, tt.expect)
 			}
-		}
-		if !found {
-			t.Errorf("Claude Code model %q not in SupportedModels", model)
-		}
-	}
-
-	// Test OpenCode default model is present
-	found = false
-	for _, supported := range SupportedModels {
-		if supported == "opencode/big-pickle" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("opencode/big-pickle not in SupportedModels")
+		})
 	}
 }
 
@@ -268,7 +246,7 @@ func TestValidateModel(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "valid supported model",
+			name:    "valid opencode model",
 			model:   "opencode/big-pickle",
 			wantErr: false,
 		},
@@ -288,7 +266,17 @@ func TestValidateModel(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "invalid model",
+			name:    "valid anthropic model",
+			model:   "anthropic/claude-3-5-sonnet-20240620",
+			wantErr: false,
+		},
+		{
+			name:    "valid ollama model",
+			model:   "ollama/llama3.2:3b",
+			wantErr: false,
+		},
+		{
+			name:    "invalid model - unknown provider",
 			model:   "invalid-model",
 			wantErr: true,
 		},
@@ -322,7 +310,7 @@ func TestValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "invalid model",
+			name: "invalid model - unknown provider",
 			config: &Config{
 				Model:         "invalid-model",
 				MaxIterations: 50,
