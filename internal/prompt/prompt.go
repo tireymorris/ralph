@@ -160,6 +160,7 @@ IMPORTANT — failure semantics: If this story does not reach the done state (te
 When every acceptance criterion passes and the full test suite is green:
 - Edit %s and set "passes": true for story "%s".
 - Do NOT touch "retry_count"; Ralph manages that field.
+- Do NOT commit this change. Ralph handles marking stories complete.
 
 After completing this story, update the "context" field in %s ONLY if you established a new pattern, added a new module, or discovered a convention that future stories need to know. Skip the context update for routine stories.
 
