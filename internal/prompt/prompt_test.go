@@ -277,7 +277,6 @@ func TestStoryImplementation(t *testing.T) {
 				tt.completed,
 				tt.total,
 				nil, // dependsOn
-				1,  // parallelCount
 			)
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {

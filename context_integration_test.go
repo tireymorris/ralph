@@ -103,7 +103,7 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 		context,
 		"prd.json",
 		1, 0, 3,
-		nil, 1,
+		nil,
 	)
 
 	if !strings.Contains(result, "CODEBASE CONTEXT") {
@@ -127,7 +127,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 		"", // Empty context
 		"prd.json",
 		1, 0, 3,
-		nil, 1,
+		nil,
 	)
 
 	if strings.Contains(result, "CODEBASE CONTEXT") {
@@ -141,7 +141,7 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
 	}
-	if !strings.Contains(result, "Tech stack") {
+	if !strings.Contains(result, "tech stack") {
 		t.Error("PRD generation prompt should mention capturing context")
 	}
 	if !strings.Contains(result, "3-5 holistic test scenarios") {
