@@ -49,14 +49,18 @@ func (l *Logger) AddOutputLine(line runner.OutputLine) {
 	}
 }
 
-// SetSize updates the viewport size
-func (l *Logger) SetSize(width, height int) {
+// SetSize updates the viewport size. logHeight is the inner height of the log viewport in lines.
+func (l *Logger) SetSize(width, logHeight int) {
 	l.width = width
-	l.height = height
+	l.height = logHeight
 	l.logView.Width = max(20, width-6)
-	// Favor showing logs while still leaving room for the main content.
-	l.logView.Height = min(max(8, height/3), max(8, height-14))
+	l.logView.Height = max(4, logHeight)
 	l.refreshLogView()
+}
+
+// LogCount returns how many log lines are stored (before wrapping).
+func (l *Logger) LogCount() int {
+	return len(l.logs)
 }
 
 // GetView returns the viewport model for rendering

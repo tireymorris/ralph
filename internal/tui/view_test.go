@@ -11,6 +11,17 @@ import (
 	"ralph/internal/prd"
 )
 
+func prepMainView(m *Model) {
+	if m.width <= 0 {
+		m.width = 80
+	}
+	if m.height <= 0 {
+		m.height = 24
+	}
+	m.applyLayout(m.width, m.height)
+	m.rebuildMainScrollContent()
+}
+
 func TestViewQuitting(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
@@ -28,6 +39,7 @@ func TestViewPhaseInit(t *testing.T) {
 	m.phase = PhaseInit
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "RALPH") {
@@ -41,6 +53,7 @@ func TestViewPhasePRDGeneration(t *testing.T) {
 	m.phase = PhasePRDGeneration
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "test prompt") || !strings.Contains(view, "Generating") {
@@ -62,7 +75,8 @@ func TestViewPhaseImplementation(t *testing.T) {
 	}
 	m.currentStory = m.prd.Stories[1]
 	m.width = 80
-	m.height = 24
+	m.height = 45
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "Test Project") {
@@ -83,6 +97,7 @@ func TestViewPhaseImplementationNilPRD(t *testing.T) {
 	m.prd = nil
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if view == "" {
@@ -97,6 +112,7 @@ func TestViewPhaseCompletedDryRun(t *testing.T) {
 	m.dryRun = true
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "Dry run") {
@@ -115,6 +131,7 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 	m.iteration = 5
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "Done Project") {
@@ -131,6 +148,7 @@ func TestViewPhaseFailed(t *testing.T) {
 	m.phase = PhaseFailed
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "failed") || !strings.Contains(view, "Failed") {
@@ -145,6 +163,7 @@ func TestViewPhaseFailedWithError(t *testing.T) {
 	m.err = &testError{msg: "test error"}
 	m.width = 80
 	m.height = 24
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "test error") {
@@ -162,7 +181,8 @@ func TestViewPhaseFailedWithFailedStories(t *testing.T) {
 		},
 	}
 	m.width = 80
-	m.height = 24
+	m.height = 45
+	prepMainView(m)
 
 	view := m.View()
 	if !strings.Contains(view, "Failed Story") {

@@ -14,24 +14,14 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	b.WriteString(m.renderHeader())
-	b.WriteString("\n")
-	b.WriteString(m.renderPhase())
-	b.WriteString("\n")
-
-	switch m.phase {
-	case PhaseInit, PhasePRDGeneration:
-		b.WriteString(m.renderGenerating())
-	case PhaseClarifying:
+	if m.phase == PhaseClarifying {
+		b.WriteString(m.renderHeader())
+		b.WriteString("\n")
+		b.WriteString(m.renderPhase())
+		b.WriteString("\n")
 		b.WriteString(m.renderClarifying())
-	case PhasePRDReview:
-		b.WriteString(m.renderPRDReview())
-	case PhaseImplementation:
-		b.WriteString(m.renderImplementation())
-	case PhaseCompleted:
-		b.WriteString(m.renderCompleted())
-	case PhaseFailed:
-		b.WriteString(m.renderFailed())
+	} else {
+		b.WriteString(m.mainPane.View())
 	}
 
 	b.WriteString("\n")
@@ -42,12 +32,19 @@ func (m *Model) View() string {
 	if m.phase == PhaseClarifying {
 		b.WriteString(helpStyle.Render("Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"))
 	} else if m.phase == PhasePRDReview {
-		b.WriteString(helpStyle.Render("Enter continue • q quit • ctrl+c exit"))
+		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • [/] log height • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"))
 	} else {
-		b.WriteString(helpStyle.Render("↑/↓ scroll logs • q quit • ctrl+c exit"))
+		b.WriteString(helpStyle.Render(scrollFocusHint(m.scrollPane) + "Tab switch pane • [/] log height • ↑/↓ scroll • q quit • ctrl+c exit"))
 	}
 
 	return b.String()
+}
+
+func scrollFocusHint(pane scrollFocus) string {
+	if pane == focusMain {
+		return "PRD ▶ • "
+	}
+	return "logs ▶ • "
 }
 
 func (m *Model) renderHeader() string {
@@ -281,4 +278,32 @@ func (m *Model) renderLogs() string {
 		return logBoxStyle.Render(mutedStyle.Render("Waiting for output..."))
 	}
 	return logBoxStyle.Render(viewportContent)
+}
+
+func (m *Model) mainScrollEnabled() bool {
+	return m.phase != PhaseClarifying
+}
+
+func (m *Model) rebuildMainScrollContent() {
+	if !m.mainScrollEnabled() {
+		return
+	}
+	var b strings.Builder
+	b.WriteString(m.renderHeader())
+	b.WriteString("\n")
+	b.WriteString(m.renderPhase())
+	b.WriteString("\n")
+	switch m.phase {
+	case PhaseInit, PhasePRDGeneration:
+		b.WriteString(m.renderGenerating())
+	case PhasePRDReview:
+		b.WriteString(m.renderPRDReview())
+	case PhaseImplementation:
+		b.WriteString(m.renderImplementation())
+	case PhaseCompleted:
+		b.WriteString(m.renderCompleted())
+	case PhaseFailed:
+		b.WriteString(m.renderFailed())
+	}
+	m.mainPane.SetContent(b.String())
 }

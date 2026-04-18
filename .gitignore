@@ -27,5 +27,6 @@ Thumbs.db
 
 # Ralph working files
 prd.json
+prd.json.lock
 ralph.log
 debug.log
