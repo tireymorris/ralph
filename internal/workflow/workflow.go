@@ -351,7 +351,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		updatedStory := updatedPRD.GetStory(story.ID)
 		if updatedStory != nil && updatedStory.Passes {
-			testsPass, testOutput, _ := e.runTests()
+			testsPass, testOutput, _ := e.runTests(updatedPRD)
 			if testsPass {
 				logger.Debug("story marked as completed", "story_id", story.ID)
 				e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
@@ -373,7 +373,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				e.emit(EventStoryCompleted{Story: updatedStory, Success: false})
 			}
 		} else {
-			testsPass, testOutput, _ := e.runTests()
+			testsPass, testOutput, _ := e.runTests(updatedPRD)
 			if testsPass {
 				logger.Debug("tests pass but passes false - AI under-reported", "story_id", story.ID)
 				if gitState != "" {
@@ -458,8 +458,13 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	}
 }
 
-func (e *Executor) runTests() (bool, string, error) {
-	cmd := exec.Command("sh", "-c", e.cfg.TestCommand)
+func (e *Executor) runTests(p *prd.PRD) (bool, string, error) {
+	testCmd := e.cfg.TestCommand
+	if p != nil && p.TestCommand != "" {
+		testCmd = p.TestCommand
+		logger.Debug("using PRD test_command", "command", testCmd)
+	}
+	cmd := exec.Command("sh", "-c", testCmd)
 	if e.cfg.WorkDir != "" {
 		cmd.Dir = e.cfg.WorkDir
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"ralph/internal/config"
+	"ralph/internal/prd"
 )
 
 func TestRunTestsReturnsTrueOnSuccess(t *testing.T) {
@@ -14,7 +15,7 @@ func TestRunTestsReturnsTrueOnSuccess(t *testing.T) {
 
 	e := NewExecutor(cfg, nil)
 
-	success, output, err := e.runTests()
+	success, output, err := e.runTests(nil)
 
 	if err != nil {
 		t.Fatalf("runTests() error = %v, want nil", err)
@@ -34,7 +35,7 @@ func TestRunTestsReturnsFalseOnFailure(t *testing.T) {
 
 	e := NewExecutor(cfg, nil)
 
-	success, output, err := e.runTests()
+	success, output, err := e.runTests(nil)
 
 	if err == nil {
 		t.Error("runTests() error = nil, want error when command fails")
@@ -54,7 +55,7 @@ func TestRunTestsUsesConfigTestCommand(t *testing.T) {
 
 	e := NewExecutor(cfg, nil)
 
-	success, output, err := e.runTests()
+	success, output, err := e.runTests(nil)
 
 	if err != nil {
 		t.Fatalf("runTests() error = %v, want nil", err)
@@ -74,7 +75,7 @@ func TestRunTestsExecutesInWorkDir(t *testing.T) {
 
 	e := NewExecutor(cfg, nil)
 
-	success, output, err := e.runTests()
+	success, output, err := e.runTests(nil)
 
 	if err != nil {
 		t.Fatalf("runTests() error = %v, want nil", err)
@@ -84,5 +85,29 @@ func TestRunTestsExecutesInWorkDir(t *testing.T) {
 	}
 	if output == "" {
 		t.Error("runTests() output = empty, want pwd output")
+	}
+}
+
+func TestRunTestsUsesPRDTestCommand(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.TestCommand = "echo config default"
+	cfg.WorkDir = ""
+
+	e := NewExecutor(cfg, nil)
+
+	p := &prd.PRD{
+		TestCommand: "echo prd override",
+	}
+
+	success, output, err := e.runTests(p)
+
+	if err != nil {
+		t.Fatalf("runTests() error = %v, want nil", err)
+	}
+	if !success {
+		t.Error("runTests() success = false, want true")
+	}
+	if !strings.Contains(output, "prd override") {
+		t.Errorf("runTests() output = %q, want containing %q", output, "prd override")
 	}
 }
