@@ -7,8 +7,8 @@ import (
 )
 
 func TestComputePaneHeightsFewLogsShrinksLogPane(t *testing.T) {
-	mainMany, logMany := computePaneHeights(32, 200, 0)
-	mainFew, logFew := computePaneHeights(32, 2, 0)
+	mainMany, logMany := computePaneHeights(32, 200, 0, 0)
+	mainFew, logFew := computePaneHeights(32, 2, 0, 0)
 	if logFew >= logMany {
 		t.Fatalf("expected fewer log lines with sparse logs: logFew=%d logMany=%d", logFew, logMany)
 	}
@@ -18,10 +18,32 @@ func TestComputePaneHeightsFewLogsShrinksLogPane(t *testing.T) {
 }
 
 func TestComputePaneHeightsBiasExpandsLogs(t *testing.T) {
-	_, log0 := computePaneHeights(40, 2, 0)
-	_, logPlus := computePaneHeights(40, 2, 5)
+	_, log0 := computePaneHeights(40, 2, 0, 0)
+	_, logPlus := computePaneHeights(40, 2, 5, 0)
 	if logPlus <= log0 {
 		t.Fatalf("positive bias should not shrink logs: log0=%d logPlus=%d", log0, logPlus)
+	}
+}
+
+func TestComputePaneHeightsFullscreenMainReturnsFullHeight(t *testing.T) {
+	termHeight := 40
+	mainH, logH := computePaneHeights(termHeight, 10, 0, focusMain)
+	if mainH != termHeight-scrollChrome {
+		t.Errorf("expected main height %d with fullscreen focusMain, got %d", termHeight-scrollChrome, mainH)
+	}
+	if logH != 0 {
+		t.Errorf("expected log height 0 with fullscreen focusMain, got %d", logH)
+	}
+}
+
+func TestComputePaneHeightsFullscreenLogsReturnsFullHeight(t *testing.T) {
+	termHeight := 40
+	mainH, logH := computePaneHeights(termHeight, 10, 0, focusLogs)
+	if logH != termHeight-scrollChrome {
+		t.Errorf("expected log height %d with fullscreen focusLogs, got %d", termHeight-scrollChrome, logH)
+	}
+	if mainH != 0 {
+		t.Errorf("expected main height 0 with fullscreen focusLogs, got %d", mainH)
 	}
 }
 

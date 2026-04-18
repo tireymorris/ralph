@@ -9,7 +9,8 @@ import (
 type scrollFocus int
 
 const (
-	focusMain scrollFocus = iota
+	focusNone scrollFocus = iota
+	focusMain
 	focusLogs
 )
 
