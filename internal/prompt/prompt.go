@@ -109,7 +109,7 @@ Task:
 3. Write the PRD file, then STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance, branchPrefix)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int, dependsOn []string, parallelCount int) string {
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int, dependsOn []string) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -133,20 +133,10 @@ DEPENDENCIES: This story depends on: %s
 Before starting, re-read %s and confirm each of those stories has "passes": true. If any dependency is not yet passing, stop and do not implement this story.`, strings.Join(dependsOn, ", "), prdFile)
 	}
 
-	parallelNote := ""
-	if parallelCount > 1 {
-		parallelNote = `
-PARALLEL EXECUTION: Other stories are being worked on by peer agents at the same time. To minimize conflicts:
-- Keep your diff narrow — touch the fewest files possible for each commit.
-- Pull the latest state of any file just before you edit it; another story may have committed to it moments ago.
-- Do NOT leave TODO comments telling other stories what to do. Coordinate only through the PRD file and real code.
-- Write tests so they don't depend on execution order or shared mutable fixtures.`
-	}
-
 	return fmt.Sprintf(`You are Ralph's implementation agent, working inside the user's git repo on the feature branch.
 
 Implement story: %s
-%s%s%s%s
+%s%s%s
 Description: %s
 Done when: %s
 
@@ -178,7 +168,6 @@ Progress: Iteration %d, %d/%d stories completed`,
 		contextSection,
 		testSection,
 		dependsSection,
-		parallelNote,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
 		prdFile, storyID,
