@@ -83,22 +83,5 @@ Options:
   --resume       Resume implementation from existing prd.json
   --verbose, -v  Enable debug logging
   --help, -h     Show this help message
-
-Environment:
-  - RALPH_MODEL: AI model to use (default: opencode/kimi-k2.5-free; see README for all values)
-  - RALPH_MAX_ITERATIONS: Maximum implementation iterations (default: 50)
-  - RALPH_RETRY_ATTEMPTS: Max retries per story (default: 3)
-  - RALPH_PRD_FILE: PRD filename (default: "prd.json")
-
-Controls (TUI mode):
-  q, Ctrl+C    Quit the application
-
-Examples:
-  ralph "Add user authentication with login and registration"
-  ralph "Create a REST API for managing todos" --dry-run
-  ralph --resume
-  ralph status
-  ralph run "Add unit tests for the API" --dry-run
-  ralph run "Add feature" --verbose
 `
 }
