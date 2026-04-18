@@ -77,7 +77,7 @@ func run() int {
 
 func runTUI(cfg *config.Config, opts *args.Options) int {
 	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 	finalModel, err := p.Run()
 	if err != nil {

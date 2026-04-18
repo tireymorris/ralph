@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -68,6 +69,16 @@ type Model struct {
 	spinner  spinner.Model
 	progress progress.Model
 
+	mainPane      viewport.Model
+	scrollPane    scrollFocus
+	snapMainToTop bool
+
+	logHeightBias int
+
+	layoutSigW, layoutSigH int
+	layoutSigLogCount      int
+	layoutSigBias          int
+
 	// Clarifying questions state
 	clarifyQuestions []string
 	clarifyInputs    []textinput.Model
@@ -89,6 +100,10 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		progress.WithSolidFill("#4B5563"),
 	)
 
+	mv := viewport.New(80, 12)
+	mv.Style = lipgloss.NewStyle()
+	mv.MouseWheelEnabled = true
+
 	logger := NewLogger(verbose)
 	operationManager := NewOperationManager(cfg)
 
@@ -101,9 +116,54 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		phase:            PhaseInit,
 		spinner:          s,
 		progress:         p,
+		mainPane:         mv,
+		scrollPane:       focusMain,
 		logger:           logger,
 		operationManager: operationManager,
 	}
+}
+
+func (m *Model) applyLayout(width, height int) {
+	lc := m.logger.LogCount()
+	bias := m.logHeightBias
+	mainH, logH := computePaneHeights(height, lc, bias)
+	if width == m.layoutSigW && height == m.layoutSigH && lc == m.layoutSigLogCount && bias == m.layoutSigBias {
+		return
+	}
+	m.layoutSigW = width
+	m.layoutSigH = height
+	m.layoutSigLogCount = lc
+	m.layoutSigBias = bias
+	m.width = width
+	m.height = height
+	m.logger.SetSize(width, logH)
+	m.mainPane.Width = max(20, width-4)
+	m.mainPane.Height = max(4, mainH)
+	m.progress.Width = min(40, max(10, width-20))
+}
+
+func (m *Model) markMainScrollJump() {
+	m.snapMainToTop = true
+	m.scrollPane = focusMain
+}
+
+func (m *Model) splitScrollMsg(msg tea.Msg) (tea.Msg, tea.Msg) {
+	if !isScrollNavMsg(msg) {
+		return msg, msg
+	}
+	if m.scrollPane == focusMain {
+		return msg, noopScrollMsg
+	}
+	return noopScrollMsg, msg
+}
+
+func (m *Model) syncAfterClarifySubmit() {
+	m.scrollPane = focusMain
+	if m.width > 0 && m.height > 0 {
+		m.applyLayout(m.width, m.height)
+	}
+	m.rebuildMainScrollContent()
+	m.mainPane.GotoTop()
 }
 
 type (
@@ -128,6 +188,7 @@ func (m *Model) Init() tea.Cmd {
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+	var needsMainRebuild bool
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -141,6 +202,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc":
 				// Skip all questions, proceed with PRD generation as-is
 				submitCmds := m.submitClarifyingAnswers(nil)
+				m.syncAfterClarifySubmit()
 				return m, tea.Batch(submitCmds...)
 			case "tab", "down":
 				m.clarifyInputs[m.clarifyFocused].Blur()
@@ -162,6 +224,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					// Last field — submit
 					cmds = append(cmds, m.submitClarifyingAnswers(m.buildAnswers())...)
+					m.syncAfterClarifySubmit()
 				}
 			default:
 				var cmd tea.Cmd
@@ -177,27 +240,57 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		if m.mainScrollEnabled() && msg.String() == "tab" {
+			if m.scrollPane == focusMain {
+				m.scrollPane = focusLogs
+			} else {
+				m.scrollPane = focusMain
+			}
+		}
+
+		if m.mainScrollEnabled() {
+			switch msg.String() {
+			case "[":
+				m.logHeightBias--
+				if m.logHeightBias < -logBiasMaxLines {
+					m.logHeightBias = -logBiasMaxLines
+				}
+			case "]":
+				m.logHeightBias++
+				if m.logHeightBias > logBiasMaxLines {
+					m.logHeightBias = logBiasMaxLines
+				}
+			}
+		}
+
 		// In PRD review phase, Enter proceeds to implementation
 		if m.phase == PhasePRDReview && msg.String() == "enter" {
 			if m.prd != nil {
 				m.phase = PhaseImplementation
+				m.scrollPane = focusMain
+				if m.width > 0 && m.height > 0 {
+					m.applyLayout(m.width, m.height)
+				}
+				m.rebuildMainScrollContent()
+				m.mainPane.GotoTop()
 				return m, m.operationManager.StartImplementation(m.prd)
 			}
 		}
 
 	case tea.WindowSizeMsg:
+		needsMainRebuild = true
 		m.width = msg.Width
 		m.height = msg.Height
-		m.logger.SetSize(msg.Width, msg.Height)
-		m.progress.Width = min(40, max(10, msg.Width-20))
 
 	case spinner.TickMsg:
+		needsMainRebuild = true
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 
 	case phaseChangeMsg:
 		m.phase = Phase(msg)
+		needsMainRebuild = true
 
 	case clarifyQuestionsMsg:
 		m.phase = PhaseClarifying
@@ -218,13 +311,38 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.operationManager.ListenForEvents())
 
 	case workflowEventMsg:
+		needsMainRebuild = true
 		cmds = append(cmds, m.handleWorkflowEvent(msg.event))
 		cmds = append(cmds, m.operationManager.ListenForEvents())
 	}
 
-	_, logCmd := m.logger.Update(msg)
-	if cmd, ok := logCmd.(tea.Cmd); ok && cmd != nil {
-		cmds = append(cmds, cmd)
+	if m.width > 0 && m.height > 0 {
+		m.applyLayout(m.width, m.height)
+	}
+
+	if m.mainScrollEnabled() {
+		if needsMainRebuild {
+			m.rebuildMainScrollContent()
+			if m.snapMainToTop {
+				m.mainPane.GotoTop()
+				m.snapMainToTop = false
+			}
+		}
+		mainMsg, logMsg := m.splitScrollMsg(msg)
+		var mainCmd tea.Cmd
+		m.mainPane, mainCmd = m.mainPane.Update(mainMsg)
+		if mainCmd != nil {
+			cmds = append(cmds, mainCmd)
+		}
+		_, logCmd := m.logger.Update(logMsg)
+		if cmd, ok := logCmd.(tea.Cmd); ok && cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	} else {
+		_, logCmd := m.logger.Update(msg)
+		if cmd, ok := logCmd.(tea.Cmd); ok && cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -279,6 +397,7 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 	case workflow.EventPRDGenerating:
 		m.phase = PhasePRDGeneration
 		m.logger.AddLog("Generating PRD...")
+		m.markMainScrollJump()
 
 	case workflow.EventPRDGenerated:
 		m.prd = e.PRD
@@ -289,6 +408,7 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 		} else {
 			m.phase = PhasePRDReview
 		}
+		m.markMainScrollJump()
 
 	case workflow.EventPRDLoaded:
 		m.prd = e.PRD
@@ -299,11 +419,13 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 		} else {
 			m.phase = PhasePRDReview
 		}
+		m.markMainScrollJump()
 
 	case workflow.EventPRDReview:
 		m.phase = PhasePRDReview
 		m.prd = e.PRD
 		m.logger.AddLog("PRD ready for review")
+		m.markMainScrollJump()
 
 	case workflow.EventStoryStarted:
 		m.currentStory = e.Story
@@ -332,16 +454,19 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
 		m.err = e.Err
 		m.phase = PhaseFailed
+		m.markMainScrollJump()
 
 	case workflow.EventCompleted:
 		m.phase = PhaseCompleted
 		m.logger.AddLog("All stories completed!")
+		m.markMainScrollJump()
 
 	case workflow.EventFailed:
 		m.phase = PhaseFailed
 		if len(e.FailedStories) > 0 {
 			m.logger.AddLog(fmt.Sprintf("Failed: %d stories exceeded retry limit", len(e.FailedStories)))
 		}
+		m.markMainScrollJump()
 	}
 
 	return nil
