@@ -7,11 +7,13 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gofrs/flock"
 	"ralph/internal/config"
 	"ralph/internal/constants"
+	"ralph/internal/logger"
 )
 
 // LockTimeoutError is returned when a file lock cannot be acquired within the timeout period.
@@ -177,4 +179,26 @@ func Delete(cfg *config.Config) error {
 func Exists(cfg *config.Config) bool {
 	_, err := os.Stat(cfg.PRDPath())
 	return err == nil
+}
+
+func Archive(cfg *config.Config) error {
+	prdPath := cfg.PRDPath()
+	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
+		return fmt.Errorf("PRD file %q does not exist", prdPath)
+	}
+
+	timestamp := time.Now().Format("20060102-150405")
+	dir := filepath.Dir(prdPath)
+	basename := filepath.Base(prdPath)
+	ext := filepath.Ext(basename)
+	name := strings.TrimSuffix(basename, ext)
+	archiveName := fmt.Sprintf("%s-completed-%s%s", name, timestamp, ext)
+	archivePath := filepath.Join(dir, archiveName)
+
+	if err := os.Rename(prdPath, archivePath); err != nil {
+		return fmt.Errorf("failed to archive PRD file to %q: %w", archivePath, err)
+	}
+
+	logger.Info("PRD archived", "path", archivePath)
+	return nil
 }

@@ -18,6 +18,7 @@ type Story struct {
 	Description        string   `json:"description"`
 	AcceptanceCriteria []string `json:"acceptance_criteria"`
 	Priority           int      `json:"priority"`
+	DependsOn          []string `json:"depends_on,omitempty"` // Story IDs this story depends on
 	Passes             bool     `json:"passes"`
 	RetryCount         int      `json:"retry_count"`
 }
@@ -45,6 +46,93 @@ func (p *PRD) NextPendingStory(maxRetries int) *Story {
 		}
 	}
 	return best
+}
+
+// ReadyStories returns all stories that are ready to run (not passed, not exceeded
+// retries, and all dependencies are satisfied).
+func (p *PRD) ReadyStories(maxRetries int) []*Story {
+	var ready []*Story
+	for _, story := range p.Stories {
+		if story.Passes {
+			continue
+		}
+		if story.RetryCount >= maxRetries {
+			continue
+		}
+		if !p.dependenciesSatisfied(story) {
+			continue
+		}
+		ready = append(ready, story)
+	}
+	return ready
+}
+
+// dependenciesSatisfied returns true if all dependencies for the story are complete.
+func (p *PRD) dependenciesSatisfied(story *Story) bool {
+	depMap := make(map[string]bool)
+	for _, s := range p.Stories {
+		depMap[s.ID] = s.Passes
+	}
+	for _, depID := range story.DependsOn {
+		if passed, ok := depMap[depID]; !ok || !passed {
+			return false
+		}
+	}
+	return true
+}
+
+// BlockedStories returns stories that cannot run due to failed dependencies.
+func (p *PRD) BlockedStories(maxRetries int) []*Story {
+	var blocked []*Story
+	for _, story := range p.Stories {
+		if story.Passes {
+			continue
+		}
+		if story.RetryCount >= maxRetries {
+			continue
+		}
+		if !p.dependenciesSatisfied(story) {
+			blocked = append(blocked, story)
+		}
+	}
+	return blocked
+}
+
+// ValidateDependencies checks for circular dependencies in the story graph.
+func (p *PRD) ValidateDependencies() error {
+	visited := make(map[string]bool)
+	var dfs func(id string, path []string) error
+	dfs = func(id string, path []string) error {
+		if id == "" {
+			return nil
+		}
+		for _, p := range path {
+			if p == id {
+				return fmt.Errorf("circular dependency detected: %s", append(path, id))
+			}
+		}
+		if visited[id] {
+			return nil
+		}
+		visited[id] = true
+		story := p.GetStory(id)
+		if story == nil {
+			return fmt.Errorf("story %q depends on non-existent story", id)
+		}
+		for _, depID := range story.DependsOn {
+			if err := dfs(depID, append(path, id)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	for _, story := range p.Stories {
+		if err := dfs(story.ID, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *PRD) CompletedCount() int {
@@ -103,6 +191,10 @@ func (p *PRD) Validate() error {
 		seenIDs[story.ID] = true
 	}
 
+	if err := p.ValidateDependencies(); err != nil {
+		return fmt.Errorf("invalid dependencies: %w", err)
+	}
+
 	return nil
 }
 
@@ -134,6 +226,15 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 
 	if s.RetryCount < 0 {
 		return fmt.Errorf("story retry count %d cannot be negative", s.RetryCount)
+	}
+
+	for _, dep := range s.DependsOn {
+		if dep == "" {
+			return fmt.Errorf("story %q has empty dependency ID", s.ID)
+		}
+		if dep == s.ID {
+			return fmt.Errorf("story %q cannot depend on itself", s.ID)
+		}
 	}
 
 	return nil

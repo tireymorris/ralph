@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"ralph/internal/config"
 	"ralph/internal/constants"
@@ -246,6 +248,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		"completed", p.CompletedCount())
 
 	iteration := 0
+	maxParallel := 2
 
 	for {
 		select {
@@ -265,17 +268,32 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
-			prd.Delete(e.cfg)
+			if err := prd.Archive(e.cfg); err != nil {
+				logger.Warn("failed to archive PRD", "error", err)
+			}
 			e.emit(EventCompleted{})
 			return nil
 		}
 
-		next := p.NextPendingStory(e.cfg.RetryAttempts)
-		if next == nil {
+		ready := p.ReadyStories(e.cfg.RetryAttempts)
+		if len(ready) == 0 {
 			failed := p.FailedStories(e.cfg.RetryAttempts)
-			logger.Error("all remaining stories have failed", "failed_count", len(failed))
-			e.emit(EventFailed{FailedStories: failed})
-			return fmt.Errorf("all remaining stories have failed (%d stories)", len(failed))
+			if len(failed) > 0 {
+				logger.Error("all remaining stories have failed", "failed_count", len(failed))
+				e.emit(EventFailed{FailedStories: failed})
+				return fmt.Errorf("all remaining stories have failed (%d stories)", len(failed))
+			}
+			blocked := p.BlockedStories(e.cfg.RetryAttempts)
+			if len(blocked) > 0 {
+				logger.Error("stories blocked by dependencies", "blocked_count", len(blocked))
+				e.emit(EventFailed{FailedStories: blocked})
+				return fmt.Errorf("%d stories blocked by dependencies and cannot be completed", len(blocked))
+			}
+		}
+
+		toRun := ready
+		if len(toRun) > maxParallel {
+			toRun = toRun[:maxParallel]
 		}
 
 		iteration++
@@ -285,73 +303,125 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			return fmt.Errorf("max iterations (%d) reached after %d iterations", e.cfg.MaxIterations, iteration)
 		}
 
-		logger.Debug("starting story",
-			"story_id", next.ID,
-			"title", next.Title,
-			"iteration", iteration,
-			"retry_count", next.RetryCount)
+		var wg sync.WaitGroup
+		results := make(chan *storyResult, len(toRun))
 
-		e.emit(EventStoryStarted{Story: next, Iteration: iteration})
+		for _, story := range toRun {
+			wg.Add(1)
+			go func(s *prd.Story) {
+				defer wg.Done()
 
-		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-		go e.forwardOutput(outputCh)
-
-		storyPrompt := prompt.StoryImplementation(
-			next.ID,
-			next.Title,
-			next.Description,
-			next.AcceptanceCriteria,
-			p.TestSpec,
-			p.Context,
-			e.cfg.PRDFile,
-			iteration,
-			p.CompletedCount(),
-			len(p.Stories),
-		)
-
-		err = e.runner.Run(ctx, storyPrompt, outputCh)
-		close(outputCh)
-
-		if err != nil {
-			logger.Debug("AI runner returned error", "story_id", next.ID, "model", e.cfg.Model, "error", err)
-		}
-
-		updatedPRD, loadErr := prd.Load(e.cfg)
-		if loadErr != nil {
-			logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", next.ID)
-			wrappedErr := fmt.Errorf("failed to reload PRD %s after story %s: %w", e.cfg.PRDFile, next.ID, loadErr)
-			e.emit(EventError{Err: wrappedErr})
-			return wrappedErr
-		}
-
-		// Check for version conflicts (unexpected jumps indicate concurrent modification)
-		if p.Version > 0 && updatedPRD.Version > p.Version+1 {
-			logger.Warn("PRD version jumped unexpectedly",
-				"previous", p.Version,
-				"current", updatedPRD.Version,
-				"expected", p.Version+1,
-				"story_id", next.ID)
-			e.emit(EventOutput{Output{Text: fmt.Sprintf(
-				"Warning: PRD was modified externally (version %d → %d)", p.Version, updatedPRD.Version)}})
-		}
-
-		updatedStory := updatedPRD.GetStory(next.ID)
-		if updatedStory != nil && updatedStory.Passes {
-			logger.Debug("story marked as completed", "story_id", next.ID)
-			e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
-		} else {
-			logger.Debug("story not completed", "story_id", next.ID)
-			if updatedStory != nil && updatedStory.RetryCount == next.RetryCount {
-				updatedStory.RetryCount++
-				if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
-					logger.Warn("failed to save retry count", "error", saveErr, "story_id", next.ID)
+				gitState, saveErr := e.saveGitState()
+				if saveErr != nil {
+					logger.Warn("failed to save git state", "error", saveErr, "story_id", s.ID)
 				}
-			}
-			e.emit(EventStoryCompleted{Story: next, Success: false})
+
+				logger.Debug("starting story",
+					"story_id", s.ID,
+					"title", s.Title,
+					"iteration", iteration,
+					"retry_count", s.RetryCount)
+
+				e.emit(EventStoryStarted{Story: s, Iteration: iteration})
+
+				outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+				go e.forwardOutput(outputCh)
+
+				storyPrompt := prompt.StoryImplementation(
+					s.ID,
+					s.Title,
+					s.Description,
+					s.AcceptanceCriteria,
+					p.TestSpec,
+					p.Context,
+					e.cfg.PRDFile,
+					iteration,
+					p.CompletedCount(),
+					len(p.Stories),
+				)
+
+				runErr := e.runner.Run(ctx, storyPrompt, outputCh)
+				close(outputCh)
+
+				results <- &storyResult{
+					story:    s,
+					gitState: gitState,
+					err:      runErr,
+				}
+			}(story)
 		}
 
-		p = updatedPRD
+		wg.Wait()
+		close(results)
+
+		hasFailure := false
+		for result := range results {
+			updatedPRD, loadErr := prd.Load(e.cfg)
+			if loadErr != nil {
+				logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", result.story.ID)
+				wrappedErr := fmt.Errorf("failed to reload PRD %s after story %s: %w", e.cfg.PRDFile, result.story.ID, loadErr)
+				e.emit(EventError{Err: wrappedErr})
+				return wrappedErr
+			}
+
+			updatedStory := updatedPRD.GetStory(result.story.ID)
+			if updatedStory != nil && updatedStory.Passes {
+				logger.Debug("story marked as completed", "story_id", result.story.ID)
+				e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
+			} else {
+				logger.Debug("story not completed", "story_id", result.story.ID)
+
+				if result.gitState != "" {
+					if rollbackErr := e.rollbackToState(result.gitState); rollbackErr != nil {
+						logger.Error("rollback failed", "error", rollbackErr, "story_id", result.story.ID)
+						hasFailure = true
+						e.emit(EventError{Err: fmt.Errorf("story %s failed and rollback failed: %w", result.story.ID, rollbackErr)})
+					} else {
+						logger.Info("rolled back after story failure", "story_id", result.story.ID, "git_state", result.gitState)
+					}
+				}
+
+				if updatedStory != nil && updatedStory.RetryCount == result.story.RetryCount {
+					updatedStory.RetryCount++
+					if saveErr := prd.Save(e.cfg, updatedPRD); saveErr != nil {
+						logger.Warn("failed to save retry count", "error", saveErr, "story_id", result.story.ID)
+					}
+				}
+				e.emit(EventStoryCompleted{Story: result.story, Success: false})
+			}
+
+			p = updatedPRD
+		}
+
+		if hasFailure {
+			return fmt.Errorf("one or more stories failed and could not be rolled back")
+		}
 	}
+}
+
+type storyResult struct {
+	story    *prd.Story
+	gitState string
+	err      error
+}
+
+func (e *Executor) saveGitState() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = e.cfg.WorkDir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get git HEAD: %w", err)
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+func (e *Executor) rollbackToState(gitState string) error {
+	cmd := exec.Command("git", "reset", "--hard", gitState)
+	cmd.Dir = e.cfg.WorkDir
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git reset failed: %w, output: %s", err, string(output))
+	}
+	return nil
 }
 
 func (e *Executor) emit(event Event) {
