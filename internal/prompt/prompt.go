@@ -161,6 +161,7 @@ Commit message rules:
 - One short sentence, lowercase, imperative mood, no trailing period.
 - NO conventional-commit prefixes. Do NOT start with "feat:", "fix:", "refactor:", "chore:", "test:", "docs:", etc.
 - Describe what this one slice does, not the whole story. Example: "parse empty input as zero-length token list", not "feat: add parser".
+- The commit message is ONLY the single subject line. Do NOT append a body, signature, trailer, or footer. In particular, do NOT add "Co-Authored-By:" lines, "Signed-off-by:" lines, "🤖 Generated with ..." footers, or any attribution trailer. If your tooling adds these by default, strip them before committing.
 
 Repeat the red → green → commit loop until every acceptance criterion is satisfied. Many small commits per story is expected and preferred over one large commit.
 
