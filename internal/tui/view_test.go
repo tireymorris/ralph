@@ -264,3 +264,43 @@ type testError struct {
 func (e *testError) Error() string {
 	return e.msg
 }
+
+func TestViewFullscreenMainHidesLogs(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.fullscreenPane = focusMain
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	if strings.Contains(view, "Output Logs") {
+		t.Error("View() should not contain 'Output Logs' when main is fullscreen")
+	}
+}
+
+func TestViewFullscreenLogsHidesMain(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.fullscreenPane = focusLogs
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	if strings.Contains(view, "Story") {
+		t.Error("View() should not contain main pane content when logs are fullscreen")
+	}
+}
