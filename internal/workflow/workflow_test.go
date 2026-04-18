@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -505,6 +506,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.TestCommand = "true" // Tests always pass
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -544,6 +546,112 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	}
 	if !foundCompleted {
 		t.Error("expected EventCompleted to be emitted")
+	}
+}
+
+// Test when passes is true but tests fail, story marked passes:false and rolled back
+func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.TestCommand = "exit 1" // Force tests to fail
+	cfg.MaxIterations = 1
+	cfg.RetryAttempts = 1
+
+	// Initialize a git repo in temp dir
+	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
+		t.Fatalf("failed to create placeholder: %v", err)
+	}
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+
+	// Mock runner marks story as passing, but tests will fail
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		outputCh <- runner.OutputLine{Text: "Working on story..."}
+		p, _ := prd.Load(cfg)
+		p.Stories[0].Passes = true // Mark as complete
+		return prd.Save(cfg, p)
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	_ = exec.RunImplementation(context.Background(), testPRD)
+
+	// Load PRD from original file (not archived)
+	prdPath := filepath.Join(tmpDir, "prd.json")
+	data, err := os.ReadFile(prdPath)
+	if err != nil {
+		t.Fatalf("failed to read PRD: %v", err)
+	}
+	var p prd.PRD
+	if err := json.Unmarshal(data, &p); err != nil {
+		t.Fatalf("failed to unmarshal PRD: %v", err)
+	}
+	if p.Stories[0].Passes {
+		t.Error("expected passes to be false after test failure")
+	}
+	if p.Stories[0].RetryCount != 1 {
+		t.Error("expected retry_count to be incremented")
+	}
+}
+
+// Test when passes is true and tests pass, story stays passes:true
+func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.TestCommand = "echo success" // Tests pass
+	cfg.MaxIterations = 1
+	cfg.RetryAttempts = 1
+
+	// Initialize a git repo in temp dir
+	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
+		t.Fatalf("failed to create placeholder: %v", err)
+	}
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+
+	// Mock runner marks story as passing, and tests will pass
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		outputCh <- runner.OutputLine{Text: "Working on story..."}
+		p, _ := prd.Load(cfg)
+		p.Stories[0].Passes = true
+		return prd.Save(cfg, p)
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	_ = exec.RunImplementation(context.Background(), testPRD)
+
+	// Verify EventCompleted was emitted (meaning all stories passed including tests)
+	foundCompleted := false
+	for len(ch) > 0 {
+		e := <-ch
+		if _, ok := e.(EventCompleted); ok {
+			foundCompleted = true
+			break
+		}
+	}
+	if !foundCompleted {
+		t.Error("expected EventCompletion when tests pass")
 	}
 }
 
@@ -622,6 +730,7 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.TestCommand = "true" // Tests always pass
 
 	testPRD := &prd.PRD{
 		Version:     1,
@@ -746,6 +855,7 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.TestCommand = "true" // Tests always pass
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
