@@ -24,12 +24,16 @@ func ClarifyingQuestions(userPrompt, questionsFile string, isEmptyCodebase bool)
 
 The user's request is: %s
 
-Before generating a full PRD, identify any ambiguities or missing details that would significantly affect how you design the solution. Write a JSON file at %s containing ONLY an array of clarifying question strings (no other keys):
+Decide whether there are any ambiguities that would SIGNIFICANTLY change the technical approach, and write a JSON array of questions to %s:
 
 ["Question 1?", "Question 2?", ...]
 
+SPEED: this step must be fast. Answer almost entirely from the user's prompt text above.
+- Do NOT read the codebase broadly. At most, run ONE or TWO quick commands (e.g., "ls" of the repo root, or read a single top-level manifest like package.json/go.mod/Cargo.toml) ONLY if needed to decide whether the prompt actually integrates with existing code.
+- Do NOT open source files, grep, or walk directories.
+
 Rules:
-- Ask 0-5 concise, specific questions. Return [] if nothing is genuinely unclear — do not invent questions to fill a quota.
+- Ask 0-5 concise, specific questions. Return [] if nothing is genuinely unclear — this is the common case for a well-specified prompt. Do NOT invent questions to fill a quota.
 - Only ask about things that would change the technical approach
 - Do NOT ask about things you can reasonably infer or decide yourself
 - Do NOT ask for things already specified in the request
@@ -100,7 +104,7 @@ CRITICAL QUALITY REQUIREMENTS:
 Each story must be implementation-ready with specific, measurable requirements that can be verified through testing or code inspection.
 
 Task:
-1. Analyze the codebase so your "context" field captures real observed patterns and the actual test runner command.
+1. Analyze the codebase JUST enough to fill in "context" — tech stack, test runner command, top-level layout, and any patterns directly relevant to the user's request. Budget ~5–15 targeted file reads. Do NOT recursively read everything; do NOT grep broadly. Prefer the project manifest (go.mod/package.json/etc.), the README, and the handful of directories the request actually touches.
 2. Create and check out a new git branch named exactly the "branch_name" you chose (e.g., "git checkout -b %s/<your-branch-name>").
 3. Write the PRD file, then STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance, branchPrefix)
 }
