@@ -73,6 +73,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		if m.mainScrollEnabled() && msg.String() == "/" {
+			if m.fullscreenPane == m.scrollPane {
+				m.fullscreenPane = 0
+			} else {
+				m.fullscreenPane = m.scrollPane
+			}
+		}
+
 		if m.mainScrollEnabled() {
 			switch msg.String() {
 			case "[":

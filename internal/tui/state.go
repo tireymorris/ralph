@@ -68,6 +68,7 @@ type Model struct {
 
 	mainPane      viewport.Model
 	scrollPane    scrollFocus
+	fullscreenPane scrollFocus
 	snapMainToTop bool
 
 	logHeightBias int
