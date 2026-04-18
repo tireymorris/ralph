@@ -75,6 +75,7 @@ Write JSON to %s:
       "description": "Specific implementation task with technical details",
       "acceptance_criteria": ["testable completion condition"],
       "priority": 1,
+      "depends_on": [],  // Array of story IDs this story depends on (can be empty)
       "passes": false,
       "retry_count": 0
     }
@@ -85,6 +86,7 @@ CRITICAL QUALITY REQUIREMENTS:
 %s
 - test_spec: STRING with 3-5 holistic test scenarios (NOT array)
 - stories: implementation steps with specific, measurable requirements
+- depends_on: ONLY include if this story genuinely cannot start until another is complete (e.g., "api-story" before "ui-story"). Most stories should have an empty array [].
 - acceptance_criteria: MUST be verifiable and specific. NEVER use vague terms without quantification:
   * Avoid vague verbs without metrics: "simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"
   * If using these verbs, add quantifiable metrics (e.g., "reduce from 650 to 200 words", "optimize query to <100ms")
