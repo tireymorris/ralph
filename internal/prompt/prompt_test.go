@@ -23,7 +23,7 @@ func TestClarifyingQuestions(t *testing.T) {
 				"Add user authentication",
 				".ralph_questions.json",
 				"existing codebase",
-				"2-5",
+				"0-5",
 				"JSON file",
 			},
 			mustNotInclude: []string{"new project"},
