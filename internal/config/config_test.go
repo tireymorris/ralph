@@ -328,6 +328,7 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				PRDFile:       "prd.json",
+				TestCommand:   DefaultTestCommand,
 			},
 			wantErr: true,
 		},
@@ -338,6 +339,7 @@ func TestValidate(t *testing.T) {
 				MaxIterations: -1,
 				RetryAttempts: 3,
 				PRDFile:       "prd.json",
+				TestCommand:   DefaultTestCommand,
 			},
 			wantErr: true,
 		},
@@ -348,6 +350,7 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 0,
 				RetryAttempts: 3,
 				PRDFile:       "prd.json",
+				TestCommand:   DefaultTestCommand,
 			},
 			wantErr: true,
 		},
@@ -358,6 +361,7 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: -1,
 				PRDFile:       "prd.json",
+				TestCommand:   DefaultTestCommand,
 			},
 			wantErr: true,
 		},
@@ -368,6 +372,7 @@ func TestValidate(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				PRDFile:       "",
+				TestCommand:   DefaultTestCommand,
 			},
 			wantErr: true,
 		},
@@ -492,5 +497,50 @@ func TestLoadInvalidRetryAttempts(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Error("Load() should return error for invalid RALPH_RETRY_ATTEMPTS")
+	}
+}
+
+func TestDefaultConfigTestCommand(t *testing.T) {
+	cfg := DefaultConfig()
+	if cfg.TestCommand != "go test ./..." {
+		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
+	}
+}
+
+func TestLoadDefaultTestCommand(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if cfg.TestCommand != "go test ./..." {
+		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
+	}
+}
+
+func TestLoadCustomTestCommand(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+	os.Setenv("RALPH_TEST_COMMAND", "go test -v ./internal/...")
+	defer os.Unsetenv("RALPH_TEST_COMMAND")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if cfg.TestCommand != "go test -v ./internal/..." {
+		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test -v ./internal/...")
 	}
 }

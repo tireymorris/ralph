@@ -21,6 +21,7 @@ var SupportedModels = []string{
 }
 
 const DefaultModel = "opencode/kimi-k2.5-free"
+const DefaultTestCommand = "go test ./..."
 
 type Config struct {
 	Model         string `json:"model"`
@@ -28,6 +29,7 @@ type Config struct {
 	RetryAttempts int    `json:"retry_attempts"`
 	PRDFile       string `json:"prd_file"`
 	WorkDir       string `json:"-"`
+	TestCommand   string `json:"test_command"`
 }
 
 func DefaultConfig() *Config {
@@ -36,6 +38,7 @@ func DefaultConfig() *Config {
 		MaxIterations: 50,
 		RetryAttempts: 3,
 		PRDFile:       "prd.json",
+		TestCommand:   DefaultTestCommand,
 	}
 }
 
@@ -72,6 +75,10 @@ func Load() (*Config, error) {
 
 	if prdFile := os.Getenv("RALPH_PRD_FILE"); prdFile != "" {
 		cfg.PRDFile = prdFile
+	}
+
+	if testCmd := os.Getenv("RALPH_TEST_COMMAND"); testCmd != "" {
+		cfg.TestCommand = testCmd
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -113,6 +120,9 @@ func (c *Config) Validate() error {
 	}
 	if c.PRDFile == "" {
 		return fmt.Errorf("prd_file cannot be empty")
+	}
+	if c.TestCommand == "" {
+		return fmt.Errorf("test_command cannot be empty")
 	}
 
 	// Validate PRD file path for security (prevent path traversal)

@@ -69,6 +69,7 @@ func TestConfig_Validate_PathTraversal(t *testing.T) {
 				MaxIterations: 50,
 				RetryAttempts: 3,
 				PRDFile:       tt.prdFile,
+				TestCommand:   DefaultTestCommand,
 			}
 			err := cfg.Validate()
 			if (err != nil) != tt.wantErr {
