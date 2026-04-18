@@ -24,6 +24,8 @@ func (m *Model) View() string {
 		b.WriteString(m.renderGenerating())
 	case PhaseClarifying:
 		b.WriteString(m.renderClarifying())
+	case PhasePRDReview:
+		b.WriteString(m.renderPRDReview())
 	case PhaseImplementation:
 		b.WriteString(m.renderImplementation())
 	case PhaseCompleted:
@@ -39,6 +41,8 @@ func (m *Model) View() string {
 	b.WriteString("\n")
 	if m.phase == PhaseClarifying {
 		b.WriteString(helpStyle.Render("Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"))
+	} else if m.phase == PhasePRDReview {
+		b.WriteString(helpStyle.Render("Enter continue • q quit • ctrl+c exit"))
 	} else {
 		b.WriteString(helpStyle.Render("↑/↓ scroll logs • q quit • ctrl+c exit"))
 	}
@@ -61,6 +65,8 @@ func (m *Model) renderPhase() string {
 		icon = iconFailed
 	case PhaseClarifying:
 		icon = "?"
+	case PhasePRDReview:
+		icon = "!"
 	}
 	return phaseStyle.Render(fmt.Sprintf("%s %s", icon, m.phase.String()))
 }
@@ -113,6 +119,57 @@ func (m *Model) renderGenerating() string {
 
 	content := fmt.Sprintf("%s %s\n\n%s %s", promptLabel, promptText, m.spinner.View(), generatingText)
 	return infoStyle.Render(content)
+}
+
+func (m *Model) renderPRDReview() string {
+	if m.prd == nil {
+		return ""
+	}
+
+	var b strings.Builder
+
+	b.WriteString(infoStyle.Render(inProgressStyle.Render("PRD ready for review")))
+	b.WriteString("\n\n")
+
+	projectLabel := labelStyle.Render("Project")
+	projectValue := valueStyle.Render(m.prd.ProjectName)
+	b.WriteString(infoStyle.Render(projectLabel + " " + projectValue))
+	b.WriteString("\n")
+
+	branchLabel := labelStyle.Render("Branch")
+	branchValue := valueStyle.Render(m.prd.BranchName)
+	b.WriteString(infoStyle.Render(branchLabel + " " + branchValue))
+	b.WriteString("\n\n")
+
+	b.WriteString(titleStyle.Render("Stories"))
+	b.WriteString("\n")
+	for _, s := range m.prd.Stories {
+		status := "[ ]"
+		if s.Passes {
+			status = "[x]"
+		}
+		deps := ""
+		if len(s.DependsOn) > 0 {
+			deps = " (depends: " + strings.Join(s.DependsOn, ", ") + ")"
+		}
+		line := fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)
+		b.WriteString(storyItemStyle.Render(line))
+		b.WriteString("\n")
+
+		if len(s.AcceptanceCriteria) > 0 {
+			b.WriteString(mutedStyle.Render("    Acceptance criteria:"))
+			b.WriteString("\n")
+			for _, ac := range s.AcceptanceCriteria {
+				b.WriteString(mutedStyle.Render(fmt.Sprintf("      - %s", ac)))
+				b.WriteString("\n")
+			}
+		}
+	}
+
+	b.WriteString("\n")
+	b.WriteString(helpStyle.Render("Press Enter to continue implementation"))
+
+	return b.String()
 }
 
 func (m *Model) renderImplementation() string {

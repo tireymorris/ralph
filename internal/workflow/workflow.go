@@ -89,6 +89,14 @@ type EventClarifyingQuestions struct {
 
 func (EventClarifyingQuestions) isEvent() {}
 
+// EventPRDReview is emitted after PRD generation to signal the consumer
+// should prompt the user to review before proceeding to implementation.
+type EventPRDReview struct {
+	PRD *prd.PRD
+}
+
+func (EventPRDReview) isEvent() {}
+
 type Executor struct {
 	cfg      *config.Config
 	eventsCh chan Event
@@ -224,6 +232,7 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 
 	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDGenerated{PRD: p})
+	e.emit(EventPRDReview{PRD: p})
 	return p, nil
 }
 
@@ -236,6 +245,7 @@ func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
 
 	logger.Debug("PRD loaded", "project", p.ProjectName, "stories", len(p.Stories))
 	e.emit(EventPRDLoaded{PRD: p})
+	e.emit(EventPRDReview{PRD: p})
 	return p, nil
 }
 

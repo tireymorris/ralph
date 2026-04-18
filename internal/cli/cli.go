@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -18,30 +19,35 @@ import (
 )
 
 type Runner struct {
-	cfg      *config.Config
-	prompt   string
-	dryRun   bool
-	resume   bool
-	verbose  bool
-	executor *workflow.Executor
-	eventsCh chan workflow.Event
+	cfg             *config.Config
+	prompt          string
+	dryRun          bool
+	resume          bool
+	verbose         bool
+	executor        *workflow.Executor
+	eventsCh        chan workflow.Event
+	reviewResponseCh chan bool
+	cancelFunc      context.CancelFunc
 }
 
 func NewRunner(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Runner {
 	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
+	reviewResponseCh := make(chan bool, 1)
 	return &Runner{
-		cfg:      cfg,
-		prompt:   userPrompt,
-		dryRun:   dryRun,
-		resume:   resume,
-		verbose:  verbose,
-		eventsCh: eventsCh,
-		executor: workflow.NewExecutor(cfg, eventsCh),
+		cfg:             cfg,
+		prompt:          userPrompt,
+		dryRun:          dryRun,
+		resume:          resume,
+		verbose:         verbose,
+		eventsCh:        eventsCh,
+		executor:        workflow.NewExecutor(cfg, eventsCh),
+		reviewResponseCh: reviewResponseCh,
 	}
 }
 
 func (r *Runner) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
+	r.cancelFunc = cancel
 	defer cancel()
 
 	logger.Debug("cli runner starting", "prompt", r.prompt, "dry_run", r.dryRun, "resume", r.resume)
@@ -117,6 +123,17 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 			fmt.Printf("Loaded PRD: %s (%d stories, %d completed)\n\n",
 				e.PRD.ProjectName, len(e.PRD.Stories), e.PRD.CompletedCount())
 			r.printStories(e.PRD)
+
+		case workflow.EventPRDReview:
+			r.promptPRDReview(e.PRD)
+			proceed := <-r.reviewResponseCh
+			if !proceed {
+				fmt.Println("Review not confirmed, exiting.")
+				if r.cancelFunc != nil {
+					r.cancelFunc()
+				}
+				return
+			}
 
 		case workflow.EventStoryStarted:
 			fmt.Printf("Story: %s (attempt %d/%d)\n",
@@ -196,4 +213,63 @@ func (r *Runner) printStories(p *prd.PRD) {
 		fmt.Printf("  %s [P%d] %s\n", status, s.Priority, s.Title)
 	}
 	fmt.Println()
+}
+
+func (r *Runner) promptPRDReview(p *prd.PRD) {
+	fmt.Println("PRD ready for review")
+	fmt.Println()
+	r.printStoriesWithDetails(p)
+	fmt.Println("Please choose an action:")
+	fmt.Println("  1. Edit in editor ($EDITOR)")
+	fmt.Println("  2. Proceed without changes")
+	fmt.Println()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Enter choice (1-2): ")
+	scanner.Scan()
+	choice := strings.TrimSpace(scanner.Text())
+
+	switch choice {
+	case "1":
+		editor := os.Getenv("EDITOR")
+		if editor == "" {
+			editor = "vi"
+		}
+		cmd := exec.Command(editor, r.cfg.PRDFile)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("Editor exited with error: %v\n", err)
+		}
+		fmt.Println("\nEditor closed.")
+		fmt.Print("Proceed to implementation? [Y/n]: ")
+		scanner.Scan()
+		confirm := strings.TrimSpace(scanner.Text())
+		r.reviewResponseCh <- confirm == "" || confirm == "y" || confirm == "Y"
+	case "2":
+		r.reviewResponseCh <- true
+	default:
+		fmt.Println("Invalid choice, proceeding without changes.")
+		r.reviewResponseCh <- true
+	}
+}
+
+func (r *Runner) printStoriesWithDetails(p *prd.PRD) {
+	for _, s := range p.Stories {
+		fmt.Printf("Story: %s\n", s.Title)
+		fmt.Printf("  ID: %s\n", s.ID)
+		fmt.Printf("  Priority: %d\n", s.Priority)
+		if len(s.DependsOn) > 0 {
+			fmt.Printf("  Depends on: %s\n", strings.Join(s.DependsOn, ", "))
+		}
+		fmt.Printf("  Description: %s\n", s.Description)
+		if len(s.AcceptanceCriteria) > 0 {
+			fmt.Println("  Acceptance Criteria:")
+			for _, ac := range s.AcceptanceCriteria {
+				fmt.Printf("    - %s\n", ac)
+			}
+		}
+		fmt.Println()
+	}
 }
