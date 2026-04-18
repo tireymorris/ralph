@@ -1,6 +1,10 @@
 package tui
 
-import "testing"
+import (
+	"testing"
+
+	"ralph/internal/config"
+)
 
 func TestComputePaneHeightsFewLogsShrinksLogPane(t *testing.T) {
 	mainMany, logMany := computePaneHeights(32, 200, 0)
@@ -18,5 +22,48 @@ func TestComputePaneHeightsBiasExpandsLogs(t *testing.T) {
 	_, logPlus := computePaneHeights(40, 2, 5)
 	if logPlus <= log0 {
 		t.Fatalf("positive bias should not shrink logs: log0=%d logPlus=%d", log0, logPlus)
+	}
+}
+
+func TestApplyLayoutFullscreenMainHidesLogs(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.width = 120
+	m.height = 40
+	m.fullscreenPane = focusMain
+
+	m.applyLayout(120, 40)
+
+	if m.mainPane.Height <= 0 {
+		t.Errorf("main pane height should be positive in fullscreen, got %d", m.mainPane.Height)
+	}
+}
+
+func TestApplyLayoutFullscreenLogsHidesMain(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.width = 120
+	m.height = 40
+	m.fullscreenPane = focusLogs
+
+	m.applyLayout(120, 40)
+
+	if m.mainPane.Height != 0 {
+		t.Errorf("main pane height should be 0 when logs are fullscreen, got %d", m.mainPane.Height)
+	}
+}
+
+func TestFullscreenPersistsAcrossPhaseChange(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.scrollPane = focusMain
+	m.fullscreenPane = focusMain
+
+	// Simulate phase change
+	m.phase = PhaseImplementation
+
+	if m.fullscreenPane != focusMain {
+		t.Errorf("fullscreenPane should persist across phase changes, got %v", m.fullscreenPane)
 	}
 }
