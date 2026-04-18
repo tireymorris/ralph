@@ -7,19 +7,28 @@ import (
 	"strings"
 )
 
-var SupportedModels = []string{
-	"opencode/kimi-k2.5-free",
-	"opencode/big-pickle",
-	"opencode/glm-4.7-free",
-	"opencode/gpt-5-nano",
-	"opencode/minimax-m2.1-free",
-	"opencode/trinity-large-preview-free",
-	"claude-code/sonnet",
-	"claude-code/haiku",
-	"claude-code/opus",
-}
-
 const DefaultModel = "opencode/kimi-k2.5-free"
+
+type Provider string
+
+const (
+	ProviderClaudeCode Provider = "claude-code"
+	ProviderOpenCode   Provider = "opencode"
+	ProviderUnknown    Provider = "unknown"
+)
+
+func DetectProvider(model string) Provider {
+	if strings.HasPrefix(model, "claude-code/") {
+		return ProviderClaudeCode
+	}
+	if strings.HasPrefix(model, "opencode/") || strings.HasPrefix(model, "opencode-go/") {
+		return ProviderOpenCode
+	}
+	if strings.HasPrefix(model, "anthropic/") || strings.HasPrefix(model, "ollama/") {
+		return ProviderOpenCode
+	}
+	return ProviderUnknown
+}
 const DefaultTestCommand = "go test ./..."
 
 type Config struct {
@@ -67,12 +76,14 @@ func (c *Config) PRDPath() string {
 }
 
 func (c *Config) ValidateModel() error {
-	for _, m := range SupportedModels {
-		if c.Model == m {
-			return nil
-		}
+	if c.Model == "" {
+		return fmt.Errorf("model cannot be empty")
 	}
-	return fmt.Errorf("unsupported model: %s (supported: %v)", c.Model, SupportedModels)
+	provider := DetectProvider(c.Model)
+	if provider == ProviderUnknown {
+		return fmt.Errorf("unknown provider for model %q (supported prefixes: claude-code/, opencode/, opencode-go/, anthropic/, ollama/)", c.Model)
+	}
+	return nil
 }
 
 func (c *Config) Validate() error {
