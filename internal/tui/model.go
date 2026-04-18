@@ -22,6 +22,7 @@ const (
 	PhaseInit Phase = iota
 	PhaseClarifying
 	PhasePRDGeneration
+	PhasePRDReview
 	PhaseImplementation
 	PhaseCompleted
 	PhaseFailed
@@ -35,6 +36,8 @@ func (p Phase) String() string {
 		return "Clarifying Questions"
 	case PhasePRDGeneration:
 		return "Phase 1: PRD Generation"
+	case PhasePRDReview:
+		return "PRD Review"
 	case PhaseImplementation:
 		return "Phase 2: Implementation"
 	case PhaseCompleted:
@@ -174,6 +177,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		// In PRD review phase, Enter proceeds to implementation
+		if m.phase == PhasePRDReview && msg.String() == "enter" {
+			if m.prd != nil {
+				m.phase = PhaseImplementation
+				return m, m.operationManager.StartImplementation(m.prd)
+			}
+		}
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -276,8 +287,7 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 			m.phase = PhaseCompleted
 			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
 		} else {
-			m.phase = PhaseImplementation
-			return m.operationManager.StartImplementation(m.prd)
+			m.phase = PhasePRDReview
 		}
 
 	case workflow.EventPRDLoaded:
@@ -287,9 +297,13 @@ func (m *Model) handleWorkflowEvent(event workflow.Event) tea.Cmd {
 		if m.dryRun {
 			m.phase = PhaseCompleted
 		} else {
-			m.phase = PhaseImplementation
-			return m.operationManager.StartImplementation(m.prd)
+			m.phase = PhasePRDReview
 		}
+
+	case workflow.EventPRDReview:
+		m.phase = PhasePRDReview
+		m.prd = e.PRD
+		m.logger.AddLog("PRD ready for review")
 
 	case workflow.EventStoryStarted:
 		m.currentStory = e.Story

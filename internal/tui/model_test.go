@@ -20,6 +20,7 @@ func TestPhaseString(t *testing.T) {
 		{PhaseInit, "Initializing"},
 		{PhaseClarifying, "Clarifying Questions"},
 		{PhasePRDGeneration, "Phase 1: PRD Generation"},
+		{PhasePRDReview, "PRD Review"},
 		{PhaseImplementation, "Phase 2: Implementation"},
 		{PhaseCompleted, "Completed"},
 		{PhaseFailed, "Failed"},
@@ -200,12 +201,12 @@ func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
-	// PRD generation is now communicated via EventPRDGenerated workflow event
+	// After PRD generation, user is prompted to review before implementation
 	newModel, _ := m.Update(workflowEventMsg{event: workflow.EventPRDGenerated{PRD: testPRD}})
 
 	if model, ok := newModel.(*Model); ok {
-		if model.phase != PhaseImplementation {
-			t.Errorf("phase = %v, want PhaseImplementation", model.phase)
+		if model.phase != PhasePRDReview {
+			t.Errorf("phase = %v, want PhasePRDReview", model.phase)
 		}
 	}
 }

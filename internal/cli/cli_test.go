@@ -532,3 +532,26 @@ type testErr struct {
 func (e *testErr) Error() string {
 	return e.msg
 }
+
+func TestHandleEventsPRDReview(t *testing.T) {
+	cfg := config.DefaultConfig()
+	r := NewRunner(cfg, "test", false, false, false)
+
+	eventsCh := make(chan workflow.Event, 10)
+	doneCh := make(chan int, 1)
+
+	go r.handleEvents(eventsCh, doneCh)
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{
+			{ID: "story-1", Title: "Story 1", Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Story 2", Priority: 2, DependsOn: []string{"story-1"}, Passes: true},
+		},
+	}
+
+	eventsCh <- workflow.EventPRDReview{PRD: testPRD}
+	close(eventsCh)
+
+	<-doneCh
+}
