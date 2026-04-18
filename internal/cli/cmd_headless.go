@@ -1,3 +1,4 @@
+// Package cli implements headless (stdout/stdin) Ralph execution.
 package cli
 
 import (
@@ -16,36 +17,51 @@ import (
 	"ralph/internal/prd"
 	"ralph/internal/prompt"
 	"ralph/internal/workflow"
+	"ralph/internal/workflow/events"
 )
 
-type Runner struct {
-	cfg             *config.Config
-	prompt          string
-	dryRun          bool
-	resume          bool
-	verbose         bool
-	executor        *workflow.Executor
-	eventsCh        chan workflow.Event
-	reviewResponseCh chan bool
-	cancelFunc      context.CancelFunc
+// HeadlessCommand wires parsed flags to a headless workflow run.
+type HeadlessCommand struct {
+	Cfg     *config.Config
+	Prompt  string
+	DryRun  bool
+	Resume  bool
+	Verbose bool
 }
 
-func NewRunner(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Runner {
-	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
+func (c HeadlessCommand) Run() int {
+	return NewHeadless(c.Cfg, c.Prompt, c.DryRun, c.Resume, c.Verbose).Run()
+}
+
+// Headless runs the workflow in stdout mode (no Bubble Tea TUI).
+type Headless struct {
+	cfg              *config.Config
+	prompt           string
+	dryRun           bool
+	resume           bool
+	verbose          bool
+	executor         *workflow.Executor
+	eventsCh         chan events.Event
+	reviewResponseCh chan bool
+	cancelFunc       context.CancelFunc
+}
+
+func NewHeadless(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Headless {
+	eventsCh := make(chan events.Event, constants.EventChannelBuffer)
 	reviewResponseCh := make(chan bool, 1)
-	return &Runner{
-		cfg:             cfg,
-		prompt:          userPrompt,
-		dryRun:          dryRun,
-		resume:          resume,
-		verbose:         verbose,
-		eventsCh:        eventsCh,
-		executor:        workflow.NewExecutor(cfg, eventsCh),
+	return &Headless{
+		cfg:              cfg,
+		prompt:           userPrompt,
+		dryRun:           dryRun,
+		resume:           resume,
+		verbose:          verbose,
+		eventsCh:         eventsCh,
+		executor:         workflow.NewExecutor(cfg, eventsCh),
 		reviewResponseCh: reviewResponseCh,
 	}
 }
 
-func (r *Runner) Run() int {
+func (r *Headless) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 	defer cancel()
@@ -64,10 +80,6 @@ func (r *Runner) Run() int {
 	doneCh := make(chan int, 1)
 	go r.handleEvents(r.eventsCh, doneCh)
 
-	// Run the full workflow in the foreground. Clarifying questions (if any)
-	// are handled inside handleEvents when EventClarifyingQuestions arrives —
-	// it reads stdin and sends answers back via the channel embedded in the
-	// event, unblocking RunClarify.
 	var p *prd.PRD
 	var err error
 
@@ -103,29 +115,29 @@ func (r *Runner) Run() int {
 	return <-doneCh
 }
 
-func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int) {
+func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int) {
 	exitCode := 0
 
 	for event := range eventsCh {
 		switch e := event.(type) {
-		case workflow.EventClarifyingQuestions:
+		case events.EventClarifyingQuestions:
 			answers := r.collectAnswersCLI(e.Questions)
 			e.AnswersCh <- answers
 
-		case workflow.EventPRDGenerating:
+		case events.EventPRDGenerating:
 			fmt.Println("Generating PRD...")
 
-		case workflow.EventPRDGenerated:
+		case events.EventPRDGenerated:
 			fmt.Printf("PRD generated: %s (%d stories)\n", e.PRD.ProjectName, len(e.PRD.Stories))
 			fmt.Printf("Saved to: %s\n\n", r.cfg.PRDFile)
 			r.printStories(e.PRD)
 
-		case workflow.EventPRDLoaded:
+		case events.EventPRDLoaded:
 			fmt.Printf("Loaded PRD: %s (%d stories, %d completed)\n\n",
 				e.PRD.ProjectName, len(e.PRD.Stories), e.PRD.CompletedCount())
 			r.printStories(e.PRD)
 
-		case workflow.EventPRDReview:
+		case events.EventPRDReview:
 			if r.dryRun {
 				fmt.Println("PRD ready for review")
 				fmt.Println("(Dry run - you can edit prd.json, then run with --resume to proceed)")
@@ -141,18 +153,18 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 				return
 			}
 
-		case workflow.EventStoryStarted:
+		case events.EventStoryStarted:
 			fmt.Printf("Story: %s (attempt %d/%d)\n",
 				e.Story.Title, e.Story.RetryCount+1, r.cfg.RetryAttempts)
 
-		case workflow.EventStoryCompleted:
+		case events.EventStoryCompleted:
 			if e.Success {
 				fmt.Printf("  Completed\n\n")
 			} else {
 				fmt.Printf("  Failed (will retry)\n\n")
 			}
 
-		case workflow.EventOutput:
+		case events.EventOutput:
 			if e.Verbose && !r.verbose {
 				continue
 			}
@@ -163,15 +175,15 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 			fmt.Printf("%s %s\n", prefix, e.Text)
 			os.Stdout.Sync()
 
-		case workflow.EventError:
+		case events.EventError:
 			fmt.Printf("Error: %v\n", e.Err)
 			exitCode = 1
 
-		case workflow.EventCompleted:
+		case events.EventCompleted:
 			fmt.Println("All stories completed successfully!")
 			exitCode = 0
 
-		case workflow.EventFailed:
+		case events.EventFailed:
 			fmt.Println("Implementation failed")
 			if len(e.FailedStories) > 0 {
 				fmt.Printf("\nFailed stories (%d):\n", len(e.FailedStories))
@@ -187,9 +199,7 @@ func (r *Runner) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int)
 	doneCh <- exitCode
 }
 
-// collectAnswersCLI prints questions to stdout and reads answers from stdin.
-// Pressing Enter with no input leaves the answer empty.
-func (r *Runner) collectAnswersCLI(questions []string) []prompt.QuestionAnswer {
+func (r *Headless) collectAnswersCLI(questions []string) []prompt.QuestionAnswer {
 	fmt.Println()
 	fmt.Println("Before generating your PRD, please answer a few clarifying questions.")
 	fmt.Println("(Press Enter to skip a question, or Ctrl+C to abort.)")
@@ -209,7 +219,7 @@ func (r *Runner) collectAnswersCLI(questions []string) []prompt.QuestionAnswer {
 	return qas
 }
 
-func (r *Runner) printStories(p *prd.PRD) {
+func (r *Headless) printStories(p *prd.PRD) {
 	fmt.Println("Stories:")
 	for _, s := range p.Stories {
 		status := "[ ]"
@@ -221,7 +231,7 @@ func (r *Runner) printStories(p *prd.PRD) {
 	fmt.Println()
 }
 
-func (r *Runner) promptPRDReview(p *prd.PRD) {
+func (r *Headless) promptPRDReview(p *prd.PRD) {
 	fmt.Println("PRD ready for review")
 	fmt.Println()
 	r.printStoriesWithDetails(p)
@@ -261,7 +271,7 @@ func (r *Runner) promptPRDReview(p *prd.PRD) {
 	}
 }
 
-func (r *Runner) printStoriesWithDetails(p *prd.PRD) {
+func (r *Headless) printStoriesWithDetails(p *prd.PRD) {
 	for _, s := range p.Stories {
 		fmt.Printf("Story: %s\n", s.Title)
 		fmt.Printf("  ID: %s\n", s.ID)

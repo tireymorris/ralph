@@ -12,12 +12,12 @@ import (
 	"ralph/internal/workflow"
 )
 
-func TestNewRunner(t *testing.T) {
+func TestNewHeadless(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test prompt", true, false, false)
+	r := NewHeadless(cfg, "test prompt", true, false, false)
 
 	if r == nil {
-		t.Fatal("NewRunner() returned nil")
+		t.Fatal("NewHeadless() returned nil")
 	}
 	if r.cfg != cfg {
 		t.Error("cfg not set correctly")
@@ -33,9 +33,9 @@ func TestNewRunner(t *testing.T) {
 	}
 }
 
-func TestNewRunnerResume(t *testing.T) {
+func TestNewHeadlessResume(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "", false, true, false)
+	r := NewHeadless(cfg, "", false, true, false)
 
 	if !r.resume {
 		t.Error("resume should be true")
@@ -45,9 +45,9 @@ func TestNewRunnerResume(t *testing.T) {
 	}
 }
 
-func TestNewRunnerVerbose(t *testing.T) {
+func TestNewHeadlessVerbose(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, true)
+	r := NewHeadless(cfg, "test", false, false, true)
 
 	if !r.verbose {
 		t.Error("verbose should be true")
@@ -56,7 +56,7 @@ func TestNewRunnerVerbose(t *testing.T) {
 
 func TestPrintStories(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	p := &prd.PRD{
 		Stories: []*prd.Story{
@@ -88,7 +88,7 @@ func TestPrintStories(t *testing.T) {
 
 func TestHandleEventsPRDGenerating(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -114,7 +114,7 @@ func TestHandleEventsPRDGenerating(t *testing.T) {
 
 func TestHandleEventsPRDGenerated(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -136,7 +136,7 @@ func TestHandleEventsPRDGenerated(t *testing.T) {
 
 func TestHandleEventsPRDLoaded(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -159,7 +159,7 @@ func TestHandleEventsPRDLoaded(t *testing.T) {
 func TestHandleEventsStoryStarted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.RetryAttempts = 3
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -181,7 +181,7 @@ func TestHandleEventsStoryStarted(t *testing.T) {
 
 func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -203,7 +203,7 @@ func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 
 func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -225,7 +225,7 @@ func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 
 func TestHandleEventsOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -248,7 +248,7 @@ func TestHandleEventsOutput(t *testing.T) {
 
 func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -282,7 +282,7 @@ func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 
 func TestHandleEventsVerboseOutputShown(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, true)
+	r := NewHeadless(cfg, "test", false, false, true)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -312,7 +312,7 @@ func TestHandleEventsVerboseOutputShown(t *testing.T) {
 
 func TestHandleEventsError(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -338,7 +338,7 @@ func TestHandleEventsError(t *testing.T) {
 
 func TestHandleEventsCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -364,7 +364,7 @@ func TestHandleEventsCompleted(t *testing.T) {
 
 func TestHandleEventsFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -390,7 +390,7 @@ func TestHandleEventsFailed(t *testing.T) {
 
 func TestHandleEventsFailedNoStories(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
@@ -418,7 +418,7 @@ func TestHandleEventsFailedNoStories(t *testing.T) {
 // causes the CLI to read stdin and send answers back on AnswersCh.
 func TestHandleEventsClarifyingQuestions(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	// Pipe simulated stdin answers into the runner
 	stdinR, stdinW, err := os.Pipe()
@@ -478,7 +478,7 @@ func TestHandleEventsClarifyingQuestions(t *testing.T) {
 // produce empty-string answers (not dropped).
 func TestHandleEventsClarifyingQuestionsEmptyAnswers(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	stdinR, stdinW, err := os.Pipe()
 	if err != nil {
@@ -535,7 +535,7 @@ func (e *testErr) Error() string {
 
 func TestHandleEventsPRDReview(t *testing.T) {
 	cfg := config.DefaultConfig()
-	r := NewRunner(cfg, "test", false, false, false)
+	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)

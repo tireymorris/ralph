@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"ralph/internal/config"
-	"ralph/internal/constants"
 	"ralph/internal/logger"
 )
 
@@ -100,38 +98,12 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	}
 
 	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stdout pipe for %s: %w", r.CommandName(), err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stderr pipe for %s: %w", r.CommandName(), err)
-	}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start %s with model %s: %w", r.CommandName(), modelName, err)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(constants.PipeReaderCount)
-
-	go func() {
-		defer wg.Done()
-		readPipeLines(stdout, outputCh, parseClaudeStreamJSON)
-	}()
-
-	go func() {
-		defer wg.Done()
-		readPipeLines(stderr, outputCh, func(line string) []OutputLine {
+	err := runPipedCommand(r.CommandName(), cmd, outputCh,
+		parseClaudeStreamJSON,
+		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
-		})
-	}()
-
-	wg.Wait()
-	err = cmd.Wait()
+		},
+	)
 
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
