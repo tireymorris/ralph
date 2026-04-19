@@ -134,7 +134,7 @@ Before starting, re-read %s and confirm each of those stories has "passes": true
 
 	return fmt.Sprintf(`You are Ralph's implementation agent, working inside the user's git repo on the feature branch.
 
-Implement story: %s
+Implement story: %s (ID: %s)
 %s%s%s
 Description: %s
 Done when: %s
@@ -154,21 +154,18 @@ Commit message rules:
 
 Repeat the red → green → commit loop until every acceptance criterion is satisfied. Many small commits per story is expected and preferred over one large commit.
 
-When every acceptance criterion passes and the full test suite is green:
-- Edit %s and set "passes": true for story "%s".
-- Do NOT commit this change. Ralph handles marking stories complete.
-- If the story is not yet done, continue the red/green/commit loop. Ralph will keep trying until it passes.
+When every acceptance criterion passes and the full test suite is green, stop. Ralph will automatically mark the story complete and proceed to the next one.
 
 After completing this story, update the "context" field in %s ONLY if you established a new pattern, added a new module, or discovered a convention that future stories need to know. Skip the context update for routine stories.
 
 Progress: %d/%d stories completed`,
 		title,
+		storyID,
 		contextSection,
 		testSection,
 		dependsSection,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
-		prdFile, storyID,
 		prdFile,
 		completed, total,
 	)

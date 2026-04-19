@@ -83,15 +83,11 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.logger.AddLog(fmt.Sprintf("Starting: %s", e.Story.Title))
 
 	case events.EventStoryCompleted:
-		if e.Success {
-			m.logger.AddLog(fmt.Sprintf("Completed: %s", e.Story.Title))
-			if m.prd != nil {
-				if s := m.prd.GetStory(e.Story.ID); s != nil {
-					s.Passes = true
-				}
+		m.logger.AddLog(fmt.Sprintf("Completed: %s", e.Story.Title))
+		if m.prd != nil {
+			if s := m.prd.GetStory(e.Story.ID); s != nil {
+				s.Passes = true
 			}
-		} else {
-			m.logger.AddLog(fmt.Sprintf("Retrying: %s", e.Story.Title))
 		}
 
 	case events.EventOutput:
