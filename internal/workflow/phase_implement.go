@@ -171,7 +171,5 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				e.emit(EventStoryCompleted{Story: story, Success: false})
 			}
 		}
-
-		p = updatedPRD
 	}
 }

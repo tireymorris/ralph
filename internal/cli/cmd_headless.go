@@ -110,7 +110,7 @@ func (r *Headless) Run() int {
 		return 0
 	}
 
-	err = r.executor.RunImplementation(ctx, p)
+	r.executor.RunImplementation(ctx, p)
 	close(r.eventsCh)
 	return <-doneCh
 }
