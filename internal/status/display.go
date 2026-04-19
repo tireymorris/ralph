@@ -31,20 +31,17 @@ func Display(cfg *config.Config) error {
 	// Calculate story counts
 	total := len(p.Stories)
 	completed := p.CompletedCount()
-	failed := len(p.FailedStories(cfg.RetryAttempts))
-	pending := total - completed - failed
+	pending := total - completed
 
 	// Print story counts
-	fmt.Printf("Stories: %d total, %d completed, %d pending, %d failed\n",
-		total, completed, pending, failed)
+	fmt.Printf("Stories: %d total, %d completed, %d pending\n",
+		total, completed, pending)
 
 	// Print individual stories
 	for _, story := range p.Stories {
 		status := "⏳"
 		if story.Passes {
 			status = "✓"
-		} else if story.RetryCount >= cfg.RetryAttempts {
-			status = "✗"
 		}
 
 		fmt.Printf("%s [%s] %s (priority: %d)\n",

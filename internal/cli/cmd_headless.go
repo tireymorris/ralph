@@ -154,14 +154,13 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 			}
 
 		case events.EventStoryStarted:
-			fmt.Printf("Story: %s (attempt %d/%d)\n",
-				e.Story.Title, e.Story.RetryCount+1, r.cfg.RetryAttempts)
+			fmt.Printf("Story: %s\n", e.Story.Title)
 
 		case events.EventStoryCompleted:
 			if e.Success {
 				fmt.Printf("  Completed\n\n")
 			} else {
-				fmt.Printf("  Failed (will retry)\n\n")
+				fmt.Printf("  Not yet complete, will retry\n\n")
 			}
 
 		case events.EventOutput:
@@ -182,17 +181,6 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 		case events.EventCompleted:
 			fmt.Println("All stories completed successfully!")
 			exitCode = 0
-
-		case events.EventFailed:
-			fmt.Println("Implementation failed")
-			if len(e.FailedStories) > 0 {
-				fmt.Printf("\nFailed stories (%d):\n", len(e.FailedStories))
-				for _, s := range e.FailedStories {
-					fmt.Printf("  - %s (%d attempts)\n", s.Title, s.RetryCount)
-				}
-				fmt.Println("\nRun with --resume to retry after fixing issues.")
-			}
-			exitCode = 1
 		}
 	}
 

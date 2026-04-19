@@ -28,7 +28,6 @@ func TestContextFieldRoundTrip(t *testing.T) {
 				AcceptanceCriteria: []string{"Works correctly"},
 				Priority:           1,
 				Passes:             false,
-				RetryCount:         0,
 			},
 		},
 	}
@@ -102,7 +101,7 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 		"Test it",
 		context,
 		"prd.json",
-		1, 0, 3,
+		0, 3,
 		nil,
 	)
 
@@ -126,7 +125,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 		"Test it",
 		"", // Empty context
 		"prd.json",
-		1, 0, 3,
+		0, 3,
 		nil,
 	)
 
@@ -169,8 +168,7 @@ func TestBackwardsCompatibilityWithoutContext(t *testing.T) {
 				"description": "Desc",
 				"acceptance_criteria": ["AC"],
 				"priority": 1,
-				"passes": false,
-				"retry_count": 0
+				"passes": false
 			}
 		]
 	}`

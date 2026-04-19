@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
@@ -127,17 +128,14 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	}
 }
 
-// Test when passes is true but tests fail, story marked passes:false and rolled back
+// Test when passes is true but tests fail, story marked passes:false
 func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
 	cfg.TestCommand = "exit 1" // Force tests to fail
-	cfg.MaxIterations = 1
-	cfg.RetryAttempts = 1
 
-	// Initialize a git repo in temp dir
 	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
 		t.Fatalf("failed to create placeholder: %v", err)
 	}
@@ -153,18 +151,19 @@ func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner marks story as passing, but tests will fail
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		outputCh <- runner.OutputLine{Text: "Working on story..."}
 		p, _ := prd.Load(cfg)
-		p.Stories[0].Passes = true // Mark as complete
+		p.Stories[0].Passes = true
 		return prd.Save(cfg, p)
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	_ = exec.RunImplementation(context.Background(), testPRD)
 
-	// Load PRD from disk after implementation
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	_ = exec.RunImplementation(ctx, testPRD)
+
 	prdPath := filepath.Join(tmpDir, "prd.json")
 	data, err := os.ReadFile(prdPath)
 	if err != nil {
@@ -177,9 +176,6 @@ func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
 	if p.Stories[0].Passes {
 		t.Error("expected passes to be false after test failure")
 	}
-	if p.Stories[0].RetryCount != 1 {
-		t.Error("expected retry_count to be incremented")
-	}
 }
 
 // Test when passes is true and tests pass, story stays passes:true
@@ -188,11 +184,8 @@ func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "echo success" // Tests pass
-	cfg.MaxIterations = 1
-	cfg.RetryAttempts = 1
+	cfg.TestCommand = "echo success"
 
-	// Initialize a git repo in temp dir
 	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
 		t.Fatalf("failed to create placeholder: %v", err)
 	}
@@ -208,7 +201,6 @@ func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner marks story as passing, and tests will pass
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		outputCh <- runner.OutputLine{Text: "Working on story..."}
 		p, _ := prd.Load(cfg)
@@ -219,7 +211,6 @@ func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	_ = exec.RunImplementation(context.Background(), testPRD)
 
-	// Verify EventCompleted was emitted (meaning all stories passed including tests)
 	foundCompleted := false
 	for len(ch) > 0 {
 		e := <-ch
@@ -233,18 +224,16 @@ func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
 	}
 }
 
-// Test RunImplementation retry count increment on failure
-func TestRunImplementationRetryIncrement(t *testing.T) {
+// Test RunImplementation keeps retrying until story passes
+func TestRunImplementationKeepsRetrying(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.RetryAttempts = 3
-	cfg.MaxIterations = 2
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false, RetryCount: 0}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -259,16 +248,15 @@ func TestRunImplementationRetryIncrement(t *testing.T) {
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	_ = exec.RunImplementation(context.Background(), testPRD)
 
-	// Load PRD and check retry count was incremented
-	p, err := prd.Load(cfg)
-	if err != nil {
-		t.Fatalf("failed to load PRD: %v", err)
-	}
-	if p.Stories[0].RetryCount == 0 {
-		t.Error("expected retry count to be incremented")
-	}
+	// Cancel after a short time since it will keep retrying forever
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		cancel()
+	}()
+
+	_ = exec.RunImplementation(ctx, testPRD)
 }
 
 // Test RunImplementation PRD reload failure

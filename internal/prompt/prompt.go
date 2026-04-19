@@ -82,8 +82,7 @@ Write JSON to %s. Each field value below is a description of what to write — d
       "acceptance_criteria": [<testable completion condition>],
       "priority": 1,
       "depends_on": [],
-      "passes": false,
-      "retry_count": 0
+      "passes": false
     }
   ]
 }
@@ -109,7 +108,7 @@ Task:
 3. Write the PRD file, then STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance, branchPrefix)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, iteration, completed, total int, dependsOn []string) string {
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -155,16 +154,14 @@ Commit message rules:
 
 Repeat the red → green → commit loop until every acceptance criterion is satisfied. Many small commits per story is expected and preferred over one large commit.
 
-IMPORTANT — failure semantics: If this story does not reach the done state (tests failing, blocked, etc.) before you stop, Ralph will ` + "`git reset --hard`" + ` back to the SHA before you started and retry the story from scratch. Your small commits will be wiped on failure. This is why each commit should be a real, tested step forward — not a WIP save.
-
 When every acceptance criterion passes and the full test suite is green:
 - Edit %s and set "passes": true for story "%s".
-- Do NOT touch "retry_count"; Ralph manages that field.
 - Do NOT commit this change. Ralph handles marking stories complete.
+- If the story is not yet done, continue the red/green/commit loop. Ralph will keep trying until it passes.
 
 After completing this story, update the "context" field in %s ONLY if you established a new pattern, added a new module, or discovered a convention that future stories need to know. Skip the context update for routine stories.
 
-Progress: Iteration %d, %d/%d stories completed`,
+Progress: %d/%d stories completed`,
 		title,
 		contextSection,
 		testSection,
@@ -173,6 +170,6 @@ Progress: Iteration %d, %d/%d stories completed`,
 		strings.Join(acceptanceCriteria, "; "),
 		prdFile, storyID,
 		prdFile,
-		iteration, completed, total,
+		completed, total,
 	)
 }

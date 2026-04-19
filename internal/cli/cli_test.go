@@ -158,7 +158,6 @@ func TestHandleEventsPRDLoaded(t *testing.T) {
 
 func TestHandleEventsStoryStarted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	cfg.RetryAttempts = 3
 	r := NewHeadless(cfg, "test", false, false, false)
 
 	eventsCh := make(chan workflow.Event, 10)
@@ -170,7 +169,7 @@ func TestHandleEventsStoryStarted(t *testing.T) {
 
 	go r.handleEvents(eventsCh, doneCh)
 
-	eventsCh <- workflow.EventStoryStarted{Story: &prd.Story{Title: "Test Story", RetryCount: 0}, Iteration: 1}
+	eventsCh <- workflow.EventStoryStarted{Story: &prd.Story{Title: "Test Story"}}
 	close(eventsCh)
 
 	<-doneCh
@@ -362,61 +361,7 @@ func TestHandleEventsCompleted(t *testing.T) {
 	}
 }
 
-func TestHandleEventsFailed(t *testing.T) {
-	cfg := config.DefaultConfig()
-	r := NewHeadless(cfg, "test", false, false, false)
-
-	eventsCh := make(chan workflow.Event, 10)
-	doneCh := make(chan int, 1)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	go r.handleEvents(eventsCh, doneCh)
-
-	eventsCh <- workflow.EventFailed{FailedStories: []*prd.Story{{Title: "Failed", RetryCount: 3}}}
-	close(eventsCh)
-
-	code := <-doneCh
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-}
-
-func TestHandleEventsFailedNoStories(t *testing.T) {
-	cfg := config.DefaultConfig()
-	r := NewHeadless(cfg, "test", false, false, false)
-
-	eventsCh := make(chan workflow.Event, 10)
-	doneCh := make(chan int, 1)
-
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
-
-	go r.handleEvents(eventsCh, doneCh)
-
-	eventsCh <- workflow.EventFailed{FailedStories: []*prd.Story{}}
-	close(eventsCh)
-
-	code := <-doneCh
-
-	w.Close()
-	os.Stdout = old
-
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
-	}
-}
-
-// TestHandleEventsClarifyingQuestions verifies that EventClarifyingQuestions
-// causes the CLI to read stdin and send answers back on AnswersCh.
-func TestHandleEventsClarifyingQuestions(t *testing.T) {
+func TestHandleEventsPRDReview(t *testing.T) {
 	cfg := config.DefaultConfig()
 	r := NewHeadless(cfg, "test", false, false, false)
 
@@ -531,27 +476,4 @@ type testErr struct {
 
 func (e *testErr) Error() string {
 	return e.msg
-}
-
-func TestHandleEventsPRDReview(t *testing.T) {
-	cfg := config.DefaultConfig()
-	r := NewHeadless(cfg, "test", false, false, false)
-
-	eventsCh := make(chan workflow.Event, 10)
-	doneCh := make(chan int, 1)
-
-	go r.handleEvents(eventsCh, doneCh)
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test Project",
-		Stories: []*prd.Story{
-			{ID: "story-1", Title: "Story 1", Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Story 2", Priority: 2, DependsOn: []string{"story-1"}, Passes: true},
-		},
-	}
-
-	eventsCh <- workflow.EventPRDReview{PRD: testPRD}
-	close(eventsCh)
-
-	<-doneCh
 }

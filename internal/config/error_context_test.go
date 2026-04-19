@@ -65,11 +65,9 @@ func TestConfig_Validate_PathTraversal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Model:         DefaultModel,
-				MaxIterations: 50,
-				RetryAttempts: 3,
-				PRDFile:       tt.prdFile,
-				TestCommand:   DefaultTestCommand,
+				Model:       DefaultModel,
+				PRDFile:     tt.prdFile,
+				TestCommand: DefaultTestCommand,
 			}
 			err := cfg.Validate()
 			if (err != nil) != tt.wantErr {

@@ -12,7 +12,6 @@ func TestDocOrchestratorPhaseString(t *testing.T) {
 		{DocPhaseReview, "prd_review"},
 		{DocPhaseImplement, "implement"},
 		{DocPhaseComplete, "complete"},
-		{DocPhaseFailed, "failed"},
 		{DocOrchestratorPhase(99), "unknown"},
 	}
 	for _, tt := range tests {

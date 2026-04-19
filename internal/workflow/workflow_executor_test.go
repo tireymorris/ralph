@@ -71,13 +71,10 @@ func TestEventPRDGenerated(t *testing.T) {
 
 func TestEventStoryStarted(t *testing.T) {
 	s := &prd.Story{ID: "s1", Title: "Story 1"}
-	e := EventStoryStarted{Story: s, Iteration: 5}
+	e := EventStoryStarted{Story: s}
 
 	if e.Story.ID != "s1" {
 		t.Errorf("Story.ID = %q, want %q", e.Story.ID, "s1")
-	}
-	if e.Iteration != 5 {
-		t.Errorf("Iteration = %d, want 5", e.Iteration)
 	}
 }
 
@@ -87,15 +84,6 @@ func TestEventStoryCompleted(t *testing.T) {
 
 	if !e.Success {
 		t.Error("Success = false, want true")
-	}
-}
-
-func TestEventFailed(t *testing.T) {
-	stories := []*prd.Story{{ID: "s1"}, {ID: "s2"}}
-	e := EventFailed{FailedStories: stories}
-
-	if len(e.FailedStories) != 2 {
-		t.Errorf("FailedStories length = %d, want 2", len(e.FailedStories))
 	}
 }
 
@@ -227,11 +215,10 @@ func TestRunImplementationNoNextStory(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.RetryAttempts = 1
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false, RetryCount: 5}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: true}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -241,32 +228,8 @@ func TestRunImplementationNoNextStory(t *testing.T) {
 	exec := NewExecutor(cfg, ch)
 
 	err := exec.RunImplementation(context.Background(), testPRD)
-	if err == nil {
-		t.Error("RunImplementation() should return error when no pending stories")
-	}
-}
-
-func TestRunImplementationMaxIterations(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-	cfg.PRDFile = "prd.json"
-	cfg.MaxIterations = 0
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
-	}
-	if err := prd.Save(cfg, testPRD); err != nil {
-		t.Fatalf("failed to save test PRD: %v", err)
-	}
-
-	ch := make(chan Event, 100)
-	exec := NewExecutor(cfg, ch)
-
-	err := exec.RunImplementation(context.Background(), testPRD)
-	if err == nil {
-		t.Error("RunImplementation() should return error on max iterations")
+	if err != nil {
+		t.Errorf("RunImplementation() should return nil when all stories complete: %v", err)
 	}
 }
 

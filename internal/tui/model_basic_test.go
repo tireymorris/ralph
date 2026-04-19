@@ -21,7 +21,6 @@ func TestPhaseString(t *testing.T) {
 		{PhasePRDReview, "PRD Review"},
 		{PhaseImplementation, "Phase 2: Implementation"},
 		{PhaseCompleted, "Completed"},
-		{PhaseFailed, "Failed"},
 		{Phase(99), "Unknown"},
 	}
 
@@ -74,33 +73,6 @@ func TestExitCode(t *testing.T) {
 			phase:    PhaseCompleted,
 			prd:      nil,
 			wantCode: 0,
-		},
-		{
-			name:     "failed no prd",
-			phase:    PhaseFailed,
-			prd:      nil,
-			wantCode: 1,
-		},
-		{
-			name:  "failed with some completed",
-			phase: PhaseFailed,
-			prd: &prd.PRD{
-				Stories: []*prd.Story{
-					{Passes: true},
-					{Passes: false},
-				},
-			},
-			wantCode: 2,
-		},
-		{
-			name:  "failed with none completed",
-			phase: PhaseFailed,
-			prd: &prd.PRD{
-				Stories: []*prd.Story{
-					{Passes: false},
-				},
-			},
-			wantCode: 1,
 		},
 		{
 			name:     "other phase",
@@ -181,7 +153,6 @@ func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 	m := NewModel(cfg, "test", true, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
-	// PRD generation is now communicated via EventPRDGenerated workflow event
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventPRDGenerated{PRD: testPRD}})
 
 	if model, ok := newModel.(*Model); ok {
@@ -199,7 +170,6 @@ func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
-	// After PRD generation, user is prompted to review before implementation
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventPRDGenerated{PRD: testPRD}})
 
 	if model, ok := newModel.(*Model); ok {
@@ -214,15 +184,11 @@ func TestUpdatePRDErrorMsg(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 
 	testErr := &testErrorType{msg: "test error"}
-	// Errors are now communicated via EventError workflow event
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventError{Err: testErr}})
 
 	if model, ok := newModel.(*Model); ok {
 		if model.err != testErr {
 			t.Error("err should be set")
-		}
-		if model.phase != PhaseFailed {
-			t.Errorf("phase = %v, want PhaseFailed", model.phase)
 		}
 	}
 }
@@ -255,7 +221,7 @@ func TestToggleFullscreenOn(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhasePRDReview
 	m.scrollPane = focusLogs
-	m.fullscreenPane = 0 // no fullscreen
+	m.fullscreenPane = 0
 
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
 
@@ -271,14 +237,13 @@ func TestToggleFullscreenOff(t *testing.T) {
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhasePRDReview
 	m.scrollPane = focusMain
-	m.fullscreenPane = focusMain // already fullscreen
+	m.fullscreenPane = focusMain
 
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
 
 	if model, ok := newModel.(*Model); ok {
 		if model.fullscreenPane != focusNone {
-			t.Errorf("fullscreenPane = %v, want 0 (no fullscreen)", model.fullscreenPane)
+			t.Errorf("fullscreenPane = %v, want focusNone", model.fullscreenPane)
 		}
 	}
 }
-

@@ -132,33 +132,26 @@ const (
 	iconPending    = "○"
 	iconInProgress = "◐"
 	iconCompleted  = "●"
-	iconFailed     = "✗"
 	iconSuccess    = "✓"
 	iconWarning    = "⚠"
 )
 
-func getStatusIcon(passes bool, inProgress bool, retryCount, maxRetries int) string {
+func getStatusIcon(passes bool, inProgress bool) string {
 	if passes {
 		return successStyle.Render(iconCompleted)
 	}
 	if inProgress {
 		return inProgressStyle.Render(iconInProgress)
 	}
-	if retryCount >= maxRetries {
-		return errorStyle.Render(iconFailed)
-	}
 	return pendingStyle.Render(iconPending)
 }
 
-func getStatusText(passes bool, inProgress bool, retryCount, maxRetries int) string {
+func getStatusText(passes bool, inProgress bool) string {
 	if passes {
 		return successStyle.Render("completed")
 	}
 	if inProgress {
 		return inProgressStyle.Render("in progress")
-	}
-	if retryCount >= maxRetries {
-		return errorStyle.Render("failed")
 	}
 	return pendingStyle.Render("pending")
 }

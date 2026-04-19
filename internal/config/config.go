@@ -32,21 +32,17 @@ func DetectProvider(model string) Provider {
 const DefaultTestCommand = "go test ./..."
 
 type Config struct {
-	Model         string `json:"model"`
-	MaxIterations int    `json:"max_iterations"`
-	RetryAttempts int    `json:"retry_attempts"`
-	PRDFile       string `json:"prd_file"`
-	WorkDir       string `json:"-"`
-	TestCommand   string `json:"test_command"`
+	Model       string `json:"model"`
+	PRDFile     string `json:"prd_file"`
+	WorkDir     string `json:"-"`
+	TestCommand string `json:"test_command"`
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		Model:         DefaultModel,
-		MaxIterations: 50,
-		RetryAttempts: 3,
-		PRDFile:       "prd.json",
-		TestCommand:   DefaultTestCommand,
+		Model:       DefaultModel,
+		PRDFile:     "prd.json",
+		TestCommand: DefaultTestCommand,
 	}
 }
 
@@ -89,12 +85,6 @@ func (c *Config) ValidateModel() error {
 func (c *Config) Validate() error {
 	if err := c.ValidateModel(); err != nil {
 		return fmt.Errorf("invalid model configuration: %w", err)
-	}
-	if c.MaxIterations <= 0 {
-		return fmt.Errorf("max_iterations must be positive, got %d", c.MaxIterations)
-	}
-	if c.RetryAttempts < 0 {
-		return fmt.Errorf("retry_attempts must be non-negative, got %d", c.RetryAttempts)
 	}
 	if c.PRDFile == "" {
 		return fmt.Errorf("prd_file cannot be empty")

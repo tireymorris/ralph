@@ -128,7 +128,6 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 		ProjectName: "Done Project",
 		Stories:     []*prd.Story{{ID: "1", Passes: true}},
 	}
-	m.iteration = 5
 	m.width = 80
 	m.height = 24
 	prepMainView(m)
@@ -139,57 +138,6 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 	}
 	if !strings.Contains(view, "completed") {
 		t.Error("View() should mention completed")
-	}
-}
-
-func TestViewPhaseFailed(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhaseFailed
-	m.width = 80
-	m.height = 24
-	prepMainView(m)
-
-	view := m.View()
-	if !strings.Contains(view, "failed") || !strings.Contains(view, "Failed") {
-		t.Error("View() should mention failure")
-	}
-}
-
-func TestViewPhaseFailedWithError(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhaseFailed
-	m.err = &testError{msg: "test error"}
-	m.width = 80
-	m.height = 24
-	prepMainView(m)
-
-	view := m.View()
-	if !strings.Contains(view, "test error") {
-		t.Error("View() should show error message")
-	}
-}
-
-func TestViewPhaseFailedWithFailedStories(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhaseFailed
-	m.prd = &prd.PRD{
-		Stories: []*prd.Story{
-			{ID: "1", Title: "Failed Story", Passes: false, RetryCount: 3},
-		},
-	}
-	m.width = 80
-	m.height = 45
-	prepMainView(m)
-
-	view := m.View()
-	if !strings.Contains(view, "Failed Story") {
-		t.Error("View() should list failed stories")
-	}
-	if !strings.Contains(view, "--resume") {
-		t.Error("View() should suggest resume option")
 	}
 }
 
@@ -224,7 +172,7 @@ func TestRenderPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted, PhaseFailed}
+	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted}
 	for _, p := range phases {
 		m.phase = p
 		result := m.renderPhase()

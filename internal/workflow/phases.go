@@ -8,8 +8,8 @@ package workflow
 //	DocPhaseClarify   → RunClarify (optional; may skip if no questions)
 //	DocPhaseGenerate  → RunGenerateWithAnswers / RunGenerate / RunLoad (--resume)
 //	DocPhaseReview    → EventPRDReview (consumer confirms or edits PRD)
-//	DocPhaseImplement → RunImplementation (story loop until complete or failed)
-//	DocPhaseComplete  → EventCompleted or EventFailed
+//	DocPhaseImplement → RunImplementation (story loop until all pass)
+//	DocPhaseComplete  → EventCompleted
 //
 // See RunClarify, RunGenerateWithAnswers, RunLoad, RunImplementation, and phase_*.go.
 type DocOrchestratorPhase int
@@ -20,7 +20,6 @@ const (
 	DocPhaseReview
 	DocPhaseImplement
 	DocPhaseComplete
-	DocPhaseFailed
 )
 
 func (p DocOrchestratorPhase) String() string {
@@ -35,8 +34,6 @@ func (p DocOrchestratorPhase) String() string {
 		return "implement"
 	case DocPhaseComplete:
 		return "complete"
-	case DocPhaseFailed:
-		return "failed"
 	default:
 		return "unknown"
 	}
