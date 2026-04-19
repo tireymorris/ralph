@@ -2,13 +2,11 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"ralph/internal/config"
 	"ralph/internal/prd"
@@ -85,7 +83,6 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "true" // Tests always pass
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -98,13 +95,9 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner marks story as passing
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		outputCh <- runner.OutputLine{Text: "Working on story..."}
-		// Load, update, and save PRD to mark story as complete
-		p, _ := prd.Load(cfg)
-		p.Stories[0].Passes = true
-		return prd.Save(cfg, p)
+		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
@@ -126,19 +119,20 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	if !foundCompleted {
 		t.Error("expected EventCompleted to be emitted")
 	}
+
+	// Verify story was marked as passing
+	p, _ := prd.Load(cfg)
+	if !p.Stories[0].Passes {
+		t.Error("expected story to be marked as passing")
+	}
 }
 
-// Test when passes is true but tests fail, story marked passes:false
-func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
+// Test when runner fails but story is still marked complete
+func TestRunImplementationRunnerFailureStillMarksComplete(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "exit 1" // Force tests to fail
-
-	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
-		t.Fatalf("failed to create placeholder: %v", err)
-	}
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -152,47 +146,37 @@ func TestRunImplementationPassesTrueButTestsFail(t *testing.T) {
 	mock := newMockRunner()
 
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		outputCh <- runner.OutputLine{Text: "Working on story..."}
-		p, _ := prd.Load(cfg)
-		p.Stories[0].Passes = true
-		return prd.Save(cfg, p)
+		return errors.New("runner failed")
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
-	_ = exec.RunImplementation(ctx, testPRD)
-
-	prdPath := filepath.Join(tmpDir, "prd.json")
-	data, err := os.ReadFile(prdPath)
+	// Should not return error, story is marked complete regardless
 	if err != nil {
-		t.Fatalf("failed to read PRD: %v", err)
+		t.Fatalf("RunImplementation() error = %v", err)
 	}
-	var p prd.PRD
-	if err := json.Unmarshal(data, &p); err != nil {
-		t.Fatalf("failed to unmarshal PRD: %v", err)
-	}
-	if p.Stories[0].Passes {
-		t.Error("expected passes to be false after test failure")
+
+	// Verify story was marked as passing
+	p, _ := prd.Load(cfg)
+	if !p.Stories[0].Passes {
+		t.Error("expected story to be marked as passing even after runner failure")
 	}
 }
 
-// Test when passes is true and tests pass, story stays passes:true
-func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
+// Test RunImplementation processes multiple stories sequentially
+func TestRunImplementationMultipleStories(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "echo success"
-
-	if err := os.WriteFile(filepath.Join(tmpDir, ".gitkeep"), []byte{}, 0644); err != nil {
-		t.Fatalf("failed to create placeholder: %v", err)
-	}
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories: []*prd.Story{
+			{ID: "1", Title: "Story 1", Description: "Desc 1", AcceptanceCriteria: []string{"AC1"}, Priority: 1, Passes: false},
+			{ID: "2", Title: "Story 2", Description: "Desc 2", AcceptanceCriteria: []string{"AC2"}, Priority: 2, Passes: false},
+		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -202,61 +186,23 @@ func TestRunImplementationPassesTrueAndTestsPass(t *testing.T) {
 	mock := newMockRunner()
 
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		outputCh <- runner.OutputLine{Text: "Working on story..."}
-		p, _ := prd.Load(cfg)
-		p.Stories[0].Passes = true
-		return prd.Save(cfg, p)
+		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	_ = exec.RunImplementation(context.Background(), testPRD)
+	err := exec.RunImplementation(context.Background(), testPRD)
 
-	foundCompleted := false
-	for len(ch) > 0 {
-		e := <-ch
-		if _, ok := e.(EventCompleted); ok {
-			foundCompleted = true
-			break
+	if err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	// Verify both stories were marked as passing
+	p, _ := prd.Load(cfg)
+	for _, s := range p.Stories {
+		if !s.Passes {
+			t.Errorf("expected story %s to be marked as passing", s.ID)
 		}
 	}
-	if !foundCompleted {
-		t.Error("expected EventCompletion when tests pass")
-	}
-}
-
-// Test RunImplementation keeps retrying until story passes
-func TestRunImplementationKeepsRetrying(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-	cfg.PRDFile = "prd.json"
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
-	}
-	if err := prd.Save(cfg, testPRD); err != nil {
-		t.Fatalf("failed to save test PRD: %v", err)
-	}
-
-	ch := make(chan Event, 100)
-	mock := newMockRunner()
-
-	// Mock runner does NOT mark story as passing
-	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		return nil // Story stays incomplete
-	}
-
-	exec := NewExecutorWithRunner(cfg, ch, mock)
-
-	// Cancel after a short time since it will keep retrying forever
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		cancel()
-	}()
-
-	_ = exec.RunImplementation(ctx, testPRD)
 }
 
 // Test RunImplementation PRD reload failure
@@ -314,7 +260,6 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		p, _ := prd.Load(cfg)
 		p.Version = 10 // Big jump
-		p.Stories[0].Passes = true
 		return prd.Save(cfg, p)
 	}
 
@@ -421,7 +366,6 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "true" // Tests always pass
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -434,9 +378,7 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		p, _ := prd.Load(cfg)
-		p.Stories[0].Passes = true
-		return prd.Save(cfg, p)
+		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)

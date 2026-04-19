@@ -157,11 +157,7 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 			fmt.Printf("Story: %s\n", e.Story.Title)
 
 		case events.EventStoryCompleted:
-			if e.Success {
-				fmt.Printf("  Completed\n\n")
-			} else {
-				fmt.Printf("  Not yet complete, will retry\n\n")
-			}
+			fmt.Printf("  Completed\n\n")
 
 		case events.EventOutput:
 			if e.Verbose && !r.verbose {

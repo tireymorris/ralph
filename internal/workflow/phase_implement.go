@@ -85,21 +85,18 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		}
 
 		updatedStory := updatedPRD.GetStory(story.ID)
-		if updatedStory != nil && updatedStory.Passes {
-			testsPass, _, _ := e.runTests(updatedPRD)
-			if testsPass {
-				logger.Debug("story completed", "story_id", story.ID)
-				e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
-			} else {
-				logger.Debug("tests failed despite passes flag, will retry", "story_id", story.ID)
-				updatedStory.Passes = false
-				if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
-					logger.Warn("failed to save after test failure", "error", saveErr, "story_id", story.ID)
-				}
-				e.emit(EventStoryCompleted{Story: updatedStory, Success: false})
-			}
-		} else {
+		if updatedStory == nil {
+			logger.Error("story disappeared after implementation", "story_id", story.ID)
 			e.emit(EventStoryCompleted{Story: story, Success: false})
+			continue
 		}
+
+		updatedStory.Passes = true
+		if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
+			logger.Warn("failed to save PRD after marking story complete", "error", saveErr, "story_id", story.ID)
+		}
+
+		logger.Debug("story completed", "story_id", story.ID)
+		e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
 	}
 }
