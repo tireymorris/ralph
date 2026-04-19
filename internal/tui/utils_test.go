@@ -62,5 +62,3 @@ func TestTruncate(t *testing.T) {
 		})
 	}
 }
-
-// TestMin removed - min() is now a built-in function in Go 1.21+

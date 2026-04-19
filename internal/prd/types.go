@@ -1,7 +1,6 @@
 package prd
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -241,7 +240,3 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	return nil
 }
 
-func (p *PRD) ToJSON() string {
-	data, _ := json.MarshalIndent(p, "", "  ")
-	return string(data)
-}

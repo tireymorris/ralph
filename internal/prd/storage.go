@@ -67,7 +67,6 @@ func Save(cfg *config.Config, p *PRD) error {
 
 	dir := filepath.Dir(prdPath)
 
-	rand.Seed(time.Now().UnixNano())
 	tmpPath := filepath.Join(dir, fmt.Sprintf(".prd.tmp.%d.%d", time.Now().Unix(), rand.Intn(constants.TempFileRandomRange)))
 
 	if err := os.WriteFile(tmpPath, data, 0600); err != nil {

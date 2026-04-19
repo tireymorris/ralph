@@ -100,7 +100,7 @@ func (l *Logger) refreshLogView() {
 		} else if strings.Contains(lowerText, "starting") || strings.Contains(lowerText, "generating") || strings.Contains(lowerText, "running") {
 			style = logInfoStyle
 		} else if strings.Contains(lowerText, "warning") || strings.Contains(lowerText, "warn") {
-			style = logLineStyle.Copy().Foreground(warningColor)
+			style = logLineStyle.Foreground(warningColor)
 		}
 
 		lines = append(lines, style.Render(line))
