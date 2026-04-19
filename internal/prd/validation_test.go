@@ -130,13 +130,6 @@ func TestStory_Validate(t *testing.T) {
 			wantErr: true,
 			errMsg:  "acceptance criteria",
 		},
-		{
-			name:    "negative retry count",
-			story:   &Story{ID: "story-1", Title: "Story 1", Description: "Description", RetryCount: -1},
-			seenIDs: make(map[string]bool),
-			wantErr: true,
-			errMsg:  "story retry count",
-		},
 	}
 
 	for _, tt := range tests {

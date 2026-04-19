@@ -13,7 +13,6 @@ type (
 	EventOutput              = events.EventOutput
 	EventError               = events.EventError
 	EventCompleted           = events.EventCompleted
-	EventFailed              = events.EventFailed
 	EventClarifyingQuestions = events.EventClarifyingQuestions
 	EventPRDReview           = events.EventPRDReview
 )

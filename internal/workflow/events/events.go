@@ -34,8 +34,7 @@ type EventPRDLoaded struct {
 func (EventPRDLoaded) isEvent() {}
 
 type EventStoryStarted struct {
-	Story     *prd.Story
-	Iteration int
+	Story *prd.Story
 }
 
 func (EventStoryStarted) isEvent() {}
@@ -62,12 +61,6 @@ func (EventError) isEvent() {}
 type EventCompleted struct{}
 
 func (EventCompleted) isEvent() {}
-
-type EventFailed struct {
-	FailedStories []*prd.Story
-}
-
-func (EventFailed) isEvent() {}
 
 // EventClarifyingQuestions is emitted when the AI has generated clarifying
 // questions. The consumer (TUI or CLI) should collect answers and send them

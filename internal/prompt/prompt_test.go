@@ -194,7 +194,6 @@ func TestStoryImplementation(t *testing.T) {
 		featureTestSpec    string
 		context            string
 		prdFile            string
-		iteration          int
 		completed          int
 		total              int
 		mustInclude        []string
@@ -209,7 +208,6 @@ func TestStoryImplementation(t *testing.T) {
 			featureTestSpec:    "",
 			context:            "",
 			prdFile:            "prd.json",
-			iteration:          1,
 			completed:          0,
 			total:              3,
 			mustInclude: []string{
@@ -218,7 +216,6 @@ func TestStoryImplementation(t *testing.T) {
 				"Implement login functionality",
 				"User can login",
 				"Error on bad credentials",
-				"Iteration 1",
 				"0/3",
 				"prd.json",
 			},
@@ -233,7 +230,6 @@ func TestStoryImplementation(t *testing.T) {
 			featureTestSpec:    "Test end-to-end: 1) Login works, 2) Errors handled",
 			context:            "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'.",
 			prdFile:            "prd.json",
-			iteration:          1,
 			completed:          0,
 			total:              2,
 			mustInclude: []string{
@@ -256,7 +252,6 @@ func TestStoryImplementation(t *testing.T) {
 			featureTestSpec:    "",
 			context:            "",
 			prdFile:            "prd.json",
-			iteration:          1,
 			completed:          0,
 			total:              1,
 			mustInclude:        []string{"A; B; C"},
@@ -273,7 +268,6 @@ func TestStoryImplementation(t *testing.T) {
 				tt.featureTestSpec,
 				tt.context,
 				tt.prdFile,
-				tt.iteration,
 				tt.completed,
 				tt.total,
 				nil, // dependsOn

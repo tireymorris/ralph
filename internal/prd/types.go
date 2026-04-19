@@ -19,7 +19,6 @@ type Story struct {
 	Priority           int      `json:"priority"`
 	DependsOn          []string `json:"depends_on,omitempty"` // Story IDs this story depends on
 	Passes             bool     `json:"passes"`
-	RetryCount         int      `json:"retry_count"`
 }
 
 type PRD struct {
@@ -32,13 +31,10 @@ type PRD struct {
 	Stories     []*Story `json:"stories"`
 }
 
-func (p *PRD) NextPendingStory(maxRetries int) *Story {
+func (p *PRD) NextPendingStory() *Story {
 	var best *Story
 	for _, story := range p.Stories {
 		if story.Passes {
-			continue
-		}
-		if story.RetryCount >= maxRetries {
 			continue
 		}
 		if best == nil || story.Priority < best.Priority {
@@ -48,15 +44,12 @@ func (p *PRD) NextPendingStory(maxRetries int) *Story {
 	return best
 }
 
-// ReadyStories returns all stories that are ready to run (not passed, not exceeded
-// retries, and all dependencies are satisfied).
-func (p *PRD) ReadyStories(maxRetries int) []*Story {
+// ReadyStories returns all stories that are ready to run (not passed and all
+// dependencies are satisfied).
+func (p *PRD) ReadyStories() []*Story {
 	var ready []*Story
 	for _, story := range p.Stories {
 		if story.Passes {
-			continue
-		}
-		if story.RetryCount >= maxRetries {
 			continue
 		}
 		if !p.dependenciesSatisfied(story) {
@@ -81,14 +74,11 @@ func (p *PRD) dependenciesSatisfied(story *Story) bool {
 	return true
 }
 
-// BlockedStories returns stories that cannot run due to failed dependencies.
-func (p *PRD) BlockedStories(maxRetries int) []*Story {
+// BlockedStories returns stories that cannot run due to unmet dependencies.
+func (p *PRD) BlockedStories() []*Story {
 	var blocked []*Story
 	for _, story := range p.Stories {
 		if story.Passes {
-			continue
-		}
-		if story.RetryCount >= maxRetries {
 			continue
 		}
 		if !p.dependenciesSatisfied(story) {
@@ -143,16 +133,6 @@ func (p *PRD) CompletedCount() int {
 		}
 	}
 	return count
-}
-
-func (p *PRD) FailedStories(maxRetries int) []*Story {
-	var failed []*Story
-	for _, story := range p.Stories {
-		if !story.Passes && story.RetryCount >= maxRetries {
-			failed = append(failed, story)
-		}
-	}
-	return failed
 }
 
 func (p *PRD) AllCompleted() bool {
@@ -224,8 +204,8 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
 	}
 
-	if s.RetryCount < 0 {
-		return fmt.Errorf("story retry count %d cannot be negative", s.RetryCount)
+	if s.Priority < 0 {
+		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
 	}
 
 	for _, dep := range s.DependsOn {

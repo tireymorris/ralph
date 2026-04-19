@@ -63,8 +63,6 @@ func (m *Model) renderPhase() string {
 	switch m.phase {
 	case PhaseCompleted:
 		icon = iconSuccess
-	case PhaseFailed:
-		icon = iconFailed
 	case PhaseClarifying:
 		icon = "?"
 	case PhasePRDReview:
@@ -208,8 +206,8 @@ func (m *Model) renderImplementation() string {
 	b.WriteString("\n")
 	for _, s := range m.prd.Stories {
 		isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
-		icon := getStatusIcon(s.Passes, isCurrentStory, s.RetryCount, m.cfg.RetryAttempts)
-		status := getStatusText(s.Passes, isCurrentStory, s.RetryCount, m.cfg.RetryAttempts)
+		icon := getStatusIcon(s.Passes, isCurrentStory)
+		status := getStatusText(s.Passes, isCurrentStory)
 
 		if isCurrentStory {
 			line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
@@ -240,37 +238,6 @@ func (m *Model) renderCompleted() string {
 		b.WriteString(labelStyle.Render("Project") + " " + valueStyle.Render(m.prd.ProjectName))
 		b.WriteString("\n")
 		b.WriteString(labelStyle.Render("Stories") + " " + valueStyle.Render(fmt.Sprintf("%d completed", len(m.prd.Stories))))
-		b.WriteString("\n")
-		b.WriteString(labelStyle.Render("Iterations") + " " + valueStyle.Render(fmt.Sprintf("%d", m.iteration)))
-		b.WriteString("\n")
-	}
-
-	return infoStyle.Render(b.String())
-}
-
-func (m *Model) renderFailed() string {
-	var b strings.Builder
-
-	b.WriteString(errorStyle.Render(iconFailed + " Implementation failed"))
-	b.WriteString("\n\n")
-
-	if m.err != nil {
-		b.WriteString(labelStyle.Render("Error") + " " + errorStyle.Render(fmt.Sprintf("%v", m.err)))
-		b.WriteString("\n")
-	}
-
-	if m.prd != nil {
-		failed := m.prd.FailedStories(m.cfg.RetryAttempts)
-		if len(failed) > 0 {
-			b.WriteString("\n")
-			b.WriteString(warningStyle.Render(fmt.Sprintf("%s Failed stories (%d):", iconWarning, len(failed))))
-			b.WriteString("\n")
-			for _, s := range failed {
-				b.WriteString(fmt.Sprintf("    %s %s (%d attempts)\n", iconFailed, s.Title, s.RetryCount))
-			}
-		}
-		b.WriteString("\n")
-		b.WriteString(mutedStyle.Render("Run with --resume to retry after fixing issues."))
 		b.WriteString("\n")
 	}
 
@@ -307,8 +274,6 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderImplementation())
 	case PhaseCompleted:
 		b.WriteString(m.renderCompleted())
-	case PhaseFailed:
-		b.WriteString(m.renderFailed())
 	}
 	m.mainPane.SetContent(b.String())
 }

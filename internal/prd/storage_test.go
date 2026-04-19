@@ -26,7 +26,6 @@ func TestSaveAndLoad(t *testing.T) {
 				AcceptanceCriteria: []string{"criterion 1"},
 				Priority:           1,
 				Passes:             false,
-				RetryCount:         0,
 			},
 		},
 	}
@@ -186,8 +185,7 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
       "description": "test",
       "acceptance_criteria": [],
       "priority": 1,
-      "passes": false,
-      "retry_count": 0
+      "passes": false
     }
   ]
 }`

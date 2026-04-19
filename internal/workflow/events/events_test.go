@@ -13,12 +13,11 @@ func TestEventTypes(t *testing.T) {
 		EventPRDGenerating{},
 		EventPRDGenerated{PRD: &prd.PRD{}},
 		EventPRDLoaded{PRD: &prd.PRD{}},
-		EventStoryStarted{Story: &prd.Story{}, Iteration: 1},
+		EventStoryStarted{Story: &prd.Story{}},
 		EventStoryCompleted{Story: &prd.Story{}, Success: true},
 		EventOutput{Output: Output{Text: "test", IsErr: false}},
 		EventError{Err: nil},
 		EventCompleted{},
-		EventFailed{FailedStories: nil},
 		EventClarifyingQuestions{Questions: []string{"Q?"}, AnswersCh: answersCh},
 		EventPRDReview{PRD: &prd.PRD{}},
 	}
@@ -37,7 +36,6 @@ func TestAllEventIsEventMethods(t *testing.T) {
 	EventOutput{}.isEvent()
 	EventError{}.isEvent()
 	EventCompleted{}.isEvent()
-	EventFailed{}.isEvent()
 	EventPRDReview{}.isEvent()
 }
 

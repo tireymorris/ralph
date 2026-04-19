@@ -22,7 +22,6 @@ const (
 	PhasePRDReview
 	PhaseImplementation
 	PhaseCompleted
-	PhaseFailed
 )
 
 func (p Phase) String() string {
@@ -39,8 +38,6 @@ func (p Phase) String() string {
 		return "Phase 2: Implementation"
 	case PhaseCompleted:
 		return "Completed"
-	case PhaseFailed:
-		return "Failed"
 	default:
 		return "Unknown"
 	}
@@ -57,7 +54,6 @@ type Model struct {
 	phase        Phase
 	prd          *prd.PRD
 	currentStory *prd.Story
-	iteration    int
 	err          error
 	quitting     bool
 	width        int
@@ -121,15 +117,8 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 }
 
 func (m *Model) ExitCode() int {
-	switch m.phase {
-	case PhaseCompleted:
+	if m.phase == PhaseCompleted {
 		return 0
-	case PhaseFailed:
-		if m.prd != nil && m.prd.CompletedCount() > 0 {
-			return 2
-		}
-		return 1
-	default:
-		return 1
 	}
+	return 1
 }

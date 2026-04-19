@@ -44,7 +44,7 @@ func run() int {
 		fmt.Print(args.HelpText())
 		return 1
 	}
-	logger.Debug("config loaded", "model", cfg.Model, "max_iterations", cfg.MaxIterations)
+	logger.Debug("config loaded", "model", cfg.Model)
 
 	if err := cli.ValidateResume(cfg, opts.Resume); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

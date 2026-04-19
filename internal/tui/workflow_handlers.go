@@ -80,9 +80,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventStoryStarted:
 		m.currentStory = e.Story
-		m.iteration = e.Iteration
-		m.logger.AddLog(fmt.Sprintf("Starting: %s (attempt %d/%d)",
-			e.Story.Title, e.Story.RetryCount+1, m.cfg.RetryAttempts))
+		m.logger.AddLog(fmt.Sprintf("Starting: %s", e.Story.Title))
 
 	case events.EventStoryCompleted:
 		if e.Success {
@@ -93,7 +91,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 				}
 			}
 		} else {
-			m.logger.AddLog(fmt.Sprintf("Failed: %s", e.Story.Title))
+			m.logger.AddLog(fmt.Sprintf("Retrying: %s", e.Story.Title))
 		}
 
 	case events.EventOutput:
@@ -104,19 +102,11 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 	case events.EventError:
 		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
 		m.err = e.Err
-		m.phase = PhaseFailed
 		m.markMainScrollJump()
 
 	case events.EventCompleted:
 		m.phase = PhaseCompleted
 		m.logger.AddLog("All stories completed!")
-		m.markMainScrollJump()
-
-	case events.EventFailed:
-		m.phase = PhaseFailed
-		if len(e.FailedStories) > 0 {
-			m.logger.AddLog(fmt.Sprintf("Failed: %d stories exceeded retry limit", len(e.FailedStories)))
-		}
 		m.markMainScrollJump()
 	}
 
