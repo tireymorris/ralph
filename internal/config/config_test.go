@@ -32,6 +32,8 @@ func TestDetectProvider(t *testing.T) {
 		{"opencode-go prefix", "opencode-go/qwen3.6-plus", ProviderOpenCode},
 		{"anthropic prefix", "anthropic/claude-3-5-sonnet-20240620", ProviderOpenCode},
 		{"ollama prefix", "ollama/llama3.2:3b", ProviderOpenCode},
+		{"cursor-agent with model", "cursor-agent/sonnet-4", ProviderCursorAgent},
+		{"cursor-agent empty suffix", "cursor-agent/", ProviderCursorAgent},
 		{"unknown provider", "invalid-model", ProviderUnknown},
 		{"empty string", "", ProviderUnknown},
 	}

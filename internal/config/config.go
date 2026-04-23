@@ -12,15 +12,19 @@ const DefaultModel = "pi/auto"
 type Provider string
 
 const (
-	ProviderClaudeCode Provider = "claude-code"
-	ProviderPi         Provider = "pi"
-	ProviderOpenCode   Provider = "opencode"
-	ProviderUnknown    Provider = "unknown"
+	ProviderClaudeCode   Provider = "claude-code"
+	ProviderCursorAgent  Provider = "cursor-agent"
+	ProviderPi           Provider = "pi"
+	ProviderOpenCode     Provider = "opencode"
+	ProviderUnknown      Provider = "unknown"
 )
 
 func DetectProvider(model string) Provider {
 	if strings.HasPrefix(model, "claude-code/") {
 		return ProviderClaudeCode
+	}
+	if strings.HasPrefix(model, "cursor-agent/") {
+		return ProviderCursorAgent
 	}
 	if strings.HasPrefix(model, "pi/") {
 		return ProviderPi
