@@ -43,6 +43,10 @@ func New(cfg *config.Config) RunnerInterface {
 		logger.Debug("using pi runner", "model", cfg.Model)
 		return NewPi(cfg)
 	}
+	if provider == config.ProviderCursorAgent {
+		logger.Debug("using cursor-agent runner", "model", cfg.Model)
+		return NewCursorAgent(cfg)
+	}
 
 	logger.Debug("using OpenCode runner", "model", cfg.Model)
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
