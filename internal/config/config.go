@@ -7,12 +7,13 @@ import (
 	"strings"
 )
 
-const DefaultModel = "opencode/kimi-k2.5-free"
+const DefaultModel = "pi/auto"
 
 type Provider string
 
 const (
 	ProviderClaudeCode Provider = "claude-code"
+	ProviderPi         Provider = "pi"
 	ProviderOpenCode   Provider = "opencode"
 	ProviderUnknown    Provider = "unknown"
 )
@@ -20,6 +21,9 @@ const (
 func DetectProvider(model string) Provider {
 	if strings.HasPrefix(model, "claude-code/") {
 		return ProviderClaudeCode
+	}
+	if strings.HasPrefix(model, "pi/") {
+		return ProviderPi
 	}
 	if strings.HasPrefix(model, "opencode/") || strings.HasPrefix(model, "opencode-go/") {
 		return ProviderOpenCode
@@ -77,7 +81,10 @@ func (c *Config) ValidateModel() error {
 	}
 	provider := DetectProvider(c.Model)
 	if provider == ProviderUnknown {
-		return fmt.Errorf("unknown provider for model %q (supported prefixes: claude-code/, opencode/, opencode-go/, anthropic/, ollama/)", c.Model)
+		return fmt.Errorf("unknown provider for model %q (supported prefixes: claude-code/, pi/, opencode/, opencode-go/, anthropic/, ollama/)", c.Model)
+	}
+	if provider == ProviderPi && strings.TrimPrefix(c.Model, "pi/") == "" {
+		return fmt.Errorf("model cannot be empty after pi/ prefix")
 	}
 	return nil
 }

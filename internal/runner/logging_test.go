@@ -37,6 +37,12 @@ func TestRunnerNames(t *testing.T) {
 			wantRunner:  "Claude Code",
 			wantCommand: "claude",
 		},
+		{
+			name:        "pi runner",
+			model:       "pi/auto",
+			wantRunner:  "pi",
+			wantCommand: "pi",
+		},
 	}
 
 	for _, tt := range tests {
@@ -46,12 +52,7 @@ func TestRunnerNames(t *testing.T) {
 				WorkDir: "/tmp",
 			}
 
-			var runner RunnerInterface
-			if config.DetectProvider(tt.model) == config.ProviderClaudeCode {
-				runner = NewClaude(cfg)
-			} else {
-				runner = &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
-			}
+			runner := New(cfg)
 
 			// Verify runner methods return correct names
 			if runner.RunnerName() != tt.wantRunner {

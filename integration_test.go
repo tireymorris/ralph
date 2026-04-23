@@ -95,7 +95,7 @@ func TestIntegrationDryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "test", "--dry-run")
 	cmd.Dir = tmpDir
-	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
+	cmd.Env = append(os.Environ(), "RALPH_MODEL=opencode/big-pickle", "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
@@ -148,7 +148,7 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 		expect eof
 	`)
 	cmd.Dir = tmpDir
-	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
+	cmd.Env = append(os.Environ(), "RALPH_MODEL=opencode/big-pickle", "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	outputStr := string(output)
 
@@ -185,7 +185,7 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure")
 	cmd.Dir = tmpDir
-	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
+	cmd.Env = append(os.Environ(), "RALPH_MODEL=opencode/big-pickle", "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
@@ -212,7 +212,7 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	// Run with --verbose to verify detailed error logging
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure", "--verbose")
 	cmd.Dir = tmpDir
-	cmd.Env = append(os.Environ(), "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
+	cmd.Env = append(os.Environ(), "RALPH_MODEL=opencode/big-pickle", "RALPH_MAX_ITERATIONS=5", "RALPH_RETRY_ATTEMPTS=3")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
 		t.Fatalf("Command failed: %v", err)
