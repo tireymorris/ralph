@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -85,5 +86,13 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		"command", r.CommandName(),
 		"model", r.cfg.Model,
 		"model_suffix", suffix)
+	return nil
+}
+
+func parseCursorStreamJSON(line string) []OutputLine {
+	var event claudeStreamEvent
+	if err := json.Unmarshal([]byte(line), &event); err != nil {
+		return []OutputLine{{Text: line, Time: time.Now(), Verbose: true}}
+	}
 	return nil
 }
