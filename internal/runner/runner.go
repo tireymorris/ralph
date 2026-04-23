@@ -39,6 +39,10 @@ func New(cfg *config.Config) RunnerInterface {
 		logger.Debug("using Claude Code runner", "model", cfg.Model)
 		return NewClaude(cfg)
 	}
+	if provider == config.ProviderPi {
+		logger.Debug("using pi runner", "model", cfg.Model)
+		return NewPi(cfg)
+	}
 
 	logger.Debug("using OpenCode runner", "model", cfg.Model)
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
@@ -60,10 +64,8 @@ func (r *Runner) CommandName() string {
 	return "opencode"
 }
 
-// IsInternalLog determines if a line contains OpenCode-specific internal log patterns
-// that should be filtered out as verbose noise rather than shown to the user.
 func (r *Runner) IsInternalLog(line string) bool {
-	return isOpenCodeInternalLog(line)
+	return stderrLineIsInternal(line, stderrFilterOpenCode)
 }
 
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
@@ -149,6 +151,49 @@ func isOpenCodeInternalLog(line string) bool {
 
 	for _, pattern := range internalLogPatterns {
 		if strings.Contains(line, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type stderrFilter int
+
+const (
+	stderrFilterOpenCode stderrFilter = iota
+	stderrFilterDefaultPipedCLI
+)
+
+func stderrLineIsInternal(line string, f stderrFilter) bool {
+	if isUserError(line) {
+		return false
+	}
+	if f == stderrFilterOpenCode {
+		return isOpenCodeInternalLog(line)
+	}
+	return true
+}
+
+func isUserError(line string) bool {
+	userErrorPatterns := []string{
+		"error:",
+		"failed:",
+		"cannot:",
+		"unable:",
+		"permission denied",
+		"file not found",
+		"no such file",
+		"invalid",
+		"error",
+		"failed",
+		"cannot",
+		"unable",
+	}
+
+	lowerLine := strings.ToLower(line)
+	for _, pattern := range userErrorPatterns {
+		if strings.Contains(lowerLine, pattern) {
 			return true
 		}
 	}

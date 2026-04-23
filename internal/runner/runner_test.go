@@ -413,10 +413,9 @@ func TestNewWithDefaultModel(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Should return OpenCode Runner for default model (opencode/kimi-k2.5-free)
-	_, ok := runner.(*Runner)
+	_, ok := runner.(*PiRunner)
 	if !ok {
-		t.Errorf("New() returned %T, want *Runner for default model", runner)
+		t.Errorf("New() returned %T, want *PiRunner for default model", runner)
 	}
 }
 
@@ -453,6 +452,21 @@ func TestNewWithErrorValidOpenCodeModel(t *testing.T) {
 	_, ok := runner.(*Runner)
 	if !ok {
 		t.Errorf("NewWithError() returned %T, want *Runner", runner)
+	}
+}
+
+func TestNewWithErrorValidPiModel(t *testing.T) {
+	cfg := &config.Config{Model: "pi/sonnet"}
+	runner, err := NewWithError(cfg)
+	if err != nil {
+		t.Fatalf("NewWithError() error = %v", err)
+	}
+	if runner == nil {
+		t.Fatal("NewWithError() returned nil runner")
+	}
+	_, ok := runner.(*PiRunner)
+	if !ok {
+		t.Errorf("NewWithError() returned %T, want *PiRunner", runner)
 	}
 }
 
@@ -498,6 +512,13 @@ func TestModelSwitchingBetweenRuns(t *testing.T) {
 	_, ok3 := runner3.(*ClaudeRunner)
 	if !ok3 {
 		t.Errorf("Third New() call returned %T, want *ClaudeRunner", runner3)
+	}
+
+	piCfg := &config.Config{Model: "pi/sonnet"}
+	runner4 := New(piCfg)
+	_, ok4 := runner4.(*PiRunner)
+	if !ok4 {
+		t.Errorf("Pi New() returned %T, want *PiRunner", runner4)
 	}
 }
 
@@ -585,6 +606,45 @@ func TestIntegrationOpenCodeModelExecution(t *testing.T) {
 	}
 }
 
+func TestIntegrationPiModelExecution(t *testing.T) {
+	cfg := &config.Config{Model: "pi/sonnet"}
+	runner := New(cfg)
+
+	var capturedName string
+	var capturedArgs []string
+	mock := &mockCmd{stdout: `{"type":"session","version":3}`, stderr: ""}
+
+	piR, ok := runner.(*PiRunner)
+	if !ok {
+		t.Fatalf("Expected *PiRunner, got %T", runner)
+	}
+
+	piR.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		capturedName = name
+		capturedArgs = args
+		return mock
+	}
+
+	err := runner.Run(context.Background(), "test prompt", nil)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if capturedName != "pi" {
+		t.Errorf("Expected command 'pi', got %q", capturedName)
+	}
+
+	expectedArgs := []string{"--mode", "json", "--no-session", "--provider", "cursor", "--model", "sonnet", "test prompt"}
+	if len(capturedArgs) != len(expectedArgs) {
+		t.Fatalf("Expected %d args, got %d: %v", len(expectedArgs), len(capturedArgs), capturedArgs)
+	}
+	for i, expected := range expectedArgs {
+		if capturedArgs[i] != expected {
+			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
+		}
+	}
+}
+
 func TestRunnerInterfaceIsInternalLog(t *testing.T) {
 	// Test OpenCode runner
 	openCodeCfg := &config.Config{Model: "opencode/big-pickle"}
@@ -598,6 +658,7 @@ func TestRunnerInterfaceIsInternalLog(t *testing.T) {
 		{"service=bus starting", true},
 		{"Regular output", false},
 		{"INFO 2026-01-19T22:45:58 service=provider test", true},
+		{"service=bus file not found", false},
 	}
 
 	for _, tt := range tests {
@@ -626,6 +687,22 @@ func TestRunnerInterfaceIsInternalLog(t *testing.T) {
 		got := claudeRunner.IsInternalLog(tt.line)
 		if got != tt.want {
 			t.Errorf("ClaudeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
+		}
+	}
+
+	piCfg := &config.Config{Model: "pi/sonnet"}
+	piRunner := New(piCfg)
+	piTests := []struct {
+		line string
+		want bool
+	}{
+		{"debug info", true},
+		{"Error: file not found", false},
+	}
+	for _, tt := range piTests {
+		got := piRunner.IsInternalLog(tt.line)
+		if got != tt.want {
+			t.Errorf("PiRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
 		}
 	}
 }

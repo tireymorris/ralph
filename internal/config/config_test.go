@@ -27,6 +27,8 @@ func TestDetectProvider(t *testing.T) {
 		{"claude-code haiku", "claude-code/haiku", ProviderClaudeCode},
 		{"claude-code opus", "claude-code/opus", ProviderClaudeCode},
 		{"opencode prefix", "opencode/kimi-k2.5-free", ProviderOpenCode},
+		{"pi prefix", "pi/auto", ProviderPi},
+		{"pi openai style", "pi/openai/gpt-4o", ProviderPi},
 		{"opencode-go prefix", "opencode-go/qwen3.6-plus", ProviderOpenCode},
 		{"anthropic prefix", "anthropic/claude-3-5-sonnet-20240620", ProviderOpenCode},
 		{"ollama prefix", "ollama/llama3.2:3b", ProviderOpenCode},
@@ -212,6 +214,16 @@ func TestValidateModel(t *testing.T) {
 			name:    "valid ollama model",
 			model:   "ollama/llama3.2:3b",
 			wantErr: false,
+		},
+		{
+			name:    "valid pi model",
+			model:   "pi/auto",
+			wantErr: false,
+		},
+		{
+			name:    "invalid pi empty pattern",
+			model:   "pi/",
+			wantErr: true,
 		},
 		{
 			name:    "invalid model - unknown provider",

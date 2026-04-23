@@ -1,6 +1,6 @@
 # Ralph
 
-Turns a natural-language goal into a PRD and implements user stories iteratively (OpenCode or Claude Code behind the scenes).
+Turns a natural-language goal into a PRD and implements user stories iteratively ([pi](https://pi.dev), OpenCode, or Claude Code behind the scenes).
 
 **Flow:** optional clarifying questions → PRD → review → implement stories (priority + dependencies, tests + commits). Failed stories roll back with `git reset --hard`. When everything passes, the PRD file (default `prd.json`) stays in place with all stories marked done; nothing renames or archives it.
 
@@ -8,7 +8,7 @@ Turns a natural-language goal into a PRD and implements user stories iteratively
 
 - Go 1.24+
 - Git
-- [OpenCode](https://github.com/opencode-ai/opencode) **or** [Claude Code](https://github.com/anthropics/claude-code) CLI on `PATH`
+- [pi](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) (`npm install -g @mariozechner/pi-coding-agent`), [OpenCode](https://github.com/opencode-ai/opencode), or [Claude Code](https://github.com/anthropics/claude-code) on `PATH` (default uses `pi`)
 
 ## Install
 
@@ -42,7 +42,7 @@ Environment variables (optional overrides; defaults shown):
 
 | Variable               | Default                   | Role                                       |
 | ---------------------- | ------------------------- | ------------------------------------------ |
-| `RALPH_MODEL`          | `opencode/kimi-k2.5-free` | Model id (must be one of the values below) |
+| `RALPH_MODEL`          | `pi/auto`                 | Model id (must use one of the prefixes below) |
 | `RALPH_MAX_ITERATIONS` | `50`                      | Cap on implementation iterations           |
 | `RALPH_RETRY_ATTEMPTS` | `3`                       | Retries per story before giving up         |
 | `RALPH_PRD_FILE`       | `prd.json`                | PRD filename in the working directory      |
@@ -51,13 +51,15 @@ Environment variables (optional overrides; defaults shown):
 
 On success the PRD is only updated in place (no rename). This repository gitignores `prd.json` by default so it stays out of `git` unless you change `.gitignore` or `RALPH_PRD_FILE`.
 
-**Supported `RALPH_MODEL` values** (from `internal/config/config.go`):
+**Supported `RALPH_MODEL` prefixes** (see `internal/config/config.go`):
 
-OpenCode: `opencode/kimi-k2.5-free`, `opencode/big-pickle`, `opencode/glm-4.7-free`, `opencode/gpt-5-nano`, `opencode/minimax-m2.1-free`, `opencode/trinity-large-preview-free`.
+pi: `pi/<model>` runs `pi` with `--provider cursor` and `--model <model>` (for example `pi/auto`). Use `pi/<provider>/<model>` to set both flags (for example `pi/openai/gpt-4o`).
+
+OpenCode: `opencode/...`, `opencode-go/...`, `anthropic/...`, `ollama/...` (examples: `opencode/kimi-k2.5-free`, `opencode/big-pickle`).
 
 Claude Code: `claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`.
 
-Upstream CLI docs list how each tool maps these to real models.
+Each CLI’s docs describe how patterns map to real models.
 
 ## Development
 
