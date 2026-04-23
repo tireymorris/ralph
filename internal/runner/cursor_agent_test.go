@@ -41,6 +41,16 @@ func TestCursorAgentIsInternalLog(t *testing.T) {
 	}
 }
 
+func TestParseCursorStreamJSON_MalformedJSON(t *testing.T) {
+	lines := parseCursorStreamJSON("not json at all")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("malformed JSON line should have Verbose=true")
+	}
+}
+
 func TestCursorAgentRunArgs(t *testing.T) {
 	tests := []struct {
 		name         string
