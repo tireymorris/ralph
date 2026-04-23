@@ -19,6 +19,28 @@ func TestNewCursorAgent(t *testing.T) {
 	}
 }
 
+func TestCursorAgentIsInternalLog(t *testing.T) {
+	cfg := &config.Config{Model: "cursor-agent/sonnet-4"}
+	r := NewCursorAgent(cfg)
+
+	tests := []struct {
+		line string
+		want bool
+	}{
+		{"debug info", true},
+		{"loading config", true},
+		{"error: something failed", false},
+		{"failed: could not connect", false},
+	}
+
+	for _, tt := range tests {
+		got := r.IsInternalLog(tt.line)
+		if got != tt.want {
+			t.Errorf("IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
+		}
+	}
+}
+
 func TestCursorAgentRunArgs(t *testing.T) {
 	tests := []struct {
 		name         string
