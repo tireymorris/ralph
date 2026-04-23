@@ -223,6 +223,16 @@ func TestValidateModel(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "valid cursor-agent model",
+			model:   "cursor-agent/sonnet-4",
+			wantErr: false,
+		},
+		{
+			name:    "valid cursor-agent empty suffix",
+			model:   "cursor-agent/",
+			wantErr: false,
+		},
+		{
 			name:    "invalid pi empty pattern",
 			model:   "pi/",
 			wantErr: true,
