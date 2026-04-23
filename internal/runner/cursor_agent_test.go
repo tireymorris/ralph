@@ -41,6 +41,20 @@ func TestCursorAgentIsInternalLog(t *testing.T) {
 	}
 }
 
+func TestParseCursorStreamJSON_AssistantText(t *testing.T) {
+	line := `{"type":"assistant","message":{"content":[{"type":"text","text":"hello world"}]}}`
+	lines := parseCursorStreamJSON(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "hello world" {
+		t.Errorf("expected text 'hello world', got %q", lines[0].Text)
+	}
+	if lines[0].IsErr {
+		t.Error("assistant text should not be an error")
+	}
+}
+
 func TestParseCursorStreamJSON_UnknownType(t *testing.T) {
 	lines := parseCursorStreamJSON(`{"type":"unknown_event"}`)
 	if lines != nil {

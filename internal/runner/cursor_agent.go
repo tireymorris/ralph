@@ -94,5 +94,32 @@ func parseCursorStreamJSON(line string) []OutputLine {
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
 		return []OutputLine{{Text: line, Time: time.Now(), Verbose: true}}
 	}
-	return nil
+
+	var outputs []OutputLine
+	now := time.Now()
+
+	switch event.Type {
+	case "assistant":
+		for _, content := range event.Message.Content {
+			switch content.Type {
+			case "text":
+				if content.Text != "" {
+					outputs = append(outputs, OutputLine{Text: content.Text, Time: now})
+				}
+			case "tool_use":
+				outputs = append(outputs, OutputLine{
+					Text: fmt.Sprintf("Using tool: %s", content.Name),
+					Time: now,
+				})
+			}
+		}
+	case "result":
+		if event.Subtype == "success" {
+			outputs = append(outputs, OutputLine{Text: "Task completed successfully", Time: now, Verbose: true})
+		} else if event.Subtype == "error" {
+			outputs = append(outputs, OutputLine{Text: "Task failed", Time: now, IsErr: true})
+		}
+	}
+
+	return outputs
 }
