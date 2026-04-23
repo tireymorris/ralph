@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"ralph/internal/config"
@@ -52,6 +53,42 @@ func TestParseCursorStreamJSON_AssistantText(t *testing.T) {
 	}
 	if lines[0].IsErr {
 		t.Error("assistant text should not be an error")
+	}
+}
+
+func TestParseCursorStreamJSON_ToolUse(t *testing.T) {
+	line := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"bash"}]}}`
+	lines := parseCursorStreamJSON(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !strings.HasPrefix(lines[0].Text, "Using tool:") {
+		t.Errorf("expected text starting with 'Using tool:', got %q", lines[0].Text)
+	}
+}
+
+func TestParseCursorStreamJSON_ResultSuccess(t *testing.T) {
+	line := `{"type":"result","subtype":"success"}`
+	lines := parseCursorStreamJSON(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("result success should have Verbose=true")
+	}
+	if lines[0].IsErr {
+		t.Error("result success should not be an error")
+	}
+}
+
+func TestParseCursorStreamJSON_ResultError(t *testing.T) {
+	line := `{"type":"result","subtype":"error"}`
+	lines := parseCursorStreamJSON(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].IsErr {
+		t.Error("result error should have IsErr=true")
 	}
 }
 
