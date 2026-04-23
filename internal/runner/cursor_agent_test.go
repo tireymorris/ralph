@@ -41,6 +41,13 @@ func TestCursorAgentIsInternalLog(t *testing.T) {
 	}
 }
 
+func TestParseCursorStreamJSON_UnknownType(t *testing.T) {
+	lines := parseCursorStreamJSON(`{"type":"unknown_event"}`)
+	if lines != nil {
+		t.Errorf("unknown event type should return nil, got %v", lines)
+	}
+}
+
 func TestParseCursorStreamJSON_MalformedJSON(t *testing.T) {
 	lines := parseCursorStreamJSON("not json at all")
 	if len(lines) != 1 {
