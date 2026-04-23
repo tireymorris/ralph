@@ -61,9 +61,7 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 
 	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
 	err := runPipedCommand(r.CommandName(), cmd, outputCh,
-		func(line string) []OutputLine {
-			return []OutputLine{{Text: line, Time: time.Now()}}
-		},
+		parseCursorStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		},
