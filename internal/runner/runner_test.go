@@ -367,6 +367,28 @@ func TestOutputLineVerboseField(t *testing.T) {
 	}
 }
 
+func TestNewReturnsCursorAgentRunner(t *testing.T) {
+	cfg := &config.Config{Model: "cursor-agent/sonnet-4"}
+	r := New(cfg)
+
+	if r == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	car, ok := r.(*CursorAgentRunner)
+	if !ok {
+		t.Fatalf("New() returned %T, want *CursorAgentRunner", r)
+	}
+
+	if car.RunnerName() != "cursor-agent" {
+		t.Errorf("RunnerName() = %q, want %q", car.RunnerName(), "cursor-agent")
+	}
+
+	if car.CommandName() != "cursor-agent" {
+		t.Errorf("CommandName() = %q, want %q", car.CommandName(), "cursor-agent")
+	}
+}
+
 func TestNewReturnsClaudeRunner(t *testing.T) {
 	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner := New(cfg)
