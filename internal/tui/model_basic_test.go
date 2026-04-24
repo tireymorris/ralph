@@ -21,6 +21,7 @@ func TestPhaseString(t *testing.T) {
 		{PhasePRDReview, "PRD Review"},
 		{PhaseImplementation, "Phase 2: Implementation"},
 		{PhaseCompleted, "Completed"},
+		{PhaseFailed, "Failed"},
 		{Phase(99), "Unknown"},
 	}
 
@@ -182,6 +183,7 @@ func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 func TestUpdatePRDErrorMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDGeneration
 
 	testErr := &testErrorType{msg: "test error"}
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventError{Err: testErr}})
@@ -190,6 +192,52 @@ func TestUpdatePRDErrorMsg(t *testing.T) {
 		if model.err != testErr {
 			t.Error("err should be set")
 		}
+		if model.phase != PhaseFailed {
+			t.Errorf("phase = %v, want PhaseFailed", model.phase)
+		}
+	}
+}
+
+func TestUpdateRetryAfterFailureRestartsPRDFlow(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "prompt", false, false, false)
+	m.width, m.height = 120, 40
+	m.phase = PhaseFailed
+	m.err = &testErrorType{msg: "bad path"}
+	m.retryImplementation = false
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model := newModel.(*Model)
+	if model.err != nil {
+		t.Error("err should clear on retry")
+	}
+	if model.phase != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", model.phase)
+	}
+	if cmd == nil {
+		t.Error("expected retry command batch")
+	}
+}
+
+func TestUpdateRetryAfterFailureResumesImplementation(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "prompt", false, false, false)
+	m.width, m.height = 120, 40
+	m.phase = PhaseFailed
+	m.err = &testErrorType{msg: "story failed"}
+	m.retryImplementation = true
+	m.prd = &prd.PRD{ProjectName: "P"}
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model := newModel.(*Model)
+	if model.err != nil {
+		t.Error("err should clear on retry")
+	}
+	if model.phase != PhaseImplementation {
+		t.Errorf("phase = %v, want PhaseImplementation", model.phase)
+	}
+	if cmd == nil {
+		t.Error("expected retry command batch")
 	}
 }
 

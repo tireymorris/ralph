@@ -96,6 +96,7 @@ func TestHandleWorkflowEventCompleted(t *testing.T) {
 func TestHandleWorkflowEventError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDGeneration
 
 	testErr := &testErrorType{msg: "error"}
 	cmd := m.handleWorkflowEvent(events.EventError{Err: testErr})
@@ -104,6 +105,28 @@ func TestHandleWorkflowEventError(t *testing.T) {
 	}
 	if m.err != testErr {
 		t.Error("err should be set")
+	}
+	if m.phase != PhaseFailed {
+		t.Errorf("phase = %v, want PhaseFailed", m.phase)
+	}
+	if m.retryImplementation {
+		t.Error("retryImplementation should be false when not implementing")
+	}
+}
+
+func TestHandleWorkflowEventErrorDuringImplementation(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{ProjectName: "P"}
+
+	testErr := &testErrorType{msg: "error"}
+	m.handleWorkflowEvent(events.EventError{Err: testErr})
+	if m.phase != PhaseFailed {
+		t.Errorf("phase = %v, want PhaseFailed", m.phase)
+	}
+	if !m.retryImplementation {
+		t.Error("retryImplementation should be true after implementation failure")
 	}
 }
 

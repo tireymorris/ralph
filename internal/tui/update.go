@@ -86,6 +86,37 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		if m.phase == PhaseFailed && msg.String() == "r" {
+			useImpl := m.retryImplementation
+			m.retryImplementation = false
+			m.err = nil
+			m.scrollPane = focusMain
+			m.snapMainToTop = true
+			var cmd tea.Cmd
+			if useImpl && m.prd != nil {
+				m.phase = PhaseImplementation
+				cmd = tea.Batch(
+					m.operationManager.StartImplementation(m.prd),
+					m.operationManager.ListenForEvents(),
+				)
+			} else {
+				m.clarifyQuestions = nil
+				m.clarifyInputs = nil
+				m.clarifyAnswersCh = nil
+				m.clarifyFocused = 0
+				m.phase = PhasePRDGeneration
+				cmd = tea.Batch(
+					m.operationManager.StartFullOperation(m.resume, m.prompt),
+					m.operationManager.ListenForEvents(),
+				)
+			}
+			if m.width > 0 && m.height > 0 {
+				m.applyLayout(m.width, m.height)
+			}
+			m.rebuildMainScrollContent()
+			return m, cmd
+		}
+
 	case tea.WindowSizeMsg:
 		needsMainRebuild = true
 		m.width = msg.Width

@@ -97,7 +97,9 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventError:
 		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
+		m.retryImplementation = m.phase == PhaseImplementation
 		m.err = e.Err
+		m.phase = PhaseFailed
 		m.markMainScrollJump()
 
 	case events.EventCompleted:

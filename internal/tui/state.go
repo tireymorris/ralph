@@ -22,6 +22,7 @@ const (
 	PhasePRDReview
 	PhaseImplementation
 	PhaseCompleted
+	PhaseFailed
 )
 
 func (p Phase) String() string {
@@ -38,6 +39,8 @@ func (p Phase) String() string {
 		return "Phase 2: Implementation"
 	case PhaseCompleted:
 		return "Completed"
+	case PhaseFailed:
+		return "Failed"
 	default:
 		return "Unknown"
 	}
@@ -72,6 +75,8 @@ type Model struct {
 	clarifyInputs    []textinput.Model
 	clarifyFocused   int
 	clarifyAnswersCh chan<- []prompt.QuestionAnswer
+
+	retryImplementation bool
 
 	logger           *Logger
 	operationManager *OperationManager
