@@ -215,35 +215,3 @@ func TestUpdateSpinnerTickMsg(t *testing.T) {
 		t.Error("spinner tick should return a command")
 	}
 }
-
-func TestToggleFullscreenOn(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhasePRDReview
-	m.scrollPane = focusLogs
-	m.fullscreenPane = 0
-
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
-
-	if model, ok := newModel.(*Model); ok {
-		if model.fullscreenPane != focusLogs {
-			t.Errorf("fullscreenPane = %v, want focusLogs", model.fullscreenPane)
-		}
-	}
-}
-
-func TestToggleFullscreenOff(t *testing.T) {
-	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhasePRDReview
-	m.scrollPane = focusMain
-	m.fullscreenPane = focusMain
-
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
-
-	if model, ok := newModel.(*Model); ok {
-		if model.fullscreenPane != focusNone {
-			t.Errorf("fullscreenPane = %v, want focusNone", model.fullscreenPane)
-		}
-	}
-}
