@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -58,6 +59,24 @@ func TestViewPhasePRDGeneration(t *testing.T) {
 	view := m.View()
 	if !strings.Contains(view, "test prompt") || !strings.Contains(view, "Generating") {
 		t.Error("View() during PRD generation should show prompt and generating message")
+	}
+}
+
+func TestViewPhaseFailed(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseFailed
+	m.err = fmt.Errorf("AI completed but did not generate prd.json")
+	m.width = 80
+	m.height = 24
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "prd.json") || !strings.Contains(view, "Failed") {
+		t.Errorf("View() should show failure phase and error, got %q", view)
+	}
+	if !strings.Contains(view, "r retry") {
+		t.Errorf("View() should mention r retry, got %q", view)
 	}
 }
 
@@ -172,7 +191,7 @@ func TestRenderPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted}
+	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted, PhaseFailed}
 	for _, p := range phases {
 		m.phase = p
 		result := m.renderPhase()

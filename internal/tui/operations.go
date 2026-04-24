@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -55,6 +56,10 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 			} else {
 				qas, err := om.executor.RunClarify(om.ctx, userPrompt)
 				if err != nil {
+					select {
+					case om.eventsCh <- events.EventError{Err: fmt.Errorf("clarification phase: %w", err)}:
+					case <-om.ctx.Done():
+					}
 					return
 				}
 				om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)

@@ -36,6 +36,8 @@ func (m *Model) View() string {
 	b.WriteString("\n")
 	if m.phase == PhasePRDReview {
 		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"))
+	} else if m.phase == PhaseFailed {
+		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • r retry • q quit • ctrl+c exit"))
 	} else {
 		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • q quit • ctrl+c exit"))
 	}
@@ -58,6 +60,8 @@ func (m *Model) renderPhase() string {
 		icon = "?"
 	case PhasePRDReview:
 		icon = "!"
+	case PhaseFailed:
+		icon = iconWarning
 	}
 	return phaseStyle.Render(fmt.Sprintf("%s %s", icon, m.phase.String()))
 }
@@ -100,6 +104,14 @@ func (m *Model) renderClarifying() string {
 	}
 
 	return b.String()
+}
+
+func (m *Model) renderFailed() string {
+	msg := "Workflow stopped."
+	if m.err != nil {
+		msg = m.err.Error()
+	}
+	return errorStyle.Render(msg)
 }
 
 func (m *Model) renderGenerating() string {
@@ -259,6 +271,8 @@ func (m *Model) rebuildMainScrollContent() {
 	switch m.phase {
 	case PhaseInit, PhasePRDGeneration:
 		b.WriteString(m.renderGenerating())
+	case PhaseFailed:
+		b.WriteString(m.renderFailed())
 	case PhasePRDReview:
 		b.WriteString(m.renderPRDReview())
 	case PhaseImplementation:
