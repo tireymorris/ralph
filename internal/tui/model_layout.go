@@ -3,41 +3,21 @@ package tui
 import tea "github.com/charmbracelet/bubbletea"
 
 func (m *Model) applyLayout(width, height int) {
-	lc := m.logger.LogCount()
-	bias := m.logHeightBias
-
-	if m.fullscreenPane != focusNone {
-		if m.fullscreenPane == focusMain {
-			m.logger.SetSize(width, 0)
-			m.mainPane.Width = max(20, width-4)
-			m.mainPane.Height = max(4, height-scrollChrome)
-		} else {
-			m.logger.SetSize(width, max(4, height-scrollChrome))
-			m.mainPane.Width = max(20, width-4)
-			m.mainPane.Height = 0
-		}
-		m.layoutSigW = width
-		m.layoutSigH = height
-		m.layoutSigLogCount = lc
-		m.layoutSigBias = bias
-		m.width = width
-		m.height = height
-		return
-	}
-
-	mainH, logH := computePaneHeights(height, lc, bias, m.fullscreenPane)
-	if width == m.layoutSigW && height == m.layoutSigH && lc == m.layoutSigLogCount && bias == m.layoutSigBias {
+	if width == m.layoutSigW && height == m.layoutSigH {
 		return
 	}
 	m.layoutSigW = width
 	m.layoutSigH = height
-	m.layoutSigLogCount = lc
-	m.layoutSigBias = bias
 	m.width = width
 	m.height = height
-	m.logger.SetSize(width, logH)
+
+	// Reserve ~3 lines for the help bar at the bottom.
+	paneHeight := max(4, height-scrollChrome)
+
 	m.mainPane.Width = max(20, width-4)
-	m.mainPane.Height = max(4, mainH)
+	m.mainPane.Height = paneHeight
+	// Log viewport height must leave room for logBoxStyle border (2) + padding (2).
+	m.logger.SetSize(width, paneHeight-4)
 	m.progress.Width = min(40, max(10, width-20))
 }
 

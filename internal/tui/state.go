@@ -64,14 +64,9 @@ type Model struct {
 
 	mainPane      viewport.Model
 	scrollPane    scrollFocus
-	fullscreenPane scrollFocus
 	snapMainToTop bool
 
-	logHeightBias int
-
 	layoutSigW, layoutSigH int
-	layoutSigLogCount      int
-	layoutSigBias          int
 
 	clarifyQuestions []string
 	clarifyInputs    []textinput.Model

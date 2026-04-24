@@ -3,89 +3,71 @@ package tui
 import (
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"ralph/internal/config"
 )
 
-func TestComputePaneHeightsFewLogsShrinksLogPane(t *testing.T) {
-	mainMany, logMany := computePaneHeights(32, 200, 0, 0)
-	mainFew, logFew := computePaneHeights(32, 2, 0, 0)
-	if logFew >= logMany {
-		t.Fatalf("expected fewer log lines with sparse logs: logFew=%d logMany=%d", logFew, logMany)
-	}
-	if mainFew <= mainMany {
-		t.Fatalf("expected more main lines with sparse logs: mainFew=%d mainMany=%d", mainFew, mainMany)
-	}
-}
-
-func TestComputePaneHeightsBiasExpandsLogs(t *testing.T) {
-	_, log0 := computePaneHeights(40, 2, 0, 0)
-	_, logPlus := computePaneHeights(40, 2, 5, 0)
-	if logPlus <= log0 {
-		t.Fatalf("positive bias should not shrink logs: log0=%d logPlus=%d", log0, logPlus)
-	}
-}
-
-func TestComputePaneHeightsFullscreenMainReturnsFullHeight(t *testing.T) {
-	termHeight := 40
-	mainH, logH := computePaneHeights(termHeight, 10, 0, focusMain)
-	if mainH != termHeight-scrollChrome {
-		t.Errorf("expected main height %d with fullscreen focusMain, got %d", termHeight-scrollChrome, mainH)
-	}
-	if logH != 0 {
-		t.Errorf("expected log height 0 with fullscreen focusMain, got %d", logH)
-	}
-}
-
-func TestComputePaneHeightsFullscreenLogsReturnsFullHeight(t *testing.T) {
-	termHeight := 40
-	mainH, logH := computePaneHeights(termHeight, 10, 0, focusLogs)
-	if logH != termHeight-scrollChrome {
-		t.Errorf("expected log height %d with fullscreen focusLogs, got %d", termHeight-scrollChrome, logH)
-	}
-	if mainH != 0 {
-		t.Errorf("expected main height 0 with fullscreen focusLogs, got %d", mainH)
-	}
-}
-
-func TestApplyLayoutFullscreenMainHidesLogs(t *testing.T) {
+func TestApplyLayoutSetsPaneDimensions(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	m.width = 120
-	m.height = 40
-	m.fullscreenPane = focusMain
 
 	m.applyLayout(120, 40)
 
+	if m.mainPane.Width <= 0 {
+		t.Errorf("main pane width should be positive, got %d", m.mainPane.Width)
+	}
 	if m.mainPane.Height <= 0 {
-		t.Errorf("main pane height should be positive in fullscreen, got %d", m.mainPane.Height)
+		t.Errorf("main pane height should be positive, got %d", m.mainPane.Height)
+	}
+	if m.logger.logView.Width <= 0 {
+		t.Errorf("log view width should be positive, got %d", m.logger.logView.Width)
+	}
+	if m.logger.logView.Height <= 0 {
+		t.Errorf("log view height should be positive, got %d", m.logger.logView.Height)
 	}
 }
 
-func TestApplyLayoutFullscreenLogsHidesMain(t *testing.T) {
+func TestApplyLayoutCachesDimensions(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	m.width = 120
-	m.height = 40
-	m.fullscreenPane = focusLogs
 
 	m.applyLayout(120, 40)
+	origMainH := m.mainPane.Height
 
-	if m.mainPane.Height != 0 {
-		t.Errorf("main pane height should be 0 when logs are fullscreen, got %d", m.mainPane.Height)
+	// Calling again with same dimensions should not change anything
+	m.applyLayout(120, 40)
+	if m.mainPane.Height != origMainH {
+		t.Error("applyLayout should cache dimensions")
 	}
 }
 
-func TestFullscreenPersistsAcrossPhaseChange(t *testing.T) {
+func TestTabSwitchesPaneFocus(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhasePRDReview
-	m.scrollPane = focusMain
-	m.fullscreenPane = focusMain
-
-	// Simulate phase change
 	m.phase = PhaseImplementation
+	m.scrollPane = focusMain
 
-	if m.fullscreenPane != focusMain {
-		t.Errorf("fullscreenPane should persist across phase changes, got %v", m.fullscreenPane)
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+
+	if model, ok := newModel.(*Model); ok {
+		if model.scrollPane != focusLogs {
+			t.Errorf("scrollPane = %v, want focusLogs after Tab", model.scrollPane)
+		}
+	}
+}
+
+func TestTabSwitchesPaneFocusBack(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.scrollPane = focusLogs
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+
+	if model, ok := newModel.(*Model); ok {
+		if model.scrollPane != focusMain {
+			t.Errorf("scrollPane = %v, want focusMain after Tab", model.scrollPane)
+		}
 	}
 }
