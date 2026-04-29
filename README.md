@@ -42,7 +42,7 @@ Environment variables (optional overrides; defaults shown):
 
 | Variable               | Default                   | Role                                       |
 | ---------------------- | ------------------------- | ------------------------------------------ |
-| `RALPH_MODEL`          | `pi/auto`                 | Model id (must use one of the prefixes below) |
+| `RALPH_MODEL`          | `claude-code/sonnet`      | Model id (must use one of the prefixes below) |
 | `RALPH_MAX_ITERATIONS` | `50`                      | Cap on implementation iterations           |
 | `RALPH_RETRY_ATTEMPTS` | `3`                       | Retries per story before giving up         |
 | `RALPH_PRD_FILE`       | `prd.json`                | PRD filename in the working directory      |

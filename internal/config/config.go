@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const DefaultModel = "pi/auto"
+const DefaultModel = "claude-code/sonnet"
 
 type Provider string
 
