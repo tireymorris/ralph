@@ -9,6 +9,9 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
+	if DefaultModel != "claude-code/sonnet" {
+		t.Errorf("DefaultModel = %q, want %q", DefaultModel, "claude-code/sonnet")
+	}
 	if cfg.Model != DefaultModel {
 		t.Errorf("Model = %q, want %q", cfg.Model, DefaultModel)
 	}

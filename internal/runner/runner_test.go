@@ -435,9 +435,9 @@ func TestNewWithDefaultModel(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	_, ok := runner.(*PiRunner)
+	_, ok := runner.(*ClaudeRunner)
 	if !ok {
-		t.Errorf("New() returned %T, want *PiRunner for default model", runner)
+		t.Errorf("New() returned %T, want *ClaudeRunner for default model", runner)
 	}
 }
 
