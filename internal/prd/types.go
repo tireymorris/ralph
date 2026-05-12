@@ -1,8 +1,6 @@
 package prd
 
-import (
-	"fmt"
-)
+import "fmt"
 
 const (
 	MaxContextSize        = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
@@ -22,11 +20,11 @@ type Story struct {
 }
 
 type PRD struct {
-	Version      int64    `json:"version"` // Incremented on each save for optimistic locking
+	Version     int64    `json:"version"` // Incremented on each save for optimistic locking
 	ProjectName string   `json:"project_name"`
 	BranchName  string   `json:"branch_name,omitempty"`
 	Context     string   `json:"context,omitempty"`
-	TestSpec    string   `json:"test_spec,omitempty"`   // Holistic test spec covering all stories
+	TestSpec    string   `json:"test_spec,omitempty"`    // Holistic test spec covering all stories
 	TestCommand string   `json:"test_command,omitempty"` // Project-specific test command (overrides config)
 	Stories     []*Story `json:"stories"`
 }
@@ -44,15 +42,10 @@ func (p *PRD) NextPendingStory() *Story {
 	return best
 }
 
-// ReadyStories returns all stories that are ready to run (not passed and all
-// dependencies are satisfied).
 func (p *PRD) ReadyStories() []*Story {
 	var ready []*Story
 	for _, story := range p.Stories {
-		if story.Passes {
-			continue
-		}
-		if !p.dependenciesSatisfied(story) {
+		if story.Passes || !p.dependenciesSatisfied(story) {
 			continue
 		}
 		ready = append(ready, story)
@@ -60,35 +53,17 @@ func (p *PRD) ReadyStories() []*Story {
 	return ready
 }
 
-// dependenciesSatisfied returns true if all dependencies for the story are complete.
-func (p *PRD) dependenciesSatisfied(story *Story) bool {
-	depMap := make(map[string]bool)
-	for _, s := range p.Stories {
-		depMap[s.ID] = s.Passes
-	}
-	for _, depID := range story.DependsOn {
-		if passed, ok := depMap[depID]; !ok || !passed {
-			return false
-		}
-	}
-	return true
-}
-
-// BlockedStories returns stories that cannot run due to unmet dependencies.
 func (p *PRD) BlockedStories() []*Story {
 	var blocked []*Story
 	for _, story := range p.Stories {
-		if story.Passes {
+		if story.Passes || p.dependenciesSatisfied(story) {
 			continue
 		}
-		if !p.dependenciesSatisfied(story) {
-			blocked = append(blocked, story)
-		}
+		blocked = append(blocked, story)
 	}
 	return blocked
 }
 
-// ValidateDependencies checks for circular dependencies in the story graph.
 func (p *PRD) ValidateDependencies() error {
 	visited := make(map[string]bool)
 	var dfs func(id string, path []string) error
@@ -96,9 +71,10 @@ func (p *PRD) ValidateDependencies() error {
 		if id == "" {
 			return nil
 		}
-		for _, p := range path {
-			if p == id {
-				return fmt.Errorf("circular dependency detected: %s", append(path, id))
+		for _, pathID := range path {
+			if pathID == id {
+				cycle := append(path, id)
+				return fmt.Errorf("circular dependency detected: %v", cycle)
 			}
 		}
 		if visited[id] {
@@ -153,12 +129,10 @@ func (p *PRD) GetStory(id string) *Story {
 	return nil
 }
 
-// Validate validates the PRD data structure and content.
 func (p *PRD) Validate() error {
 	if len(p.Context) > MaxContextSize {
 		return fmt.Errorf("context size %d exceeds maximum %d bytes", len(p.Context), MaxContextSize)
 	}
-
 	if len(p.Stories) > MaxStories {
 		return fmt.Errorf("story count %d exceeds maximum %d", len(p.Stories), MaxStories)
 	}
@@ -170,44 +144,31 @@ func (p *PRD) Validate() error {
 		}
 		seenIDs[story.ID] = true
 	}
-
 	if err := p.ValidateDependencies(); err != nil {
 		return fmt.Errorf("invalid dependencies: %w", err)
 	}
-
 	return nil
 }
 
-// Validate validates a single story and checks for duplicate IDs.
 func (s *Story) Validate(seenIDs map[string]bool) error {
 	if s.ID == "" {
 		return fmt.Errorf("story ID cannot be empty")
 	}
-
 	if seenIDs[s.ID] {
 		return fmt.Errorf("duplicate story ID %q", s.ID)
 	}
-
 	if s.Title == "" {
 		return fmt.Errorf("story title cannot be empty")
 	}
-
 	if len(s.Description) > MaxStoryDescSize {
 		return fmt.Errorf("story description size %d exceeds maximum %d bytes", len(s.Description), MaxStoryDescSize)
 	}
-
 	if s.Priority < 0 {
 		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
 	}
-
 	if len(s.AcceptanceCriteria) > MaxAcceptanceCriteria {
 		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
 	}
-
-	if s.Priority < 0 {
-		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
-	}
-
 	for _, dep := range s.DependsOn {
 		if dep == "" {
 			return fmt.Errorf("story %q has empty dependency ID", s.ID)
@@ -216,7 +177,23 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 			return fmt.Errorf("story %q cannot depend on itself", s.ID)
 		}
 	}
-
 	return nil
 }
 
+func (p *PRD) dependenciesSatisfied(story *Story) bool {
+	depMap := p.storyPassMap()
+	for _, depID := range story.DependsOn {
+		if passed, ok := depMap[depID]; !ok || !passed {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *PRD) storyPassMap() map[string]bool {
+	depMap := make(map[string]bool, len(p.Stories))
+	for _, s := range p.Stories {
+		depMap[s.ID] = s.Passes
+	}
+	return depMap
+}

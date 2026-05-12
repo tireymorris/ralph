@@ -9,8 +9,12 @@ import (
 
 // Display loads and prints a formatted PRD status summary to stdout
 func Display(cfg *config.Config) error {
-	// Check if PRD file exists first
-	if !prd.Exists(cfg) {
+	// Check if PRD file exists first.
+	exists, err := prd.Exists(cfg)
+	if err != nil {
+		return fmt.Errorf("checking PRD file: %w", err)
+	}
+	if !exists {
 		fmt.Println("No PRD file found. Run ralph with a prompt to create one.")
 		return nil
 	}

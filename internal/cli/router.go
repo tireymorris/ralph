@@ -34,7 +34,11 @@ func ValidateResume(cfg *config.Config, resume bool) error {
 	if !resume {
 		return nil
 	}
-	if !prd.Exists(cfg) {
+	exists, err := prd.Exists(cfg)
+	if err != nil {
+		return fmt.Errorf("checking for existing PRD %s: %w", cfg.PRDFile, err)
+	}
+	if !exists {
 		return fmt.Errorf("no %s found to resume from (run ralph with a prompt first to generate a PRD)", cfg.PRDFile)
 	}
 	if _, err := prd.Load(cfg); err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -41,23 +40,30 @@ func (r *PiRunner) IsInternalLog(line string) bool {
 func piProviderAndModel(cfgModel string) (provider, piModel string) {
 	rest := strings.TrimPrefix(cfgModel, "pi/")
 	if rest == "" {
-		return "cursor", ""
+		return "", ""
 	}
 	parts := strings.SplitN(rest, "/", 2)
 	if len(parts) == 1 {
-		return "cursor", parts[0]
+		return "", parts[0]
 	}
 	p := parts[0]
 	m := parts[1]
 	if p == "" {
-		return "cursor", m
+		return "", m
 	}
 	return p, m
 }
 
 func (r *PiRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
 	provider, piModel := piProviderAndModel(r.cfg.Model)
-	args := []string{"--mode", "json", "--no-session", "--provider", provider, "--model", piModel, prompt}
+	args := []string{"--print", "--mode", "json", "--no-session"}
+	if provider != "" {
+		args = append(args, "--provider", provider)
+	}
+	if piModel != "" {
+		args = append(args, "--model", piModel)
+	}
+	args = append(args, prompt)
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
@@ -69,11 +75,10 @@ func (r *PiRunner) Run(ctx context.Context, prompt string, outputCh chan<- Outpu
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), r.cfg.Model), Time: time.Now()}
+		outputCh <- newStartingOutputLine(r.RunnerName(), r.cfg.Model)
 	}
 
-	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
-	err := runPipedCommand(r.CommandName(), cmd, outputCh,
+	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
 		parsePiJSONLine,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
@@ -81,17 +86,13 @@ func (r *PiRunner) Run(ctx context.Context, prompt string, outputCh chan<- Outpu
 	)
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("AI runner exited with code",
-				"runner", r.RunnerName(),
-				"command", r.CommandName(),
-				"exit_code", exitErr.ExitCode(),
-				"model", r.cfg.Model,
-				"pi_provider", provider,
-				"pi_model", piModel)
-			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), r.cfg.Model, exitErr.ExitCode())
-		}
-		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), r.cfg.Model, err)
+		logger.Debug("AI runner exited with code",
+			"runner", r.RunnerName(),
+			"command", r.CommandName(),
+			"model", r.cfg.Model,
+			"pi_provider", provider,
+			"pi_model", piModel)
+		return wrapRunnerError(r.RunnerName(), r.cfg.Model, err)
 	}
 
 	logger.Debug("AI runner completed successfully",

@@ -9,7 +9,12 @@ import (
 )
 
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {
-	_ = ctx
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	p, err := e.store.Load(e.cfg)
 	if err != nil {
 		e.emit(EventError{Err: fmt.Errorf("failed to load PRD %s: %w", e.cfg.PRDFile, err)})

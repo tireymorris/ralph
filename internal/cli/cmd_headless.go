@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -130,12 +129,12 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 		case events.EventPRDGenerated:
 			fmt.Printf("PRD generated: %s (%d stories)\n", e.PRD.ProjectName, len(e.PRD.Stories))
 			fmt.Printf("Saved to: %s\n\n", r.cfg.PRDFile)
-			r.printStories(e.PRD)
+			r.printStoryList(e.PRD)
 
 		case events.EventPRDLoaded:
 			fmt.Printf("Loaded PRD: %s (%d stories, %d completed)\n\n",
 				e.PRD.ProjectName, len(e.PRD.Stories), e.PRD.CompletedCount())
-			r.printStories(e.PRD)
+			r.printStoryList(e.PRD)
 
 		case events.EventPRDReview:
 			if r.dryRun {
@@ -163,11 +162,7 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 			if e.Verbose && !r.verbose {
 				continue
 			}
-			prefix := "  "
-			if e.IsErr {
-				prefix = "  [!]"
-			}
-			fmt.Printf("%s %s\n", prefix, e.Text)
+			fmt.Printf("%s %s\n", r.outputPrefix(e.IsErr), e.Text)
 			os.Stdout.Sync()
 
 		case events.EventError:
@@ -203,22 +198,10 @@ func (r *Headless) collectAnswersCLI(questions []string) []prompt.QuestionAnswer
 	return qas
 }
 
-func (r *Headless) printStories(p *prd.PRD) {
-	fmt.Println("Stories:")
-	for _, s := range p.Stories {
-		status := "[ ]"
-		if s.Passes {
-			status = "[x]"
-		}
-		fmt.Printf("  %s [P%d] %s\n", status, s.Priority, s.Title)
-	}
-	fmt.Println()
-}
-
 func (r *Headless) promptPRDReview(p *prd.PRD) {
 	fmt.Println("PRD ready for review")
 	fmt.Println()
-	r.printStoriesWithDetails(p)
+	r.printStoryDetails(p)
 	fmt.Println("Please choose an action:")
 	fmt.Println("  1. Edit in editor ($EDITOR)")
 	fmt.Println("  2. Proceed without changes")
@@ -231,15 +214,7 @@ func (r *Headless) promptPRDReview(p *prd.PRD) {
 
 	switch choice {
 	case "1":
-		editor := os.Getenv("EDITOR")
-		if editor == "" {
-			editor = "vi"
-		}
-		cmd := exec.Command(editor, r.cfg.PRDFile)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		if err := r.runEditor(r.cfg.PRDFile); err != nil {
 			fmt.Printf("Editor exited with error: %v\n", err)
 		}
 		fmt.Println("\nEditor closed.")
@@ -252,24 +227,5 @@ func (r *Headless) promptPRDReview(p *prd.PRD) {
 	default:
 		fmt.Println("Invalid choice, proceeding without changes.")
 		r.reviewResponseCh <- true
-	}
-}
-
-func (r *Headless) printStoriesWithDetails(p *prd.PRD) {
-	for _, s := range p.Stories {
-		fmt.Printf("Story: %s\n", s.Title)
-		fmt.Printf("  ID: %s\n", s.ID)
-		fmt.Printf("  Priority: %d\n", s.Priority)
-		if len(s.DependsOn) > 0 {
-			fmt.Printf("  Depends on: %s\n", strings.Join(s.DependsOn, ", "))
-		}
-		fmt.Printf("  Description: %s\n", s.Description)
-		if len(s.AcceptanceCriteria) > 0 {
-			fmt.Println("  Acceptance Criteria:")
-			for _, ac := range s.AcceptanceCriteria {
-				fmt.Printf("    - %s\n", ac)
-			}
-		}
-		fmt.Println()
 	}
 }

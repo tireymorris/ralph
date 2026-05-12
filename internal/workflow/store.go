@@ -9,7 +9,7 @@ import (
 type PRDStore interface {
 	Load(cfg *config.Config) (*prd.PRD, error)
 	Save(cfg *config.Config, p *prd.PRD) error
-	Exists(cfg *config.Config) bool
+	Exists(cfg *config.Config) (bool, error)
 }
 
 type defaultPRDStore struct{}
@@ -22,6 +22,6 @@ func (defaultPRDStore) Save(cfg *config.Config, p *prd.PRD) error {
 	return prd.Save(cfg, p)
 }
 
-func (defaultPRDStore) Exists(cfg *config.Config) bool {
+func (defaultPRDStore) Exists(cfg *config.Config) (bool, error) {
 	return prd.Exists(cfg)
 }

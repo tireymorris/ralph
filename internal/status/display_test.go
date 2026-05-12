@@ -1,7 +1,6 @@
 package status
 
 import (
-	"bytes"
 	"os"
 	"strings"
 	"testing"
@@ -9,24 +8,6 @@ import (
 	"ralph/internal/config"
 	"ralph/internal/prd"
 )
-
-func captureStdout(t *testing.T, fn func()) string {
-	t.Helper()
-	oldStdout := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("os.Pipe() failed: %v", err)
-	}
-	os.Stdout = w
-	defer func() { os.Stdout = oldStdout }()
-
-	fn()
-	w.Close()
-
-	var buf bytes.Buffer
-	buf.ReadFrom(r)
-	return buf.String()
-}
 
 func TestDisplay(t *testing.T) {
 	tmpDir := t.TempDir()

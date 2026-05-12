@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -16,6 +17,8 @@ type QuestionsFileReader struct {
 func (q QuestionsFileReader) ReadRemove() ([]byte, error) {
 	path := filepath.Join(q.WorkDir, ClarifyingQuestionsFile)
 	data, err := os.ReadFile(path)
-	_ = os.Remove(path)
+	if removeErr := os.Remove(path); removeErr != nil && err == nil && !os.IsNotExist(removeErr) {
+		return data, fmt.Errorf("remove clarifying questions file %q: %w", path, removeErr)
+	}
 	return data, err
 }

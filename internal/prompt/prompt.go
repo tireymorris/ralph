@@ -28,12 +28,9 @@ Decide whether there are any ambiguities that would SIGNIFICANTLY change the tec
 
 ["Question 1?", "Question 2?", ...]
 
-SPEED: this step must be fast. Answer almost entirely from the user's prompt text above.
-- Do NOT read the codebase broadly. At most, run ONE or TWO quick commands (e.g., "ls" of the repo root, or read a single top-level manifest like package.json/go.mod/Cargo.toml) ONLY if needed to decide whether the prompt actually integrates with existing code.
-- Do NOT open source files, grep, or walk directories.
-
 Rules:
 - Ask 0-5 concise, specific questions. Return [] if nothing is genuinely unclear — this is the common case for a well-specified prompt. Do NOT invent questions to fill a quota.
+- If the request is underspecified but the missing details do not change the technical approach in a meaningful way, prefer [] and move forward.
 - Only ask about things that would change the technical approach
 - Do NOT ask about things you can reasonably infer or decide yourself
 - Do NOT ask for things already specified in the request

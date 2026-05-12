@@ -81,18 +81,13 @@ func Save(cfg *config.Config, p *PRD) error {
 	return nil
 }
 
-func Delete(cfg *config.Config) error {
-	prdPath := cfg.PRDPath()
-	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
-		return nil
-	}
-	if err := os.Remove(prdPath); err != nil {
-		return fmt.Errorf("failed to delete PRD file %q: %w", prdPath, err)
-	}
-	return nil
-}
-
-func Exists(cfg *config.Config) bool {
+func Exists(cfg *config.Config) (bool, error) {
 	_, err := os.Stat(cfg.PRDPath())
-	return err == nil
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to stat PRD file %q: %w", cfg.PRDPath(), err)
 }

@@ -12,8 +12,7 @@ import (
 
 func TestSaveAndLoad(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "test.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "test.json")
 
 	original := &PRD{
 		ProjectName: "Test Project",
@@ -62,10 +61,9 @@ func TestLoadNonExistentFile(t *testing.T) {
 
 func TestLoadInvalidJSON(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "invalid.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "invalid.json")
 
-	os.WriteFile(prdFile, []byte("not valid json"), 0644)
+	os.WriteFile(cfg.PRDPath(), []byte("not valid json"), 0644)
 
 	_, err := Load(cfg)
 	if err == nil {
@@ -73,54 +71,31 @@ func TestLoadInvalidJSON(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
-	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "delete.json")
-	cfg := &config.Config{PRDFile: prdFile}
-
-	os.WriteFile(prdFile, []byte("{}"), 0644)
-
-	if !Exists(cfg) {
-		t.Error("file should exist before delete")
-	}
-
-	err := Delete(cfg)
-	if err != nil {
-		t.Fatalf("Delete() error = %v", err)
-	}
-
-	if Exists(cfg) {
-		t.Error("file should not exist after delete")
-	}
-}
-
-func TestDeleteNonExistent(t *testing.T) {
-	cfg := &config.Config{PRDFile: "/nonexistent/file.json"}
-
-	err := Delete(cfg)
-	if err != nil {
-		t.Errorf("Delete() should not error for non-existent file, got %v", err)
-	}
-}
-
 func TestExists(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	t.Run("file exists", func(t *testing.T) {
-		prdFile := filepath.Join(tmpDir, "exists.json")
-		cfg := &config.Config{PRDFile: prdFile}
+		cfg := newTestConfig(t, tmpDir, "exists.json")
 
-		os.WriteFile(prdFile, []byte("{}"), 0644)
+		os.WriteFile(cfg.PRDPath(), []byte("{}"), 0644)
 
-		if !Exists(cfg) {
+		exists, err := Exists(cfg)
+		if err != nil {
+			t.Fatalf("Exists() error = %v", err)
+		}
+		if !exists {
 			t.Error("Exists() = false, want true")
 		}
 	})
 
 	t.Run("file does not exist", func(t *testing.T) {
-		cfg := &config.Config{PRDFile: filepath.Join(tmpDir, "not-exists.json")}
+		cfg := newTestConfig(t, tmpDir, "not-exists.json")
 
-		if Exists(cfg) {
+		exists, err := Exists(cfg)
+		if err != nil {
+			t.Fatalf("Exists() error = %v", err)
+		}
+		if exists {
 			t.Error("Exists() = true, want false")
 		}
 	})
@@ -139,8 +114,7 @@ func TestSaveUnwritableLocation(t *testing.T) {
 // TestVersionIncrement verifies that Version increments on each save
 func TestVersionIncrement(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "version.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "version.json")
 
 	prd := &PRD{
 		ProjectName: "Test Project",
@@ -172,8 +146,7 @@ func TestVersionIncrement(t *testing.T) {
 // TestBackwardsCompatibilityNoVersion verifies that PRDs without version field still load
 func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "old.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "old.json")
 
 	// Manually write a PRD JSON without version field (old format)
 	oldFormatJSON := `{
@@ -190,7 +163,7 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
   ]
 }`
 
-	if err := os.WriteFile(prdFile, []byte(oldFormatJSON), 0644); err != nil {
+	if err := os.WriteFile(cfg.PRDPath(), []byte(oldFormatJSON), 0644); err != nil {
 		t.Fatalf("failed to write old format PRD: %v", err)
 	}
 
@@ -212,8 +185,7 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 // TestAtomicWriteFilePermissions verifies file permissions are 0600
 func TestAtomicWriteFilePermissions(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "perms.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "perms.json")
 
 	prd := &PRD{ProjectName: "Test"}
 
@@ -221,7 +193,7 @@ func TestAtomicWriteFilePermissions(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	info, err := os.Stat(prdFile)
+	info, err := os.Stat(cfg.PRDPath())
 	if err != nil {
 		t.Fatalf("failed to stat file: %v", err)
 	}
@@ -235,8 +207,7 @@ func TestAtomicWriteFilePermissions(t *testing.T) {
 // TestAtomicWriteNoTempFiles verifies temp files are cleaned up
 func TestAtomicWriteNoTempFiles(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "cleanup.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "cleanup.json")
 
 	prd := &PRD{ProjectName: "Test"}
 
@@ -252,7 +223,8 @@ func TestAtomicWriteNoTempFiles(t *testing.T) {
 
 	for _, file := range files {
 		name := file.Name()
-		if filepath.Ext(name) == ".tmp" || name != filepath.Base(prdFile) && name != filepath.Base(prdFile)+".lock" {
+		base := filepath.Base(cfg.PRDFile)
+		if filepath.Ext(name) == ".tmp" || name != base && name != base+".lock" {
 			t.Errorf("unexpected file in temp dir: %s", name)
 		}
 	}
@@ -261,8 +233,7 @@ func TestAtomicWriteNoTempFiles(t *testing.T) {
 // TestConcurrentReads verifies multiple concurrent reads can succeed
 func TestConcurrentReads(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "concurrent-read.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "concurrent-read.json")
 
 	prd := &PRD{
 		ProjectName: "Concurrent Test",
@@ -309,8 +280,7 @@ func TestConcurrentReads(t *testing.T) {
 // TestConcurrentWrites verifies concurrent writes are serialized correctly
 func TestConcurrentWrites(t *testing.T) {
 	tmpDir := t.TempDir()
-	prdFile := filepath.Join(tmpDir, "concurrent-write.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := newTestConfig(t, tmpDir, "concurrent-write.json")
 
 	prd := &PRD{
 		ProjectName: "Write Test",
@@ -402,8 +372,7 @@ func TestVersionConflictError(t *testing.T) {
 // BenchmarkSave measures performance of Save operation
 func BenchmarkSave(b *testing.B) {
 	tmpDir := b.TempDir()
-	prdFile := filepath.Join(tmpDir, "bench.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := &config.Config{PRDFile: filepath.Join(tmpDir, "bench.json")}
 
 	prd := &PRD{
 		ProjectName: "Benchmark",
@@ -422,8 +391,7 @@ func BenchmarkSave(b *testing.B) {
 // BenchmarkLoad measures performance of Load operation
 func BenchmarkLoad(b *testing.B) {
 	tmpDir := b.TempDir()
-	prdFile := filepath.Join(tmpDir, "bench.json")
-	cfg := &config.Config{PRDFile: prdFile}
+	cfg := &config.Config{PRDFile: filepath.Join(tmpDir, "bench.json")}
 
 	prd := &PRD{
 		ProjectName: "Benchmark",

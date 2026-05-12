@@ -2,7 +2,6 @@ package tui
 
 import (
 	"context"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -50,21 +49,18 @@ func (om *OperationManager) Cancel() {
 // there when the user submits the form.
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
-		go func() {
+		om.startBackground(func() {
 			if resume {
 				om.executor.RunLoad(om.ctx)
-			} else {
-				qas, err := om.executor.RunClarify(om.ctx, userPrompt)
-				if err != nil {
-					select {
-					case om.eventsCh <- events.EventError{Err: fmt.Errorf("clarification phase: %w", err)}:
-					case <-om.ctx.Done():
-					}
-					return
-				}
-				om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
+				return
 			}
-		}()
+			qas, err := om.executor.RunClarify(om.ctx, userPrompt)
+			if err != nil {
+				om.emitError(clarifyPhaseError(err))
+				return
+			}
+			om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
+		})
 		// Return a phase change immediately so the UI shows "Phase 1: PRD Generation"
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
@@ -72,9 +68,9 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
-		go func() {
+		om.startBackground(func() {
 			om.executor.RunImplementation(om.ctx, p)
-		}()
+		})
 		return nil
 	}
 }
