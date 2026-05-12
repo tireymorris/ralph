@@ -75,12 +75,10 @@ func (m *mockCmd) Wait() error {
 
 func TestRunSuccess(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stdout: "output line", stderr: ""}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	err := r.Run(context.Background(), "test prompt", nil)
 	if err != nil {
@@ -90,12 +88,10 @@ func TestRunSuccess(t *testing.T) {
 
 func TestRunWithOutputChannel(t *testing.T) {
 	cfg := &config.Config{Model: "test-model"}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stdout: "line1\nline2", stderr: "err1"}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	outputCh := make(chan OutputLine, 100)
 	err := r.Run(context.Background(), "test", outputCh)
@@ -106,12 +102,10 @@ func TestRunWithOutputChannel(t *testing.T) {
 
 func TestRunStdoutError(t *testing.T) {
 	cfg := &config.Config{}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stdoutErr: errors.New("stdout error")}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
@@ -121,12 +115,10 @@ func TestRunStdoutError(t *testing.T) {
 
 func TestRunStderrError(t *testing.T) {
 	cfg := &config.Config{}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stderrErr: errors.New("stderr error")}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
@@ -136,12 +128,10 @@ func TestRunStderrError(t *testing.T) {
 
 func TestRunStartError(t *testing.T) {
 	cfg := &config.Config{}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{startErr: errors.New("start error")}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
@@ -151,12 +141,10 @@ func TestRunStartError(t *testing.T) {
 
 func TestRunWaitError(t *testing.T) {
 	cfg := &config.Config{}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{waitErr: errors.New("wait error")}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, nil)
 
 	err := r.Run(context.Background(), "test", nil)
 	if err == nil {
@@ -166,14 +154,11 @@ func TestRunWaitError(t *testing.T) {
 
 func TestRunNoModel(t *testing.T) {
 	cfg := &config.Config{Model: ""}
-	r := &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
+	r := newTestRunner(t, cfg)
 
 	var capturedArgs []string
 	mock := &mockCmd{}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		capturedArgs = args
-		return mock
-	}
+	r.CmdFunc = stubCmdFunc(mock, nil, &capturedArgs)
 
 	r.Run(context.Background(), "test", nil)
 
@@ -441,106 +426,79 @@ func TestNewWithDefaultModel(t *testing.T) {
 	}
 }
 
-func TestNewWithErrorValidClaudeModel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
-	runner, err := NewWithError(cfg)
-
-	if err != nil {
-		t.Fatalf("NewWithError() error = %v", err)
+func TestNewWithError(t *testing.T) {
+	tests := []struct {
+		name    string
+		model   string
+		want    any
+		wantErr bool
+	}{
+		{name: "claude", model: "claude-code/sonnet", want: &ClaudeRunner{}},
+		{name: "open code", model: "opencode/big-pickle", want: &Runner{}},
+		{name: "pi", model: "pi/sonnet", want: &PiRunner{}},
+		{name: "invalid", model: "invalid-model", wantErr: true},
 	}
 
-	if runner == nil {
-		t.Fatal("NewWithError() returned nil runner")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner, err := NewWithError(&config.Config{Model: tt.model})
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("NewWithError() should return error")
+				}
+				if runner != nil {
+					t.Fatal("NewWithError() should return nil runner")
+				}
+				if !strings.Contains(err.Error(), "invalid model configuration") {
+					t.Fatalf("error = %v, want invalid model configuration", err)
+				}
+				return
+			}
 
-	_, ok := runner.(*ClaudeRunner)
-	if !ok {
-		t.Errorf("NewWithError() returned %T, want *ClaudeRunner", runner)
-	}
-}
-
-func TestNewWithErrorValidOpenCodeModel(t *testing.T) {
-	cfg := &config.Config{Model: "opencode/big-pickle"}
-	runner, err := NewWithError(cfg)
-
-	if err != nil {
-		t.Fatalf("NewWithError() error = %v", err)
-	}
-
-	if runner == nil {
-		t.Fatal("NewWithError() returned nil runner")
-	}
-
-	_, ok := runner.(*Runner)
-	if !ok {
-		t.Errorf("NewWithError() returned %T, want *Runner", runner)
-	}
-}
-
-func TestNewWithErrorValidPiModel(t *testing.T) {
-	cfg := &config.Config{Model: "pi/sonnet"}
-	runner, err := NewWithError(cfg)
-	if err != nil {
-		t.Fatalf("NewWithError() error = %v", err)
-	}
-	if runner == nil {
-		t.Fatal("NewWithError() returned nil runner")
-	}
-	_, ok := runner.(*PiRunner)
-	if !ok {
-		t.Errorf("NewWithError() returned %T, want *PiRunner", runner)
-	}
-}
-
-func TestNewWithErrorInvalidModel(t *testing.T) {
-	cfg := &config.Config{Model: "invalid-model"}
-	runner, err := NewWithError(cfg)
-
-	if err == nil {
-		t.Error("NewWithError() should return error for invalid model")
-	}
-
-	if runner != nil {
-		t.Error("NewWithError() should return nil runner for invalid model")
-	}
-
-	expectedMsg := "invalid model configuration"
-	if !strings.Contains(err.Error(), expectedMsg) {
-		t.Errorf("Error message = %v, want to contain %v", err.Error(), expectedMsg)
+			if err != nil {
+				t.Fatalf("NewWithError() error = %v", err)
+			}
+			if runner == nil {
+				t.Fatal("NewWithError() returned nil runner")
+			}
+			if tt.model == "claude-code/sonnet" {
+				_ = assertRunnerIs[*ClaudeRunner](t, runner)
+			} else if tt.model == "opencode/big-pickle" {
+				_ = assertRunnerIs[*Runner](t, runner)
+			} else {
+				_ = assertRunnerIs[*PiRunner](t, runner)
+			}
+		})
 	}
 }
 
 func TestModelSwitchingBetweenRuns(t *testing.T) {
-	// Test Claude Code model
-	claudeCfg := &config.Config{Model: "claude-code/sonnet"}
-	runner1 := New(claudeCfg)
-
-	_, ok1 := runner1.(*ClaudeRunner)
-	if !ok1 {
-		t.Errorf("First New() call returned %T, want *ClaudeRunner", runner1)
+	tests := []struct {
+		name  string
+		model string
+		want  any
+	}{
+		{name: "claude", model: "claude-code/sonnet", want: &ClaudeRunner{}},
+		{name: "opencode", model: "opencode/big-pickle", want: &Runner{}},
+		{name: "claude-again", model: "claude-code/sonnet", want: &ClaudeRunner{}},
+		{name: "pi", model: "pi/sonnet", want: &PiRunner{}},
 	}
 
-	// Test OpenCode model in second run
-	openCodeCfg := &config.Config{Model: "opencode/big-pickle"}
-	runner2 := New(openCodeCfg)
-
-	_, ok2 := runner2.(*Runner)
-	if !ok2 {
-		t.Errorf("Second New() call returned %T, want *Runner", runner2)
-	}
-
-	// Test switching back to Claude Code
-	runner3 := New(claudeCfg)
-	_, ok3 := runner3.(*ClaudeRunner)
-	if !ok3 {
-		t.Errorf("Third New() call returned %T, want *ClaudeRunner", runner3)
-	}
-
-	piCfg := &config.Config{Model: "pi/sonnet"}
-	runner4 := New(piCfg)
-	_, ok4 := runner4.(*PiRunner)
-	if !ok4 {
-		t.Errorf("Pi New() returned %T, want *PiRunner", runner4)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := New(&config.Config{Model: tt.model})
+			if r == nil {
+				t.Fatal("New() returned nil")
+			}
+			switch tt.want.(type) {
+			case *ClaudeRunner:
+				_ = assertRunnerIs[*ClaudeRunner](t, r)
+			case *Runner:
+				_ = assertRunnerIs[*Runner](t, r)
+			case *PiRunner:
+				_ = assertRunnerIs[*PiRunner](t, r)
+			}
+		})
 	}
 }
 
@@ -548,22 +506,14 @@ func TestIntegrationClaudeModelExecution(t *testing.T) {
 	cfg := &config.Config{Model: "claude-code/sonnet"}
 	runner := New(cfg)
 
-	// Mock the command execution for Claude runner
-	var capturedName string
-	var capturedArgs []string
 	mock := &mockCmd{stdout: "claude output", stderr: ""}
-
-	// Type assert to ClaudeRunner to set the mock
 	claudeRunner, ok := runner.(*ClaudeRunner)
 	if !ok {
 		t.Fatalf("Expected *ClaudeRunner, got %T", runner)
 	}
-
-	claudeRunner.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		capturedName = name
-		capturedArgs = args
-		return mock
-	}
+	var capturedName string
+	var capturedArgs []string
+	claudeRunner.CmdFunc = stubCmdFunc(mock, &capturedName, &capturedArgs)
 
 	err := runner.Run(context.Background(), "test prompt", nil)
 	if err != nil {
@@ -590,22 +540,14 @@ func TestIntegrationOpenCodeModelExecution(t *testing.T) {
 	cfg := &config.Config{Model: "opencode/big-pickle"}
 	runner := New(cfg)
 
-	// Mock the command execution for OpenCode runner
-	var capturedName string
-	var capturedArgs []string
 	mock := &mockCmd{stdout: "opencode output", stderr: ""}
-
-	// Type assert to Runner to set the mock
 	openCodeRunner, ok := runner.(*Runner)
 	if !ok {
 		t.Fatalf("Expected *Runner, got %T", runner)
 	}
-
-	openCodeRunner.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		capturedName = name
-		capturedArgs = args
-		return mock
-	}
+	var capturedName string
+	var capturedArgs []string
+	openCodeRunner.CmdFunc = stubCmdFunc(mock, &capturedName, &capturedArgs)
 
 	err := runner.Run(context.Background(), "test prompt", nil)
 	if err != nil {
@@ -632,20 +574,14 @@ func TestIntegrationPiModelExecution(t *testing.T) {
 	cfg := &config.Config{Model: "pi/sonnet"}
 	runner := New(cfg)
 
-	var capturedName string
-	var capturedArgs []string
 	mock := &mockCmd{stdout: `{"type":"session","version":3}`, stderr: ""}
-
 	piR, ok := runner.(*PiRunner)
 	if !ok {
 		t.Fatalf("Expected *PiRunner, got %T", runner)
 	}
-
-	piR.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		capturedName = name
-		capturedArgs = args
-		return mock
-	}
+	var capturedName string
+	var capturedArgs []string
+	piR.CmdFunc = stubCmdFunc(mock, &capturedName, &capturedArgs)
 
 	err := runner.Run(context.Background(), "test prompt", nil)
 	if err != nil {
@@ -656,7 +592,7 @@ func TestIntegrationPiModelExecution(t *testing.T) {
 		t.Errorf("Expected command 'pi', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"--mode", "json", "--no-session", "--provider", "cursor", "--model", "sonnet", "test prompt"}
+	expectedArgs := []string{"--print", "--mode", "json", "--no-session", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d: %v", len(expectedArgs), len(capturedArgs), capturedArgs)
 	}
@@ -668,63 +604,25 @@ func TestIntegrationPiModelExecution(t *testing.T) {
 }
 
 func TestRunnerInterfaceIsInternalLog(t *testing.T) {
-	// Test OpenCode runner
-	openCodeCfg := &config.Config{Model: "opencode/big-pickle"}
-	openCodeRunner := New(openCodeCfg)
-
-	// Test internal log detection for OpenCode
 	tests := []struct {
+		name string
+		r    RunnerInterface
 		line string
 		want bool
 	}{
-		{"service=bus starting", true},
-		{"Regular output", false},
-		{"INFO 2026-01-19T22:45:58 service=provider test", true},
-		{"service=bus file not found", false},
+		{name: "open code internal", r: New(&config.Config{Model: "opencode/big-pickle"}), line: "service=bus starting", want: true},
+		{name: "open code normal", r: New(&config.Config{Model: "opencode/big-pickle"}), line: "Regular output", want: false},
+		{name: "claude internal", r: New(&config.Config{Model: "claude-code/sonnet"}), line: "debug info", want: true},
+		{name: "claude user error", r: New(&config.Config{Model: "claude-code/sonnet"}), line: "Error: file not found", want: false},
+		{name: "pi internal", r: New(&config.Config{Model: "pi/sonnet"}), line: "debug info", want: true},
+		{name: "pi user error", r: New(&config.Config{Model: "pi/sonnet"}), line: "Error: file not found", want: false},
 	}
 
 	for _, tt := range tests {
-		got := openCodeRunner.IsInternalLog(tt.line)
-		if got != tt.want {
-			t.Errorf("OpenCodeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
-		}
-	}
-
-	// Test Claude runner
-	claudeCfg := &config.Config{Model: "claude-code/sonnet"}
-	claudeRunner := New(claudeCfg)
-
-	// Test internal log detection for Claude (should treat most stderr as internal)
-	claudeTests := []struct {
-		line string
-		want bool
-	}{
-		{"debug info", true},
-		{"Error: file not found", false}, // User-facing error
-		{"Failed to load", false},        // User-facing error
-		{"loading config", true},
-	}
-
-	for _, tt := range claudeTests {
-		got := claudeRunner.IsInternalLog(tt.line)
-		if got != tt.want {
-			t.Errorf("ClaudeRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
-		}
-	}
-
-	piCfg := &config.Config{Model: "pi/sonnet"}
-	piRunner := New(piCfg)
-	piTests := []struct {
-		line string
-		want bool
-	}{
-		{"debug info", true},
-		{"Error: file not found", false},
-	}
-	for _, tt := range piTests {
-		got := piRunner.IsInternalLog(tt.line)
-		if got != tt.want {
-			t.Errorf("PiRunner.IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.r.IsInternalLog(tt.line); got != tt.want {
+				t.Errorf("IsInternalLog(%q) = %v, want %v", tt.line, got, tt.want)
+			}
+		})
 	}
 }

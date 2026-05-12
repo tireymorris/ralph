@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -59,11 +58,10 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), modelName), Time: time.Now()}
+		outputCh <- newStartingOutputLine(r.RunnerName(), modelName)
 	}
 
-	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
-	err := runPipedCommand(r.CommandName(), cmd, outputCh,
+	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
 		parseClaudeStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
@@ -71,15 +69,11 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	)
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("AI runner exited with code",
-				"runner", r.RunnerName(),
-				"command", r.CommandName(),
-				"exit_code", exitErr.ExitCode(),
-				"model", modelName)
-			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), modelName, exitErr.ExitCode())
-		}
-		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), modelName, err)
+		logger.Debug("AI runner exited with code",
+			"runner", r.RunnerName(),
+			"command", r.CommandName(),
+			"model", modelName)
+		return wrapRunnerError(r.RunnerName(), modelName, err)
 	}
 
 	logger.Debug("AI runner completed successfully",

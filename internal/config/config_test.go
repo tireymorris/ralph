@@ -80,9 +80,7 @@ func TestLoadPartialConfig(t *testing.T) {
 
 	os.Clearenv()
 	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	defer func() {
-		os.Unsetenv("RALPH_MODEL")
-	}()
+	defer func() { os.Unsetenv("RALPH_MODEL") }()
 
 	cfg, err := Load()
 	if err != nil {
@@ -102,11 +100,7 @@ func TestLoadFullConfig(t *testing.T) {
 
 	os.Clearenv()
 	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	os.Setenv("RALPH_PRD_FILE", "custom.json")
-	defer func() {
-		os.Unsetenv("RALPH_MODEL")
-		os.Unsetenv("RALPH_PRD_FILE")
-	}()
+	defer func() { os.Unsetenv("RALPH_MODEL") }()
 
 	cfg, err := Load()
 	if err != nil {
@@ -115,9 +109,6 @@ func TestLoadFullConfig(t *testing.T) {
 
 	if cfg.Model != "opencode/big-pickle" {
 		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
-	}
-	if cfg.PRDFile != "custom.json" {
-		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "custom.json")
 	}
 }
 
@@ -392,43 +383,5 @@ func TestDefaultConfigTestCommand(t *testing.T) {
 	cfg := DefaultConfig()
 	if cfg.TestCommand != "go test ./..." {
 		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
-	}
-}
-
-func TestLoadDefaultTestCommand(t *testing.T) {
-	origDir, _ := os.Getwd()
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
-
-	os.Clearenv()
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v, want nil", err)
-	}
-
-	if cfg.TestCommand != "go test ./..." {
-		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
-	}
-}
-
-func TestLoadCustomTestCommand(t *testing.T) {
-	origDir, _ := os.Getwd()
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
-
-	os.Clearenv()
-	os.Setenv("RALPH_TEST_COMMAND", "go test -v ./internal/...")
-	defer os.Unsetenv("RALPH_TEST_COMMAND")
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v, want nil", err)
-	}
-
-	if cfg.TestCommand != "go test -v ./internal/..." {
-		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test -v ./internal/...")
 	}
 }

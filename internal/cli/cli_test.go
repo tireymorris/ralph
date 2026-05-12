@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"os"
 	"strings"
 	"testing"
@@ -65,18 +64,11 @@ func TestPrintStories(t *testing.T) {
 		},
 	}
 
-	old := os.Stdout
-	rr, w, _ := os.Pipe()
-	os.Stdout = w
+	_, readStdout := captureStdout(t)
 
 	r.printStories(p)
 
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(rr)
-	output := buf.String()
+	output := readStdout()
 
 	if !strings.Contains(output, "Story 1") {
 		t.Error("printStories() should contain story titles")
@@ -93,9 +85,7 @@ func TestHandleEventsPRDGenerating(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -103,9 +93,6 @@ func TestHandleEventsPRDGenerating(t *testing.T) {
 	close(eventsCh)
 
 	code := <-doneCh
-
-	w.Close()
-	os.Stdout = old
 
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
@@ -119,9 +106,7 @@ func TestHandleEventsPRDGenerated(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -130,8 +115,6 @@ func TestHandleEventsPRDGenerated(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsPRDLoaded(t *testing.T) {
@@ -141,9 +124,7 @@ func TestHandleEventsPRDLoaded(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -152,8 +133,6 @@ func TestHandleEventsPRDLoaded(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsStoryStarted(t *testing.T) {
@@ -163,9 +142,7 @@ func TestHandleEventsStoryStarted(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -174,8 +151,6 @@ func TestHandleEventsStoryStarted(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
@@ -185,9 +160,7 @@ func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -196,8 +169,6 @@ func TestHandleEventsStoryCompletedSuccess(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsStoryCompletedFailure(t *testing.T) {
@@ -207,9 +178,7 @@ func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -218,8 +187,6 @@ func TestHandleEventsStoryCompletedFailure(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsOutput(t *testing.T) {
@@ -229,9 +196,7 @@ func TestHandleEventsOutput(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -241,8 +206,6 @@ func TestHandleEventsOutput(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
 }
 
 func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
@@ -252,9 +215,7 @@ func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	rr, w, _ := os.Pipe()
-	os.Stdout = w
+	_, readStdout := captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -264,12 +225,7 @@ func TestHandleEventsVerboseOutputFiltered(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(rr)
-	output := buf.String()
+	output := readStdout()
 
 	if strings.Contains(output, "service bus log") {
 		t.Error("verbose output should be filtered when verbose=false")
@@ -286,9 +242,7 @@ func TestHandleEventsVerboseOutputShown(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	rr, w, _ := os.Pipe()
-	os.Stdout = w
+	_, readStdout := captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -297,12 +251,7 @@ func TestHandleEventsVerboseOutputShown(t *testing.T) {
 
 	<-doneCh
 
-	w.Close()
-	os.Stdout = old
-
-	var buf bytes.Buffer
-	buf.ReadFrom(rr)
-	output := buf.String()
+	output := readStdout()
 
 	if !strings.Contains(output, "service bus log") {
 		t.Error("verbose output should be shown when verbose=true")
@@ -316,9 +265,7 @@ func TestHandleEventsError(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -326,9 +273,6 @@ func TestHandleEventsError(t *testing.T) {
 	close(eventsCh)
 
 	code := <-doneCh
-
-	w.Close()
-	os.Stdout = old
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
@@ -342,9 +286,7 @@ func TestHandleEventsCompleted(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -352,9 +294,6 @@ func TestHandleEventsCompleted(t *testing.T) {
 	close(eventsCh)
 
 	code := <-doneCh
-
-	w.Close()
-	os.Stdout = old
 
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
@@ -385,9 +324,7 @@ func TestHandleEventsPRDReview(t *testing.T) {
 	doneCh := make(chan int, 1)
 
 	// Capture stdout
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 
 	go r.handleEvents(eventsCh, doneCh)
 
@@ -399,8 +336,6 @@ func TestHandleEventsPRDReview(t *testing.T) {
 	close(eventsCh)
 
 	<-doneCh
-	w.Close()
-	os.Stdout = old
 
 	// Check answers were sent
 	select {
@@ -441,9 +376,7 @@ func TestHandleEventsClarifyingQuestionsEmptyAnswers(t *testing.T) {
 	eventsCh := make(chan workflow.Event, 10)
 	doneCh := make(chan int, 1)
 
-	old := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+	_, _ = captureStdout(t)
 	go r.handleEvents(eventsCh, doneCh)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
@@ -454,8 +387,6 @@ func TestHandleEventsClarifyingQuestionsEmptyAnswers(t *testing.T) {
 	close(eventsCh)
 
 	<-doneCh
-	w.Close()
-	os.Stdout = old
 
 	select {
 	case answers := <-answersCh:

@@ -65,20 +65,27 @@ func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- Outpu
 	}
 
 	var wg sync.WaitGroup
+	errCh := make(chan error, constants.PipeReaderCount)
 	wg.Add(constants.PipeReaderCount)
 	go func() {
 		defer wg.Done()
-		readPipeLines(stdout, outputCh, stdoutTransform)
+		errCh <- readPipeLines(stdout, outputCh, stdoutTransform)
 	}()
 	go func() {
 		defer wg.Done()
-		readPipeLines(stderr, outputCh, stderrTransform)
+		errCh <- readPipeLines(stderr, outputCh, stderrTransform)
 	}()
 	wg.Wait()
+	close(errCh)
+	for readErr := range errCh {
+		if readErr != nil {
+			return readErr
+		}
+	}
 	return cmd.Wait()
 }
 
-func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) {
+func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) error {
 	scanner := bufio.NewScanner(pipe)
 	buf := make([]byte, 0, constants.InitialScannerBufferCapacity)
 	scanner.Buffer(buf, constants.ScannerBufferSize)
@@ -89,4 +96,8 @@ func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTra
 			}
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scan pipe output: %w", err)
+	}
+	return nil
 }

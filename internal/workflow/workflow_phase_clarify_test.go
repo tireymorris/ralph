@@ -16,16 +16,10 @@ import (
 // when the AI runner succeeds but writes no questions file.
 func TestRunClarifyNoQuestionsFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-
 	ch := make(chan Event, 100)
-	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		return nil // AI does not write a questions file
-	}
-
-	exec := NewExecutorWithRunner(cfg, ch, mock)
+	}, ch)
 	qas, err := exec.RunClarify(context.Background(), "add login")
 
 	if err != nil {
@@ -39,16 +33,10 @@ func TestRunClarifyNoQuestionsFile(t *testing.T) {
 // TestRunClarifyRunnerError verifies RunClarify is non-fatal when the runner errors.
 func TestRunClarifyRunnerError(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-
 	ch := make(chan Event, 100)
-	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		return errors.New("runner failed")
-	}
-
-	exec := NewExecutorWithRunner(cfg, ch, mock)
+	}, ch)
 	qas, err := exec.RunClarify(context.Background(), "add login")
 
 	if err != nil {
@@ -62,16 +50,10 @@ func TestRunClarifyRunnerError(t *testing.T) {
 // TestRunClarifyInvalidJSON verifies RunClarify handles malformed questions file gracefully.
 func TestRunClarifyInvalidJSON(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-
 	ch := make(chan Event, 100)
-	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		return os.WriteFile(filepath.Join(tmpDir, ClarifyingQuestionsFile), []byte("not json"), 0644)
-	}
-
-	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return writeQuestionsFile(t, tmpDir, "not json")
+	}, ch)
 	qas, err := exec.RunClarify(context.Background(), "add login")
 
 	if err != nil {
@@ -85,16 +67,10 @@ func TestRunClarifyInvalidJSON(t *testing.T) {
 // TestRunClarifyEmptyArray verifies RunClarify returns nil when the AI writes [].
 func TestRunClarifyEmptyArray(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-
 	ch := make(chan Event, 100)
-	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		return os.WriteFile(filepath.Join(tmpDir, ClarifyingQuestionsFile), []byte("[]"), 0644)
-	}
-
-	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return writeQuestionsFile(t, tmpDir, "[]")
+	}, ch)
 	qas, err := exec.RunClarify(context.Background(), "add login")
 
 	if err != nil {

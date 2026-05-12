@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"ralph/internal/prd"
 )
 
 func (m *Model) View() string {
@@ -15,32 +16,18 @@ func (m *Model) View() string {
 	var b strings.Builder
 
 	if m.phase == PhaseClarifying {
-		b.WriteString(m.renderHeader())
-		b.WriteString("\n")
-		b.WriteString(m.renderPhase())
-		b.WriteString("\n")
-		b.WriteString(m.renderClarifying())
-		b.WriteString("\n")
-		b.WriteString(helpStyle.Render("Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"))
+		b.WriteString(m.renderClarifyingView())
 		return b.String()
 	}
 
 	if m.scrollPane == focusMain {
 		b.WriteString(m.mainPane.View())
 	} else {
-		b.WriteString(titleStyle.Render("Output Logs"))
-		b.WriteString("\n")
-		b.WriteString(m.renderLogs())
+		b.WriteString(m.renderLogsPane())
 	}
 
 	b.WriteString("\n")
-	if m.phase == PhasePRDReview {
-		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"))
-	} else if m.phase == PhaseFailed {
-		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • r retry • q quit • ctrl+c exit"))
-	} else {
-		b.WriteString(helpStyle.Render("Tab switch pane • ↑/↓ scroll • q quit • ctrl+c exit"))
-	}
+	b.WriteString(helpStyle.Render(m.helpText()))
 
 	return b.String()
 }
@@ -130,45 +117,15 @@ func (m *Model) renderPRDReview() string {
 	}
 
 	var b strings.Builder
-
 	b.WriteString(infoStyle.Render(inProgressStyle.Render("PRD ready for review")))
 	b.WriteString("\n\n")
-
-	projectLabel := labelStyle.Render("Project")
-	projectValue := valueStyle.Render(m.prd.ProjectName)
-	b.WriteString(infoStyle.Render(projectLabel + " " + projectValue))
-	b.WriteString("\n")
-
-	branchLabel := labelStyle.Render("Branch")
-	branchValue := valueStyle.Render(m.prd.BranchName)
-	b.WriteString(infoStyle.Render(branchLabel + " " + branchValue))
+	b.WriteString(m.renderProjectSection())
 	b.WriteString("\n\n")
-
 	b.WriteString(titleStyle.Render("Stories"))
 	b.WriteString("\n")
 	for _, s := range m.prd.Stories {
-		status := "[ ]"
-		if s.Passes {
-			status = "[x]"
-		}
-		deps := ""
-		if len(s.DependsOn) > 0 {
-			deps = " (depends: " + strings.Join(s.DependsOn, ", ") + ")"
-		}
-		line := fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)
-		b.WriteString(storyItemStyle.Render(line))
-		b.WriteString("\n")
-
-		if len(s.AcceptanceCriteria) > 0 {
-			b.WriteString(mutedStyle.Render("    Acceptance criteria:"))
-			b.WriteString("\n")
-			for _, ac := range s.AcceptanceCriteria {
-				b.WriteString(mutedStyle.Render(fmt.Sprintf("      - %s", ac)))
-				b.WriteString("\n")
-			}
-		}
+		b.WriteString(m.renderReviewStory(s))
 	}
-
 	b.WriteString("\n")
 	b.WriteString(helpStyle.Render("Press Enter to continue implementation"))
 
@@ -181,44 +138,14 @@ func (m *Model) renderImplementation() string {
 	}
 
 	var b strings.Builder
-
-	projectLabel := labelStyle.Render("Project")
-	projectValue := valueStyle.Render(m.prd.ProjectName)
-	b.WriteString(infoStyle.Render(projectLabel + " " + projectValue))
+	b.WriteString(m.renderProjectSection())
 	b.WriteString("\n")
-
-	if m.prd.BranchName != "" {
-		branchLabel := labelStyle.Render("Branch")
-		branchValue := valueStyle.Render(m.prd.BranchName)
-		b.WriteString(infoStyle.Render(branchLabel + " " + branchValue))
-		b.WriteString("\n")
-	}
-
-	completed := m.prd.CompletedCount()
-	total := len(m.prd.Stories)
-	percent := float64(completed) / float64(total)
-
-	progressLabel := labelStyle.Render("Progress")
-	progressValue := mutedStyle.Render(fmt.Sprintf("%d/%d stories", completed, total))
-	b.WriteString(infoStyle.Render(progressLabel + " " + progressValue))
-	b.WriteString("\n")
-	b.WriteString(infoStyle.Render(m.progress.ViewAs(percent)))
+	b.WriteString(m.renderProgressSection())
 	b.WriteString("\n\n")
-
 	b.WriteString(titleStyle.Render("Stories"))
 	b.WriteString("\n")
 	for _, s := range m.prd.Stories {
-		isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
-		icon := getStatusIcon(s.Passes, isCurrentStory)
-		status := getStatusText(s.Passes, isCurrentStory)
-
-		if isCurrentStory {
-			line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
-			b.WriteString(selectedStoryStyle.Render(line))
-		} else {
-			line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
-			b.WriteString(storyItemStyle.Render(line))
-		}
+		b.WriteString(m.renderImplementationStory(s))
 		b.WriteString("\n")
 	}
 
@@ -255,6 +182,40 @@ func (m *Model) renderLogs() string {
 	return logBoxStyle.Render(viewportContent)
 }
 
+func (m *Model) renderClarifyingView() string {
+	var b strings.Builder
+	b.WriteString(m.renderHeader())
+	b.WriteString("\n")
+	b.WriteString(m.renderPhase())
+	b.WriteString("\n")
+	b.WriteString(m.renderClarifying())
+	b.WriteString("\n")
+	b.WriteString(helpStyle.Render(m.clarifyingHelpText()))
+	return b.String()
+}
+
+func (m *Model) renderLogsPane() string {
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("Output Logs"))
+	b.WriteString("\n")
+	b.WriteString(m.renderLogs())
+	return b.String()
+}
+
+func (m *Model) helpText() string {
+	if m.phase == PhasePRDReview {
+		return "Tab switch pane • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"
+	}
+	if m.phase == PhaseFailed {
+		return "Tab switch pane • ↑/↓ scroll • r retry • q quit • ctrl+c exit"
+	}
+	return "Tab switch pane • ↑/↓ scroll • q quit • ctrl+c exit"
+}
+
+func (m *Model) clarifyingHelpText() string {
+	return "Tab/↑/↓ navigate • Enter confirm • Esc skip all • ctrl+c exit"
+}
+
 func (m *Model) mainScrollEnabled() bool {
 	return m.phase != PhaseClarifying
 }
@@ -281,4 +242,67 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderCompleted())
 	}
 	m.mainPane.SetContent(b.String())
+}
+
+func (m *Model) renderProjectSection() string {
+	var b strings.Builder
+	b.WriteString(m.renderProjectLine())
+	if m.prd.BranchName != "" {
+		b.WriteString("\n")
+		b.WriteString(m.renderBranchLine())
+	}
+	return b.String()
+}
+
+func (m *Model) renderProjectLine() string {
+	return infoStyle.Render(labelStyle.Render("Project") + " " + valueStyle.Render(m.prd.ProjectName))
+}
+
+func (m *Model) renderBranchLine() string {
+	return infoStyle.Render(labelStyle.Render("Branch") + " " + valueStyle.Render(m.prd.BranchName))
+}
+
+func (m *Model) renderProgressSection() string {
+	completed := m.prd.CompletedCount()
+	total := len(m.prd.Stories)
+	percent := float64(completed) / float64(total)
+	var b strings.Builder
+	b.WriteString(infoStyle.Render(labelStyle.Render("Progress") + " " + mutedStyle.Render(fmt.Sprintf("%d/%d stories", completed, total))))
+	b.WriteString("\n")
+	b.WriteString(infoStyle.Render(m.progress.ViewAs(percent)))
+	return b.String()
+}
+
+func (m *Model) renderReviewStory(s *prd.Story) string {
+	var b strings.Builder
+	status := "[ ]"
+	if s.Passes {
+		status = "[x]"
+	}
+	deps := ""
+	if len(s.DependsOn) > 0 {
+		deps = " (depends: " + strings.Join(s.DependsOn, ", ") + ")"
+	}
+	b.WriteString(storyItemStyle.Render(fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)))
+	b.WriteString("\n")
+	if len(s.AcceptanceCriteria) > 0 {
+		b.WriteString(mutedStyle.Render("    Acceptance criteria:"))
+		b.WriteString("\n")
+		for _, ac := range s.AcceptanceCriteria {
+			b.WriteString(mutedStyle.Render(fmt.Sprintf("      - %s", ac)))
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
+func (m *Model) renderImplementationStory(s *prd.Story) string {
+	isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
+	icon := getStatusIcon(s.Passes, isCurrentStory)
+	status := getStatusText(s.Passes, isCurrentStory)
+	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
+	if isCurrentStory {
+		return selectedStoryStyle.Render(line)
+	}
+	return storyItemStyle.Render(line)
 }

@@ -7,14 +7,14 @@ import (
 
 func TestPiProviderAndModel(t *testing.T) {
 	tests := []struct {
-		cfg    string
-		wantP  string
-		wantM  string
+		cfg   string
+		wantP string
+		wantM string
 	}{
-		{"pi/auto", "cursor", "auto"},
-		{"pi/sonnet", "cursor", "sonnet"},
+		{"pi/auto", "", "auto"},
+		{"pi/sonnet", "", "sonnet"},
 		{"pi/openai/gpt-4o", "openai", "gpt-4o"},
-		{"pi/cursor/foo/bar", "cursor", "foo/bar"},
+		{"pi/anything/else", "anything", "else"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.cfg, func(t *testing.T) {

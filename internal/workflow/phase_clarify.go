@@ -2,12 +2,9 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
 
-	"ralph/internal/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prompt"
-	"ralph/internal/runner"
 )
 
 // RunClarify asks the AI to generate clarifying questions about the user's
@@ -18,29 +15,19 @@ func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.
 
 	e.emit(EventOutput{Output: Output{Text: "Analyzing request and generating clarifying questions..."}})
 
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	go e.forwardOutput(outputCh)
-
-	clarifyPrompt := prompt.ClarifyingQuestions(userPrompt, ClarifyingQuestionsFile, isEmpty)
-	err := e.runner.Run(ctx, clarifyPrompt, outputCh)
-	close(outputCh)
-
-	if err != nil {
+	if err := e.runClarifyRunner(ctx, userPrompt, isEmpty); err != nil {
 		logger.Warn("clarifying questions generation failed, proceeding without", "error", err)
 		return nil, nil
 	}
 
 	data, readErr := QuestionsFileReader{WorkDir: e.cfg.WorkDir}.ReadRemove()
-
 	if readErr != nil {
-		logger.Warn("AI did not write questions file, proceeding without clarification", "file", ClarifyingQuestionsFile)
-		return nil, nil
+		return continueWithoutClarification("AI did not write questions file, proceeding without clarification", "file", ClarifyingQuestionsFile)
 	}
 
-	var questions []string
-	if jsonErr := json.Unmarshal(data, &questions); jsonErr != nil {
-		logger.Warn("failed to parse questions file, proceeding without clarification", "error", jsonErr)
-		return nil, nil
+	questions, jsonErr := parseClarifyingQuestions(data)
+	if jsonErr != nil {
+		return continueWithoutClarification("failed to parse questions file, proceeding without clarification", "error", jsonErr)
 	}
 
 	if len(questions) == 0 {

@@ -40,7 +40,13 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 		return nil, fmt.Errorf("PRD generation failed with model %s: %w", e.cfg.Model, err)
 	}
 
-	if !e.store.Exists(e.cfg) {
+	exists, err := e.store.Exists(e.cfg)
+	if err != nil {
+		logger.Error("failed to check for generated PRD", "error", err)
+		e.emit(EventError{Err: fmt.Errorf("checking for generated PRD %s: %w", e.cfg.PRDFile, err)})
+		return nil, fmt.Errorf("checking for generated PRD %s: %w", e.cfg.PRDFile, err)
+	}
+	if !exists {
 		err := fmt.Errorf("AI completed but did not generate %s — it may not have understood the request", e.cfg.PRDFile)
 		logger.Error("AI did not generate PRD file", "file", e.cfg.PRDFile)
 		e.emit(EventError{Err: err})

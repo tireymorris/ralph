@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -56,11 +55,10 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), r.cfg.Model), Time: time.Now()}
+		outputCh <- newStartingOutputLine(r.RunnerName(), r.cfg.Model)
 	}
 
-	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
-	err := runPipedCommand(r.CommandName(), cmd, outputCh,
+	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
 		parseCursorStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
@@ -68,15 +66,11 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 	)
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("AI runner exited with code",
-				"runner", r.RunnerName(),
-				"command", r.CommandName(),
-				"exit_code", exitErr.ExitCode(),
-				"model", r.cfg.Model)
-			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), r.cfg.Model, exitErr.ExitCode())
-		}
-		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), r.cfg.Model, err)
+		logger.Debug("AI runner exited with code",
+			"runner", r.RunnerName(),
+			"command", r.CommandName(),
+			"model", r.cfg.Model)
+		return wrapRunnerError(r.RunnerName(), r.cfg.Model, err)
 	}
 
 	logger.Debug("AI runner completed successfully",

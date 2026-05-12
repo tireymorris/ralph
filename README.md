@@ -1,65 +1,90 @@
 # Ralph
 
-Turns a natural-language goal into a PRD and implements user stories iteratively ([pi](https://pi.dev), OpenCode, or Claude Code behind the scenes).
+Ralph turns a natural-language goal into a PRD, then implements the work story by story using an AI coding backend.
 
-**Flow:** optional clarifying questions → PRD → review → implement stories (priority + dependencies, tests + commits). Failed stories roll back with `git reset --hard`. When everything passes, the PRD file (default `prd.json`) stays in place with all stories marked done; nothing renames or archives it.
+Supported backends:
+- [pi](https://pi.dev)
+- [OpenCode](https://github.com/opencode-ai/opencode)
+- [Claude Code](https://github.com/anthropics/claude-code)
+- Cursor Agent (`agent`)
+
+## Flow
+
+1. optionally ask clarifying questions
+2. generate a PRD
+3. review the PRD
+4. implement stories in priority/dependency order
+5. run tests and retry failed stories
 
 ## Requirements
 
 - Go 1.24+
 - Git
-- [pi](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) (`npm install -g @mariozechner/pi-coding-agent`), [OpenCode](https://github.com/opencode-ai/opencode), or [Claude Code](https://github.com/anthropics/claude-code) on `PATH` (default uses `pi`)
+- One of the supported CLIs on `PATH`:
+  - `pi`
+  - `opencode`
+  - `claude`
+  - `agent` (Cursor Agent)
 
 ## Install
 
-From the repository root:
-
 ```bash
-go build -o ralph .   # or: go install .
+go build -o ralph .
+# or
+go install .
 ```
 
 ## Usage
 
+### TUI mode
 
-| Command                                          |                                      |
-| ------------------------------------------------ | ------------------------------------ |
-| `ralph "…"`                                      | TUI: full run                        |
-| `ralph "…" --dry-run`                            | TUI: PRD only                        |
-| `ralph --resume`                                 | TUI: continue from existing PRD file |
-| `ralph status`                                   | Print PRD progress                   |
-| `ralph run "…"`                                  | Headless full run                    |
-| `ralph run "…" --dry-run` / `ralph run --resume` | Headless variants                    |
+```bash
+ralph "build a todo app"
+ralph "build a todo app" --dry-run
+ralph --resume
+```
 
+### Headless mode
 
-**Flags:** `--dry-run`, `--resume`, `-v` / `--verbose`, `-h` / `--help`
+```bash
+ralph run "build a todo app"
+ralph run "build a todo app" --dry-run
+ralph run --resume
+```
 
-Typical review path: `ralph "…" --dry-run` → edit PRD → `ralph --resume`.
+### Other commands
 
-## Configuration
+```bash
+ralph status
+```
 
-Environment variables (optional overrides; defaults shown):
+## Environment
 
+Use `RALPH_MODEL` to select the backend and model in one value.
 
-| Variable               | Default                   | Role                                       |
-| ---------------------- | ------------------------- | ------------------------------------------ |
-| `RALPH_MODEL`          | `claude-code/sonnet`      | Model id (must use one of the prefixes below) |
-| `RALPH_MAX_ITERATIONS` | `50`                      | Cap on implementation iterations           |
-| `RALPH_RETRY_ATTEMPTS` | `3`                       | Retries per story before giving up         |
-| `RALPH_PRD_FILE`       | `prd.json`                | PRD filename in the working directory      |
-| `RALPH_TEST_COMMAND`   | `go test ./...`           | Command run to verify each story           |
+Use the backend's own help or model-list command as the source of truth for supported models.
 
+Set `RALPH_MODEL` to a backend-specific string with the right format:
 
-On success the PRD is only updated in place (no rename). This repository gitignores `prd.json` by default so it stays out of `git` unless you change `.gitignore` or `RALPH_PRD_FILE`.
+- `pi/<model>` or `pi/<provider>/<model>`
+  - `pi --list-models`
+  - `pi --help`
+- `opencode/<model>`
+  - `opencode models`
+  - `opencode --help`
+- `claude-code/<model>`
+  - `claude --help`
+- `cursor-agent/<model>`
+  - `agent --help`
 
-**Supported `RALPH_MODEL` prefixes** (see `internal/config/config.go`):
+Examples:
 
-pi: `pi/<model>` runs `pi` with `--provider cursor` and `--model <model>` (for example `pi/auto`). Use `pi/<provider>/<model>` to set both flags (for example `pi/openai/gpt-4o`).
-
-OpenCode: `opencode/...`, `opencode-go/...`, `anthropic/...`, `ollama/...` (examples: `opencode/kimi-k2.5-free`, `opencode/big-pickle`).
-
-Claude Code: `claude-code/sonnet`, `claude-code/haiku`, `claude-code/opus`.
-
-Each CLI’s docs describe how patterns map to real models.
+```text
+pi/github-copilot/claude-sonnet-4.6
+opencode/gpt-5.5
+claude-code/sonnet
+cursor-agent/sonnet-4
+```
 
 ## Development
 
@@ -67,4 +92,3 @@ Each CLI’s docs describe how patterns map to real models.
 go test ./...
 go build -o ralph .
 ```
-
