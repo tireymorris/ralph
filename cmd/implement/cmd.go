@@ -35,6 +35,17 @@ func (c *Cmd) Run() int {
 		return 1
 	}
 
+	p, err := prd.Load(c.cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading PRD: %v\n", err)
+		return 1
+	}
+
+	if p.AllCompleted() {
+		fmt.Printf("All %d stories already completed.\n", len(p.Stories))
+		return 0
+	}
+
 	return 0
 }
 
