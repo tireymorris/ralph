@@ -91,6 +91,21 @@ func TestParse(t *testing.T) {
 			args:     []string{"status"},
 			expected: Options{Status: true},
 		},
+		{
+			name:     "prd command",
+			args:     []string{"prd"},
+			expected: Options{Prd: true},
+		},
+		{
+			name:     "prd command with prompt",
+			args:     []string{"prd", "build a todo app"},
+			expected: Options{Prd: true, Prompt: "build a todo app"},
+		},
+		{
+			name:     "prd command with verbose",
+			args:     []string{"prd", "--verbose", "build a todo app"},
+			expected: Options{Prd: true, Verbose: true, Prompt: "build a todo app"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -116,6 +131,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.Status != tt.expected.Status {
 				t.Errorf("Status = %v, want %v", got.Status, tt.expected.Status)
+			}
+			if got.Prd != tt.expected.Prd {
+				t.Errorf("Prd = %v, want %v", got.Prd, tt.expected.Prd)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -169,6 +187,16 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "status with prompt still valid",
 			opts:    Options{Status: true, Prompt: "extra"},
+			wantErr: false,
+		},
+		{
+			name:    "prd command without prompt is valid",
+			opts:    Options{Prd: true},
+			wantErr: false,
+		},
+		{
+			name:    "prd command with prompt is valid",
+			opts:    Options{Prd: true, Prompt: "build a todo app"},
 			wantErr: false,
 		},
 	}
