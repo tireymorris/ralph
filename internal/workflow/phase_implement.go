@@ -73,8 +73,13 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			story.DependsOn,
 		)
 
-		e.runner.Run(ctx, storyPrompt, outputCh)
+		runErr := e.runner.Run(ctx, storyPrompt, outputCh)
 		close(outputCh)
+		if runErr != nil {
+			logger.Error("implementation runner failed", "error", runErr, "story_id", story.ID)
+			e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
+			return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)
+		}
 
 		updatedPRD, loadErr := e.store.Load(e.cfg)
 		if loadErr != nil {
@@ -94,6 +99,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		updatedStory.Passes = true
 		if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
 			logger.Warn("failed to save PRD after marking story complete", "error", saveErr, "story_id", story.ID)
+			e.emit(EventError{Err: fmt.Errorf("failed to save PRD after completing story %s: %w", story.ID, saveErr)})
+			return fmt.Errorf("failed to save PRD after completing story %s: %w", story.ID, saveErr)
 		}
 
 		logger.Debug("story completed", "story_id", story.ID)
