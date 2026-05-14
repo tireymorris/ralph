@@ -36,34 +36,17 @@ go install .
 
 ## Usage
 
-### TUI mode (auto-run)
+### Modes
 
 ```bash
-ralph "build a todo app"
-ralph "build a todo app" --dry-run
-ralph --resume
+ralph "build a todo app"               # TUI flow
+ralph "build a todo app" --dry-run     # Generate PRD only
+ralph --resume                          # Resume from existing prd.json
+ralph prd "build a todo app"           # Start in PRD mode
+ralph review                           # Start in review mode
+ralph implement                        # Start in implementation mode
+ralph status                            # Show current PRD status
 ```
-
-### Subcommands
-
-```bash
-ralph prd "build a todo app"           # Generate PRD only, no implementation
-ralph prd "build a todo app" --verbose # Generate PRD with debug logging
-ralph review                           # Review existing PRD
-ralph review --verbose                 # Review with debug logging
-ralph implement                        # Implement stories from existing PRD
-ralph implement --verbose              # Implement with debug logging
-```
-
-### Headless mode
-
-```bash
-ralph run "build a todo app"
-ralph run "build a todo app" --dry-run
-ralph run --resume
-```
-
-### Status
 
 ```bash
 ralph status
