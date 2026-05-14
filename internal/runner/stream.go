@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"ralph/internal/constants"
+	"ralph/internal/shared/constants"
 )
 
 type CmdInterface interface {

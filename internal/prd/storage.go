@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"ralph/internal/config"
-	"ralph/internal/constants"
+	"ralph/internal/shared/constants"
 )
 
 // Load reads and parses the PRD from disk with a shared lock to prevent concurrent modifications.
