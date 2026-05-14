@@ -1,19 +1,20 @@
 package tui
 
 import (
+	"ralph/internal/args"
 	"testing"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/shared/config"
 	"ralph/internal/prompt"
+	"ralph/internal/shared/config"
 	"ralph/internal/workflow/events"
 )
 
 func TestHandleWorkflowEventClarifyingQuestions(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	cmd := m.handleWorkflowEvent(events.EventClarifyingQuestions{
@@ -44,7 +45,7 @@ func TestHandleWorkflowEventClarifyingQuestions(t *testing.T) {
 
 func TestUpdateClarifyQuestionsMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	newModel, cmd := m.Update(clarifyQuestionsMsg{
@@ -75,7 +76,7 @@ func TestUpdateClarifyQuestionsMsg(t *testing.T) {
 
 func TestUpdateClarifyingKeyEsc(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	// Put model in clarifying phase
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
@@ -105,7 +106,7 @@ func TestUpdateClarifyingKeyEsc(t *testing.T) {
 
 func TestUpdateClarifyingKeyEnterNavigates(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	m.phase = PhaseClarifying
@@ -137,7 +138,7 @@ func TestUpdateClarifyingKeyEnterNavigates(t *testing.T) {
 
 func TestUpdateClarifyingKeyEnterSubmitsOnLast(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	m.phase = PhaseClarifying
@@ -166,7 +167,7 @@ func TestUpdateClarifyingKeyEnterSubmitsOnLast(t *testing.T) {
 
 func TestBuildAnswers(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	// No questions
 	if got := m.buildAnswers(); got != nil {
@@ -190,7 +191,7 @@ func TestBuildAnswers(t *testing.T) {
 
 func TestSubmitClarifyingAnswersSendsAndTransitions(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	m.clarifyAnswersCh = answersCh
@@ -220,7 +221,7 @@ func TestSubmitClarifyingAnswersSendsAndTransitions(t *testing.T) {
 
 func TestSubmitClarifyingAnswersNilChannelSafe(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 	// clarifyAnswersCh is nil — should not panic
 	m.phase = PhaseClarifying
 	cmds := m.submitClarifyingAnswers(nil)

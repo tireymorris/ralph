@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"ralph/internal/args"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
@@ -39,14 +40,9 @@ func (om *OperationManager) Cancel() {
 	}
 }
 
-// StartFullOperation launches the complete PRD workflow in a background
-// goroutine: (1) clarifying questions (skipped on --resume), (2) PRD
-// generation or load, (3) implementation. All results are communicated via the
-// event channel and the returned tea.Cmd.
-//
-// For the clarifying phase the workflow blocks waiting for user answers, which
-// arrive via EventClarifyingQuestions.AnswersCh — the TUI model sends them
-// there when the user submits the form.
+// StartFullOperation launches the default TUI workflow in a background
+// goroutine: clarify if needed, then generate the PRD. Results are
+// communicated via the event channel and the returned tea.Cmd.
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
 		om.startBackground(func() {
@@ -66,12 +62,30 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 	}
 }
 
+func (om *OperationManager) StartLoad() tea.Cmd {
+	return func() tea.Msg {
+		om.startBackground(func() {
+			om.executor.RunLoad(om.ctx)
+		})
+		return phaseChangeMsg(PhasePRDReview)
+	}
+}
+
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
 		om.startBackground(func() {
 			om.executor.RunImplementation(om.ctx, p)
 		})
 		return nil
+	}
+}
+
+func (om *OperationManager) StartMode(mode args.Mode, resume bool, userPrompt string) tea.Cmd {
+	switch mode {
+	case args.ModeReview, args.ModeImplement:
+		return om.StartLoad()
+	default:
+		return om.StartFullOperation(resume, userPrompt)
 	}
 }
 

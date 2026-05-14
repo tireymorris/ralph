@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"ralph/internal/args"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,7 +38,7 @@ func TestPhaseString(t *testing.T) {
 
 func TestNewModel(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", true, false, false)
+	m := NewModel(cfg, "test prompt", true, false, false, args.ModeAuto)
 
 	if m.cfg != cfg {
 		t.Error("cfg not set correctly")
@@ -85,7 +86,7 @@ func TestExitCode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Model{phase: tt.phase, prd: tt.prd}
+			m := &Model{phase: tt.phase, prd: tt.prd, mode: args.ModeAuto}
 			got := m.ExitCode()
 			if got != tt.wantCode {
 				t.Errorf("ExitCode() = %d, want %d", got, tt.wantCode)
@@ -96,7 +97,7 @@ func TestExitCode(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	cmd := m.Init()
 	if cmd == nil {
@@ -106,7 +107,7 @@ func TestInit(t *testing.T) {
 
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 
@@ -122,7 +123,7 @@ func TestUpdateKeyMsgQuit(t *testing.T) {
 
 func TestUpdateKeyMsgCtrlC(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
@@ -135,7 +136,7 @@ func TestUpdateKeyMsgCtrlC(t *testing.T) {
 
 func TestUpdateWindowSizeMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	newModel, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
@@ -151,7 +152,7 @@ func TestUpdateWindowSizeMsg(t *testing.T) {
 
 func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", true, false, false)
+	m := NewModel(cfg, "test", true, false, false, args.ModeAuto)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventPRDGenerated{PRD: testPRD}})
@@ -168,7 +169,7 @@ func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 
 func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	newModel, _ := m.Update(workflowEventMsg{event: events.EventPRDGenerated{PRD: testPRD}})
@@ -182,7 +183,7 @@ func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 
 func TestUpdatePRDErrorMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 	m.phase = PhasePRDGeneration
 
 	testErr := &testErrorType{msg: "test error"}
@@ -200,7 +201,7 @@ func TestUpdatePRDErrorMsg(t *testing.T) {
 
 func TestUpdateRetryAfterFailureRestartsPRDFlow(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "prompt", false, false, false)
+	m := NewModel(cfg, "prompt", false, false, false, args.ModeAuto)
 	m.width, m.height = 120, 40
 	m.phase = PhaseFailed
 	m.err = &testErrorType{msg: "bad path"}
@@ -221,7 +222,7 @@ func TestUpdateRetryAfterFailureRestartsPRDFlow(t *testing.T) {
 
 func TestUpdateRetryAfterFailureResumesImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "prompt", false, false, false)
+	m := NewModel(cfg, "prompt", false, false, false, args.ModeAuto)
 	m.width, m.height = 120, 40
 	m.phase = PhaseFailed
 	m.err = &testErrorType{msg: "story failed"}
@@ -243,7 +244,7 @@ func TestUpdateRetryAfterFailureResumesImplementation(t *testing.T) {
 
 func TestUpdatePhaseChangeMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	newModel, _ := m.Update(phaseChangeMsg(PhaseCompleted))
 
@@ -256,7 +257,7 @@ func TestUpdatePhaseChangeMsg(t *testing.T) {
 
 func TestUpdateSpinnerTickMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
 
 	_, cmd := m.Update(m.spinner.Tick())
 	if cmd == nil {
