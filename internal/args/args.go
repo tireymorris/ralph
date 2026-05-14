@@ -85,6 +85,8 @@ Usage:
   ralph status                                   # Show current PRD status
   ralph run "your feature description"           # Headless/stdout mode
   ralph run --resume                             # Resume (headless)
+  ralph prd "your feature description"           # Generate PRD only, no implementation
+  ralph prd "your feature description" --verbose # Generate PRD with debug logging
 
 Options:
   --dry-run      Generate PRD only, don't implement
