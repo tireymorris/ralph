@@ -3,7 +3,7 @@ package workflow
 import (
 	"os/exec"
 
-	"ralph/internal/logger"
+	"ralph/internal/shared/logger"
 	"ralph/internal/prd"
 )
 

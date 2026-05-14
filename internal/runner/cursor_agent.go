@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"ralph/internal/config"
-	"ralph/internal/logger"
+	"ralph/internal/shared/logger"
 )
 
 type CursorAgentRunner struct {

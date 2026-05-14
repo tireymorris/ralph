@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"ralph/internal/config"
-	"ralph/internal/logger"
+	"ralph/internal/shared/logger"
 	"ralph/internal/runner"
 )
 
