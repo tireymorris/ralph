@@ -1,8 +1,8 @@
 package workflow
 
 import (
-	"ralph/internal/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 // PRDStore abstracts PRD persistence so workflow can be tested without disk I/O.

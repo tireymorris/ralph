@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/constants"
-	"ralph/internal/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/constants"
+	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {

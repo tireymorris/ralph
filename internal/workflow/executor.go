@@ -3,9 +3,9 @@ package workflow
 import (
 	"fmt"
 
-	"ralph/internal/config"
-	"ralph/internal/logger"
-	"ralph/internal/runner"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/logger"
+	"ralph/internal/shared/runner"
 )
 
 // Executor orchestrates PRD generation, clarification, and story implementation.

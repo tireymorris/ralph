@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 )
 
 func (e *Executor) RunLoad(ctx context.Context) (*prd.PRD, error) {

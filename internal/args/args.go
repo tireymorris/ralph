@@ -14,6 +14,10 @@ type Options struct {
 	Verbose      bool
 	Help         bool
 	Status       bool
+	Prd          bool
+	Review       bool
+	Implement    bool
+	Subcommand   string
 	UnknownFlags []string
 }
 
@@ -33,8 +37,19 @@ func Parse(args []string) *Options {
 			opts.Verbose = true
 		case "run":
 			opts.Headless = true
+			opts.Subcommand = "run"
 		case "status":
 			opts.Status = true
+			opts.Subcommand = "status"
+		case "prd":
+			opts.Prd = true
+			opts.Subcommand = "prd"
+		case "review":
+			opts.Review = true
+			opts.Subcommand = "review"
+		case "implement":
+			opts.Implement = true
+			opts.Subcommand = "implement"
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -48,12 +63,28 @@ func Parse(args []string) *Options {
 	return opts
 }
 
+func (o *Options) SubcommandName() string {
+	return o.Subcommand
+}
+
 func (o *Options) Validate() error {
 	if o.Help {
 		return nil
 	}
 
 	if o.Status {
+		return nil
+	}
+
+	if o.Prd {
+		return nil
+	}
+
+	if o.Review {
+		return nil
+	}
+
+	if o.Implement {
 		return nil
 	}
 
@@ -78,6 +109,12 @@ Usage:
   ralph status                                   # Show current PRD status
   ralph run "your feature description"           # Headless/stdout mode
   ralph run --resume                             # Resume (headless)
+  ralph prd "your feature description"           # Generate PRD only, no implementation
+  ralph prd "your feature description" --verbose # Generate PRD with debug logging
+  ralph review                                   # Review existing PRD
+  ralph review --verbose                         # Review with debug logging
+  ralph implement                                # Implement stories from existing PRD
+  ralph implement --verbose                      # Implement with debug logging
 
 Options:
   --dry-run      Generate PRD only, don't implement

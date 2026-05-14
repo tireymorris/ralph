@@ -120,3 +120,107 @@ func TestRunResumeValidPRDHeadless(t *testing.T) {
 		t.Errorf("run() with valid prd (all complete) = %d, want 0", code)
 	}
 }
+
+func TestRunReviewNoPRD(t *testing.T) {
+	origArgs := os.Args
+	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
+
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+
+	os.Args = []string{"ralph", "review"}
+	defer func() {
+		os.Args = origArgs
+		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
+	}()
+
+	code := run()
+	if code != 1 {
+		t.Errorf("run() with review and no prd = %d, want 1", code)
+	}
+}
+
+func TestRunImplementNoPRD(t *testing.T) {
+	origArgs := os.Args
+	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
+
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+
+	os.Args = []string{"ralph", "implement"}
+	defer func() {
+		os.Args = origArgs
+		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
+	}()
+
+	code := run()
+	if code != 1 {
+		t.Errorf("run() with implement and no prd = %d, want 1", code)
+	}
+}
+
+func TestRunStatusBackwardCompatible(t *testing.T) {
+	origArgs := os.Args
+	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
+
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+
+	os.Args = []string{"ralph", "status"}
+	defer func() {
+		os.Args = origArgs
+		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
+	}()
+
+	code := run()
+	if code != 0 {
+		t.Errorf("run() with status = %d, want 0", code)
+	}
+}
+
+func TestRunAutoRunFallbackNoPrompt(t *testing.T) {
+	origArgs := os.Args
+	origDir, _ := os.Getwd()
+	origModel := os.Getenv("RALPH_MODEL")
+
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
+
+	os.Args = []string{"ralph"}
+	defer func() {
+		os.Args = origArgs
+		os.Chdir(origDir)
+		if origModel != "" {
+			os.Setenv("RALPH_MODEL", origModel)
+		} else {
+			os.Unsetenv("RALPH_MODEL")
+		}
+	}()
+
+	code := run()
+	if code != 1 {
+		t.Errorf("run() with no args (auto-run fallback) = %d, want 1", code)
+	}
+}

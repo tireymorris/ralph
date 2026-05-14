@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"ralph/internal/config"
-	"ralph/internal/constants"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 )
 
 // LockTimeoutError is returned when a file lock cannot be acquired within the timeout period.

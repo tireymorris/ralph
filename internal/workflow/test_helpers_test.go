@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/config"
-	"ralph/internal/runner"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/runner"
 )
 
 func newClarifyExecutor(t *testing.T, workDir string, runFunc func(context.Context, string, chan<- runner.OutputLine) error, eventsCh chan Event) *Executor {

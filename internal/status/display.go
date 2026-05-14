@@ -3,8 +3,8 @@ package status
 import (
 	"fmt"
 
-	"ralph/internal/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 // Display loads and prints a formatted PRD status summary to stdout
