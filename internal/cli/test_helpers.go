@@ -30,23 +30,3 @@ func captureStdout(t *testing.T) (*os.File, func() string) {
 	}
 }
 
-func captureStdin(t *testing.T, input string) {
-	t.Helper()
-
-	old := os.Stdin
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("os.Pipe() failed: %v", err)
-	}
-	os.Stdin = r
-	t.Cleanup(func() {
-		os.Stdin = old
-		_ = r.Close()
-		_ = w.Close()
-	})
-
-	go func() {
-		_, _ = io.WriteString(w, input)
-		_ = w.Close()
-	}()
-}
