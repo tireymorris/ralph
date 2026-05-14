@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/constants"
+	"ralph/internal/shared/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prd"
 	"ralph/internal/prompt"

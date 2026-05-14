@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"ralph/internal/constants"
+	"ralph/internal/shared/constants"
 	"ralph/internal/logger"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
