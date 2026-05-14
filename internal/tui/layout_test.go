@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"ralph/internal/args"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,7 +10,7 @@ import (
 
 func TestApplyLayoutSetsPaneDimensions(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	m.applyLayout(120, 40)
 
@@ -31,7 +30,7 @@ func TestApplyLayoutSetsPaneDimensions(t *testing.T) {
 
 func TestApplyLayoutCachesDimensions(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	m.applyLayout(120, 40)
 	origMainH := m.mainPane.Height
@@ -45,7 +44,7 @@ func TestApplyLayoutCachesDimensions(t *testing.T) {
 
 func TestTabSwitchesPaneFocus(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.scrollPane = focusMain
 
@@ -60,7 +59,7 @@ func TestTabSwitchesPaneFocus(t *testing.T) {
 
 func TestTabSwitchesPaneFocusBack(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.scrollPane = focusLogs
 

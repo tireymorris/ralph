@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"ralph/internal/args"
 	"testing"
 
 	"ralph/internal/shared/config"
@@ -11,7 +10,7 @@ import (
 
 func TestHandleWorkflowEventPRDGenerating(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	cmd := m.handleWorkflowEvent(events.EventPRDGenerating{})
 	if cmd != nil {
@@ -24,7 +23,7 @@ func TestHandleWorkflowEventPRDGenerating(t *testing.T) {
 
 func TestHandleWorkflowEventPRDGenerated(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
 	m.handleWorkflowEvent(events.EventPRDGenerated{PRD: testPRD})
@@ -36,7 +35,7 @@ func TestHandleWorkflowEventPRDGenerated(t *testing.T) {
 
 func TestHandleWorkflowEventPRDLoaded(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Passes: true}}}
 	m.handleWorkflowEvent(events.EventPRDLoaded{PRD: testPRD})
@@ -48,7 +47,7 @@ func TestHandleWorkflowEventPRDLoaded(t *testing.T) {
 
 func TestHandleWorkflowEventStoryStarted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	story := &prd.Story{ID: "1", Title: "Test Story"}
 	m.handleWorkflowEvent(events.EventStoryStarted{Story: story})
@@ -60,7 +59,7 @@ func TestHandleWorkflowEventStoryStarted(t *testing.T) {
 
 func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
 	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
@@ -73,7 +72,7 @@ func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {
 
 func TestHandleWorkflowEventStoryCompletedFailure(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
 	m.handleWorkflowEvent(events.EventStoryCompleted{Story: story, Success: false})
@@ -85,7 +84,7 @@ func TestHandleWorkflowEventStoryCompletedFailure(t *testing.T) {
 
 func TestHandleWorkflowEventCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	m.handleWorkflowEvent(events.EventCompleted{})
 
@@ -96,7 +95,7 @@ func TestHandleWorkflowEventCompleted(t *testing.T) {
 
 func TestHandleWorkflowEventError(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhasePRDGeneration
 
 	testErr := &testErrorType{msg: "error"}
@@ -117,7 +116,7 @@ func TestHandleWorkflowEventError(t *testing.T) {
 
 func TestHandleWorkflowEventErrorDuringImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = &prd.PRD{ProjectName: "P"}
 
@@ -133,7 +132,7 @@ func TestHandleWorkflowEventErrorDuringImplementation(t *testing.T) {
 
 func TestHandleWorkflowEventOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	cmd := m.handleWorkflowEvent(events.EventOutput{Output: events.Output{Text: "test", IsErr: false}})
 	if cmd != nil {
@@ -143,7 +142,7 @@ func TestHandleWorkflowEventOutput(t *testing.T) {
 
 func TestHandleWorkflowEventOutputVerboseFiltered(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	cmd := m.handleWorkflowEvent(events.EventOutput{Output: events.Output{Text: "verbose", IsErr: false, Verbose: true}})
 	if cmd != nil {
@@ -153,7 +152,7 @@ func TestHandleWorkflowEventOutputVerboseFiltered(t *testing.T) {
 
 func TestHandleWorkflowEventOutputVerboseShown(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, true, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, true)
 
 	cmd := m.handleWorkflowEvent(events.EventOutput{Output: events.Output{Text: "verbose", IsErr: false, Verbose: true}})
 	if cmd != nil {
@@ -163,7 +162,7 @@ func TestHandleWorkflowEventOutputVerboseShown(t *testing.T) {
 
 func TestUpdateWorkflowEventMsg(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	newModel, cmd := m.Update(workflowEventMsg{event: events.EventCompleted{}})
 

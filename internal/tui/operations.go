@@ -5,7 +5,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/args"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
@@ -77,15 +76,6 @@ func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 			om.executor.RunImplementation(om.ctx, p)
 		})
 		return nil
-	}
-}
-
-func (om *OperationManager) StartMode(mode args.Mode, resume bool, userPrompt string) tea.Cmd {
-	switch mode {
-	case args.ModeReview, args.ModeImplement:
-		return om.StartLoad()
-	default:
-		return om.StartFullOperation(resume, userPrompt)
 	}
 }
 

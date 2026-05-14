@@ -109,8 +109,7 @@ func TestRunResumeValidPRD(t *testing.T) {
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	prdContent := `{"project_name":"Test","stories":[{"id":"1","title":"T","description":"D","acceptance_criteria":["a"],"priority":1,"passes":true}]}`
-	os.WriteFile("prd.json", []byte(prdContent), 0644)
+	os.WriteFile("prd.json", []byte(`{"project_name":"Test","stories":[{"id":"1","title":"T","description":"D","acceptance_criteria":["a"],"priority":1,"passes":true}]}`), 0644)
 	os.Args = []string{"ralph", "--resume"}
 	defer func() {
 		os.Args = origArgs
@@ -125,60 +124,6 @@ func TestRunResumeValidPRD(t *testing.T) {
 
 	if code := run(); code != 0 {
 		t.Errorf("run() with valid prd (all complete) = %d, want 0", code)
-	}
-}
-
-func TestRunReviewNoPRD(t *testing.T) {
-	origArgs := os.Args
-	origDir, _ := os.Getwd()
-	origModel := os.Getenv("RALPH_MODEL")
-	origLaunch := launchTUI
-	launchTUI = func(*config.Config, *args.Options) int { return 0 }
-
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	os.Args = []string{"ralph", "review"}
-	defer func() {
-		os.Args = origArgs
-		os.Chdir(origDir)
-		launchTUI = origLaunch
-		if origModel != "" {
-			os.Setenv("RALPH_MODEL", origModel)
-		} else {
-			os.Unsetenv("RALPH_MODEL")
-		}
-	}()
-
-	if code := run(); code != 1 {
-		t.Errorf("run() with review and no prd = %d, want 1", code)
-	}
-}
-
-func TestRunImplementNoPRD(t *testing.T) {
-	origArgs := os.Args
-	origDir, _ := os.Getwd()
-	origModel := os.Getenv("RALPH_MODEL")
-	origLaunch := launchTUI
-	launchTUI = func(*config.Config, *args.Options) int { return 0 }
-
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	os.Args = []string{"ralph", "implement"}
-	defer func() {
-		os.Args = origArgs
-		os.Chdir(origDir)
-		launchTUI = origLaunch
-		if origModel != "" {
-			os.Setenv("RALPH_MODEL", origModel)
-		} else {
-			os.Unsetenv("RALPH_MODEL")
-		}
-	}()
-
-	if code := run(); code != 1 {
-		t.Errorf("run() with implement and no prd = %d, want 1", code)
 	}
 }
 
@@ -217,8 +162,8 @@ func TestRunLaunchesTUI(t *testing.T) {
 	called := false
 	launchTUI = func(_ *config.Config, opts *args.Options) int {
 		called = true
-		if opts.Mode != args.ModeAuto {
-			t.Fatalf("mode = %v, want auto", opts.Mode)
+		if opts.Resume || opts.Status {
+			t.Fatal("unexpected flags")
 		}
 		return 0
 	}

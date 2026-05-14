@@ -2,7 +2,6 @@ package tui
 
 import (
 	"errors"
-	"ralph/internal/args"
 	"strings"
 	"testing"
 
@@ -26,7 +25,7 @@ func prepMainView(m *Model) {
 
 func TestViewQuitting(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.quitting = true
 
 	view := m.View()
@@ -37,7 +36,7 @@ func TestViewQuitting(t *testing.T) {
 
 func TestViewPhaseInit(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	m.phase = PhaseInit
 	m.width = 80
 	m.height = 24
@@ -51,7 +50,7 @@ func TestViewPhaseInit(t *testing.T) {
 
 func TestViewPhasePRDGeneration(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test prompt", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test prompt", false, false, false)
 	m.phase = PhasePRDGeneration
 	m.width = 80
 	m.height = 24
@@ -65,7 +64,7 @@ func TestViewPhasePRDGeneration(t *testing.T) {
 
 func TestViewPhaseFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseFailed
 	m.err = errors.New("AI completed but did not generate prd.json")
 	m.width = 80
@@ -83,7 +82,7 @@ func TestViewPhaseFailed(t *testing.T) {
 
 func TestViewPhaseImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = &prd.PRD{
 		ProjectName: "Test Project",
@@ -112,7 +111,7 @@ func TestViewPhaseImplementation(t *testing.T) {
 
 func TestViewPhaseImplementationNilPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = nil
 	m.width = 80
@@ -127,7 +126,7 @@ func TestViewPhaseImplementationNilPRD(t *testing.T) {
 
 func TestViewPhaseCompletedDryRun(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", true, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", true, false, false)
 	m.phase = PhaseCompleted
 	m.dryRun = true
 	m.width = 80
@@ -142,7 +141,7 @@ func TestViewPhaseCompletedDryRun(t *testing.T) {
 
 func TestViewPhaseCompletedWithPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseCompleted
 	m.prd = &prd.PRD{
 		ProjectName: "Done Project",
@@ -163,7 +162,7 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 
 func TestRenderHeader(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	header := m.renderHeader()
 	if !strings.Contains(header, "RALPH") {
@@ -176,7 +175,7 @@ func TestRenderHeaderPrimaryColor(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	header := m.renderHeader()
 	// Assert output contains ANSI color escape sequences for primary color (#A855F7)
@@ -190,7 +189,7 @@ func TestRenderHeaderPrimaryColor(t *testing.T) {
 
 func TestRenderPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 
 	phases := []Phase{PhaseInit, PhasePRDGeneration, PhaseImplementation, PhaseCompleted, PhaseFailed}
 	for _, p := range phases {
@@ -207,7 +206,7 @@ func TestRenderLogsStyling(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.width = 80
 
 	logs := m.renderLogs()
@@ -227,7 +226,7 @@ func TestRenderLogsStyling(t *testing.T) {
 
 func TestViewLogsPaneShowsOutputLogs(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = &prd.PRD{
 		ProjectName: "Test",
@@ -247,7 +246,7 @@ func TestViewLogsPaneShowsOutputLogs(t *testing.T) {
 
 func TestViewMainPaneHidesOutputLogs(t *testing.T) {
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false, args.ModeAuto)
+	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
 	m.prd = &prd.PRD{
 		ProjectName: "Test",

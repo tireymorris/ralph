@@ -6,28 +6,18 @@ import (
 	"strings"
 )
 
-type Mode string
-
-const (
-	ModeAuto      Mode = "auto"
-	ModePRD       Mode = "prd"
-	ModeReview    Mode = "review"
-	ModeImplement Mode = "implement"
-	ModeStatus    Mode = "status"
-)
-
 type Options struct {
 	Prompt       string
 	DryRun       bool
 	Resume       bool
 	Verbose      bool
 	Help         bool
-	Mode         Mode
+	Status       bool
 	UnknownFlags []string
 }
 
 func Parse(args []string) *Options {
-	opts := &Options{Mode: ModeAuto}
+	opts := &Options{}
 	var promptParts []string
 
 	for _, arg := range args {
@@ -40,16 +30,8 @@ func Parse(args []string) *Options {
 			opts.Resume = true
 		case "--verbose", "-v":
 			opts.Verbose = true
-		case "run":
-			opts.Mode = ModeAuto
 		case "status":
-			opts.Mode = ModeStatus
-		case "prd":
-			opts.Mode = ModePRD
-		case "review":
-			opts.Mode = ModeReview
-		case "implement":
-			opts.Mode = ModeImplement
+			opts.Status = true
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -64,10 +46,7 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
-	if o.Help {
-		return nil
-	}
-	if o.Mode == ModeStatus || o.Mode == ModeReview || o.Mode == ModeImplement {
+	if o.Help || o.Status {
 		return nil
 	}
 	if !o.Resume && o.Prompt == "" {
@@ -87,14 +66,6 @@ Usage:
   ralph "your feature description" --dry-run     # Generate PRD only
   ralph --resume                                 # Resume from existing prd.json
   ralph status                                   # Show current PRD status
-  ralph run "your feature description"           # TUI mode
-  ralph run --resume                             # Resume (TUI)
-  ralph prd "your feature description"           # Generate PRD only, no implementation
-  ralph prd "your feature description" --verbose # Generate PRD with debug logging
-  ralph review                                   # Review existing PRD
-  ralph review --verbose                         # Review with debug logging
-  ralph implement                                # Implement stories from existing PRD
-  ralph implement --verbose                      # Implement with debug logging
 
 Options:
   --dry-run      Generate PRD only, don't implement
