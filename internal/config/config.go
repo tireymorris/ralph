@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -82,7 +83,7 @@ func (c *Config) PRDPath() string {
 
 func (c *Config) ValidateModel() error {
 	if c.Model == "" {
-		return fmt.Errorf("model cannot be empty")
+		return errors.New("model cannot be empty")
 	}
 	provider := DetectProvider(c.Model)
 	if provider == ProviderUnknown {
