@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 	"ralph/internal/workflow/events"
 )
 

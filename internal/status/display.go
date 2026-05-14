@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 // Display loads and prints a formatted PRD status summary to stdout

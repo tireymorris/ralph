@@ -9,7 +9,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 func prepMainView(m *Model) {

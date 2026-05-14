@@ -5,7 +5,7 @@ import (
 
 	"ralph/internal/args"
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 // RunNonTUI handles status and headless modes. If it returns handled=false, the caller should start the TUI.

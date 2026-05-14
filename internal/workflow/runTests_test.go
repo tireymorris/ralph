@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 func TestRunTestsReturnsTrueOnSuccess(t *testing.T) {
