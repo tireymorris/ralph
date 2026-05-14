@@ -14,28 +14,22 @@ import (
 	"ralph/internal/tui"
 )
 
-func main() {
-	os.Exit(run())
-}
+func main() { os.Exit(run()) }
 
 func run() int {
 	opts := args.Parse(os.Args[1:])
-
 	if opts.Help {
 		fmt.Print(args.HelpText())
 		return 0
 	}
-
 	if err := opts.Validate(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		fmt.Print(args.HelpText())
 		return 1
 	}
-
 	for _, flag := range opts.UnknownFlags {
 		fmt.Fprintf(os.Stderr, "Warning: unknown flag %q (ignored)\n", flag)
 	}
-
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
 
@@ -51,28 +45,23 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
-
 	if opts.Status {
 		return runStatus(cfg)
 	}
-
-	return launchTUI(cfg, opts)
+	return runTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 }
 
-var launchTUI = func(cfg *config.Config, opts *args.Options) int {
-	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
+func runTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int {
+	model := tui.NewModel(cfg, prompt, dryRun, resume, verbose)
 	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
-
 	finalModel, err := p.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
 		return 1
 	}
-
 	if m, ok := finalModel.(*tui.Model); ok {
 		return m.ExitCode()
 	}
-
 	return 0
 }
 
