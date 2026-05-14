@@ -61,15 +61,6 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 	}
 }
 
-func (om *OperationManager) StartLoad() tea.Cmd {
-	return func() tea.Msg {
-		om.startBackground(func() {
-			om.executor.RunLoad(om.ctx)
-		})
-		return phaseChangeMsg(PhasePRDReview)
-	}
-}
-
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
 		om.startBackground(func() {
