@@ -68,8 +68,8 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:     "run with prompt",
-			args:     []string{"run", "implement", "tests"},
-			expected: Options{Headless: true, Prompt: "implement tests"},
+			args:     []string{"run", "build", "tests"},
+			expected: Options{Headless: true, Prompt: "build tests"},
 		},
 		{
 			name:     "all flags combined",
@@ -106,6 +106,16 @@ func TestParse(t *testing.T) {
 			args:     []string{"prd", "--verbose", "build a todo app"},
 			expected: Options{Prd: true, Verbose: true, Prompt: "build a todo app"},
 		},
+		{
+			name:     "implement command",
+			args:     []string{"implement"},
+			expected: Options{Implement: true},
+		},
+		{
+			name:     "implement command with verbose",
+			args:     []string{"implement", "--verbose"},
+			expected: Options{Implement: true, Verbose: true},
+		},
 	}
 
 	for _, tt := range tests {
@@ -134,6 +144,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.Prd != tt.expected.Prd {
 				t.Errorf("Prd = %v, want %v", got.Prd, tt.expected.Prd)
+			}
+			if got.Implement != tt.expected.Implement {
+				t.Errorf("Implement = %v, want %v", got.Implement, tt.expected.Implement)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -199,6 +212,11 @@ func TestValidate(t *testing.T) {
 			opts:    Options{Prd: true, Prompt: "build a todo app"},
 			wantErr: false,
 		},
+		{
+			name:    "implement command without prompt is valid",
+			opts:    Options{Implement: true},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -225,6 +243,7 @@ func TestHelpText(t *testing.T) {
 		"run",
 		"status",
 		"prd",
+		"implement",
 	}
 
 	for _, phrase := range requiredPhrases {

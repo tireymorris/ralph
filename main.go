@@ -9,6 +9,8 @@ import (
 	"ralph/internal/args"
 	"ralph/internal/cli"
 	"ralph/cmd/prd"
+	"ralph/cmd/review"
+	"ralph/cmd/implement"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
 	"ralph/internal/tui"
@@ -58,6 +60,14 @@ func run() int {
 
 	if opts.Prd {
 		return prd.Run(cfg, opts.Prompt, opts.Verbose)
+	}
+
+	if opts.Review {
+		return review.Run(cfg, opts.Verbose)
+	}
+
+	if opts.Implement {
+		return implement.Run(cfg, opts.Verbose)
 	}
 
 	return runTUI(cfg, opts)
