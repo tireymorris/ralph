@@ -3,7 +3,7 @@ package workflow
 import (
 	"context"
 
-	"ralph/internal/logger"
+	"ralph/internal/shared/logger"
 	"ralph/internal/prompt"
 )
 

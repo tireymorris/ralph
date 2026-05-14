@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/logger"
+	"ralph/internal/shared/logger"
 	"ralph/internal/prd"
 )
 
