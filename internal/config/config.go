@@ -90,7 +90,7 @@ func (c *Config) ValidateModel() error {
 		return fmt.Errorf("unknown provider for model %q (supported prefixes: claude-code/, cursor-agent/, pi/, opencode/, opencode-go/, anthropic/, ollama/)", c.Model)
 	}
 	if provider == ProviderPi && strings.TrimPrefix(c.Model, "pi/") == "" {
-		return fmt.Errorf("model cannot be empty after pi/ prefix")
+		return errors.New("model cannot be empty after pi/ prefix")
 	}
 	return nil
 }
