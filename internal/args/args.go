@@ -63,6 +63,10 @@ func Parse(args []string) *Options {
 	return opts
 }
 
+func (o *Options) SubcommandName() string {
+	return o.Subcommand
+}
+
 func (o *Options) Validate() error {
 	if o.Help {
 		return nil

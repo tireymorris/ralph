@@ -56,30 +56,26 @@ func run() int {
 		return 1
 	}
 
-	if opts.Status {
-		if err := status.Display(cfg); err != nil {
-			return 1
-		}
-		return 0
+	dispatch := map[string]func() int{
+		"status":    func() int { return runStatus(cfg) },
+		"run":       func() int { return cmdrun.Run(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose) },
+		"prd":       func() int { return cmdprd.Run(cfg, opts.Prompt, opts.Verbose) },
+		"review":    func() int { return review.Run(cfg, opts.Verbose) },
+		"implement": func() int { return implement.Run(cfg, opts.Verbose) },
 	}
 
-	if opts.Headless {
-		return cmdrun.Run(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
-	}
-
-	if opts.Prd {
-		return cmdprd.Run(cfg, opts.Prompt, opts.Verbose)
-	}
-
-	if opts.Review {
-		return review.Run(cfg, opts.Verbose)
-	}
-
-	if opts.Implement {
-		return implement.Run(cfg, opts.Verbose)
+	if fn, ok := dispatch[opts.SubcommandName()]; ok {
+		return fn()
 	}
 
 	return runTUI(cfg, opts)
+}
+
+func runStatus(cfg *config.Config) int {
+	if err := status.Display(cfg); err != nil {
+		return 1
+	}
+	return 0
 }
 
 func runTUI(cfg *config.Config, opts *args.Options) int {
