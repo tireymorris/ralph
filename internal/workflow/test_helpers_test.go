@@ -19,9 +19,7 @@ func newClarifyExecutor(t *testing.T, workDir string, runFunc func(context.Conte
 	return NewExecutorWithRunner(cfg, eventsCh, mock)
 }
 
-
 func writeQuestionsFile(t *testing.T, dir string, data string) error {
 	t.Helper()
 	return os.WriteFile(filepath.Join(dir, ClarifyingQuestionsFile), []byte(data), 0644)
 }
-

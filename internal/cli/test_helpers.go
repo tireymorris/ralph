@@ -29,4 +29,3 @@ func captureStdout(t *testing.T) (*os.File, func() string) {
 		return buf.String()
 	}
 }
-
