@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 )
 

@@ -8,7 +8,7 @@ import (
 
 	"ralph/internal/args"
 	"ralph/internal/cli"
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
 	"ralph/internal/tui"
 )

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/prd"

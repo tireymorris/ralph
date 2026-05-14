@@ -3,7 +3,7 @@ package status
 import (
 	"fmt"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prd"
 )
 

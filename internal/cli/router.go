@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"ralph/internal/args"
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prd"
 )
 
