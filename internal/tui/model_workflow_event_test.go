@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prd"
 	"ralph/internal/workflow/events"
 )

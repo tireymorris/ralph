@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 )

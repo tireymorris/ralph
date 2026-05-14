@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func TestNewCursorAgent(t *testing.T) {

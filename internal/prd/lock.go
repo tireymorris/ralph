@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 )
 

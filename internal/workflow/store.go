@@ -1,7 +1,7 @@
 package workflow
 
 import (
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prd"
 )
 

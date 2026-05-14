@@ -3,7 +3,7 @@ package workflow
 import (
 	"fmt"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
 	"ralph/internal/runner"
 )

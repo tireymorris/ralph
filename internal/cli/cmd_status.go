@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/status"
 )
 

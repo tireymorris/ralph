@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func TestNewClaude(t *testing.T) {

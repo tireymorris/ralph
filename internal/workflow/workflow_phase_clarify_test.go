@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
 )

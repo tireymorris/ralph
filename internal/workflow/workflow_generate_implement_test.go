@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 	"ralph/internal/prd"
 	"ralph/internal/runner"
 )
