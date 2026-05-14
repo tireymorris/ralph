@@ -12,11 +12,11 @@ const DefaultModel = "claude-code/sonnet"
 type Provider string
 
 const (
-	ProviderClaudeCode   Provider = "claude-code"
-	ProviderCursorAgent  Provider = "cursor-agent"
-	ProviderPi           Provider = "pi"
-	ProviderOpenCode     Provider = "opencode"
-	ProviderUnknown      Provider = "unknown"
+	ProviderClaudeCode  Provider = "claude-code"
+	ProviderCursorAgent Provider = "cursor-agent"
+	ProviderPi          Provider = "pi"
+	ProviderOpenCode    Provider = "opencode"
+	ProviderUnknown     Provider = "unknown"
 )
 
 func DetectProvider(model string) Provider {
@@ -37,6 +37,7 @@ func DetectProvider(model string) Provider {
 	}
 	return ProviderUnknown
 }
+
 const DefaultTestCommand = "go test ./..."
 
 type Config struct {

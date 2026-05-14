@@ -72,10 +72,6 @@ var (
 			Foreground(errorColor).
 			Bold(true)
 
-	warningStyle = lipgloss.NewStyle().
-			Foreground(warningColor).
-			Bold(true)
-
 	inProgressStyle = lipgloss.NewStyle().
 			Foreground(highlightColor).
 			Bold(true)
