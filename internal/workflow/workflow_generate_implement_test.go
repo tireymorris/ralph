@@ -127,8 +127,8 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	}
 }
 
-// Test when runner fails but story is still marked complete
-func TestRunImplementationRunnerFailureStillMarksComplete(t *testing.T) {
+// Test RunImplementation returns an error when the runner fails
+func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
@@ -152,15 +152,26 @@ func TestRunImplementationRunnerFailureStillMarksComplete(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	err := exec.RunImplementation(context.Background(), testPRD)
 
-	// Should not return error, story is marked complete regardless
-	if err != nil {
-		t.Fatalf("RunImplementation() error = %v", err)
+	if err == nil {
+		t.Fatal("RunImplementation() should return error when runner fails")
 	}
 
-	// Verify story was marked as passing
+	// Verify story was not marked as passing
 	p, _ := prd.Load(cfg)
-	if !p.Stories[0].Passes {
-		t.Error("expected story to be marked as passing even after runner failure")
+	if p.Stories[0].Passes {
+		t.Error("expected story to remain incomplete after runner failure")
+	}
+
+	foundError := false
+	for len(ch) > 0 {
+		e := <-ch
+		if _, ok := e.(EventError); ok {
+			foundError = true
+			break
+		}
+	}
+	if !foundError {
+		t.Error("expected EventError to be emitted")
 	}
 }
 

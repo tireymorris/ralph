@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -279,6 +281,23 @@ func TestHandleEventsError(t *testing.T) {
 	}
 }
 
+func TestHeadlessRunReturnsErrorOnImplementationFailure(t *testing.T) {
+	cfg := config.DefaultConfig()
+	r := NewHeadless(cfg, "test prompt", false, true, false)
+	r.executor = &fakeHeadlessExecutor{
+		loadPRD: &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}}},
+		runErr:  errors.New("implementation failed"),
+	}
+
+	_, _ = captureStdout(t)
+
+	code := r.Run()
+
+	if code != 1 {
+		t.Fatalf("Run() exit code = %d, want 1", code)
+	}
+}
+
 func TestHandleEventsCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	r := NewHeadless(cfg, "test", false, false, false)
@@ -407,4 +426,30 @@ type testErr struct {
 
 func (e *testErr) Error() string {
 	return e.msg
+}
+
+type fakeHeadlessExecutor struct {
+	loadPRD *prd.PRD
+	runErr  error
+	calls   []string
+}
+
+func (f *fakeHeadlessExecutor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error) {
+	f.calls = append(f.calls, "clarify")
+	return nil, nil
+}
+
+func (f *fakeHeadlessExecutor) RunLoad(ctx context.Context) (*prd.PRD, error) {
+	f.calls = append(f.calls, "load")
+	return f.loadPRD, nil
+}
+
+func (f *fakeHeadlessExecutor) RunGenerateWithAnswers(ctx context.Context, userPrompt string, qas []prompt.QuestionAnswer) (*prd.PRD, error) {
+	f.calls = append(f.calls, "generate")
+	return f.loadPRD, nil
+}
+
+func (f *fakeHeadlessExecutor) RunImplementation(ctx context.Context, p *prd.PRD) error {
+	f.calls = append(f.calls, "implement")
+	return f.runErr
 }

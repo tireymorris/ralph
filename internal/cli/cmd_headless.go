@@ -33,13 +33,20 @@ func (c HeadlessCommand) Run() int {
 }
 
 // Headless runs the workflow in stdout mode (no Bubble Tea TUI).
+type workflowExecutor interface {
+	RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error)
+	RunLoad(ctx context.Context) (*prd.PRD, error)
+	RunGenerateWithAnswers(ctx context.Context, userPrompt string, qas []prompt.QuestionAnswer) (*prd.PRD, error)
+	RunImplementation(ctx context.Context, p *prd.PRD) error
+}
+
 type Headless struct {
 	cfg              *config.Config
 	prompt           string
 	dryRun           bool
 	resume           bool
 	verbose          bool
-	executor         *workflow.Executor
+	executor         workflowExecutor
 	eventsCh         chan events.Event
 	reviewResponseCh chan bool
 	cancelFunc       context.CancelFunc
@@ -109,7 +116,12 @@ func (r *Headless) Run() int {
 		return 0
 	}
 
-	r.executor.RunImplementation(ctx, p)
+	if implErr := r.executor.RunImplementation(ctx, p); implErr != nil {
+		logger.Error("implementation failed", "error", implErr)
+		close(r.eventsCh)
+		<-doneCh
+		return 1
+	}
 	close(r.eventsCh)
 	return <-doneCh
 }
