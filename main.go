@@ -7,10 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/args"
-	cmdprd "ralph/cmd/prd"
-	"ralph/cmd/review"
-	"ralph/cmd/implement"
-	cmdrun "ralph/cmd/run"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
 	sharedprd "ralph/internal/shared/prd"
@@ -56,30 +52,21 @@ func run() int {
 		return 1
 	}
 
-	dispatch := map[string]func() int{
-		"status":    func() int { return runStatus(cfg) },
-		"run":       func() int { return cmdrun.Run(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose) },
-		"prd":       func() int { return cmdprd.Run(cfg, opts.Prompt, opts.Verbose) },
-		"review":    func() int { return review.Run(cfg, opts.Verbose) },
-		"implement": func() int { return implement.Run(cfg, opts.Verbose) },
+	if opts.Mode == args.ModeStatus {
+		return runStatus(cfg)
+	}
+	if opts.Mode == args.ModeReview || opts.Mode == args.ModeImplement {
+		if err := validatePRDExists(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
 	}
 
-	if fn, ok := dispatch[opts.SubcommandName()]; ok {
-		return fn()
-	}
-
-	return runTUI(cfg, opts)
+	return launchTUI(cfg, opts)
 }
 
-func runStatus(cfg *config.Config) int {
-	if err := status.Display(cfg); err != nil {
-		return 1
-	}
-	return 0
-}
-
-func runTUI(cfg *config.Config, opts *args.Options) int {
-	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
+var launchTUI = func(cfg *config.Config, opts *args.Options) int {
+	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose, opts.Mode)
 	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 	finalModel, err := p.Run()
@@ -93,6 +80,27 @@ func runTUI(cfg *config.Config, opts *args.Options) int {
 	}
 
 	return 0
+}
+
+func runStatus(cfg *config.Config) int {
+	if err := status.Display(cfg); err != nil {
+		return 1
+	}
+	return 0
+}
+
+func validatePRDExists(cfg *config.Config) error {
+	exists, err := sharedprd.Exists(cfg)
+	if err != nil {
+		return fmt.Errorf("checking for existing PRD %s: %w", cfg.PRDFile, err)
+	}
+	if !exists {
+		return fmt.Errorf("no %s found (run ralph with a prompt first to generate a PRD)", cfg.PRDFile)
+	}
+	if _, err := sharedprd.Load(cfg); err != nil {
+		return fmt.Errorf("loading existing PRD %s: %w", cfg.PRDFile, err)
+	}
+	return nil
 }
 
 func validateResume(cfg *config.Config, resume bool) error {

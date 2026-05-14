@@ -6,23 +6,28 @@ import (
 	"strings"
 )
 
+type Mode string
+
+const (
+	ModeAuto      Mode = "auto"
+	ModePRD       Mode = "prd"
+	ModeReview    Mode = "review"
+	ModeImplement Mode = "implement"
+	ModeStatus    Mode = "status"
+)
+
 type Options struct {
 	Prompt       string
 	DryRun       bool
 	Resume       bool
-	Headless     bool
 	Verbose      bool
 	Help         bool
-	Status       bool
-	Prd          bool
-	Review       bool
-	Implement    bool
-	Subcommand   string
+	Mode         Mode
 	UnknownFlags []string
 }
 
 func Parse(args []string) *Options {
-	opts := &Options{}
+	opts := &Options{Mode: ModeAuto}
 	var promptParts []string
 
 	for _, arg := range args {
@@ -36,20 +41,15 @@ func Parse(args []string) *Options {
 		case "--verbose", "-v":
 			opts.Verbose = true
 		case "run":
-			opts.Headless = true
-			opts.Subcommand = "run"
+			opts.Mode = ModeAuto
 		case "status":
-			opts.Status = true
-			opts.Subcommand = "status"
+			opts.Mode = ModeStatus
 		case "prd":
-			opts.Prd = true
-			opts.Subcommand = "prd"
+			opts.Mode = ModePRD
 		case "review":
-			opts.Review = true
-			opts.Subcommand = "review"
+			opts.Mode = ModeReview
 		case "implement":
-			opts.Implement = true
-			opts.Subcommand = "implement"
+			opts.Mode = ModeImplement
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -63,39 +63,19 @@ func Parse(args []string) *Options {
 	return opts
 }
 
-func (o *Options) SubcommandName() string {
-	return o.Subcommand
-}
-
 func (o *Options) Validate() error {
 	if o.Help {
 		return nil
 	}
-
-	if o.Status {
+	if o.Mode == ModeStatus || o.Mode == ModeReview || o.Mode == ModeImplement {
 		return nil
 	}
-
-	if o.Prd {
-		return nil
-	}
-
-	if o.Review {
-		return nil
-	}
-
-	if o.Implement {
-		return nil
-	}
-
 	if !o.Resume && o.Prompt == "" {
 		return errors.New("prompt required when not resuming: provide a prompt or use --resume flag")
 	}
-
 	if len(o.UnknownFlags) > 0 {
 		return fmt.Errorf("unknown flags provided: %v", o.UnknownFlags)
 	}
-
 	return nil
 }
 
@@ -107,8 +87,8 @@ Usage:
   ralph "your feature description" --dry-run     # Generate PRD only
   ralph --resume                                 # Resume from existing prd.json
   ralph status                                   # Show current PRD status
-  ralph run "your feature description"           # Headless/stdout mode
-  ralph run --resume                             # Resume (headless)
+  ralph run "your feature description"           # TUI mode
+  ralph run --resume                             # Resume (TUI)
   ralph prd "your feature description"           # Generate PRD only, no implementation
   ralph prd "your feature description" --verbose # Generate PRD with debug logging
   ralph review                                   # Review existing PRD
