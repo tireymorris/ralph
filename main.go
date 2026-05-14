@@ -7,12 +7,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/args"
-	"ralph/internal/cli"
-	"ralph/cmd/prd"
+	cmdprd "ralph/cmd/prd"
 	"ralph/cmd/review"
 	"ralph/cmd/implement"
+	cmdrun "ralph/cmd/run"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
+	sharedprd "ralph/internal/shared/prd"
+	"ralph/internal/status"
 	"ralph/internal/tui"
 )
 
@@ -49,17 +51,24 @@ func run() int {
 	}
 	logger.Debug("config loaded", "model", cfg.Model)
 
-	if err := cli.ValidateResume(cfg, opts.Resume); err != nil {
+	if err := validateResume(cfg, opts.Resume); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
 
-	if code, handled := cli.RunNonTUI(cfg, opts); handled {
-		return code
+	if opts.Status {
+		if err := status.Display(cfg); err != nil {
+			return 1
+		}
+		return 0
+	}
+
+	if opts.Headless {
+		return cmdrun.Run(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 	}
 
 	if opts.Prd {
-		return prd.Run(cfg, opts.Prompt, opts.Verbose)
+		return cmdprd.Run(cfg, opts.Prompt, opts.Verbose)
 	}
 
 	if opts.Review {
@@ -88,4 +97,21 @@ func runTUI(cfg *config.Config, opts *args.Options) int {
 	}
 
 	return 0
+}
+
+func validateResume(cfg *config.Config, resume bool) error {
+	if !resume {
+		return nil
+	}
+	exists, err := sharedprd.Exists(cfg)
+	if err != nil {
+		return fmt.Errorf("checking for existing PRD %s: %w", cfg.PRDFile, err)
+	}
+	if !exists {
+		return fmt.Errorf("no %s found to resume from (run ralph with a prompt first to generate a PRD)", cfg.PRDFile)
+	}
+	if _, err := sharedprd.Load(cfg); err != nil {
+		return fmt.Errorf("loading existing PRD %s: %w", cfg.PRDFile, err)
+	}
+	return nil
 }
