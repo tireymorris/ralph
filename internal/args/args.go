@@ -1,6 +1,7 @@
 package args
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -57,7 +58,7 @@ func (o *Options) Validate() error {
 	}
 
 	if !o.Resume && o.Prompt == "" {
-		return fmt.Errorf("prompt required when not resuming: provide a prompt or use --resume flag")
+		return errors.New("prompt required when not resuming: provide a prompt or use --resume flag")
 	}
 
 	if len(o.UnknownFlags) > 0 {
