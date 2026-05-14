@@ -15,6 +15,8 @@ type Options struct {
 	Help         bool
 	Status       bool
 	Prd          bool
+	Review       bool
+	Implement    bool
 	UnknownFlags []string
 }
 
@@ -38,6 +40,10 @@ func Parse(args []string) *Options {
 			opts.Status = true
 		case "prd":
 			opts.Prd = true
+		case "review":
+			opts.Review = true
+		case "implement":
+			opts.Implement = true
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -64,6 +70,14 @@ func (o *Options) Validate() error {
 		return nil
 	}
 
+	if o.Review {
+		return nil
+	}
+
+	if o.Implement {
+		return nil
+	}
+
 	if !o.Resume && o.Prompt == "" {
 		return errors.New("prompt required when not resuming: provide a prompt or use --resume flag")
 	}
@@ -87,6 +101,10 @@ Usage:
   ralph run --resume                             # Resume (headless)
   ralph prd "your feature description"           # Generate PRD only, no implementation
   ralph prd "your feature description" --verbose # Generate PRD with debug logging
+  ralph review                                   # Review existing PRD
+  ralph review --verbose                         # Review with debug logging
+  ralph implement                                # Implement stories from existing PRD
+  ralph implement --verbose                      # Implement with debug logging
 
 Options:
   --dry-run      Generate PRD only, don't implement
