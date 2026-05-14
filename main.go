@@ -52,21 +52,15 @@ func run() int {
 		return 1
 	}
 
-	if opts.Mode == args.ModeStatus {
+	if opts.Status {
 		return runStatus(cfg)
-	}
-	if opts.Mode == args.ModeReview || opts.Mode == args.ModeImplement {
-		if err := validatePRDExists(cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			return 1
-		}
 	}
 
 	return launchTUI(cfg, opts)
 }
 
 var launchTUI = func(cfg *config.Config, opts *args.Options) int {
-	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose, opts.Mode)
+	model := tui.NewModel(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 	finalModel, err := p.Run()
@@ -87,20 +81,6 @@ func runStatus(cfg *config.Config) int {
 		return 1
 	}
 	return 0
-}
-
-func validatePRDExists(cfg *config.Config) error {
-	exists, err := sharedprd.Exists(cfg)
-	if err != nil {
-		return fmt.Errorf("checking for existing PRD %s: %w", cfg.PRDFile, err)
-	}
-	if !exists {
-		return fmt.Errorf("no %s found (run ralph with a prompt first to generate a PRD)", cfg.PRDFile)
-	}
-	if _, err := sharedprd.Load(cfg); err != nil {
-		return fmt.Errorf("loading existing PRD %s: %w", cfg.PRDFile, err)
-	}
-	return nil
 }
 
 func validateResume(cfg *config.Config, resume bool) error {

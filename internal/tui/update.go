@@ -11,7 +11,7 @@ func (m *Model) Init() tea.Cmd {
 		m.spinner.Tick,
 		m.operationManager.ListenForEvents(),
 		tea.WindowSize(),
-		m.operationManager.StartMode(m.mode, m.resume, m.prompt),
+		m.operationManager.StartFullOperation(m.resume, m.prompt),
 	)
 }
 
