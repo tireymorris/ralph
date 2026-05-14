@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func TestRunnerNames(t *testing.T) {

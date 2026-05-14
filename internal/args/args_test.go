@@ -49,7 +49,7 @@ func TestParse(t *testing.T) {
 		{
 			name:     "run command sets headless",
 			args:     []string{"run"},
-			expected: Options{Headless: true},
+			expected: Options{Headless: true, Subcommand: "run"},
 		},
 		{
 			name:     "single prompt word",
@@ -68,13 +68,13 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:     "run with prompt",
-			args:     []string{"run", "implement", "tests"},
-			expected: Options{Headless: true, Prompt: "implement tests"},
+			args:     []string{"run", "build", "tests"},
+			expected: Options{Headless: true, Prompt: "build tests", Subcommand: "run"},
 		},
 		{
 			name:     "all flags combined",
 			args:     []string{"run", "--dry-run", "--resume", "--verbose", "prompt"},
-			expected: Options{Headless: true, DryRun: true, Resume: true, Verbose: true, Prompt: "prompt"},
+			expected: Options{Headless: true, DryRun: true, Resume: true, Verbose: true, Prompt: "prompt", Subcommand: "run"},
 		},
 		{
 			name:     "unknown flag captured",
@@ -89,13 +89,81 @@ func TestParse(t *testing.T) {
 		{
 			name:     "status command",
 			args:     []string{"status"},
-			expected: Options{Status: true},
+			expected: Options{Status: true, Subcommand: "status"},
+		},
+		{
+			name:     "prd command",
+			args:     []string{"prd"},
+			expected: Options{Prd: true, Subcommand: "prd"},
+		},
+		{
+			name:     "prd command with prompt",
+			args:     []string{"prd", "build a todo app"},
+			expected: Options{Prd: true, Prompt: "build a todo app", Subcommand: "prd"},
+		},
+		{
+			name:     "prd command with verbose",
+			args:     []string{"prd", "--verbose", "build a todo app"},
+			expected: Options{Prd: true, Verbose: true, Prompt: "build a todo app", Subcommand: "prd"},
+		},
+		{
+			name:     "implement command",
+			args:     []string{"implement"},
+			expected: Options{Implement: true, Subcommand: "implement"},
+		},
+		{
+			name:     "implement command with verbose",
+			args:     []string{"implement", "--verbose"},
+			expected: Options{Implement: true, Verbose: true, Subcommand: "implement"},
+		},
+		{
+			name:     "review command",
+			args:     []string{"review"},
+			expected: Options{Review: true, Subcommand: "review"},
+		},
+		{
+			name:     "review command with verbose",
+			args:     []string{"review", "--verbose"},
+			expected: Options{Review: true, Verbose: true, Subcommand: "review"},
+		},
+		{
+			name:     "run command sets subcommand",
+			args:     []string{"run"},
+			expected: Options{Headless: true, Subcommand: "run"},
+		},
+		{
+			name:     "run command with prompt sets subcommand",
+			args:     []string{"run", "build", "tests"},
+			expected: Options{Headless: true, Prompt: "build tests", Subcommand: "run"},
+		},
+		{
+			name:     "status command sets subcommand",
+			args:     []string{"status"},
+			expected: Options{Status: true, Subcommand: "status"},
+		},
+		{
+			name:     "prd command sets subcommand",
+			args:     []string{"prd"},
+			expected: Options{Prd: true, Subcommand: "prd"},
+		},
+		{
+			name:     "prd command with prompt sets subcommand",
+			args:     []string{"prd", "build a todo app"},
+			expected: Options{Prd: true, Prompt: "build a todo app", Subcommand: "prd"},
+		},
+		{
+			name:     "auto-run fallback has no subcommand",
+			args:     []string{"build a todo app"},
+			expected: Options{Prompt: "build a todo app", Subcommand: ""},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := Parse(tt.args)
+			if got.Subcommand != tt.expected.Subcommand {
+				t.Errorf("Subcommand = %q, want %q", got.Subcommand, tt.expected.Subcommand)
+			}
 			if got.Prompt != tt.expected.Prompt {
 				t.Errorf("Prompt = %q, want %q", got.Prompt, tt.expected.Prompt)
 			}
@@ -116,6 +184,12 @@ func TestParse(t *testing.T) {
 			}
 			if got.Status != tt.expected.Status {
 				t.Errorf("Status = %v, want %v", got.Status, tt.expected.Status)
+			}
+			if got.Prd != tt.expected.Prd {
+				t.Errorf("Prd = %v, want %v", got.Prd, tt.expected.Prd)
+			}
+			if got.Implement != tt.expected.Implement {
+				t.Errorf("Implement = %v, want %v", got.Implement, tt.expected.Implement)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -171,6 +245,21 @@ func TestValidate(t *testing.T) {
 			opts:    Options{Status: true, Prompt: "extra"},
 			wantErr: false,
 		},
+		{
+			name:    "prd command without prompt is valid",
+			opts:    Options{Prd: true},
+			wantErr: false,
+		},
+		{
+			name:    "prd command with prompt is valid",
+			opts:    Options{Prd: true, Prompt: "build a todo app"},
+			wantErr: false,
+		},
+		{
+			name:    "implement command without prompt is valid",
+			opts:    Options{Implement: true},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -196,6 +285,8 @@ func TestHelpText(t *testing.T) {
 		"--help",
 		"run",
 		"status",
+		"prd",
+		"implement",
 	}
 
 	for _, phrase := range requiredPhrases {

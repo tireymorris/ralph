@@ -7,42 +7,46 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/config"
-	"ralph/internal/logger"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/logger"
 )
 
-type CursorAgentRunner struct {
+type ClaudeRunner struct {
 	cfg     *config.Config
 	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
 }
 
-var _ RunnerInterface = (*CursorAgentRunner)(nil)
+var _ RunnerInterface = (*ClaudeRunner)(nil)
 
-func NewCursorAgent(cfg *config.Config) *CursorAgentRunner {
-	return &CursorAgentRunner{
+func (r *ClaudeRunner) RunnerName() string {
+	return "Claude Code"
+}
+
+func (r *ClaudeRunner) CommandName() string {
+	return "claude"
+}
+
+func (r *ClaudeRunner) IsInternalLog(line string) bool {
+	return stderrLineIsInternal(line, stderrFilterDefaultPipedCLI)
+}
+
+func NewClaude(cfg *config.Config) *ClaudeRunner {
+	return &ClaudeRunner{
 		cfg:     cfg,
 		CmdFunc: defaultCmdFuncNoStdin(cfg.WorkDir),
 	}
 }
 
-func (r *CursorAgentRunner) RunnerName() string {
-	return "cursor-agent"
-}
-
-func (r *CursorAgentRunner) CommandName() string {
-	return "cursor-agent"
-}
-
-func (r *CursorAgentRunner) IsInternalLog(line string) bool {
-	return stderrLineIsInternal(line, stderrFilterDefaultPipedCLI)
-}
-
-func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	suffix := strings.TrimPrefix(r.cfg.Model, "cursor-agent/")
-
-	args := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo"}
-	if suffix != "" {
-		args = append(args, "--model", suffix)
+func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
+	args := []string{
+		"--print",
+		"--verbose",
+		"--output-format", "stream-json",
+		"--dangerously-skip-permissions",
+	}
+	modelName := strings.TrimPrefix(r.cfg.Model, "claude-code/")
+	if r.cfg.Model != "" {
+		args = append(args, "--model", modelName)
 	}
 	args = append(args, prompt)
 
@@ -50,16 +54,15 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
 		"model", r.cfg.Model,
-		"model_suffix", suffix,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- newStartingOutputLine(r.RunnerName(), r.cfg.Model)
+		outputCh <- newStartingOutputLine(r.RunnerName(), modelName)
 	}
 
 	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
-		parseCursorStreamJSON,
+		parseClaudeStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		},
@@ -69,19 +72,32 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		logger.Debug("AI runner exited with code",
 			"runner", r.RunnerName(),
 			"command", r.CommandName(),
-			"model", r.cfg.Model)
-		return wrapRunnerError(r.RunnerName(), r.cfg.Model, err)
+			"model", modelName)
+		return wrapRunnerError(r.RunnerName(), modelName, err)
 	}
 
 	logger.Debug("AI runner completed successfully",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
-		"model_suffix", suffix)
+		"model", modelName)
 	return nil
 }
 
-func parseCursorStreamJSON(line string) []OutputLine {
+type claudeStreamEvent struct {
+	Type    string `json:"type"`
+	Subtype string `json:"subtype,omitempty"`
+	Message struct {
+		Content []struct {
+			Type  string `json:"type"`
+			Text  string `json:"text,omitempty"`
+			Name  string `json:"name,omitempty"`
+			Input any    `json:"input,omitempty"`
+		} `json:"content"`
+	} `json:"message,omitempty"`
+	Result string `json:"result,omitempty"`
+}
+
+func parseClaudeStreamJSON(line string) []OutputLine {
 	var event claudeStreamEvent
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
 		return []OutputLine{{Text: line, Time: time.Now(), Verbose: true}}
@@ -91,6 +107,10 @@ func parseCursorStreamJSON(line string) []OutputLine {
 	now := time.Now()
 
 	switch event.Type {
+	case "system":
+		if event.Subtype == "init" {
+			outputs = append(outputs, OutputLine{Text: "Claude initialized", Time: now, Verbose: true})
+		}
 	case "assistant":
 		for _, content := range event.Message.Content {
 			switch content.Type {
@@ -100,11 +120,14 @@ func parseCursorStreamJSON(line string) []OutputLine {
 				}
 			case "tool_use":
 				outputs = append(outputs, OutputLine{
-					Text: fmt.Sprintf("Using tool: %s", content.Name),
-					Time: now,
+					Text:    fmt.Sprintf("Using tool: %s", content.Name),
+					Time:    now,
+					Verbose: false,
 				})
 			}
 		}
+	case "user":
+		outputs = append(outputs, OutputLine{Text: "Tool completed", Time: now, Verbose: true})
 	case "result":
 		if event.Subtype == "success" {
 			outputs = append(outputs, OutputLine{Text: "Task completed successfully", Time: now, Verbose: true})

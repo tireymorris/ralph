@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 func (m *Model) View() string {

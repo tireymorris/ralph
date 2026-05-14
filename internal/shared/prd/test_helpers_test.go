@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func newTestConfig(t *testing.T, dir, file string) *config.Config {

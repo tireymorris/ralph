@@ -3,8 +3,8 @@ package workflow
 import (
 	"os/exec"
 
-	"ralph/internal/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 )
 
 func (e *Executor) runTests(p *prd.PRD) (bool, string, error) {

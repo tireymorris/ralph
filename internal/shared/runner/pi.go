@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/config"
-	"ralph/internal/logger"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/logger"
 )
 
 type PiRunner struct {

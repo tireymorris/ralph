@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"ralph/internal/config"
-	"ralph/internal/prd"
-	"ralph/internal/runner"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runner"
 )
 
 func TestNewExecutor(t *testing.T) {

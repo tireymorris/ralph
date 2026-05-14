@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func TestApplyLayoutSetsPaneDimensions(t *testing.T) {

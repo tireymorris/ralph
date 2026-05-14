@@ -1,5 +1,5 @@
-// Package cli implements headless (stdout/stdin) Ralph execution.
-package cli
+// Package run implements the "ralph run" subcommand (headless/stdout mode).
+package run
 
 import (
 	"bufio"
@@ -10,29 +10,16 @@ import (
 	"strings"
 	"syscall"
 
-	"ralph/internal/config"
-	"ralph/internal/constants"
-	"ralph/internal/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/cli"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
+	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
-// HeadlessCommand wires parsed flags to a headless workflow run.
-type HeadlessCommand struct {
-	Cfg     *config.Config
-	Prompt  string
-	DryRun  bool
-	Resume  bool
-	Verbose bool
-}
-
-func (c HeadlessCommand) Run() int {
-	return NewHeadless(c.Cfg, c.Prompt, c.DryRun, c.Resume, c.Verbose).Run()
-}
-
-// Headless runs the workflow in stdout mode (no Bubble Tea TUI).
 type workflowExecutor interface {
 	RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error)
 	RunLoad(ctx context.Context) (*prd.PRD, error)
@@ -40,22 +27,24 @@ type workflowExecutor interface {
 	RunImplementation(ctx context.Context, p *prd.PRD) error
 }
 
-type Headless struct {
+// Cmd runs the headless (stdout/stdin) workflow.
+type Cmd struct {
 	cfg              *config.Config
 	prompt           string
 	dryRun           bool
 	resume           bool
 	verbose          bool
 	executor         workflowExecutor
-	eventsCh         chan events.Event
+	eventsCh         chan workflow.Event
 	reviewResponseCh chan bool
 	cancelFunc       context.CancelFunc
 }
 
-func NewHeadless(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Headless {
-	eventsCh := make(chan events.Event, constants.EventChannelBuffer)
+// NewCmd creates a new Cmd instance.
+func NewCmd(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) *Cmd {
+	eventsCh := make(chan workflow.Event, constants.EventChannelBuffer)
 	reviewResponseCh := make(chan bool, 1)
-	return &Headless{
+	return &Cmd{
 		cfg:              cfg,
 		prompt:           userPrompt,
 		dryRun:           dryRun,
@@ -67,12 +56,13 @@ func NewHeadless(cfg *config.Config, userPrompt string, dryRun, resume, verbose 
 	}
 }
 
-func (r *Headless) Run() int {
+// Run executes the headless workflow and returns an exit code.
+func (c *Cmd) Run() int {
 	ctx, cancel := context.WithCancel(context.Background())
-	r.cancelFunc = cancel
+	c.cancelFunc = cancel
 	defer cancel()
 
-	logger.Debug("cli runner starting", "prompt", r.prompt, "dry_run", r.dryRun, "resume", r.resume)
+	logger.Debug("run command starting", "prompt", c.prompt, "dry_run", c.dryRun, "resume", c.resume)
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -84,55 +74,55 @@ func (r *Headless) Run() int {
 	}()
 
 	doneCh := make(chan int, 1)
-	go r.handleEvents(r.eventsCh, doneCh)
+	go c.handleEvents(c.eventsCh, doneCh)
 
 	var p *prd.PRD
 	var err error
 
-	if r.resume {
-		p, err = r.executor.RunLoad(ctx)
+	if c.resume {
+		p, err = c.executor.RunLoad(ctx)
 	} else {
-		qas, clarifyErr := r.executor.RunClarify(ctx, r.prompt)
+		qas, clarifyErr := c.executor.RunClarify(ctx, c.prompt)
 		if clarifyErr != nil {
 			logger.Error("clarification step failed", "error", clarifyErr)
-			close(r.eventsCh)
+			close(c.eventsCh)
 			<-doneCh
 			return 1
 		}
-		p, err = r.executor.RunGenerateWithAnswers(ctx, r.prompt, qas)
+		p, err = c.executor.RunGenerateWithAnswers(ctx, c.prompt, qas)
 	}
 
 	if err != nil {
 		logger.Error("operation failed", "error", err)
-		close(r.eventsCh)
+		close(c.eventsCh)
 		<-doneCh
 		return 1
 	}
 
-	if r.dryRun {
+	if c.dryRun {
 		fmt.Println("Dry run complete - PRD saved, no implementation performed")
-		close(r.eventsCh)
+		close(c.eventsCh)
 		<-doneCh
 		return 0
 	}
 
-	if implErr := r.executor.RunImplementation(ctx, p); implErr != nil {
+	if implErr := c.executor.RunImplementation(ctx, p); implErr != nil {
 		logger.Error("implementation failed", "error", implErr)
-		close(r.eventsCh)
+		close(c.eventsCh)
 		<-doneCh
 		return 1
 	}
-	close(r.eventsCh)
+	close(c.eventsCh)
 	return <-doneCh
 }
 
-func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int) {
+func (c *Cmd) handleEvents(eventsCh <-chan workflow.Event, doneCh chan<- int) {
 	exitCode := 0
 
 	for event := range eventsCh {
 		switch e := event.(type) {
 		case events.EventClarifyingQuestions:
-			answers := r.collectAnswersCLI(e.Questions)
+			answers := c.collectAnswers(e.Questions)
 			e.AnswersCh <- answers
 
 		case events.EventPRDGenerating:
@@ -140,26 +130,26 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 
 		case events.EventPRDGenerated:
 			fmt.Printf("PRD generated: %s (%d stories)\n", e.PRD.ProjectName, len(e.PRD.Stories))
-			fmt.Printf("Saved to: %s\n\n", r.cfg.PRDFile)
-			r.printStoryList(e.PRD)
+			fmt.Printf("Saved to: %s\n\n", c.cfg.PRDFile)
+			cli.PrintStoryList(os.Stdout, e.PRD)
 
 		case events.EventPRDLoaded:
 			fmt.Printf("Loaded PRD: %s (%d stories, %d completed)\n\n",
 				e.PRD.ProjectName, len(e.PRD.Stories), e.PRD.CompletedCount())
-			r.printStoryList(e.PRD)
+			cli.PrintStoryList(os.Stdout, e.PRD)
 
 		case events.EventPRDReview:
-			if r.dryRun {
+			if c.dryRun {
 				fmt.Println("PRD ready for review")
 				fmt.Println("(Dry run - you can edit prd.json, then run with --resume to proceed)")
 				continue
 			}
-			r.promptPRDReview(e.PRD)
-			proceed := <-r.reviewResponseCh
+			c.promptPRDReview(e.PRD)
+			proceed := <-c.reviewResponseCh
 			if !proceed {
 				fmt.Println("Review not confirmed, exiting.")
-				if r.cancelFunc != nil {
-					r.cancelFunc()
+				if c.cancelFunc != nil {
+					c.cancelFunc()
 				}
 				return
 			}
@@ -171,10 +161,10 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 			fmt.Printf("  Completed\n\n")
 
 		case events.EventOutput:
-			if e.Verbose && !r.verbose {
+			if e.Verbose && !c.verbose {
 				continue
 			}
-			fmt.Printf("%s %s\n", r.outputPrefix(e.IsErr), e.Text)
+			fmt.Printf("%s %s\n", cli.OutputPrefix(e.IsErr), e.Text)
 			os.Stdout.Sync()
 
 		case events.EventError:
@@ -190,7 +180,7 @@ func (r *Headless) handleEvents(eventsCh <-chan events.Event, doneCh chan<- int)
 	doneCh <- exitCode
 }
 
-func (r *Headless) collectAnswersCLI(questions []string) []prompt.QuestionAnswer {
+func (c *Cmd) collectAnswers(questions []string) []prompt.QuestionAnswer {
 	fmt.Println()
 	fmt.Println("Before generating your PRD, please answer a few clarifying questions.")
 	fmt.Println("(Press Enter to skip a question, or Ctrl+C to abort.)")
@@ -210,10 +200,10 @@ func (r *Headless) collectAnswersCLI(questions []string) []prompt.QuestionAnswer
 	return qas
 }
 
-func (r *Headless) promptPRDReview(p *prd.PRD) {
+func (c *Cmd) promptPRDReview(p *prd.PRD) {
 	fmt.Println("PRD ready for review")
 	fmt.Println()
-	r.printStoryDetails(p)
+	cli.PrintStoryDetails(os.Stdout, p)
 	fmt.Println("Please choose an action:")
 	fmt.Println("  1. Edit in editor ($EDITOR)")
 	fmt.Println("  2. Proceed without changes")
@@ -226,18 +216,23 @@ func (r *Headless) promptPRDReview(p *prd.PRD) {
 
 	switch choice {
 	case "1":
-		if err := r.runEditor(r.cfg.PRDFile); err != nil {
+		if err := cli.RunEditor(c.cfg.PRDFile); err != nil {
 			fmt.Printf("Editor exited with error: %v\n", err)
 		}
 		fmt.Println("\nEditor closed.")
 		fmt.Print("Proceed to implementation? [Y/n]: ")
 		scanner.Scan()
 		confirm := strings.TrimSpace(scanner.Text())
-		r.reviewResponseCh <- confirm == "" || confirm == "y" || confirm == "Y"
+		c.reviewResponseCh <- confirm == "" || confirm == "y" || confirm == "Y"
 	case "2":
-		r.reviewResponseCh <- true
+		c.reviewResponseCh <- true
 	default:
 		fmt.Println("Invalid choice, proceeding without changes.")
-		r.reviewResponseCh <- true
+		c.reviewResponseCh <- true
 	}
+}
+
+// Run is a convenience function that creates a Cmd and runs it.
+func Run(cfg *config.Config, userPrompt string, dryRun, resume, verbose bool) int {
+	return NewCmd(cfg, userPrompt, dryRun, resume, verbose).Run()
 }

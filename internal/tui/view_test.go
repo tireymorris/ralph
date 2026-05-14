@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
-	"ralph/internal/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 func prepMainView(m *Model) {

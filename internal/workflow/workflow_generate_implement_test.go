@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/config"
-	"ralph/internal/prd"
-	"ralph/internal/runner"
+	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runner"
 )
 
 func TestRunGenerateSuccess(t *testing.T) {

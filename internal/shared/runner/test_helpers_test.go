@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"ralph/internal/config"
+	"ralph/internal/shared/config"
 )
 
 func newTestRunner(t *testing.T, cfg *config.Config) *Runner {
