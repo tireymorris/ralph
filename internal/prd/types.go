@@ -161,7 +161,7 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 		return fmt.Errorf("duplicate story ID %q", s.ID)
 	}
 	if s.Title == "" {
-		return fmt.Errorf("story title cannot be empty")
+		return errors.New("story title cannot be empty")
 	}
 	if len(s.Description) > MaxStoryDescSize {
 		return fmt.Errorf("story description size %d exceeds maximum %d bytes", len(s.Description), MaxStoryDescSize)
