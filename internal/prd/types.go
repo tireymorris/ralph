@@ -1,6 +1,9 @@
 package prd
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 const (
 	MaxContextSize        = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
@@ -152,7 +155,7 @@ func (p *PRD) Validate() error {
 
 func (s *Story) Validate(seenIDs map[string]bool) error {
 	if s.ID == "" {
-		return fmt.Errorf("story ID cannot be empty")
+		return errors.New("story ID cannot be empty")
 	}
 	if seenIDs[s.ID] {
 		return fmt.Errorf("duplicate story ID %q", s.ID)
