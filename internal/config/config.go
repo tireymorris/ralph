@@ -100,7 +100,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid model configuration: %w", err)
 	}
 	if c.PRDFile == "" {
-		return fmt.Errorf("prd_file cannot be empty")
+		return errors.New("prd_file cannot be empty")
 	}
 	if c.TestCommand == "" {
 		return fmt.Errorf("test_command cannot be empty")
