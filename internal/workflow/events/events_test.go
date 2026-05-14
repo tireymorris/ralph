@@ -3,7 +3,7 @@ package events
 import (
 	"testing"
 
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
 )
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 func TestDisplay(t *testing.T) {

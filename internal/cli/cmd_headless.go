@@ -13,7 +13,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"

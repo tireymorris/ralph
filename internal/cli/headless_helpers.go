@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 )
 
 func (r *Headless) printStories(p *prd.PRD) {

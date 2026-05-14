@@ -6,7 +6,7 @@ import (
 
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
-	"ralph/internal/prd"
+	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
 	"ralph/internal/runner"
 )
