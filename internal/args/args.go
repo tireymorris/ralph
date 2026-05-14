@@ -14,6 +14,7 @@ type Options struct {
 	Verbose      bool
 	Help         bool
 	Status       bool
+	Prd          bool
 	UnknownFlags []string
 }
 
@@ -35,6 +36,8 @@ func Parse(args []string) *Options {
 			opts.Headless = true
 		case "status":
 			opts.Status = true
+		case "prd":
+			opts.Prd = true
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -54,6 +57,10 @@ func (o *Options) Validate() error {
 	}
 
 	if o.Status {
+		return nil
+	}
+
+	if o.Prd {
 		return nil
 	}
 

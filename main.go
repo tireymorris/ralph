@@ -8,6 +8,7 @@ import (
 
 	"ralph/internal/args"
 	"ralph/internal/cli"
+	"ralph/cmd/prd"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
 	"ralph/internal/tui"
@@ -53,6 +54,10 @@ func run() int {
 
 	if code, handled := cli.RunNonTUI(cfg, opts); handled {
 		return code
+	}
+
+	if opts.Prd {
+		return prd.Run(cfg, opts.Prompt, opts.Verbose)
 	}
 
 	return runTUI(cfg, opts)
