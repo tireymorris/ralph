@@ -103,7 +103,7 @@ func (c *Config) Validate() error {
 		return errors.New("prd_file cannot be empty")
 	}
 	if c.TestCommand == "" {
-		return fmt.Errorf("test_command cannot be empty")
+		return errors.New("test_command cannot be empty")
 	}
 
 	// Validate PRD file path for security (prevent path traversal)
