@@ -5,7 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 // Logger handles logging and viewport management

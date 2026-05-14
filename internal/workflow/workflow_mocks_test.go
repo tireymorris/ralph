@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 type mockRunner struct {

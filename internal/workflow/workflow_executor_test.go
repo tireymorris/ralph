@@ -6,7 +6,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 func TestNewExecutor(t *testing.T) {

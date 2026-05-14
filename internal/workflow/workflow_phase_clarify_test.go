@@ -9,7 +9,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/prompt"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 // TestRunClarifyNoQuestionsFile verifies RunClarify returns nil,nil gracefully
