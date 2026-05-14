@@ -36,12 +36,23 @@ go install .
 
 ## Usage
 
-### TUI mode
+### TUI mode (auto-run)
 
 ```bash
 ralph "build a todo app"
 ralph "build a todo app" --dry-run
 ralph --resume
+```
+
+### Subcommands
+
+```bash
+ralph prd "build a todo app"           # Generate PRD only, no implementation
+ralph prd "build a todo app" --verbose # Generate PRD with debug logging
+ralph review                           # Review existing PRD
+ralph review --verbose                 # Review with debug logging
+ralph implement                        # Implement stories from existing PRD
+ralph implement --verbose              # Implement with debug logging
 ```
 
 ### Headless mode
@@ -52,7 +63,7 @@ ralph run "build a todo app" --dry-run
 ralph run --resume
 ```
 
-### Other commands
+### Status
 
 ```bash
 ralph status
