@@ -17,6 +17,7 @@ type Options struct {
 	Prd          bool
 	Review       bool
 	Implement    bool
+	Subcommand   string
 	UnknownFlags []string
 }
 
@@ -36,14 +37,19 @@ func Parse(args []string) *Options {
 			opts.Verbose = true
 		case "run":
 			opts.Headless = true
+			opts.Subcommand = "run"
 		case "status":
 			opts.Status = true
+			opts.Subcommand = "status"
 		case "prd":
 			opts.Prd = true
+			opts.Subcommand = "prd"
 		case "review":
 			opts.Review = true
+			opts.Subcommand = "review"
 		case "implement":
 			opts.Implement = true
+			opts.Subcommand = "implement"
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
