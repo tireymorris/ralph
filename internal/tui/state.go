@@ -7,9 +7,10 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 
+	"ralph/internal/args"
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
-	"ralph/internal/prompt"
 )
 
 // Phase is the Bubble Tea UI phase (distinct from workflow.Executor phases).
@@ -53,6 +54,7 @@ type Model struct {
 	dryRun  bool
 	resume  bool
 	verbose bool
+	mode    args.Mode
 
 	phase        Phase
 	prd          *prd.PRD
@@ -82,7 +84,7 @@ type Model struct {
 	operationManager *OperationManager
 }
 
-func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *Model {
+func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool, mode args.Mode) *Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(accentColor)
@@ -106,6 +108,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		dryRun:           dryRun,
 		resume:           resume,
 		verbose:          verbose,
+		mode:             mode,
 		phase:            PhaseInit,
 		spinner:          s,
 		progress:         p,
