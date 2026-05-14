@@ -8,7 +8,7 @@ import (
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/prompt"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) runClarifyRunner(ctx context.Context, userPrompt string, isEmpty bool) error {

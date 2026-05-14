@@ -8,7 +8,7 @@ import (
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {

@@ -1,6 +1,6 @@
 package workflow
 
-import "ralph/internal/runner"
+import "ralph/internal/shared/runner"
 
 type OutputForwarder struct {
 	emit func(Event)

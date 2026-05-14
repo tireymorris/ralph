@@ -10,7 +10,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 func TestRunGenerateSuccess(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/logger"
-	"ralph/internal/runner"
+	"ralph/internal/shared/runner"
 )
 
 // Executor orchestrates PRD generation, clarification, and story implementation.
