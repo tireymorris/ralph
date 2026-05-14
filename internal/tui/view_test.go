@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 
@@ -66,7 +66,7 @@ func TestViewPhaseFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseFailed
-	m.err = fmt.Errorf("AI completed but did not generate prd.json")
+	m.err = errors.New("AI completed but did not generate prd.json")
 	m.width = 80
 	m.height = 24
 	prepMainView(m)
