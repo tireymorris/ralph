@@ -18,7 +18,6 @@ func TestNew(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Test with concrete Runner type since test-model is not a claude-code model
 	runner, ok := r.(*Runner)
 	if !ok {
 		t.Fatalf("New() returned %T, want *Runner", r)
@@ -382,7 +381,6 @@ func TestNewReturnsClaudeRunner(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Check that we got a ClaudeRunner
 	claudeRunner, ok := runner.(*ClaudeRunner)
 	if !ok {
 		t.Errorf("New() returned %T, want *ClaudeRunner", runner)
@@ -401,7 +399,6 @@ func TestNewReturnsOpenCodeRunner(t *testing.T) {
 		t.Fatal("New() returned nil")
 	}
 
-	// Check that we got an OpenCode Runner
 	openCodeRunner, ok := runner.(*Runner)
 	if !ok {
 		t.Errorf("New() returned %T, want *Runner", runner)
@@ -524,7 +521,6 @@ func TestIntegrationClaudeModelExecution(t *testing.T) {
 		t.Errorf("Expected command 'claude-code', got %q", capturedName)
 	}
 
-	// Verify Claude-specific arguments
 	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
@@ -558,7 +554,6 @@ func TestIntegrationOpenCodeModelExecution(t *testing.T) {
 		t.Errorf("Expected command 'opencode', got %q", capturedName)
 	}
 
-	// Verify OpenCode-specific arguments
 	expectedArgs := []string{"run", "--print-logs", "--model", "opencode/big-pickle", "test prompt"}
 	if len(capturedArgs) != len(expectedArgs) {
 		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
-	"ralph/internal/prompt"
 )
 
 func TestContextFieldRoundTrip(t *testing.T) {
@@ -32,23 +32,19 @@ func TestContextFieldRoundTrip(t *testing.T) {
 		},
 	}
 
-	// Save the PRD
 	if err := prd.Save(cfg, original); err != nil {
 		t.Fatalf("Failed to save PRD: %v", err)
 	}
 
-	// Load it back
 	loaded, err := prd.Load(cfg)
 	if err != nil {
 		t.Fatalf("Failed to load PRD: %v", err)
 	}
 
-	// Verify context was preserved
 	if loaded.Context != original.Context {
 		t.Errorf("Context not preserved.\nGot: %q\nWant: %q", loaded.Context, original.Context)
 	}
 
-	// Verify the JSON file contains the context field
 	data, err := os.ReadFile(cfg.PRDPath())
 	if err != nil {
 		t.Fatalf("Failed to read PRD file: %v", err)
@@ -69,7 +65,7 @@ func TestContextFieldOmittedWhenEmpty(t *testing.T) {
 	original := &prd.PRD{
 		ProjectName: "Test Project",
 		BranchName:  "feature/test",
-		Context:     "", // Empty context
+		Context:     "",
 		Stories: []*prd.Story{
 			{ID: "story-1", Title: "Test", Priority: 1},
 		},
@@ -84,7 +80,6 @@ func TestContextFieldOmittedWhenEmpty(t *testing.T) {
 		t.Fatalf("Failed to read PRD file: %v", err)
 	}
 
-	// With omitempty, empty context should not appear in JSON
 	if strings.Contains(string(data), `"context"`) {
 		t.Error("Empty context should be omitted from JSON (omitempty)")
 	}
@@ -123,7 +118,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 		"Implement it",
 		[]string{"It works"},
 		"Test it",
-		"", // Empty context
+		"",
 		"prd.json",
 		0, 3,
 		nil,
@@ -152,12 +147,11 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 }
 
 func TestBackwardsCompatibilityWithoutContext(t *testing.T) {
-	// Test that PRDs without context field still load correctly
+
 	tmpDir := t.TempDir()
 	cfg := &config.Config{PRDFile: "prd.json", WorkDir: tmpDir}
 	prdFile := cfg.PRDPath()
 
-	// Write a PRD JSON without the context field (old format)
 	oldFormatJSON := `{
 		"project_name": "Old Project",
 		"branch_name": "feature/old",
@@ -206,7 +200,6 @@ func TestContextPreservedThroughMultipleSaves(t *testing.T) {
 		},
 	}
 
-	// Save, load, modify, save again (simulating workflow)
 	if err := prd.Save(cfg, p); err != nil {
 		t.Fatalf("Save 1 failed: %v", err)
 	}
@@ -216,14 +209,12 @@ func TestContextPreservedThroughMultipleSaves(t *testing.T) {
 		t.Fatalf("Load 1 failed: %v", err)
 	}
 
-	// Mark first story as complete
 	loaded.Stories[0].Passes = true
 
 	if err := prd.Save(cfg, loaded); err != nil {
 		t.Fatalf("Save 2 failed: %v", err)
 	}
 
-	// Load again and verify context is still there
 	final, err := prd.Load(cfg)
 	if err != nil {
 		t.Fatalf("Load 2 failed: %v", err)
@@ -252,14 +243,12 @@ func TestContextJSONFormatting(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	// Verify it's valid JSON
 	data, _ := os.ReadFile(cfg.PRDPath())
 	var parsed map[string]interface{}
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		t.Fatalf("Saved PRD is not valid JSON: %v", err)
 	}
 
-	// Verify context with newlines is preserved
 	loaded, _ := prd.Load(cfg)
 	if loaded.Context != p.Context {
 		t.Errorf("Context with newlines not preserved.\nGot: %q\nWant: %q", loaded.Context, p.Context)

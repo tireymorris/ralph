@@ -10,7 +10,7 @@ import (
 	"ralph/internal/shared/constants"
 )
 
-// LockTimeoutError is returned when a file lock cannot be acquired within the timeout period.
+// LockTimeoutError is returned when a file lock cannot be acquired in time.
 type LockTimeoutError struct {
 	Path    string
 	Timeout time.Duration
@@ -20,8 +20,7 @@ func (e *LockTimeoutError) Error() string {
 	return fmt.Sprintf("timeout acquiring lock on %s after %v", e.Path, e.Timeout)
 }
 
-// VersionConflictError is returned when the PRD version has changed unexpectedly,
-// indicating concurrent modification.
+// VersionConflictError indicates the PRD version changed unexpectedly.
 type VersionConflictError struct {
 	Expected int64
 	Actual   int64

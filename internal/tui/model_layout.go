@@ -11,12 +11,13 @@ func (m *Model) applyLayout(width, height int) {
 	m.width = width
 	m.height = height
 
-	// Reserve ~3 lines for the help bar at the bottom.
+	// Reserve space for the help bar at the bottom.
 	paneHeight := max(4, height-scrollChrome)
 
 	m.mainPane.Width = max(20, width-4)
 	m.mainPane.Height = paneHeight
-	// Log viewport height must leave room for logBoxStyle border (2) + padding (2).
+
+	// Leave room for the log panel border and padding.
 	m.logger.SetSize(width, paneHeight-4)
 	m.progress.Width = min(40, max(10, width-20))
 }

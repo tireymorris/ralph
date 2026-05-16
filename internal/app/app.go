@@ -14,7 +14,6 @@ import (
 	"ralph/internal/tui"
 )
 
-// Run executes Ralph's CLI flow for the provided arguments.
 func Run(argv []string) int {
 	opts := args.Parse(argv)
 	if opts.Help {
@@ -50,7 +49,6 @@ func Run(argv []string) int {
 	return RunTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 }
 
-// RunTUI starts the Bubble Tea application.
 func RunTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int {
 	model := tui.NewModel(cfg, prompt, dryRun, resume, verbose)
 	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
@@ -65,7 +63,6 @@ func RunTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int
 	return 0
 }
 
-// RunStatus renders the current PRD status.
 func RunStatus(cfg *config.Config) int {
 	if err := status.Display(cfg); err != nil {
 		return 1
@@ -73,7 +70,6 @@ func RunStatus(cfg *config.Config) int {
 	return 0
 }
 
-// ValidateResume ensures resume mode has a saved PRD to load.
 func ValidateResume(cfg *config.Config, resume bool) error {
 	if !resume {
 		return nil

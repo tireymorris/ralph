@@ -171,20 +171,19 @@ func TestRenderHeader(t *testing.T) {
 }
 
 func TestRenderHeaderPrimaryColor(t *testing.T) {
-	// Ensure colors are enabled for the test
+
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
 	header := m.renderHeader()
-	// Assert output contains ANSI color escape sequences for primary color (#A855F7)
-	// Primary color is background in headerStyle, RGB 168,85,247
+
 	expectedEscape := "\x1b[48;2;168;85;247m"
 	if !strings.Contains(header, expectedEscape) {
 		t.Errorf("renderHeader() should contain ANSI escape for primary color #A855F7, got: %q", header)
 	}
-	// Verify no color-related panics occur - this is implicit as the function call succeeded
+
 }
 
 func TestRenderPhase(t *testing.T) {
@@ -202,7 +201,7 @@ func TestRenderPhase(t *testing.T) {
 }
 
 func TestRenderLogsStyling(t *testing.T) {
-	// Ensure colors and styles are enabled for the test
+
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	cfg := config.DefaultConfig()
@@ -211,14 +210,10 @@ func TestRenderLogsStyling(t *testing.T) {
 
 	logs := m.renderLogs()
 
-	// Assert output contains rounded border ANSI sequences
-	// Rounded border uses box drawing characters like ╭
 	if !strings.Contains(logs, "╭") {
 		t.Error("renderLogs() output should contain rounded border characters")
 	}
 
-	// Verify background surface color (#111827) is applied correctly
-	// #111827 is rgb(17,24,39), ANSI 24-bit background \x1b[48;2;17;24;39m
 	if !strings.Contains(logs, "\x1b[48;2;17;24;39m") {
 		t.Error("renderLogs() output should contain surface color background ANSI sequence")
 	}

@@ -1,10 +1,9 @@
-// Package events defines workflow notifications emitted to the UI and CLI.
-// It is a leaf package: orchestration lives in workflow.Executor.
+// Package events defines workflow notifications emitted to UI and CLI consumers.
 package events
 
 import (
-	"ralph/internal/shared/prd"
 	"ralph/internal/prompt"
+	"ralph/internal/shared/prd"
 )
 
 type Output struct {
@@ -62,9 +61,7 @@ type EventCompleted struct{}
 
 func (EventCompleted) isEvent() {}
 
-// EventClarifyingQuestions is emitted when the AI has generated clarifying
-// questions. The consumer (TUI or CLI) should collect answers and send them
-// back via the AnswersCh channel.
+// EventClarifyingQuestions carries an answer channel the consumer must reply on.
 type EventClarifyingQuestions struct {
 	Questions []string
 	AnswersCh chan<- []prompt.QuestionAnswer
@@ -72,8 +69,7 @@ type EventClarifyingQuestions struct {
 
 func (EventClarifyingQuestions) isEvent() {}
 
-// EventPRDReview is emitted after PRD generation to signal the consumer should
-// prompt the user to review before proceeding to implementation.
+// EventPRDReview asks the consumer to review before implementation proceeds.
 type EventPRDReview struct {
 	PRD *prd.PRD
 }

@@ -30,17 +30,16 @@ Supported backends:
 
 ```bash
 go build -o ralph .
-# or
 go install .
 ```
 
 ## Usage
 
 ```bash
-ralph "build a todo app"           # TUI flow
-ralph "build a todo app" --dry-run # Generate PRD only
-ralph --resume                      # Resume from existing prd.json
-ralph status                        # Show current PRD status
+ralph "build a todo app"
+ralph "build a todo app" --dry-run
+ralph --resume
+ralph status
 ```
 
 ## Environment

@@ -11,7 +11,7 @@ import (
 )
 
 func TestIntegrationHelp(t *testing.T) {
-	// Build the binary
+
 	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
@@ -20,10 +20,8 @@ func TestIntegrationHelp(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run --help
 	cmd = exec.Command(binaryPath, "--help")
 	output, err = cmd.CombinedOutput()
 	if err != nil && cmd.ProcessState == nil {
@@ -42,7 +40,7 @@ func TestIntegrationHelp(t *testing.T) {
 }
 
 func TestIntegrationInvalidConfig(t *testing.T) {
-	// Build the binary
+
 	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
@@ -51,10 +49,8 @@ func TestIntegrationInvalidConfig(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run with invalid config (invalid model)
 	cmd = exec.Command(binaryPath, "test prompt")
 	cmd.Dir = t.TempDir()
 	cmd.Env = append(os.Environ(), "RALPH_MODEL=invalid-model")
@@ -79,7 +75,6 @@ func TestIntegrationDryRun(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Build the binary
 	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
@@ -88,10 +83,8 @@ func TestIntegrationDryRun(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run 'ralph run "test" --dry-run' with env vars
 	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "test", "--dry-run")
 	cmd.Dir = tmpDir
@@ -103,17 +96,14 @@ func TestIntegrationDryRun(t *testing.T) {
 	exitCode := cmd.ProcessState.ExitCode()
 	outputStr := string(output)
 
-	// Assert no runtime panics (panic would show in output or exit code)
 	if strings.Contains(outputStr, "panic") || strings.Contains(outputStr, "runtime error") {
 		t.Errorf("Runtime panic detected in output: %s", outputStr)
 	}
 
-	// Assert PRD generation completes without errors
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0 for successful dry run, got %d. Output: %s", exitCode, outputStr)
 	}
 
-	// Assert PRD generation completed
 	if !strings.Contains(outputStr, "stories") || !strings.Contains(outputStr, "Dry run complete") {
 		t.Errorf("Expected PRD generation success messages, got: %s", outputStr)
 	}
@@ -124,7 +114,6 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Build the binary
 	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
@@ -133,11 +122,8 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run 'ralph "test prompt" --dry-run' with a simulated TUI interaction
-	// We'll use expect or a similar tool to interact with the TUI
 	tmpDir := t.TempDir()
 	cmd = exec.Command("expect", "-c", `
 		spawn "`+binaryPath+`" "test prompt" --dry-run
@@ -152,24 +138,21 @@ func TestIntegrationTUIDryRun(t *testing.T) {
 	output, err = cmd.CombinedOutput()
 	outputStr := string(output)
 
-	// Check for errors
 	if err != nil {
 		t.Errorf("TUI interaction failed: %v\nOutput: %s", err, outputStr)
 	}
 
-	// Assert TUI displays PRD generation phase correctly
 	if !strings.Contains(outputStr, "Phase 1: PRD Generation") {
 		t.Errorf("Expected TUI to display 'Phase 1: PRD Generation', got: %s", outputStr)
 	}
 
-	// Assert clean exit with no errors (expect script should exit cleanly)
 	if strings.Contains(outputStr, "Error:") || strings.Contains(outputStr, "panic") {
 		t.Errorf("Expected clean exit with no errors, but found errors in output: %s", outputStr)
 	}
 }
 
 func TestIntegrationOpencodeFailure(t *testing.T) {
-	// Build the binary
+
 	cmd := exec.Command("go", "build", "-o", "ralph-test", ".")
 	cmd.Dir = "."
 	output, err := cmd.CombinedOutput()
@@ -178,10 +161,8 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	}
 	defer os.Remove("ralph-test")
 
-	// Get absolute path to binary
 	binaryPath, _ := filepath.Abs("ralph-test")
 
-	// Run with invalid prompt that causes opencode failure
 	tmpDir := t.TempDir()
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure")
 	cmd.Dir = tmpDir
@@ -192,24 +173,20 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	}
 	exitCode := cmd.ProcessState.ExitCode()
 
-	// Assert non-zero exit code for failure
 	if exitCode == 0 {
 		t.Errorf("Expected non-zero exit code for opencode failure, got 0")
 	}
 
 	outputStr := string(output)
 
-	// Assert appropriate error message displayed
 	if !strings.Contains(outputStr, "Error:") {
 		t.Errorf("Expected output to contain 'Error:', got: %s", outputStr)
 	}
 
-	// Check for structured error messages
 	if !strings.Contains(outputStr, "opencode") && !strings.Contains(outputStr, "PRD") && !strings.Contains(outputStr, "git") {
 		t.Errorf("Expected output to contain structured error message, got: %s", outputStr)
 	}
 
-	// Run with --verbose to verify detailed error logging
 	cmd = exec.Command(binaryPath, "run", "invalid prompt that should cause parsing failure", "--verbose")
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), "RALPH_MODEL=opencode/big-pickle")
@@ -219,7 +196,6 @@ func TestIntegrationOpencodeFailure(t *testing.T) {
 	}
 	outputStrVerbose := string(output)
 
-	// Assert detailed error logging in verbose mode
 	if !strings.Contains(outputStrVerbose, "error") {
 		t.Errorf("Expected verbose output to contain error details, got: %s", outputStrVerbose)
 	}

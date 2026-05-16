@@ -39,9 +39,7 @@ func (om *OperationManager) Cancel() {
 	}
 }
 
-// StartFullOperation launches the default TUI workflow in a background
-// goroutine: clarify if needed, then generate the PRD. Results are
-// communicated via the event channel and the returned tea.Cmd.
+// StartFullOperation runs clarify then PRD generation in the background.
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
 		om.startBackground(func() {
@@ -56,7 +54,8 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 			}
 			om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
 		})
-		// Return a phase change immediately so the UI shows "Phase 1: PRD Generation"
+
+		// Return immediately so the UI shows PRD generation while work continues.
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }

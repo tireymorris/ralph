@@ -3,13 +3,11 @@ package workflow
 import (
 	"context"
 
-	"ralph/internal/shared/logger"
 	"ralph/internal/prompt"
+	"ralph/internal/shared/logger"
 )
 
-// RunClarify asks the AI to generate clarifying questions about the user's
-// prompt, then emits EventClarifyingQuestions and blocks until the consumer
-// sends answers back. Returns the answers (possibly empty if skipped).
+// RunClarify emits questions and waits for consumer answers; skipped questions return nil.
 func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error) {
 	isEmpty := isEmptyCodebase(e.cfg.WorkDir)
 

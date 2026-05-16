@@ -119,8 +119,7 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	return nil
 }
 
-// isOpenCodeInternalLog determines if a line contains OpenCode-specific internal log patterns
-// that should be filtered out as verbose noise rather than shown to the user.
+// isOpenCodeInternalLog identifies OpenCode noise that should be hidden unless verbose.
 func isOpenCodeInternalLog(line string) bool {
 	if len(line) >= constants.VerbosePatternMinLength {
 		prefix := line[:constants.VerbosePatternMinLength]

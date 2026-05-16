@@ -8,7 +8,6 @@ import (
 	"ralph/internal/shared/runner"
 )
 
-// Logger handles logging and viewport management
 type Logger struct {
 	logView viewport.Model
 	logs    []string
@@ -18,10 +17,10 @@ type Logger struct {
 	verbose bool
 }
 
-// NewLogger creates a new logger instance
 func NewLogger(verbose bool) *Logger {
 	v := viewport.New(80, 10)
-	// Border/padding are applied by the surrounding log panel.
+
+	// Border and padding are applied by the surrounding log panel.
 	v.Style = lipgloss.NewStyle()
 
 	return &Logger{
@@ -32,7 +31,6 @@ func NewLogger(verbose bool) *Logger {
 	}
 }
 
-// AddLog adds a log line to the logger
 func (l *Logger) AddLog(line string) {
 	l.logs = append(l.logs, line)
 	if len(l.logs) > l.maxLogs {
@@ -41,15 +39,14 @@ func (l *Logger) AddLog(line string) {
 	l.refreshLogView()
 }
 
-// AddOutputLine adds an output line from runner, respecting verbose flag
 func (l *Logger) AddOutputLine(line runner.OutputLine) {
-	// Skip verbose output unless --verbose is enabled
+
+	// Skip verbose output unless --verbose is enabled.
 	if !line.Verbose || l.verbose {
 		l.AddLog(line.Text)
 	}
 }
 
-// SetSize updates the viewport size. logHeight is the inner height of the log viewport in lines.
 func (l *Logger) SetSize(width, logHeight int) {
 	l.width = width
 	l.height = logHeight
@@ -58,40 +55,37 @@ func (l *Logger) SetSize(width, logHeight int) {
 	l.refreshLogView()
 }
 
-// LogCount returns how many log lines are stored (before wrapping).
 func (l *Logger) LogCount() int {
 	return len(l.logs)
 }
 
-// GetView returns the viewport model for rendering
 func (l *Logger) GetView() viewport.Model {
 	return l.logView
 }
 
-// Update handles viewport updates and returns any command
 func (l *Logger) Update(msg interface{}) (viewport.Model, interface{}) {
 	var cmd interface{}
 	l.logView, cmd = l.logView.Update(msg)
 	return l.logView, cmd
 }
 
-// refreshLogView updates the viewport content with styled logs
 func (l *Logger) refreshLogView() {
 	wasAtBottom := l.logView.AtBottom()
 
 	w := l.logView.Width
 	if w <= 0 {
-		// Fall back to a conservative width if we haven't received a window size yet.
+
+		// Fall back before the first window size message arrives.
 		w = max(30, l.width-6)
 	}
 
 	lines := make([]string, 0, len(l.logs))
 	for _, logText := range l.logs {
-		// Truncate *before* styling so we don't cut ANSI sequences.
+
+		// Truncate before styling so ANSI sequences are not cut.
 		line := truncate(logText, max(10, w-2))
 		style := logLineStyle
 
-		// Enhanced colorization for logs based on content
 		lowerText := strings.ToLower(logText)
 		if strings.Contains(lowerText, "error") || strings.Contains(lowerText, "failed") || strings.Contains(lowerText, "failure") {
 			style = logErrorStyle
