@@ -34,27 +34,27 @@ type Runner struct {
 var _ RunnerInterface = (*Runner)(nil)
 
 func New(cfg *config.Config) RunnerInterface {
-	provider := config.DetectProvider(cfg.Model)
-	if provider == config.ProviderClaudeCode {
-		logger.Debug("using Claude Code runner", "model", cfg.Model)
+	provider := config.DetectRunner(cfg.Runner)
+	if provider == config.RunnerClaude {
+		logger.Debug("using Claude Code runner", "runner", cfg.Runner)
 		return NewClaude(cfg)
 	}
-	if provider == config.ProviderPi {
-		logger.Debug("using pi runner", "model", cfg.Model)
+	if provider == config.RunnerPi {
+		logger.Debug("using pi runner", "runner", cfg.Runner)
 		return NewPi(cfg)
 	}
-	if provider == config.ProviderCursorAgent {
-		logger.Debug("using cursor-agent runner", "model", cfg.Model)
+	if provider == config.RunnerCursor {
+		logger.Debug("using cursor-agent runner", "runner", cfg.Runner)
 		return NewCursorAgent(cfg)
 	}
 
-	logger.Debug("using OpenCode runner", "model", cfg.Model)
+	logger.Debug("using OpenCode runner", "runner", cfg.Runner)
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}
 }
 
 func NewWithError(cfg *config.Config) (RunnerInterface, error) {
-	if err := cfg.ValidateModel(); err != nil {
-		return nil, fmt.Errorf("invalid model configuration %q: %w", cfg.Model, err)
+	if err := cfg.ValidateRunner(); err != nil {
+		return nil, fmt.Errorf("invalid runner configuration %q: %w", cfg.Runner, err)
 	}
 
 	return New(cfg), nil
@@ -73,21 +73,17 @@ func (r *Runner) IsInternalLog(line string) bool {
 }
 
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	args := []string{"run", "--print-logs"}
-	if r.cfg.Model != "" {
-		args = append(args, "--model", r.cfg.Model)
-	}
-	args = append(args, prompt)
+	args := []string{"run", "--print-logs", prompt}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
+		"runner", r.cfg.Runner,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", r.RunnerName(), r.cfg.Model), Time: time.Now()}
+		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s...", r.RunnerName()), Time: time.Now()}
 	}
 
 	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
@@ -106,16 +102,16 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 				"runner", r.RunnerName(),
 				"command", r.CommandName(),
 				"exit_code", exitErr.ExitCode(),
-				"model", r.cfg.Model)
-			return fmt.Errorf("%s with model %s exited with code %d", r.RunnerName(), r.cfg.Model, exitErr.ExitCode())
+				"runner", r.cfg.Runner)
+			return fmt.Errorf("%s exited with code %d", r.RunnerName(), exitErr.ExitCode())
 		}
-		return fmt.Errorf("%s with model %s failed: %w", r.RunnerName(), r.cfg.Model, err)
+		return fmt.Errorf("%s failed: %w", r.RunnerName(), err)
 	}
 
 	logger.Debug("AI runner completed successfully",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model)
+		"runner", r.cfg.Runner)
 	return nil
 }
 

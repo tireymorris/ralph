@@ -8,41 +8,37 @@ import (
 	"strings"
 )
 
-const DefaultModel = "claude-code/sonnet"
+const DefaultRunner = "claude"
 
-type Provider string
+type RunnerKind string
 
 const (
-	ProviderClaudeCode  Provider = "claude-code"
-	ProviderCursorAgent Provider = "cursor-agent"
-	ProviderPi          Provider = "pi"
-	ProviderOpenCode    Provider = "opencode"
-	ProviderUnknown     Provider = "unknown"
+	RunnerClaude   RunnerKind = "claude"
+	RunnerCursor   RunnerKind = "cursor"
+	RunnerPi       RunnerKind = "pi"
+	RunnerOpenCode RunnerKind = "opencode"
+	RunnerUnknown  RunnerKind = "unknown"
 )
 
-func DetectProvider(model string) Provider {
-	if strings.HasPrefix(model, "claude-code/") {
-		return ProviderClaudeCode
+func DetectRunner(runner string) RunnerKind {
+	switch runner {
+	case string(RunnerClaude):
+		return RunnerClaude
+	case string(RunnerCursor):
+		return RunnerCursor
+	case string(RunnerPi):
+		return RunnerPi
+	case string(RunnerOpenCode):
+		return RunnerOpenCode
+	default:
+		return RunnerUnknown
 	}
-	if strings.HasPrefix(model, "cursor-agent/") {
-		return ProviderCursorAgent
-	}
-	if strings.HasPrefix(model, "pi/") {
-		return ProviderPi
-	}
-	if strings.HasPrefix(model, "opencode/") || strings.HasPrefix(model, "opencode-go/") {
-		return ProviderOpenCode
-	}
-	if strings.HasPrefix(model, "anthropic/") || strings.HasPrefix(model, "ollama/") {
-		return ProviderOpenCode
-	}
-	return ProviderUnknown
 }
 
 const DefaultTestCommand = "go test ./..."
 
 type Config struct {
-	Model       string `json:"model"`
+	Runner      string `json:"runner"`
 	PRDFile     string `json:"prd_file"`
 	WorkDir     string `json:"-"`
 	TestCommand string `json:"test_command"`
@@ -50,7 +46,7 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		Model:       DefaultModel,
+		Runner:      DefaultRunner,
 		PRDFile:     "prd.json",
 		TestCommand: DefaultTestCommand,
 	}
@@ -81,23 +77,19 @@ func (c *Config) PRDPath() string {
 	return c.ConfigPath(c.PRDFile)
 }
 
-func (c *Config) ValidateModel() error {
-	if c.Model == "" {
-		return errors.New("model cannot be empty")
+func (c *Config) ValidateRunner() error {
+	if c.Runner == "" {
+		return errors.New("runner cannot be empty")
 	}
-	provider := DetectProvider(c.Model)
-	if provider == ProviderUnknown {
-		return fmt.Errorf("unknown provider for model %q (supported prefixes: claude-code/, cursor-agent/, pi/, opencode/, opencode-go/, anthropic/, ollama/)", c.Model)
-	}
-	if provider == ProviderPi && strings.TrimPrefix(c.Model, "pi/") == "" {
-		return errors.New("model cannot be empty after pi/ prefix")
+	if DetectRunner(c.Runner) == RunnerUnknown {
+		return fmt.Errorf("unknown runner %q (supported runners: claude, cursor, pi, opencode)", c.Runner)
 	}
 	return nil
 }
 
 func (c *Config) Validate() error {
-	if err := c.ValidateModel(); err != nil {
-		return fmt.Errorf("invalid model configuration: %w", err)
+	if err := c.ValidateRunner(); err != nil {
+		return fmt.Errorf("invalid runner configuration: %w", err)
 	}
 	if c.PRDFile == "" {
 		return errors.New("prd_file cannot be empty")

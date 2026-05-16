@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewClaude(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+	cfg := &config.Config{Runner: "claude"}
 	r := NewClaude(cfg)
 
 	if r == nil {
@@ -25,8 +25,8 @@ func TestNewClaude(t *testing.T) {
 	}
 }
 
-func TestClaudeRunWithModel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+func TestClaudeRunArgs(t *testing.T) {
+	cfg := &config.Config{Runner: "claude"}
 	r := NewClaude(cfg)
 
 	var capturedArgs []string
@@ -41,43 +41,13 @@ func TestClaudeRunWithModel(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
-	if len(capturedArgs) != len(expectedArgs) {
-		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
-	}
-	for i, expected := range expectedArgs {
-		if capturedArgs[i] != expected {
-			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
-		}
-	}
-}
-
-func TestClaudeRunNoModel(t *testing.T) {
-	cfg := &config.Config{Model: ""}
-	r := NewClaude(cfg)
-
-	var capturedArgs []string
-	mock := &mockCmd{}
-	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
-		capturedArgs = args
-		return mock
-	}
-
-	r.Run(context.Background(), "test", nil)
-
-	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "test"}
-	if len(capturedArgs) != len(expectedArgs) {
-		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
-	}
-	for i, expected := range expectedArgs {
-		if capturedArgs[i] != expected {
-			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
-		}
-	}
+	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "test prompt"}
+	assertArgsEqual(t, capturedArgs, expectedArgs)
+	assertNoModelSelectionArgs(t, capturedArgs)
 }
 
 func TestClaudeRunWithOutputChannel(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/haiku"}
+	cfg := &config.Config{Runner: "claude"}
 	r := NewClaude(cfg)
 
 	mock := &mockCmd{stdout: "line1\nline2", stderr: "err1"}
@@ -169,7 +139,7 @@ func TestClaudeRunWaitError(t *testing.T) {
 	if err == nil {
 		t.Error("Run() should return error on wait failure")
 	}
-	if !strings.Contains(err.Error(), "Claude Code with model") && !strings.Contains(err.Error(), "failed") {
+	if !strings.Contains(err.Error(), "Claude Code") || !strings.Contains(err.Error(), "failed") {
 		t.Errorf("Expected Claude Code failed error, got %v", err)
 	}
 }
@@ -187,7 +157,7 @@ func TestClaudeOutputLineVerboseField(t *testing.T) {
 }
 
 func TestClaudeRunOutputTimestamps(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+	cfg := &config.Config{Runner: "claude"}
 	r := NewClaude(cfg)
 
 	mock := &mockCmd{stdout: "test output line", stderr: ""}
@@ -331,7 +301,7 @@ func TestParseClaudeStreamJSONTimestamps(t *testing.T) {
 }
 
 func TestClaudeRunnerIsInternalLog(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+	cfg := &config.Config{Runner: "claude"}
 	r := NewClaude(cfg)
 
 	tests := []struct {

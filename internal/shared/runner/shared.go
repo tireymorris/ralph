@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func newStartingOutputLine(runnerName, model string) OutputLine {
-	return OutputLine{Text: fmt.Sprintf("Starting %s with model %s...", runnerName, model), Time: time.Now()}
+func newStartingOutputLine(runnerName string) OutputLine {
+	return OutputLine{Text: fmt.Sprintf("Starting %s...", runnerName), Time: time.Now()}
 }
 
 func runWithPipedCommand(
@@ -23,9 +23,9 @@ func runWithPipedCommand(
 	return runPipedCommand(cmdName, cmd, outputCh, stdoutTransform, stderrTransform)
 }
 
-func wrapRunnerError(runnerName, model string, err error) error {
+func wrapRunnerError(runnerName string, err error) error {
 	if exitErr, ok := err.(*exec.ExitError); ok {
-		return fmt.Errorf("%s with model %s exited with code %d", runnerName, model, exitErr.ExitCode())
+		return fmt.Errorf("%s exited with code %d", runnerName, exitErr.ExitCode())
 	}
-	return fmt.Errorf("%s with model %s failed: %w", runnerName, model, err)
+	return fmt.Errorf("%s failed: %w", runnerName, err)
 }

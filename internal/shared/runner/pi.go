@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
@@ -37,45 +36,18 @@ func (r *PiRunner) IsInternalLog(line string) bool {
 	return stderrLineIsInternal(line, stderrFilterDefaultPipedCLI)
 }
 
-func piProviderAndModel(cfgModel string) (provider, piModel string) {
-	rest := strings.TrimPrefix(cfgModel, "pi/")
-	if rest == "" {
-		return "", ""
-	}
-	parts := strings.SplitN(rest, "/", 2)
-	if len(parts) == 1 {
-		return "", parts[0]
-	}
-	p := parts[0]
-	m := parts[1]
-	if p == "" {
-		return "", m
-	}
-	return p, m
-}
-
 func (r *PiRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	provider, piModel := piProviderAndModel(r.cfg.Model)
-	args := []string{"--print", "--mode", "json", "--no-session"}
-	if provider != "" {
-		args = append(args, "--provider", provider)
-	}
-	if piModel != "" {
-		args = append(args, "--model", piModel)
-	}
-	args = append(args, prompt)
+	args := []string{"--print", "--mode", "json", "--no-session", prompt}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
-		"pi_provider", provider,
-		"pi_model", piModel,
+		"runner", r.cfg.Runner,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- newStartingOutputLine(r.RunnerName(), r.cfg.Model)
+		outputCh <- newStartingOutputLine(r.RunnerName())
 	}
 
 	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
@@ -89,18 +61,14 @@ func (r *PiRunner) Run(ctx context.Context, prompt string, outputCh chan<- Outpu
 		logger.Debug("AI runner exited with code",
 			"runner", r.RunnerName(),
 			"command", r.CommandName(),
-			"model", r.cfg.Model,
-			"pi_provider", provider,
-			"pi_model", piModel)
-		return wrapRunnerError(r.RunnerName(), r.cfg.Model, err)
+			"runner", r.cfg.Runner)
+		return wrapRunnerError(r.RunnerName(), err)
 	}
 
 	logger.Debug("AI runner completed successfully",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
-		"pi_provider", provider,
-		"pi_model", piModel)
+		"runner", r.cfg.Runner)
 	return nil
 }
 
