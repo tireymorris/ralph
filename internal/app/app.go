@@ -37,7 +37,7 @@ func Run(argv []string) int {
 		fmt.Print(args.HelpText())
 		return 1
 	}
-	logger.Debug("config loaded", "model", cfg.Model)
+	logger.Debug("config loaded", "runner", cfg.Runner)
 
 	if err := ValidateResume(cfg, opts.Resume); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

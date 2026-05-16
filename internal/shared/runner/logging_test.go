@@ -9,37 +9,37 @@ import (
 func TestRunnerNames(t *testing.T) {
 	tests := []struct {
 		name        string
-		model       string
+		runner      string
 		wantRunner  string
 		wantCommand string
 	}{
 		{
 			name:        "OpenCode runner returns correct names",
-			model:       "opencode/big-pickle",
+			runner:      "opencode",
 			wantRunner:  "OpenCode",
 			wantCommand: "opencode",
 		},
 		{
 			name:        "Claude runner returns correct names",
-			model:       "claude-code/sonnet",
+			runner:      "claude",
 			wantRunner:  "Claude Code",
 			wantCommand: "claude",
 		},
 		{
-			name:        "Another OpenCode model",
-			model:       "opencode/big-pickle",
+			name:        "Another OpenCode runner",
+			runner:      "opencode",
 			wantRunner:  "OpenCode",
 			wantCommand: "opencode",
 		},
 		{
-			name:        "Another Claude model",
-			model:       "claude-code/haiku",
+			name:        "Another Claude runner",
+			runner:      "claude",
 			wantRunner:  "Claude Code",
 			wantCommand: "claude",
 		},
 		{
 			name:        "pi runner",
-			model:       "pi/auto",
+			runner:      "pi",
 			wantRunner:  "pi",
 			wantCommand: "pi",
 		},
@@ -48,7 +48,7 @@ func TestRunnerNames(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.Config{
-				Model:   tt.model,
+				Runner:  tt.runner,
 				WorkDir: "/tmp",
 			}
 

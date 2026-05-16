@@ -36,8 +36,8 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 
 	if err != nil {
 		logger.Error("PRD generation failed", "error", err)
-		e.emit(EventError{Err: fmt.Errorf("PRD generation failed with model %s: %w", e.cfg.Model, err)})
-		return nil, fmt.Errorf("PRD generation failed with model %s: %w", e.cfg.Model, err)
+		e.emit(EventError{Err: fmt.Errorf("PRD generation failed with runner %s: %w", e.cfg.Runner, err)})
+		return nil, fmt.Errorf("PRD generation failed with runner %s: %w", e.cfg.Runner, err)
 	}
 
 	exists, err := e.store.Exists(e.cfg)

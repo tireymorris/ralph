@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
@@ -44,21 +43,17 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
-	modelName := strings.TrimPrefix(r.cfg.Model, "claude-code/")
-	if r.cfg.Model != "" {
-		args = append(args, "--model", modelName)
-	}
 	args = append(args, prompt)
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
+		"runner", r.cfg.Runner,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- newStartingOutputLine(r.RunnerName(), modelName)
+		outputCh <- newStartingOutputLine(r.RunnerName())
 	}
 
 	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
@@ -71,15 +66,13 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 	if err != nil {
 		logger.Debug("AI runner exited with code",
 			"runner", r.RunnerName(),
-			"command", r.CommandName(),
-			"model", modelName)
-		return wrapRunnerError(r.RunnerName(), modelName, err)
+			"command", r.CommandName())
+		return wrapRunnerError(r.RunnerName(), err)
 	}
 
 	logger.Debug("AI runner completed successfully",
 		"runner", r.RunnerName(),
-		"command", r.CommandName(),
-		"model", modelName)
+		"command", r.CommandName())
 	return nil
 }
 

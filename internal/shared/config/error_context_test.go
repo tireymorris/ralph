@@ -13,20 +13,20 @@ func TestLoad_InvalidConfigPath(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	os.Clearenv()
-	os.Setenv("RALPH_MODEL", "invalid")
-	defer os.Unsetenv("RALPH_MODEL")
+	os.Setenv("RALPH_RUNNER", "invalid")
+	defer os.Unsetenv("RALPH_RUNNER")
 
 	cfg, err := Load()
 	if err == nil {
 		t.Error("Expected error for invalid config, got nil")
 	}
 
-	if cfg != nil && cfg.Model == "invalid" {
-		t.Error("Should not have loaded invalid model")
+	if cfg != nil && cfg.Runner == "invalid" {
+		t.Error("Should not have loaded invalid runner")
 	}
 
-	if err != nil && !strings.Contains(err.Error(), "invalid model configuration") {
-		t.Errorf("Error message should contain 'invalid model configuration', got: %v", err)
+	if err != nil && !strings.Contains(err.Error(), "invalid runner configuration") {
+		t.Errorf("Error message should contain 'invalid runner configuration', got: %v", err)
 	}
 }
 
@@ -65,7 +65,7 @@ func TestConfig_Validate_PathTraversal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Model:       DefaultModel,
+				Runner:      DefaultRunner,
 				PRDFile:     tt.prdFile,
 				TestCommand: DefaultTestCommand,
 			}

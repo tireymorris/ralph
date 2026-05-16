@@ -32,3 +32,24 @@ func assertRunnerIs[T any](t *testing.T, got any) T {
 	}
 	return r
 }
+
+func assertArgsEqual(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("args = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("args = %v, want %v", got, want)
+		}
+	}
+}
+
+func assertNoModelSelectionArgs(t *testing.T, args []string) {
+	t.Helper()
+	for _, arg := range args {
+		if arg == "--model" || arg == "--runner" || arg == "--provider" {
+			t.Fatalf("unexpected model selection arg %q in %v", arg, args)
+		}
+	}
+}

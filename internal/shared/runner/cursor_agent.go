@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
@@ -38,24 +37,17 @@ func (r *CursorAgentRunner) IsInternalLog(line string) bool {
 }
 
 func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	suffix := strings.TrimPrefix(r.cfg.Model, "cursor-agent/")
-
-	args := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo"}
-	if suffix != "" {
-		args = append(args, "--model", suffix)
-	}
-	args = append(args, prompt)
+	args := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo", prompt}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
-		"model_suffix", suffix,
+		"runner", r.cfg.Runner,
 		"prompt_length", len(prompt),
 		"work_dir", r.cfg.WorkDir)
 
 	if outputCh != nil {
-		outputCh <- newStartingOutputLine(r.RunnerName(), r.cfg.Model)
+		outputCh <- newStartingOutputLine(r.RunnerName())
 	}
 
 	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
@@ -69,15 +61,14 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		logger.Debug("AI runner exited with code",
 			"runner", r.RunnerName(),
 			"command", r.CommandName(),
-			"model", r.cfg.Model)
-		return wrapRunnerError(r.RunnerName(), r.cfg.Model, err)
+			"runner", r.cfg.Runner)
+		return wrapRunnerError(r.RunnerName(), err)
 	}
 
 	logger.Debug("AI runner completed successfully",
 		"runner", r.RunnerName(),
 		"command", r.CommandName(),
-		"model", r.cfg.Model,
-		"model_suffix", suffix)
+		"runner", r.cfg.Runner)
 	return nil
 }
 
