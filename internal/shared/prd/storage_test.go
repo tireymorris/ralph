@@ -111,7 +111,6 @@ func TestSaveUnwritableLocation(t *testing.T) {
 	}
 }
 
-// TestVersionIncrement verifies that Version increments on each save
 func TestVersionIncrement(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "version.json")
@@ -121,7 +120,6 @@ func TestVersionIncrement(t *testing.T) {
 		Version:     0,
 	}
 
-	// Save multiple times and verify version increments
 	for i := 1; i <= 5; i++ {
 		if err := Save(cfg, prd); err != nil {
 			t.Fatalf("Save %d failed: %v", i, err)
@@ -131,7 +129,6 @@ func TestVersionIncrement(t *testing.T) {
 			t.Errorf("after save %d: expected version %d, got %d", i, i, prd.Version)
 		}
 
-		// Load and verify version persisted to disk
 		loaded, err := Load(cfg)
 		if err != nil {
 			t.Fatalf("Load after save %d failed: %v", i, err)
@@ -143,12 +140,10 @@ func TestVersionIncrement(t *testing.T) {
 	}
 }
 
-// TestBackwardsCompatibilityNoVersion verifies that PRDs without version field still load
 func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "old.json")
 
-	// Manually write a PRD JSON without version field (old format)
 	oldFormatJSON := `{
   "project_name": "Old Project",
   "stories": [
@@ -167,7 +162,6 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 		t.Fatalf("failed to write old format PRD: %v", err)
 	}
 
-	// Load should succeed and default version to 0
 	loaded, err := Load(cfg)
 	if err != nil {
 		t.Fatalf("Load failed for old format PRD: %v", err)
@@ -182,7 +176,6 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 	}
 }
 
-// TestAtomicWriteFilePermissions verifies file permissions are 0600
 func TestAtomicWriteFilePermissions(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "perms.json")
@@ -204,7 +197,6 @@ func TestAtomicWriteFilePermissions(t *testing.T) {
 	}
 }
 
-// TestAtomicWriteNoTempFiles verifies temp files are cleaned up
 func TestAtomicWriteNoTempFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "cleanup.json")
@@ -215,7 +207,6 @@ func TestAtomicWriteNoTempFiles(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	// Check for temp files
 	files, err := os.ReadDir(tmpDir)
 	if err != nil {
 		t.Fatalf("failed to read temp dir: %v", err)
@@ -230,7 +221,6 @@ func TestAtomicWriteNoTempFiles(t *testing.T) {
 	}
 }
 
-// TestConcurrentReads verifies multiple concurrent reads can succeed
 func TestConcurrentReads(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "concurrent-read.json")
@@ -244,7 +234,6 @@ func TestConcurrentReads(t *testing.T) {
 		t.Fatalf("initial Save failed: %v", err)
 	}
 
-	// Launch multiple concurrent readers
 	numReaders := 10
 	var wg sync.WaitGroup
 	wg.Add(numReaders)
@@ -277,7 +266,6 @@ func TestConcurrentReads(t *testing.T) {
 	}
 }
 
-// TestConcurrentWrites verifies concurrent writes are serialized correctly
 func TestConcurrentWrites(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "concurrent-write.json")
@@ -291,7 +279,6 @@ func TestConcurrentWrites(t *testing.T) {
 		t.Fatalf("initial Save failed: %v", err)
 	}
 
-	// Launch multiple concurrent writers
 	numWriters := 10
 	var wg sync.WaitGroup
 	wg.Add(numWriters)
@@ -325,25 +312,20 @@ func TestConcurrentWrites(t *testing.T) {
 		}
 	}
 
-	// Verify final version incremented (concurrent access is serialized)
 	final, err := Load(cfg)
 	if err != nil {
 		t.Fatalf("final Load failed: %v", err)
 	}
 
-	// Version should have incremented, though exact final value depends on
-	// scheduling of concurrent loads/saves. Just verify it increased.
 	if final.Version <= 1 {
 		t.Errorf("expected version > 1, got %d", final.Version)
 	}
 
-	// Verify no corruption
 	if final.ProjectName != "Modified" {
 		t.Error("final PRD has corrupted data")
 	}
 }
 
-// TestLockTimeoutError verifies the LockTimeoutError type
 func TestLockTimeoutError(t *testing.T) {
 	err := &LockTimeoutError{
 		Path:    "/tmp/test.lock",
@@ -356,7 +338,6 @@ func TestLockTimeoutError(t *testing.T) {
 	}
 }
 
-// TestVersionConflictError verifies the VersionConflictError type
 func TestVersionConflictError(t *testing.T) {
 	err := &VersionConflictError{
 		Expected: 5,
@@ -369,7 +350,6 @@ func TestVersionConflictError(t *testing.T) {
 	}
 }
 
-// BenchmarkSave measures performance of Save operation
 func BenchmarkSave(b *testing.B) {
 	tmpDir := b.TempDir()
 	cfg := &config.Config{PRDFile: filepath.Join(tmpDir, "bench.json")}
@@ -388,7 +368,6 @@ func BenchmarkSave(b *testing.B) {
 	}
 }
 
-// BenchmarkLoad measures performance of Load operation
 func BenchmarkLoad(b *testing.B) {
 	tmpDir := b.TempDir()
 	cfg := &config.Config{PRDFile: filepath.Join(tmpDir, "bench.json")}

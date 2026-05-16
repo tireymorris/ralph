@@ -56,11 +56,11 @@ func TestPrintStoryDetails(t *testing.T) {
 	p := &prd.PRD{
 		Stories: []*prd.Story{
 			{
-				ID:               "story-1",
-				Title:            "Test Story",
-				Priority:         1,
-				Description:      "A test story",
-				DependsOn:        []string{"story-0"},
+				ID:                 "story-1",
+				Title:              "Test Story",
+				Priority:           1,
+				Description:        "A test story",
+				DependsOn:          []string{"story-0"},
 				AcceptanceCriteria: []string{"AC1", "AC2"},
 			},
 		},

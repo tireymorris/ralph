@@ -29,8 +29,7 @@ func NewExecutorWithRunner(cfg *config.Config, eventsCh chan Event, r runner.Run
 	return NewExecutorWithRunnerAndStore(cfg, eventsCh, r, nil)
 }
 
-// NewExecutorWithRunnerAndStore constructs an executor with a custom AI runner
-// and optional PRD persistence. If store is nil, the default disk-backed store is used.
+// NewExecutorWithRunnerAndStore injects a runner and optional store for tests.
 func NewExecutorWithRunnerAndStore(cfg *config.Config, eventsCh chan Event, r runner.RunnerInterface, store PRDStore) *Executor {
 	if store == nil {
 		store = defaultPRDStore{}

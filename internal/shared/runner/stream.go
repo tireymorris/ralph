@@ -50,7 +50,7 @@ func defaultCmdFuncNoStdin(workDir string) func(ctx context.Context, name string
 
 type LineTransformer func(line string) []OutputLine
 
-// runPipedCommand starts cmd, streams stdout/stderr through transform, waits for readers, then Wait.
+// runPipedCommand streams stdout/stderr through transformers before waiting on cmd.
 func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- OutputLine, stdoutTransform, stderrTransform LineTransformer) error {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

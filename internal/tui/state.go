@@ -12,7 +12,7 @@ import (
 	"ralph/internal/shared/prd"
 )
 
-// Phase is the Bubble Tea UI phase (distinct from workflow.Executor phases).
+// Phase is the Bubble Tea UI phase, distinct from workflow.Executor phases.
 type Phase int
 
 const (

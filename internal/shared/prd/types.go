@@ -135,8 +135,7 @@ func (p *PRD) GetStory(id string) *Story {
 func (p *PRD) Validate() error {
 	if len(p.Context) > MaxContextSize {
 		return fmt.Errorf("context size %d exceeds maximum %d bytes", len(p.Context), MaxContextSize)
-	}
-	if len(p.Stories) > MaxStories {
+	} else if len(p.Stories) > MaxStories {
 		return fmt.Errorf("story count %d exceeds maximum %d", len(p.Stories), MaxStories)
 	}
 

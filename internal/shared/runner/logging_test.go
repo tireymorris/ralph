@@ -54,7 +54,6 @@ func TestRunnerNames(t *testing.T) {
 
 			runner := New(cfg)
 
-			// Verify runner methods return correct names
 			if runner.RunnerName() != tt.wantRunner {
 				t.Errorf("RunnerName() = %q, want %q", runner.RunnerName(), tt.wantRunner)
 			}
@@ -62,7 +61,6 @@ func TestRunnerNames(t *testing.T) {
 				t.Errorf("CommandName() = %q, want %q", runner.CommandName(), tt.wantCommand)
 			}
 
-			// Verify that methods return non-empty values
 			if runner.RunnerName() == "" {
 				t.Error("RunnerName() should not be empty")
 			}

@@ -25,7 +25,6 @@ func TestHandleWorkflowEventClarifyingQuestions(t *testing.T) {
 		t.Fatal("EventClarifyingQuestions should return a command")
 	}
 
-	// Execute the returned command — it should produce a clarifyQuestionsMsg
 	msg := cmd()
 	cqm, ok := msg.(clarifyQuestionsMsg)
 	if !ok {
@@ -77,7 +76,6 @@ func TestUpdateClarifyingKeyEsc(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	// Put model in clarifying phase
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	m.phase = PhaseClarifying
 	m.clarifyQuestions = []string{"Q1?"}
@@ -92,7 +90,7 @@ func TestUpdateClarifyingKeyEsc(t *testing.T) {
 	if model.phase != PhasePRDGeneration {
 		t.Errorf("phase = %v, want PhasePRDGeneration after Esc", model.phase)
 	}
-	// Answers should have been sent (nil = skip)
+
 	select {
 	case answers := <-answersCh:
 		if answers != nil {
@@ -117,7 +115,6 @@ func TestUpdateClarifyingKeyEnterNavigates(t *testing.T) {
 	ti2 := textinput.New()
 	m.clarifyInputs = []textinput.Model{ti1, ti2}
 
-	// Enter on first field should move focus to second, not submit
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model := newModel.(*Model)
 
@@ -131,7 +128,7 @@ func TestUpdateClarifyingKeyEnterNavigates(t *testing.T) {
 	case <-answersCh:
 		t.Error("Enter on non-last field should not submit answers")
 	default:
-		// correct — no submission yet
+
 	}
 }
 
@@ -168,12 +165,10 @@ func TestBuildAnswers(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 
-	// No questions
 	if got := m.buildAnswers(); got != nil {
 		t.Errorf("buildAnswers() with no questions = %v, want nil", got)
 	}
 
-	// With questions
 	m.clarifyQuestions = []string{"Q1?", "Q2?"}
 	ti1 := textinput.New()
 	ti2 := textinput.New()
@@ -221,7 +216,7 @@ func TestSubmitClarifyingAnswersSendsAndTransitions(t *testing.T) {
 func TestSubmitClarifyingAnswersNilChannelSafe(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	// clarifyAnswersCh is nil — should not panic
+
 	m.phase = PhaseClarifying
 	cmds := m.submitClarifyingAnswers(nil)
 	if m.phase != PhasePRDGeneration {

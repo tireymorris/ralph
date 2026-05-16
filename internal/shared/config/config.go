@@ -106,7 +106,7 @@ func (c *Config) Validate() error {
 		return errors.New("test_command cannot be empty")
 	}
 
-	// Validate PRD file path for security (prevent path traversal)
+	// Prevent path traversal by requiring a simple filename.
 	if filepath.Base(c.PRDFile) != c.PRDFile {
 		return fmt.Errorf("prd_file must be a simple filename, got path %q", c.PRDFile)
 	}

@@ -11,9 +11,7 @@ type QuestionAnswer struct {
 	Answer   string
 }
 
-// ClarifyingQuestions generates a prompt asking the AI to produce a JSON file
-// with clarifying questions about the user's request. The AI writes a JSON
-// array of question strings to questionsFile, then stops.
+// ClarifyingQuestions tells the AI to write question strings to questionsFile and stop.
 func ClarifyingQuestions(userPrompt, questionsFile string, isEmptyCodebase bool) string {
 	codebaseNote := "an existing codebase"
 	if isEmptyCodebase {

@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
-	"ralph/internal/prompt"
 	"ralph/internal/shared/runner"
 )
 

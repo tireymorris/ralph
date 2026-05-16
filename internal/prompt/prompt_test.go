@@ -270,7 +270,7 @@ func TestStoryImplementation(t *testing.T) {
 				tt.prdFile,
 				tt.completed,
 				tt.total,
-				nil, // dependsOn
+				nil,
 			)
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {

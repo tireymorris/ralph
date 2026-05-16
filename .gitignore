@@ -1,9 +1,7 @@
-# Binary
 .ralph-bin
 ralph
 .claude/
 
-# Go
 *.exe
 *.exe~
 *.dll
@@ -14,18 +12,15 @@ ralph
 go.work
 go.work.sum
 
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# OS
 .DS_Store
 Thumbs.db
 
-# Ralph working files
 prd.json
 prd.json.lock
 ralph.log

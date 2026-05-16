@@ -7,18 +7,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/config"
 	"ralph/internal/prompt"
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
 )
 
-// TestRunClarifyNoQuestionsFile verifies RunClarify returns nil,nil gracefully
-// when the AI runner succeeds but writes no questions file.
 func TestRunClarifyNoQuestionsFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	ch := make(chan Event, 100)
 	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		return nil // AI does not write a questions file
+		return nil
 	}, ch)
 	qas, err := exec.RunClarify(context.Background(), "add login")
 
@@ -30,7 +28,6 @@ func TestRunClarifyNoQuestionsFile(t *testing.T) {
 	}
 }
 
-// TestRunClarifyRunnerError verifies RunClarify is non-fatal when the runner errors.
 func TestRunClarifyRunnerError(t *testing.T) {
 	tmpDir := t.TempDir()
 	ch := make(chan Event, 100)
@@ -47,7 +44,6 @@ func TestRunClarifyRunnerError(t *testing.T) {
 	}
 }
 
-// TestRunClarifyInvalidJSON verifies RunClarify handles malformed questions file gracefully.
 func TestRunClarifyInvalidJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 	ch := make(chan Event, 100)
@@ -64,7 +60,6 @@ func TestRunClarifyInvalidJSON(t *testing.T) {
 	}
 }
 
-// TestRunClarifyEmptyArray verifies RunClarify returns nil when the AI writes [].
 func TestRunClarifyEmptyArray(t *testing.T) {
 	tmpDir := t.TempDir()
 	ch := make(chan Event, 100)
@@ -81,8 +76,6 @@ func TestRunClarifyEmptyArray(t *testing.T) {
 	}
 }
 
-// TestRunClarifyWithQuestions verifies the full happy-path: AI writes questions,
-// RunClarify emits EventClarifyingQuestions, and returns the answers sent to AnswersCh.
 func TestRunClarifyWithQuestions(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -97,7 +90,6 @@ func TestRunClarifyWithQuestions(t *testing.T) {
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 
-	// Consume the EventClarifyingQuestions from the channel and send answers back.
 	expectedAnswers := []prompt.QuestionAnswer{
 		{Question: "What language?", Answer: "Go"},
 		{Question: "Any auth requirements?", Answer: "JWT"},
@@ -127,8 +119,6 @@ func TestRunClarifyWithQuestions(t *testing.T) {
 	}
 }
 
-// TestRunClarifyContextCancelled verifies RunClarify respects context cancellation
-// while waiting for answers.
 func TestRunClarifyContextCancelled(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -145,7 +135,6 @@ func TestRunClarifyContextCancelled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Cancel immediately after RunClarify starts (once event is emitted).
 	go func() {
 		for event := range ch {
 			if _, ok := event.(EventClarifyingQuestions); ok {
@@ -161,7 +150,6 @@ func TestRunClarifyContextCancelled(t *testing.T) {
 	}
 }
 
-// TestRunClarifyNilChannel verifies RunClarify skips questions when no event channel.
 func TestRunClarifyNilChannel(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -173,7 +161,6 @@ func TestRunClarifyNilChannel(t *testing.T) {
 		return os.WriteFile(filepath.Join(tmpDir, ClarifyingQuestionsFile), []byte(data), 0644)
 	}
 
-	// nil channel — simulates executor with no event consumer
 	exec := NewExecutorWithRunner(cfg, nil, mock)
 	qas, err := exec.RunClarify(context.Background(), "test")
 
@@ -185,8 +172,6 @@ func TestRunClarifyNilChannel(t *testing.T) {
 	}
 }
 
-// TestRunClarifyQuestionsFileCleanedUp verifies the temporary questions file is
-// deleted even when parsing succeeds (to avoid leaving state on disk).
 func TestRunClarifyQuestionsFileCleanedUp(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()

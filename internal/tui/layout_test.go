@@ -35,7 +35,6 @@ func TestApplyLayoutCachesDimensions(t *testing.T) {
 	m.applyLayout(120, 40)
 	origMainH := m.mainPane.Height
 
-	// Calling again with same dimensions should not change anything
 	m.applyLayout(120, 40)
 	if m.mainPane.Height != origMainH {
 		t.Error("applyLayout should cache dimensions")

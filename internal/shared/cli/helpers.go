@@ -1,17 +1,13 @@
-// Package cli provides shared CLI helper functions used by multiple subcommands.
 package cli
 
 import (
 	"fmt"
 	"io"
-	"os"
-	"os/exec"
 	"strings"
 
 	"ralph/internal/shared/prd"
 )
 
-// OutputPrefix returns the prefix for output lines based on whether it's an error.
 func OutputPrefix(isErr bool) string {
 	if isErr {
 		return "  [!]"
@@ -19,7 +15,6 @@ func OutputPrefix(isErr bool) string {
 	return "  "
 }
 
-// StoryStatus returns a visual status indicator for a story.
 func StoryStatus(passes bool) string {
 	if passes {
 		return "[x]"
@@ -27,7 +22,6 @@ func StoryStatus(passes bool) string {
 	return "[ ]"
 }
 
-// PrintStoryList prints a summary of all stories in the PRD.
 func PrintStoryList(w io.Writer, p *prd.PRD) {
 	fmt.Fprintln(w, "Stories:")
 	for _, s := range p.Stories {
@@ -36,7 +30,6 @@ func PrintStoryList(w io.Writer, p *prd.PRD) {
 	fmt.Fprintln(w)
 }
 
-// PrintStoryDetails prints detailed information about all stories in the PRD.
 func PrintStoryDetails(w io.Writer, p *prd.PRD) {
 	for _, s := range p.Stories {
 		fmt.Fprintf(w, "Story: %s\n", s.Title)
@@ -54,17 +47,4 @@ func PrintStoryDetails(w io.Writer, p *prd.PRD) {
 		}
 		fmt.Fprintln(w)
 	}
-}
-
-// RunEditor opens the given file path in the user's preferred editor.
-func RunEditor(path string) error {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vi"
-	}
-	cmd := exec.Command(editor, path)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }

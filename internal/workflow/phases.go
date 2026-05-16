@@ -1,17 +1,7 @@
 package workflow
 
-// DocOrchestratorPhase names high-level executor stages for navigation and logging.
-// It documents the conceptual state machine; transitions are implemented by Executor methods.
-//
-// Transitions (happy path, non–dry-run):
-//
-//	DocPhaseClarify   → RunClarify (optional; may skip if no questions)
-//	DocPhaseGenerate  → RunGenerateWithAnswers / RunGenerate / RunLoad (--resume)
-//	DocPhaseReview    → EventPRDReview (consumer confirms or edits PRD)
-//	DocPhaseImplement → RunImplementation (story loop until all pass)
-//	DocPhaseComplete  → EventCompleted
-//
-// See RunClarify, RunGenerateWithAnswers, RunLoad, RunImplementation, and phase_*.go.
+// DocOrchestratorPhase documents the executor state machine:
+// clarify → generate/load → review → implement → complete.
 type DocOrchestratorPhase int
 
 const (

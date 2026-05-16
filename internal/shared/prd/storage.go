@@ -12,7 +12,7 @@ import (
 	"ralph/internal/shared/constants"
 )
 
-// Load reads and parses the PRD from disk with a shared lock to prevent concurrent modifications.
+// Load reads and parses the PRD under a shared lock.
 func Load(cfg *config.Config) (*PRD, error) {
 	prdPath := cfg.PRDPath()
 
@@ -39,12 +39,7 @@ func Load(cfg *config.Config) (*PRD, error) {
 	return &p, nil
 }
 
-// Save writes the PRD to disk using atomic file operations and exclusive locking.
-// It acquires an exclusive lock, increments the version, writes to a temporary file,
-// then atomically renames it to the final location. This ensures that:
-// 1. The PRD file is never in a partially-written state (atomic writes)
-// 2. No concurrent reads or writes occur during the save operation (exclusive lock)
-// 3. Concurrent modifications can be detected via version numbers (optimistic locking)
+// Save writes the PRD atomically under an exclusive lock and increments Version.
 func Save(cfg *config.Config, p *PRD) error {
 	prdPath := cfg.PRDPath()
 

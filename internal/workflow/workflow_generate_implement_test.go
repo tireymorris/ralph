@@ -22,7 +22,6 @@ func TestRunGenerateSuccess(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner writes a valid PRD file
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		prdPath := filepath.Join(tmpDir, "prd.json")
 		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
@@ -43,7 +42,6 @@ func TestRunGenerateSuccess(t *testing.T) {
 	}
 }
 
-// Test RunGenerate when runner fails
 func TestRunGenerateRunnerError(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -63,7 +61,6 @@ func TestRunGenerateRunnerError(t *testing.T) {
 		t.Error("RunGenerate() should return error when runner fails")
 	}
 
-	// Check error event was emitted
 	foundError := false
 	for len(ch) > 0 {
 		e := <-ch
@@ -77,7 +74,6 @@ func TestRunGenerateRunnerError(t *testing.T) {
 	}
 }
 
-// Test RunImplementation with mock runner completing a story
 func TestRunImplementationStorySuccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -107,7 +103,6 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	// Verify EventCompleted was emitted
 	foundCompleted := false
 	for len(ch) > 0 {
 		e := <-ch
@@ -120,14 +115,12 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 		t.Error("expected EventCompleted to be emitted")
 	}
 
-	// Verify story was marked as passing
 	p, _ := prd.Load(cfg)
 	if !p.Stories[0].Passes {
 		t.Error("expected story to be marked as passing")
 	}
 }
 
-// Test RunImplementation returns an error when the runner fails
 func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -156,7 +149,6 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 		t.Fatal("RunImplementation() should return error when runner fails")
 	}
 
-	// Verify story was not marked as passing
 	p, _ := prd.Load(cfg)
 	if p.Stories[0].Passes {
 		t.Error("expected story to remain incomplete after runner failure")
@@ -175,7 +167,6 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	}
 }
 
-// Test RunImplementation processes multiple stories sequentially
 func TestRunImplementationMultipleStories(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -207,7 +198,6 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	// Verify both stories were marked as passing
 	p, _ := prd.Load(cfg)
 	for _, s := range p.Stories {
 		if !s.Passes {
@@ -216,7 +206,6 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 	}
 }
 
-// Test RunImplementation PRD reload failure
 func TestRunImplementationPRDReloadError(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -234,7 +223,6 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner deletes the PRD file
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		return os.Remove(filepath.Join(tmpDir, "prd.json"))
 	}
@@ -247,13 +235,12 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 	}
 }
 
-// Test RunImplementation version conflict detection
 func TestRunImplementationVersionConflict(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
-	cfg.TestCommand = "true" // Tests always pass
+	cfg.TestCommand = "true"
 
 	testPRD := &prd.PRD{
 		Version:     1,
@@ -267,10 +254,9 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 
-	// Mock runner jumps version significantly (simulating external modification)
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		p, _ := prd.Load(cfg)
-		p.Version = 10 // Big jump
+		p.Version = 10
 		return prd.Save(cfg, p)
 	}
 
@@ -281,7 +267,6 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	// Check that a warning event was emitted about version jump
 	foundWarning := false
 	for len(ch) > 0 {
 		e := <-ch
@@ -296,7 +281,6 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	}
 }
 
-// Test output forwarding with verbose flag
 func TestForwardOutputVerbose(t *testing.T) {
 	cfg := config.DefaultConfig()
 	eventsCh := make(chan Event, 10)
@@ -338,7 +322,6 @@ func TestForwardOutputVerbose(t *testing.T) {
 	}
 }
 
-// Test that EventPRDLoaded is emitted on RunLoad success
 func TestRunLoadEmitsEvent(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -371,7 +354,6 @@ func TestRunLoadEmitsEvent(t *testing.T) {
 	}
 }
 
-// Test EventStoryStarted and EventStoryCompleted are emitted
 func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
@@ -430,7 +412,7 @@ func TestRunGenerateNoPRDFile(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	// Mock runner succeeds but does NOT create a PRD file
+
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		return nil
 	}
