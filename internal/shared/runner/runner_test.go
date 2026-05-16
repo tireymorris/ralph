@@ -11,7 +11,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	cfg := &config.Config{Model: "test-model"}
+	cfg := &config.Config{Runner: "opencode"}
 	r := New(cfg)
 
 	if r == nil {
@@ -73,7 +73,7 @@ func (m *mockCmd) Wait() error {
 }
 
 func TestRunSuccess(t *testing.T) {
-	cfg := &config.Config{Model: "test-model"}
+	cfg := &config.Config{Runner: "opencode"}
 	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stdout: "output line", stderr: ""}
@@ -86,7 +86,7 @@ func TestRunSuccess(t *testing.T) {
 }
 
 func TestRunWithOutputChannel(t *testing.T) {
-	cfg := &config.Config{Model: "test-model"}
+	cfg := &config.Config{Runner: "opencode"}
 	r := newTestRunner(t, cfg)
 
 	mock := &mockCmd{stdout: "line1\nline2", stderr: "err1"}
@@ -151,21 +151,19 @@ func TestRunWaitError(t *testing.T) {
 	}
 }
 
-func TestRunNoModel(t *testing.T) {
-	cfg := &config.Config{Model: ""}
+func TestOpenCodeDoesNotPassModelSelectionArgs(t *testing.T) {
+	cfg := &config.Config{Runner: "opencode"}
 	r := newTestRunner(t, cfg)
 
 	var capturedArgs []string
 	mock := &mockCmd{}
 	r.CmdFunc = stubCmdFunc(mock, nil, &capturedArgs)
 
-	r.Run(context.Background(), "test", nil)
-
-	for _, arg := range capturedArgs {
-		if arg == "--model" {
-			t.Error("--model should not be in args when Model is empty")
-		}
+	if err := r.Run(context.Background(), "test", nil); err != nil {
+		t.Fatalf("Run() error = %v", err)
 	}
+
+	assertNoModelSelectionArgs(t, capturedArgs)
 }
 
 func TestDefaultCmdFunc(t *testing.T) {
@@ -269,7 +267,7 @@ func TestOpenCodeInternalLogDetection(t *testing.T) {
 		},
 		{
 			name: "service provider log",
-			line: "INFO 2026-01-19T22:45:58 service=provider model=test",
+			line: "INFO 2026-01-19T22:45:58 service=provider runner=test",
 			want: true,
 		},
 		{
@@ -352,7 +350,7 @@ func TestOutputLineVerboseField(t *testing.T) {
 }
 
 func TestNewReturnsCursorAgentRunner(t *testing.T) {
-	cfg := &config.Config{Model: "cursor-agent/sonnet-4"}
+	cfg := &config.Config{Runner: "cursor"}
 	r := New(cfg)
 
 	if r == nil {
@@ -374,7 +372,7 @@ func TestNewReturnsCursorAgentRunner(t *testing.T) {
 }
 
 func TestNewReturnsClaudeRunner(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+	cfg := &config.Config{Runner: "claude"}
 	runner := New(cfg)
 
 	if runner == nil {
@@ -392,7 +390,7 @@ func TestNewReturnsClaudeRunner(t *testing.T) {
 }
 
 func TestNewReturnsOpenCodeRunner(t *testing.T) {
-	cfg := &config.Config{Model: "opencode/big-pickle"}
+	cfg := &config.Config{Runner: "opencode"}
 	runner := New(cfg)
 
 	if runner == nil {
@@ -409,8 +407,8 @@ func TestNewReturnsOpenCodeRunner(t *testing.T) {
 	}
 }
 
-func TestNewWithDefaultModel(t *testing.T) {
-	cfg := &config.Config{Model: config.DefaultModel}
+func TestNewWithDefaultRunner(t *testing.T) {
+	cfg := &config.Config{Runner: config.DefaultRunner}
 	runner := New(cfg)
 
 	if runner == nil {
@@ -419,26 +417,26 @@ func TestNewWithDefaultModel(t *testing.T) {
 
 	_, ok := runner.(*ClaudeRunner)
 	if !ok {
-		t.Errorf("New() returned %T, want *ClaudeRunner for default model", runner)
+		t.Errorf("New() returned %T, want *ClaudeRunner for default runner", runner)
 	}
 }
 
 func TestNewWithError(t *testing.T) {
 	tests := []struct {
 		name    string
-		model   string
+		runner  string
 		want    any
 		wantErr bool
 	}{
-		{name: "claude", model: "claude-code/sonnet", want: &ClaudeRunner{}},
-		{name: "open code", model: "opencode/big-pickle", want: &Runner{}},
-		{name: "pi", model: "pi/sonnet", want: &PiRunner{}},
-		{name: "invalid", model: "invalid-model", wantErr: true},
+		{name: "claude", runner: "claude", want: &ClaudeRunner{}},
+		{name: "open code", runner: "opencode", want: &Runner{}},
+		{name: "pi", runner: "pi", want: &PiRunner{}},
+		{name: "invalid", runner: "invalid-runner", wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runner, err := NewWithError(&config.Config{Model: tt.model})
+			runner, err := NewWithError(&config.Config{Runner: tt.runner})
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("NewWithError() should return error")
@@ -446,8 +444,8 @@ func TestNewWithError(t *testing.T) {
 				if runner != nil {
 					t.Fatal("NewWithError() should return nil runner")
 				}
-				if !strings.Contains(err.Error(), "invalid model configuration") {
-					t.Fatalf("error = %v, want invalid model configuration", err)
+				if !strings.Contains(err.Error(), "invalid runner configuration") {
+					t.Fatalf("error = %v, want invalid runner configuration", err)
 				}
 				return
 			}
@@ -458,9 +456,9 @@ func TestNewWithError(t *testing.T) {
 			if runner == nil {
 				t.Fatal("NewWithError() returned nil runner")
 			}
-			if tt.model == "claude-code/sonnet" {
+			if tt.runner == "claude" {
 				_ = assertRunnerIs[*ClaudeRunner](t, runner)
-			} else if tt.model == "opencode/big-pickle" {
+			} else if tt.runner == "opencode" {
 				_ = assertRunnerIs[*Runner](t, runner)
 			} else {
 				_ = assertRunnerIs[*PiRunner](t, runner)
@@ -469,21 +467,21 @@ func TestNewWithError(t *testing.T) {
 	}
 }
 
-func TestModelSwitchingBetweenRuns(t *testing.T) {
+func TestRunnerSwitchingBetweenRuns(t *testing.T) {
 	tests := []struct {
-		name  string
-		model string
-		want  any
+		name   string
+		runner string
+		want   any
 	}{
-		{name: "claude", model: "claude-code/sonnet", want: &ClaudeRunner{}},
-		{name: "opencode", model: "opencode/big-pickle", want: &Runner{}},
-		{name: "claude-again", model: "claude-code/sonnet", want: &ClaudeRunner{}},
-		{name: "pi", model: "pi/sonnet", want: &PiRunner{}},
+		{name: "claude", runner: "claude", want: &ClaudeRunner{}},
+		{name: "opencode", runner: "opencode", want: &Runner{}},
+		{name: "claude-again", runner: "claude", want: &ClaudeRunner{}},
+		{name: "pi", runner: "pi", want: &PiRunner{}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := New(&config.Config{Model: tt.model})
+			r := New(&config.Config{Runner: tt.runner})
 			if r == nil {
 				t.Fatal("New() returned nil")
 			}
@@ -499,8 +497,8 @@ func TestModelSwitchingBetweenRuns(t *testing.T) {
 	}
 }
 
-func TestIntegrationClaudeModelExecution(t *testing.T) {
-	cfg := &config.Config{Model: "claude-code/sonnet"}
+func TestIntegrationClaudeRunnerExecution(t *testing.T) {
+	cfg := &config.Config{Runner: "claude"}
 	runner := New(cfg)
 
 	mock := &mockCmd{stdout: "claude output", stderr: ""}
@@ -518,22 +516,15 @@ func TestIntegrationClaudeModelExecution(t *testing.T) {
 	}
 
 	if capturedName != "claude" {
-		t.Errorf("Expected command 'claude-code', got %q", capturedName)
+		t.Errorf("Expected command 'claude', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "--model", "sonnet", "test prompt"}
-	if len(capturedArgs) != len(expectedArgs) {
-		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
-	}
-	for i, expected := range expectedArgs {
-		if capturedArgs[i] != expected {
-			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
-		}
-	}
+	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "test prompt"}
+	assertArgsEqual(t, capturedArgs, expectedArgs)
 }
 
-func TestIntegrationOpenCodeModelExecution(t *testing.T) {
-	cfg := &config.Config{Model: "opencode/big-pickle"}
+func TestIntegrationOpenCodeRunnerExecution(t *testing.T) {
+	cfg := &config.Config{Runner: "opencode"}
 	runner := New(cfg)
 
 	mock := &mockCmd{stdout: "opencode output", stderr: ""}
@@ -554,19 +545,12 @@ func TestIntegrationOpenCodeModelExecution(t *testing.T) {
 		t.Errorf("Expected command 'opencode', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"run", "--print-logs", "--model", "opencode/big-pickle", "test prompt"}
-	if len(capturedArgs) != len(expectedArgs) {
-		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(capturedArgs))
-	}
-	for i, expected := range expectedArgs {
-		if capturedArgs[i] != expected {
-			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
-		}
-	}
+	expectedArgs := []string{"run", "--print-logs", "test prompt"}
+	assertArgsEqual(t, capturedArgs, expectedArgs)
 }
 
-func TestIntegrationPiModelExecution(t *testing.T) {
-	cfg := &config.Config{Model: "pi/sonnet"}
+func TestIntegrationPiRunnerExecution(t *testing.T) {
+	cfg := &config.Config{Runner: "pi"}
 	runner := New(cfg)
 
 	mock := &mockCmd{stdout: `{"type":"session","version":3}`, stderr: ""}
@@ -587,15 +571,8 @@ func TestIntegrationPiModelExecution(t *testing.T) {
 		t.Errorf("Expected command 'pi', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"--print", "--mode", "json", "--no-session", "--model", "sonnet", "test prompt"}
-	if len(capturedArgs) != len(expectedArgs) {
-		t.Fatalf("Expected %d args, got %d: %v", len(expectedArgs), len(capturedArgs), capturedArgs)
-	}
-	for i, expected := range expectedArgs {
-		if capturedArgs[i] != expected {
-			t.Errorf("Arg %d: expected %q, got %q", i, expected, capturedArgs[i])
-		}
-	}
+	expectedArgs := []string{"--print", "--mode", "json", "--no-session", "test prompt"}
+	assertArgsEqual(t, capturedArgs, expectedArgs)
 }
 
 func TestRunnerInterfaceIsInternalLog(t *testing.T) {
@@ -605,12 +582,12 @@ func TestRunnerInterfaceIsInternalLog(t *testing.T) {
 		line string
 		want bool
 	}{
-		{name: "open code internal", r: New(&config.Config{Model: "opencode/big-pickle"}), line: "service=bus starting", want: true},
-		{name: "open code normal", r: New(&config.Config{Model: "opencode/big-pickle"}), line: "Regular output", want: false},
-		{name: "claude internal", r: New(&config.Config{Model: "claude-code/sonnet"}), line: "debug info", want: true},
-		{name: "claude user error", r: New(&config.Config{Model: "claude-code/sonnet"}), line: "Error: file not found", want: false},
-		{name: "pi internal", r: New(&config.Config{Model: "pi/sonnet"}), line: "debug info", want: true},
-		{name: "pi user error", r: New(&config.Config{Model: "pi/sonnet"}), line: "Error: file not found", want: false},
+		{name: "open code internal", r: New(&config.Config{Runner: "opencode"}), line: "service=bus starting", want: true},
+		{name: "open code normal", r: New(&config.Config{Runner: "opencode"}), line: "Regular output", want: false},
+		{name: "claude internal", r: New(&config.Config{Runner: "claude"}), line: "debug info", want: true},
+		{name: "claude user error", r: New(&config.Config{Runner: "claude"}), line: "Error: file not found", want: false},
+		{name: "pi internal", r: New(&config.Config{Runner: "pi"}), line: "debug info", want: true},
+		{name: "pi user error", r: New(&config.Config{Runner: "pi"}), line: "Error: file not found", want: false},
 	}
 
 	for _, tt := range tests {

@@ -9,43 +9,35 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if DefaultModel != "claude-code/sonnet" {
-		t.Errorf("DefaultModel = %q, want %q", DefaultModel, "claude-code/sonnet")
+	if DefaultRunner != "claude" {
+		t.Errorf("DefaultRunner = %q, want %q", DefaultRunner, "claude")
 	}
-	if cfg.Model != DefaultModel {
-		t.Errorf("Model = %q, want %q", cfg.Model, DefaultModel)
+	if cfg.Runner != DefaultRunner {
+		t.Errorf("Runner = %q, want %q", cfg.Runner, DefaultRunner)
 	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "prd.json")
 	}
 }
 
-func TestDetectProvider(t *testing.T) {
+func TestDetectRunner(t *testing.T) {
 	tests := []struct {
-		name   string
-		model  string
-		expect Provider
+		runner string
+		want   RunnerKind
 	}{
-		{"claude-code prefix", "claude-code/sonnet", ProviderClaudeCode},
-		{"claude-code haiku", "claude-code/haiku", ProviderClaudeCode},
-		{"claude-code opus", "claude-code/opus", ProviderClaudeCode},
-		{"opencode prefix", "opencode/kimi-k2.5-free", ProviderOpenCode},
-		{"pi prefix", "pi/auto", ProviderPi},
-		{"pi openai style", "pi/openai/gpt-4o", ProviderPi},
-		{"opencode-go prefix", "opencode-go/qwen3.6-plus", ProviderOpenCode},
-		{"anthropic prefix", "anthropic/claude-3-5-sonnet-20240620", ProviderOpenCode},
-		{"ollama prefix", "ollama/llama3.2:3b", ProviderOpenCode},
-		{"cursor-agent with model", "cursor-agent/sonnet-4", ProviderCursorAgent},
-		{"cursor-agent empty suffix", "cursor-agent/", ProviderCursorAgent},
-		{"unknown provider", "invalid-model", ProviderUnknown},
-		{"empty string", "", ProviderUnknown},
+		{"claude", RunnerClaude},
+		{"cursor", RunnerCursor},
+		{"pi", RunnerPi},
+		{"opencode", RunnerOpenCode},
+		{"invalid-runner", RunnerUnknown},
+		{"", RunnerUnknown},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := DetectProvider(tt.model)
-			if got != tt.expect {
-				t.Errorf("DetectProvider(%q) = %v, want %v", tt.model, got, tt.expect)
+		t.Run(tt.runner, func(t *testing.T) {
+			got := DetectRunner(tt.runner)
+			if got != tt.want {
+				t.Errorf("DetectRunner(%q) = %v, want %v", tt.runner, got, tt.want)
 			}
 		})
 	}
@@ -64,51 +56,31 @@ func TestLoadDefaults(t *testing.T) {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if cfg.Model != DefaultModel {
-		t.Errorf("Model = %q, want %q", cfg.Model, DefaultModel)
+	if cfg.Runner != DefaultRunner {
+		t.Errorf("Runner = %q, want %q", cfg.Runner, DefaultRunner)
 	}
 	if cfg.PRDFile != "prd.json" {
 		t.Errorf("PRDFile = %q, want %q", cfg.PRDFile, "prd.json")
 	}
 }
 
-func TestLoadPartialConfig(t *testing.T) {
+func TestLoadEnvRunner(t *testing.T) {
 	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
 	os.Chdir(tmpDir)
 	defer os.Chdir(origDir)
 
 	os.Clearenv()
-	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	defer func() { os.Unsetenv("RALPH_MODEL") }()
+	os.Setenv("RALPH_RUNNER", "opencode")
+	defer os.Unsetenv("RALPH_RUNNER")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v, want nil", err)
 	}
 
-	if cfg.Model != "opencode/big-pickle" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
-	}
-}
-
-func TestLoadFullConfig(t *testing.T) {
-	origDir, _ := os.Getwd()
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
-
-	os.Clearenv()
-	os.Setenv("RALPH_MODEL", "opencode/big-pickle")
-	defer func() { os.Unsetenv("RALPH_MODEL") }()
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v, want nil", err)
-	}
-
-	if cfg.Model != "opencode/big-pickle" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "opencode/big-pickle")
+	if cfg.Runner != "opencode" {
+		t.Errorf("Runner = %q, want %q", cfg.Runner, "opencode")
 	}
 }
 
@@ -132,10 +104,7 @@ func TestLoadSetsWorkDir(t *testing.T) {
 }
 
 func TestConfigPath(t *testing.T) {
-	cfg := &Config{
-		WorkDir: "/some/path",
-		PRDFile: "prd.json",
-	}
+	cfg := &Config{WorkDir: "/some/path", PRDFile: "prd.json"}
 
 	got := cfg.ConfigPath("test.json")
 	want := filepath.Join("/some/path", "test.json")
@@ -145,10 +114,7 @@ func TestConfigPath(t *testing.T) {
 }
 
 func TestConfigPathEmptyWorkDir(t *testing.T) {
-	cfg := &Config{
-		WorkDir: "",
-		PRDFile: "prd.json",
-	}
+	cfg := &Config{WorkDir: "", PRDFile: "prd.json"}
 
 	got := cfg.ConfigPath("test.json")
 	want := "test.json"
@@ -158,10 +124,7 @@ func TestConfigPathEmptyWorkDir(t *testing.T) {
 }
 
 func TestPRDPath(t *testing.T) {
-	cfg := &Config{
-		WorkDir: "/some/path",
-		PRDFile: "custom.json",
-	}
+	cfg := &Config{WorkDir: "/some/path", PRDFile: "custom.json"}
 
 	got := cfg.PRDPath()
 	want := filepath.Join("/some/path", "custom.json")
@@ -170,85 +133,27 @@ func TestPRDPath(t *testing.T) {
 	}
 }
 
-func TestValidateModel(t *testing.T) {
+func TestValidateRunner(t *testing.T) {
 	tests := []struct {
-		name    string
-		model   string
+		runner  string
 		wantErr bool
 	}{
-		{
-			name:    "valid default model",
-			model:   DefaultModel,
-			wantErr: false,
-		},
-		{
-			name:    "valid opencode model",
-			model:   "opencode/big-pickle",
-			wantErr: false,
-		},
-		{
-			name:    "valid claude code model - sonnet",
-			model:   "claude-code/sonnet",
-			wantErr: false,
-		},
-		{
-			name:    "valid claude code model - haiku",
-			model:   "claude-code/haiku",
-			wantErr: false,
-		},
-		{
-			name:    "valid claude code model - opus",
-			model:   "claude-code/opus",
-			wantErr: false,
-		},
-		{
-			name:    "valid anthropic model",
-			model:   "anthropic/claude-3-5-sonnet-20240620",
-			wantErr: false,
-		},
-		{
-			name:    "valid ollama model",
-			model:   "ollama/llama3.2:3b",
-			wantErr: false,
-		},
-		{
-			name:    "valid pi model",
-			model:   "pi/auto",
-			wantErr: false,
-		},
-		{
-			name:    "valid cursor-agent model",
-			model:   "cursor-agent/sonnet-4",
-			wantErr: false,
-		},
-		{
-			name:    "valid cursor-agent empty suffix",
-			model:   "cursor-agent/",
-			wantErr: false,
-		},
-		{
-			name:    "invalid pi empty pattern",
-			model:   "pi/",
-			wantErr: true,
-		},
-		{
-			name:    "invalid model - unknown provider",
-			model:   "invalid-model",
-			wantErr: true,
-		},
-		{
-			name:    "empty model",
-			model:   "",
-			wantErr: true,
-		},
+		{DefaultRunner, false},
+		{"opencode", false},
+		{"claude", false},
+		{"pi", false},
+		{"cursor", false},
+		{"pi/", true},
+		{"invalid-runner", true},
+		{"", true},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Model: tt.model}
-			err := cfg.ValidateModel()
+		t.Run(tt.runner, func(t *testing.T) {
+			cfg := &Config{Runner: tt.runner}
+			err := cfg.ValidateRunner()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateModel() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ValidateRunner() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -260,29 +165,9 @@ func TestValidate(t *testing.T) {
 		config  *Config
 		wantErr bool
 	}{
-		{
-			name:    "valid default config",
-			config:  DefaultConfig(),
-			wantErr: false,
-		},
-		{
-			name: "invalid model - unknown provider",
-			config: &Config{
-				Model:       "invalid-model",
-				PRDFile:     "prd.json",
-				TestCommand: DefaultTestCommand,
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty prd_file",
-			config: &Config{
-				Model:       DefaultModel,
-				PRDFile:     "",
-				TestCommand: DefaultTestCommand,
-			},
-			wantErr: true,
-		},
+		{name: "valid default config", config: DefaultConfig()},
+		{name: "invalid runner", config: &Config{Runner: "invalid-runner", PRDFile: "prd.json", TestCommand: DefaultTestCommand}, wantErr: true},
+		{name: "empty prd_file", config: &Config{Runner: DefaultRunner, PRDFile: "", TestCommand: DefaultTestCommand}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -302,80 +187,12 @@ func TestLoadInvalidConfig(t *testing.T) {
 	defer os.Chdir(origDir)
 
 	os.Clearenv()
-	os.Setenv("RALPH_MODEL", "invalid-model")
-	defer os.Unsetenv("RALPH_MODEL")
+	os.Setenv("RALPH_RUNNER", "invalid-runner")
+	defer os.Unsetenv("RALPH_RUNNER")
 
 	_, err := Load()
 	if err == nil {
-		t.Error("Load() should return error for invalid model")
-	}
-}
-
-func TestLoadClaudeCodeConfig(t *testing.T) {
-	origDir, _ := os.Getwd()
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
-
-	tests := []struct {
-		name    string
-		model   string
-		wantErr bool
-	}{
-		{
-			name:    "claude sonnet model",
-			model:   "claude-code/sonnet",
-			wantErr: false,
-		},
-		{
-			name:    "claude haiku model",
-			model:   "claude-code/haiku",
-			wantErr: false,
-		},
-		{
-			name:    "claude opus model",
-			model:   "claude-code/opus",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			os.Clearenv()
-			os.Setenv("RALPH_MODEL", tt.model)
-			defer os.Unsetenv("RALPH_MODEL")
-
-			cfg, err := Load()
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("Load() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if !tt.wantErr {
-				if cfg.Model != tt.model {
-					t.Errorf("Model = %q, want %q", cfg.Model, tt.model)
-				}
-			}
-		})
-	}
-}
-
-func TestLoadCursorAgentConfig(t *testing.T) {
-	origDir, _ := os.Getwd()
-	tmpDir := t.TempDir()
-	os.Chdir(tmpDir)
-	defer os.Chdir(origDir)
-
-	os.Clearenv()
-	os.Setenv("RALPH_MODEL", "claude-code/sonnet")
-	defer os.Unsetenv("RALPH_MODEL")
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v, want nil", err)
-	}
-
-	if cfg.Model != "claude-code/sonnet" {
-		t.Errorf("Model = %q, want %q", cfg.Model, "claude-code/sonnet")
+		t.Error("Load() should return error for invalid runner")
 	}
 }
 

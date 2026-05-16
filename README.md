@@ -44,30 +44,15 @@ ralph status
 
 ## Environment
 
-Use `RALPH_MODEL` to select the backend and model in one value.
+Use `RALPH_RUNNER` to select the AI runner binary. Ralph does not pass a model to the runner; configure model selection in the runner itself.
 
-Use the backend's own help or model-list command as the source of truth for supported models.
-
-Set `RALPH_MODEL` to a backend-specific string with the right format:
-
-- `pi/<model>` or `pi/<provider>/<model>`
-  - `pi --list-models`
-  - `pi --help`
-- `opencode/<model>`
-  - `opencode models`
-  - `opencode --help`
-- `claude-code/<model>`
-  - `claude --help`
-- `cursor-agent/<model>`
-  - `agent --help`
-
-Examples:
+Supported values:
 
 ```text
-pi/github-copilot/claude-sonnet-4.6
-opencode/gpt-5.5
-claude-code/sonnet
-cursor-agent/sonnet-4
+pi
+cursor
+claude
+opencode
 ```
 
 ## Development
