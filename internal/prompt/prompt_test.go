@@ -196,6 +196,7 @@ func TestStoryImplementation(t *testing.T) {
 		prdFile            string
 		completed          int
 		total              int
+		critique           string
 		mustInclude        []string
 		mustNotInclude     []string
 	}{
@@ -210,6 +211,7 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              3,
+			critique:           "",
 			mustInclude: []string{
 				"Add login",
 				"story-1",
@@ -219,7 +221,7 @@ func TestStoryImplementation(t *testing.T) {
 				"0/3",
 				"prd.json",
 			},
-			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC"},
+			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC", "CRITIQUE"},
 		},
 		{
 			name:               "story with context and feature test spec",
@@ -232,6 +234,7 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              2,
+			critique:           "",
 			mustInclude: []string{
 				"Add feature",
 				"Implement feature",
@@ -254,6 +257,7 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              1,
+			critique:           "",
 			mustInclude:        []string{"A; B; C"},
 		},
 	}
@@ -271,6 +275,7 @@ func TestStoryImplementation(t *testing.T) {
 				tt.completed,
 				tt.total,
 				nil,
+				tt.critique,
 			)
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {
@@ -283,5 +288,49 @@ func TestStoryImplementation(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+
+func TestStoryImplementationIncludesCritique(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Add login",
+		"Implement login functionality",
+		[]string{"User can login"},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+		"The review missed the logout edge case.",
+	)
+
+	if !strings.Contains(result, "The review missed the logout edge case.") {
+		t.Fatal("StoryImplementation() should include critique text when provided")
+	}
+	if !strings.Contains(result, "CRITIQUE") {
+		t.Fatal("StoryImplementation() should label critique section when provided")
+	}
+}
+
+func TestStoryImplementationOmitsEmptyCritique(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Add login",
+		"Implement login functionality",
+		[]string{"User can login"},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+		"",
+	)
+
+	if strings.Contains(result, "CRITIQUE") {
+		t.Fatal("StoryImplementation() should not include critique section when empty")
 	}
 }
