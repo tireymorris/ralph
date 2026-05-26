@@ -305,3 +305,21 @@ func TestUpdatePRDReviewCritiqueEnterSubmitsAndStartsImplementation(t *testing.T
 		t.Fatalf("storyCritique = %q, want submitted critique", model.storyCritique)
 	}
 }
+
+func TestUpdatePRDReviewCritiqueEnterAllowsEmptySubmission(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+	m.critiqueActive = true
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.phase != PhaseImplementation {
+		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
+	}
+	if model.storyCritique != "" {
+		t.Fatalf("storyCritique = %q, want empty critique", model.storyCritique)
+	}
+}
