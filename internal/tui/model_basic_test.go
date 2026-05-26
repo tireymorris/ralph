@@ -263,3 +263,45 @@ func TestUpdateSpinnerTickMsg(t *testing.T) {
 		t.Error("spinner tick should return a command")
 	}
 }
+
+func TestUpdatePRDReviewCritiqueKeyOpensInputMode(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
+	model := newModel.(*Model)
+
+	if !model.critiqueActive {
+		t.Fatal("critiqueActive should be true after pressing critique key")
+	}
+	if model.phase != PhasePRDReview {
+		t.Fatalf("phase = %v, want PhasePRDReview", model.phase)
+	}
+	if cmd == nil {
+		t.Fatal("opening critique mode should return a command")
+	}
+}
+
+func TestUpdatePRDReviewCritiqueEnterSubmitsAndStartsImplementation(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+	m.critiqueActive = true
+	m.critiqueInput.SetValue("Needs more tests")
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.critiqueActive {
+		t.Fatal("critiqueActive should be false after submitting critique")
+	}
+	if model.phase != PhaseImplementation {
+		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
+	}
+	if model.storyCritique != "Needs more tests" {
+		t.Fatalf("storyCritique = %q, want submitted critique", model.storyCritique)
+	}
+}

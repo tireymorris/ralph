@@ -60,10 +60,10 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 	}
 }
 
-func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
+func (om *OperationManager) StartImplementation(p *prd.PRD, critique string) tea.Cmd {
 	return func() tea.Msg {
 		om.startBackground(func() {
-			om.executor.RunImplementation(om.ctx, p)
+			om.executor.RunImplementation(om.ctx, p, critique)
 		})
 		return nil
 	}
