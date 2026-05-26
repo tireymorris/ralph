@@ -354,6 +354,74 @@ func TestRunLoadEmitsEvent(t *testing.T) {
 	}
 }
 
+func TestRunImplementationIncludesCritiqueInPrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD, "Needs more tests")
+	if err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	if len(mock.calls) != 1 {
+		t.Fatalf("runner call count = %d, want 1", len(mock.calls))
+	}
+	if !strings.Contains(mock.calls[0], "CRITIQUE") || !strings.Contains(mock.calls[0], "Needs more tests") {
+		t.Fatalf("implementation prompt missing critique:\n%s", mock.calls[0])
+	}
+}
+
+func TestRunImplementationWithoutCritiqueStillRuns(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD, "")
+	if err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	if len(mock.calls) != 1 {
+		t.Fatalf("runner call count = %d, want 1", len(mock.calls))
+	}
+	if strings.Contains(mock.calls[0], "CRITIQUE") {
+		t.Fatalf("implementation prompt should omit empty critique:\n%s", mock.calls[0])
+	}
+}
+
 func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
