@@ -73,16 +73,53 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		if m.phase == PhasePRDReview && msg.String() == "enter" {
-			if m.prd != nil {
-				m.phase = PhaseImplementation
-				m.scrollPane = focusMain
-				if m.width > 0 && m.height > 0 {
-					m.applyLayout(m.width, m.height)
+		if m.phase == PhasePRDReview {
+			if m.critiqueActive {
+				switch msg.String() {
+				case "esc":
+					m.critiqueActive = false
+					m.storyCritique = ""
+					m.scrollPane = focusMain
+					m.rebuildMainScrollContent()
+					return m, nil
+				case "enter":
+					if m.prd != nil {
+						m.storyCritique = m.critiqueInput.Value()
+						m.critiqueActive = false
+						m.phase = PhaseImplementation
+						m.scrollPane = focusMain
+						if m.width > 0 && m.height > 0 {
+							m.applyLayout(m.width, m.height)
+						}
+						m.rebuildMainScrollContent()
+						m.mainPane.GotoTop()
+						return m, m.operationManager.StartImplementation(m.prd, m.storyCritique)
+					}
+				default:
+					var cmd tea.Cmd
+					m.critiqueInput, cmd = m.critiqueInput.Update(msg)
+					cmds = append(cmds, cmd)
 				}
-				m.rebuildMainScrollContent()
-				m.mainPane.GotoTop()
-				return m, m.operationManager.StartImplementation(m.prd)
+				return m, tea.Batch(cmds...)
+			}
+			if msg.String() == "c" {
+				m.critiqueActive = true
+				m.scrollPane = focusMain
+				m.critiqueInput.Focus()
+				cmds = append(cmds, textinput.Blink)
+				return m, tea.Batch(cmds...)
+			}
+			if msg.String() == "enter" {
+				if m.prd != nil {
+					m.phase = PhaseImplementation
+					m.scrollPane = focusMain
+					if m.width > 0 && m.height > 0 {
+						m.applyLayout(m.width, m.height)
+					}
+					m.rebuildMainScrollContent()
+					m.mainPane.GotoTop()
+					return m, m.operationManager.StartImplementation(m.prd, "")
+				}
 			}
 		}
 
@@ -96,7 +133,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if useImpl && m.prd != nil {
 				m.phase = PhaseImplementation
 				cmd = tea.Batch(
-					m.operationManager.StartImplementation(m.prd),
+					m.operationManager.StartImplementation(m.prd, m.storyCritique),
 					m.operationManager.ListenForEvents(),
 				)
 			} else {

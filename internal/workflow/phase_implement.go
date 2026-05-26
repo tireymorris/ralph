@@ -11,7 +11,14 @@ import (
 	"ralph/internal/shared/runner"
 )
 
-func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
+func firstCritique(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
+}
+
+func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD, critique ...string) error {
 	logger.Debug("starting implementation",
 		"project", p.ProjectName,
 		"branch", p.BranchName,
@@ -71,6 +78,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			p.CompletedCount(),
 			len(p.Stories),
 			story.DependsOn,
+			firstCritique(critique),
 		)
 
 		runErr := e.runner.Run(ctx, storyPrompt, outputCh)
