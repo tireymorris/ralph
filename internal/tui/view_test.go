@@ -272,7 +272,7 @@ func TestViewPRDReviewShowsCritiqueShortcut(t *testing.T) {
 	prepMainView(m)
 
 	view := m.View()
-	if !strings.Contains(view, "Press c to add critique or Enter to continue implementation") {
+	if !strings.Contains(view, "Press c to add critique or Enter to continue to implementation") {
 		t.Errorf("View() should include critique shortcut in PRD review help, got %q", view)
 	}
 	if !strings.Contains(view, "c critique") {

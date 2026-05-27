@@ -103,7 +103,37 @@ Task:
 3. Write the PRD file, then STOP.`, userPrompt, clarificationsSection, prdFile, branchPrefix, contextGuidance, branchPrefix)
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string, critique ...string) string {
+func PRDCritiqueRevision(userPrompt, prdFile, critique string) string {
+	return fmt.Sprintf(`You are Ralph's planning agent, working inside the user's git repo on the feature branch.
+
+The user's original request was: %s
+
+The user reviewed the PRD in %s and provided this critique:
+%s
+
+Task:
+1. Read %s and analyze the codebase enough to address the critique — budget ~5–15 targeted file reads.
+2. Update %s to incorporate the critique. Preserve existing story IDs and "passes" values for stories that are unchanged.
+3. Write the updated PRD file, then STOP — do not implement anything.`, userPrompt, prdFile, critique, prdFile, prdFile)
+}
+
+func PRDClarificationRevision(userPrompt, prdFile string, qas []QuestionAnswer) string {
+	var sb strings.Builder
+	sb.WriteString("\nUSER CLARIFICATIONS:\n")
+	for i, qa := range qas {
+		sb.WriteString(fmt.Sprintf("Q%d: %s\nA%d: %s\n", i+1, qa.Question, i+1, qa.Answer))
+	}
+
+	return fmt.Sprintf(`You are Ralph's planning agent, working inside the user's git repo on the feature branch.
+
+The user's original request was: %s
+%s
+Read %s and update it to incorporate these clarifications after a PRD revision.
+Preserve existing story IDs and "passes" values for stories that are unchanged.
+Write the updated PRD file, then STOP — do not implement anything.`, userPrompt, sb.String(), prdFile)
+}
+
+func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -127,18 +157,10 @@ DEPENDENCIES: This story depends on: %s
 Before starting, re-read %s and confirm each of those stories has "passes": true. If any dependency is not yet passing, stop and do not implement this story.`, strings.Join(dependsOn, ", "), prdFile)
 	}
 
-	critiqueSection := ""
-	if len(critique) > 0 && critique[0] != "" {
-		critiqueSection = fmt.Sprintf(`
-CRITIQUE:
-%s
-`, critique[0])
-	}
-
 	return fmt.Sprintf(`You are Ralph's implementation agent, working inside the user's git repo on the feature branch.
 
 Implement story: %s (ID: %s)
-%s%s%s%s
+%s%s%s
 Description: %s
 Done when: %s
 
@@ -167,7 +189,6 @@ Progress: %d/%d stories completed`,
 		contextSection,
 		testSection,
 		dependsSection,
-		critiqueSection,
 		description,
 		strings.Join(acceptanceCriteria, "; "),
 		prdFile,

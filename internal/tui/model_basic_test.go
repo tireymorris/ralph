@@ -284,7 +284,7 @@ func TestUpdatePRDReviewCritiqueKeyOpensInputMode(t *testing.T) {
 	}
 }
 
-func TestUpdatePRDReviewCritiqueEnterSubmitsAndStartsImplementation(t *testing.T) {
+func TestUpdatePRDReviewCritiqueEnterStartsRevision(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhasePRDReview
@@ -292,17 +292,23 @@ func TestUpdatePRDReviewCritiqueEnterSubmitsAndStartsImplementation(t *testing.T
 	m.critiqueActive = true
 	m.critiqueInput.SetValue("Needs more tests")
 
-	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model := newModel.(*Model)
 
 	if model.critiqueActive {
 		t.Fatal("critiqueActive should be false after submitting critique")
 	}
-	if model.phase != PhaseImplementation {
-		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
+	if model.phase != PhasePRDGeneration {
+		t.Fatalf("phase = %v, want PhasePRDGeneration", model.phase)
 	}
-	if model.storyCritique != "Needs more tests" {
-		t.Fatalf("storyCritique = %q, want submitted critique", model.storyCritique)
+	if !model.revisingPRD {
+		t.Fatal("revisingPRD should be true after submitting critique")
+	}
+	if model.critiqueInput.Value() != "" {
+		t.Fatalf("critiqueInput = %q, want cleared after submit", model.critiqueInput.Value())
+	}
+	if cmd == nil {
+		t.Fatal("submitting critique should return a command")
 	}
 }
 
@@ -319,18 +325,14 @@ func TestUpdatePRDReviewCritiqueEnterAllowsEmptySubmission(t *testing.T) {
 	if model.phase != PhaseImplementation {
 		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
 	}
-	if model.storyCritique != "" {
-		t.Fatalf("storyCritique = %q, want empty critique", model.storyCritique)
-	}
 }
 
-func TestUpdatePRDReviewCritiqueEscKeepsExistingCritique(t *testing.T) {
+func TestUpdatePRDReviewCritiqueEscClearsDraftInput(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhasePRDReview
 	m.prd = &prd.PRD{ProjectName: "P"}
 	m.critiqueActive = true
-	m.storyCritique = "Keep this"
 	m.critiqueInput.SetValue("Discard this draft")
 
 	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
@@ -339,8 +341,8 @@ func TestUpdatePRDReviewCritiqueEscKeepsExistingCritique(t *testing.T) {
 	if model.critiqueActive {
 		t.Fatal("critiqueActive should be false after cancelling critique input")
 	}
-	if model.storyCritique != "Keep this" {
-		t.Fatalf("storyCritique = %q, want existing critique preserved", model.storyCritique)
+	if model.phase != PhasePRDReview {
+		t.Fatalf("phase = %v, want PhasePRDReview", model.phase)
 	}
 	if model.critiqueInput.Value() != "" {
 		t.Fatalf("critiqueInput = %q, want cleared draft input", model.critiqueInput.Value())

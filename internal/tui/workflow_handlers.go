@@ -31,7 +31,7 @@ func (m *Model) submitClarifyingAnswers(qas []prompt.QuestionAnswer) []tea.Cmd {
 		m.clarifyAnswersCh = nil
 	}
 	m.phase = PhasePRDGeneration
-	m.logger.AddLog("Clarifications received, generating PRD...")
+	m.logger.AddLog("Clarifications received, updating PRD...")
 	return []tea.Cmd{m.operationManager.ListenForEvents()}
 }
 
@@ -47,6 +47,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventPRDGenerating:
 		m.phase = PhasePRDGeneration
+		m.revisingPRD = false
 		m.logger.AddLog("Generating PRD...")
 		m.markMainScrollJump()
 
@@ -72,8 +73,15 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		}
 		m.markMainScrollJump()
 
+	case events.EventPRDRevising:
+		m.phase = PhasePRDGeneration
+		m.revisingPRD = true
+		m.logger.AddLog("Applying critique to PRD...")
+		m.markMainScrollJump()
+
 	case events.EventPRDReview:
 		m.phase = PhasePRDReview
+		m.revisingPRD = false
 		m.prd = e.PRD
 		m.logger.AddLog("PRD ready for review")
 		m.markMainScrollJump()
@@ -98,6 +106,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 	case events.EventError:
 		m.logger.AddLog(fmt.Sprintf("Error: %v", e.Err))
 		m.retryImplementation = m.phase == PhaseImplementation
+		m.revisingPRD = false
 		m.err = e.Err
 		m.phase = PhaseFailed
 		m.markMainScrollJump()

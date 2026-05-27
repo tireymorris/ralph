@@ -78,7 +78,7 @@ type Model struct {
 
 	critiqueActive bool
 	critiqueInput  textinput.Model
-	storyCritique  string
+	revisingPRD    bool
 
 	retryImplementation bool
 

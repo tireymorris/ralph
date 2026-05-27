@@ -75,3 +75,7 @@ type EventPRDReview struct {
 }
 
 func (EventPRDReview) isEvent() {}
+
+type EventPRDRevising struct{}
+
+func (EventPRDRevising) isEvent() {}

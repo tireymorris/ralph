@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -84,16 +86,30 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				case "enter":
 					if m.prd != nil {
-						m.storyCritique = m.critiqueInput.Value()
+						critique := strings.TrimSpace(m.critiqueInput.Value())
 						m.critiqueActive = false
-						m.phase = PhaseImplementation
+						m.critiqueInput.SetValue("")
 						m.scrollPane = focusMain
+						if critique != "" {
+							m.revisingPRD = true
+							m.phase = PhasePRDGeneration
+							if m.width > 0 && m.height > 0 {
+								m.applyLayout(m.width, m.height)
+							}
+							m.rebuildMainScrollContent()
+							m.mainPane.GotoTop()
+							return m, tea.Batch(
+								m.operationManager.StartCritiqueRevision(m.prompt, critique),
+								m.operationManager.ListenForEvents(),
+							)
+						}
+						m.phase = PhaseImplementation
 						if m.width > 0 && m.height > 0 {
 							m.applyLayout(m.width, m.height)
 						}
 						m.rebuildMainScrollContent()
 						m.mainPane.GotoTop()
-						return m, m.operationManager.StartImplementation(m.prd, m.storyCritique)
+						return m, m.operationManager.StartImplementation(m.prd)
 					}
 				default:
 					var cmd tea.Cmd
@@ -120,7 +136,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					m.rebuildMainScrollContent()
 					m.mainPane.GotoTop()
-					return m, m.operationManager.StartImplementation(m.prd, "")
+					return m, m.operationManager.StartImplementation(m.prd)
 				}
 			}
 		}
@@ -135,7 +151,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if useImpl && m.prd != nil {
 				m.phase = PhaseImplementation
 				cmd = tea.Batch(
-					m.operationManager.StartImplementation(m.prd, m.storyCritique),
+					m.operationManager.StartImplementation(m.prd),
 					m.operationManager.ListenForEvents(),
 				)
 			} else {
