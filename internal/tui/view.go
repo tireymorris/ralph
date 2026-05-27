@@ -127,7 +127,13 @@ func (m *Model) renderPRDReview() string {
 		b.WriteString(m.renderReviewStory(s))
 	}
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("Press Enter to continue implementation"))
+	if m.critiqueActive {
+		b.WriteString(helpStyle.Render("Critique (Enter submit • Esc cancel)"))
+		b.WriteString("\n")
+		b.WriteString(infoStyle.Render(storyItemStyle.Render(m.critiqueInput.View())))
+		b.WriteString("\n")
+	}
+	b.WriteString(helpStyle.Render("Press c to add critique or Enter to continue implementation"))
 
 	return b.String()
 }
@@ -204,7 +210,7 @@ func (m *Model) renderLogsPane() string {
 
 func (m *Model) helpText() string {
 	if m.phase == PhasePRDReview {
-		return "Tab switch pane • ↑/↓ scroll • Enter continue • q quit • ctrl+c exit"
+		return "Tab switch pane • ↑/↓ scroll • c critique • Enter continue • q quit • ctrl+c exit"
 	}
 	if m.phase == PhaseFailed {
 		return "Tab switch pane • ↑/↓ scroll • r retry • q quit • ctrl+c exit"

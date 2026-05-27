@@ -292,7 +292,7 @@ func TestStoryImplementation(t *testing.T) {
 }
 
 
-func TestStoryImplementationIncludesCritique(t *testing.T) {
+func TestStoryImplementationIncludesCritiqueWhenProvided(t *testing.T) {
 	result := StoryImplementation(
 		"story-1",
 		"Add login",
@@ -332,5 +332,24 @@ func TestStoryImplementationOmitsEmptyCritique(t *testing.T) {
 
 	if strings.Contains(result, "CRITIQUE") {
 		t.Fatal("StoryImplementation() should not include critique section when empty")
+	}
+}
+
+func TestStoryImplementationOmitsCritiqueWhenNotProvided(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Add login",
+		"Implement login functionality",
+		[]string{"User can login"},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	if strings.Contains(result, "CRITIQUE") {
+		t.Fatal("StoryImplementation() should not include critique section when omitted")
 	}
 }

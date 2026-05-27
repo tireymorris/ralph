@@ -11,13 +11,6 @@ import (
 	"ralph/internal/shared/runner"
 )
 
-func firstCritique(values []string) string {
-	if len(values) == 0 {
-		return ""
-	}
-	return values[0]
-}
-
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD, critique ...string) error {
 	logger.Debug("starting implementation",
 		"project", p.ProjectName,
@@ -78,7 +71,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD, critique .
 			p.CompletedCount(),
 			len(p.Stories),
 			story.DependsOn,
-			firstCritique(critique),
+			critique...,
 		)
 
 		runErr := e.runner.Run(ctx, storyPrompt, outputCh)

@@ -78,7 +78,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch msg.String() {
 				case "esc":
 					m.critiqueActive = false
-					m.storyCritique = ""
+					m.critiqueInput.SetValue("")
 					m.scrollPane = focusMain
 					m.rebuildMainScrollContent()
 					return m, nil
@@ -100,6 +100,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.critiqueInput, cmd = m.critiqueInput.Update(msg)
 					cmds = append(cmds, cmd)
 				}
+				m.rebuildMainScrollContent()
 				return m, tea.Batch(cmds...)
 			}
 			if msg.String() == "c" {
@@ -107,6 +108,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.scrollPane = focusMain
 				m.critiqueInput.Focus()
 				cmds = append(cmds, textinput.Blink)
+				m.rebuildMainScrollContent()
 				return m, tea.Batch(cmds...)
 			}
 			if msg.String() == "enter" {
