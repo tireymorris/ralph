@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -73,16 +75,69 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		if m.phase == PhasePRDReview && msg.String() == "enter" {
-			if m.prd != nil {
-				m.phase = PhaseImplementation
-				m.scrollPane = focusMain
-				if m.width > 0 && m.height > 0 {
-					m.applyLayout(m.width, m.height)
+		if m.phase == PhasePRDReview {
+			if m.critiqueActive {
+				switch msg.String() {
+				case "esc":
+					m.critiqueActive = false
+					m.critiqueInput.SetValue("")
+					m.scrollPane = focusMain
+					m.rebuildMainScrollContent()
+					return m, nil
+				case "enter":
+					if m.prd != nil {
+						critique := strings.TrimSpace(m.critiqueInput.Value())
+						m.critiqueActive = false
+						m.critiqueInput.SetValue("")
+						m.scrollPane = focusMain
+						if critique != "" {
+							m.revisingPRD = true
+							m.phase = PhasePRDGeneration
+							if m.width > 0 && m.height > 0 {
+								m.applyLayout(m.width, m.height)
+							}
+							m.rebuildMainScrollContent()
+							m.mainPane.GotoTop()
+							return m, tea.Batch(
+								m.operationManager.StartCritiqueRevision(m.prompt, critique),
+								m.operationManager.ListenForEvents(),
+							)
+						}
+						m.phase = PhaseImplementation
+						if m.width > 0 && m.height > 0 {
+							m.applyLayout(m.width, m.height)
+						}
+						m.rebuildMainScrollContent()
+						m.mainPane.GotoTop()
+						return m, m.operationManager.StartImplementation(m.prd)
+					}
+				default:
+					var cmd tea.Cmd
+					m.critiqueInput, cmd = m.critiqueInput.Update(msg)
+					cmds = append(cmds, cmd)
 				}
 				m.rebuildMainScrollContent()
-				m.mainPane.GotoTop()
-				return m, m.operationManager.StartImplementation(m.prd)
+				return m, tea.Batch(cmds...)
+			}
+			if msg.String() == "c" {
+				m.critiqueActive = true
+				m.scrollPane = focusMain
+				m.critiqueInput.Focus()
+				cmds = append(cmds, textinput.Blink)
+				m.rebuildMainScrollContent()
+				return m, tea.Batch(cmds...)
+			}
+			if msg.String() == "enter" {
+				if m.prd != nil {
+					m.phase = PhaseImplementation
+					m.scrollPane = focusMain
+					if m.width > 0 && m.height > 0 {
+						m.applyLayout(m.width, m.height)
+					}
+					m.rebuildMainScrollContent()
+					m.mainPane.GotoTop()
+					return m, m.operationManager.StartImplementation(m.prd)
+				}
 			}
 		}
 

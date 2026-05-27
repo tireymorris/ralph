@@ -263,3 +263,88 @@ func TestUpdateSpinnerTickMsg(t *testing.T) {
 		t.Error("spinner tick should return a command")
 	}
 }
+
+func TestUpdatePRDReviewCritiqueKeyOpensInputMode(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
+	model := newModel.(*Model)
+
+	if !model.critiqueActive {
+		t.Fatal("critiqueActive should be true after pressing critique key")
+	}
+	if model.phase != PhasePRDReview {
+		t.Fatalf("phase = %v, want PhasePRDReview", model.phase)
+	}
+	if cmd == nil {
+		t.Fatal("opening critique mode should return a command")
+	}
+}
+
+func TestUpdatePRDReviewCritiqueEnterStartsRevision(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+	m.critiqueActive = true
+	m.critiqueInput.SetValue("Needs more tests")
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.critiqueActive {
+		t.Fatal("critiqueActive should be false after submitting critique")
+	}
+	if model.phase != PhasePRDGeneration {
+		t.Fatalf("phase = %v, want PhasePRDGeneration", model.phase)
+	}
+	if !model.revisingPRD {
+		t.Fatal("revisingPRD should be true after submitting critique")
+	}
+	if model.critiqueInput.Value() != "" {
+		t.Fatalf("critiqueInput = %q, want cleared after submit", model.critiqueInput.Value())
+	}
+	if cmd == nil {
+		t.Fatal("submitting critique should return a command")
+	}
+}
+
+func TestUpdatePRDReviewCritiqueEnterAllowsEmptySubmission(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+	m.critiqueActive = true
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.phase != PhaseImplementation {
+		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
+	}
+}
+
+func TestUpdatePRDReviewCritiqueEscClearsDraftInput(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{ProjectName: "P"}
+	m.critiqueActive = true
+	m.critiqueInput.SetValue("Discard this draft")
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model := newModel.(*Model)
+
+	if model.critiqueActive {
+		t.Fatal("critiqueActive should be false after cancelling critique input")
+	}
+	if model.phase != PhasePRDReview {
+		t.Fatalf("phase = %v, want PhasePRDReview", model.phase)
+	}
+	if model.critiqueInput.Value() != "" {
+		t.Fatalf("critiqueInput = %q, want cleared draft input", model.critiqueInput.Value())
+	}
+}

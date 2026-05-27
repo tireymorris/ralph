@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
@@ -351,6 +353,126 @@ func TestRunLoadEmitsEvent(t *testing.T) {
 	}
 	if !found {
 		t.Error("expected EventPRDLoaded to be emitted")
+	}
+}
+
+func TestRunCritiqueRevisionUpdatesPRDAndReturnsToReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	call := 0
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		call++
+		if call == 1 {
+			if !strings.Contains(prompt, "Needs more tests") {
+				t.Fatalf("critique revision prompt missing critique:\n%s", prompt)
+			}
+			revised := &prd.PRD{
+				ProjectName: "Revised",
+				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Revised desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+			}
+			return prd.Save(cfg, revised)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunCritiqueRevision(context.Background(), "build feature", "Needs more tests")
+	if err != nil {
+		t.Fatalf("RunCritiqueRevision() error = %v", err)
+	}
+
+	foundReview := false
+	for len(ch) > 0 {
+		e := <-ch
+		if review, ok := e.(EventPRDReview); ok {
+			foundReview = true
+			if review.PRD.ProjectName != "Revised" {
+				t.Errorf("EventPRDReview project = %q, want Revised", review.PRD.ProjectName)
+			}
+		}
+	}
+	if !foundReview {
+		t.Fatal("expected EventPRDReview after critique revision")
+	}
+}
+
+func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	call := 0
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		call++
+		switch call {
+		case 1:
+			revised := &prd.PRD{ProjectName: "CritiqueApplied", Stories: testPRD.Stories}
+			return prd.Save(cfg, revised)
+		case 2:
+			data := `["Which database?"]`
+			return os.WriteFile(filepath.Join(tmpDir, ClarifyingQuestionsFile), []byte(data), 0644)
+		case 3:
+			if !strings.Contains(prompt, "Which database?") || !strings.Contains(prompt, "Postgres") {
+				t.Fatalf("clarification revision prompt missing answers:\n%s", prompt)
+			}
+			final := &prd.PRD{ProjectName: "Final", Stories: testPRD.Stories}
+			return prd.Save(cfg, final)
+		default:
+			t.Fatalf("unexpected runner call %d", call)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	done := make(chan error, 1)
+	go func() {
+		done <- exec.RunCritiqueRevision(context.Background(), "build feature", "Needs more tests")
+	}()
+
+	var answersCh chan<- []prompt.QuestionAnswer
+	timeout := time.After(2 * time.Second)
+	for answersCh == nil {
+		select {
+		case event := <-ch:
+			if eq, ok := event.(EventClarifyingQuestions); ok {
+				answersCh = eq.AnswersCh
+			}
+		case <-timeout:
+			t.Fatal("timed out waiting for clarifying questions during critique revision")
+		}
+	}
+
+	answersCh <- []prompt.QuestionAnswer{{Question: "Which database?", Answer: "Postgres"}}
+
+	if err := <-done; err != nil {
+		t.Fatalf("RunCritiqueRevision() error = %v", err)
+	}
+	if mock.CallCount() != 3 {
+		t.Fatalf("runner call count = %d, want 3", mock.CallCount())
 	}
 }
 

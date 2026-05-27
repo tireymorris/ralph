@@ -258,3 +258,47 @@ func TestViewMainPaneHidesOutputLogs(t *testing.T) {
 		t.Error("View() should not contain 'Output Logs' when main pane is active")
 	}
 }
+
+func TestViewPRDReviewShowsCritiqueShortcut(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false}},
+	}
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "Press c to add critique or Enter to continue to implementation") {
+		t.Errorf("View() should include critique shortcut in PRD review help, got %q", view)
+	}
+	if !strings.Contains(view, "c critique") {
+		t.Errorf("View() footer help should include critique shortcut, got %q", view)
+	}
+}
+
+func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false}},
+	}
+	m.critiqueActive = true
+	m.critiqueInput.SetValue("Needs better tests")
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "Critique (Enter submit • Esc cancel)") {
+		t.Errorf("View() should show critique input help when critique mode is active, got %q", view)
+	}
+	if !strings.Contains(view, "Needs better tests") {
+		t.Errorf("View() should include critique input value when active, got %q", view)
+	}
+}

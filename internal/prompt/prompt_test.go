@@ -219,7 +219,7 @@ func TestStoryImplementation(t *testing.T) {
 				"0/3",
 				"prd.json",
 			},
-			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC"},
+			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC", "CRITIQUE"},
 		},
 		{
 			name:               "story with context and feature test spec",
@@ -283,5 +283,30 @@ func TestStoryImplementation(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+
+func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
+	result := PRDCritiqueRevision("add login", "prd.json", "Needs more tests")
+
+	if !strings.Contains(result, "Needs more tests") {
+		t.Fatal("PRDCritiqueRevision() should include critique text")
+	}
+	if !strings.Contains(result, "add login") {
+		t.Fatal("PRDCritiqueRevision() should include user prompt")
+	}
+	if !strings.Contains(result, "prd.json") {
+		t.Fatal("PRDCritiqueRevision() should reference PRD file")
+	}
+}
+
+func TestPRDClarificationRevisionIncludesAnswers(t *testing.T) {
+	result := PRDClarificationRevision("add login", "prd.json", []QuestionAnswer{
+		{Question: "Which auth?", Answer: "OAuth"},
+	})
+
+	if !strings.Contains(result, "Which auth?") || !strings.Contains(result, "OAuth") {
+		t.Fatal("PRDClarificationRevision() should include clarifications")
 	}
 }

@@ -76,6 +76,10 @@ type Model struct {
 	clarifyFocused   int
 	clarifyAnswersCh chan<- []prompt.QuestionAnswer
 
+	critiqueActive bool
+	critiqueInput  textinput.Model
+	revisingPRD    bool
+
 	retryImplementation bool
 
 	logger           *Logger
@@ -100,6 +104,10 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 	logger := NewLogger(verbose)
 	operationManager := NewOperationManager(cfg)
 
+	critiqueInput := textinput.New()
+	critiqueInput.Placeholder = "Add critique for the runner"
+	critiqueInput.CharLimit = 1000
+
 	return &Model{
 		cfg:              cfg,
 		prompt:           prompt,
@@ -111,6 +119,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 		progress:         p,
 		mainPane:         mv,
 		scrollPane:       focusMain,
+		critiqueInput:    critiqueInput,
 		logger:           logger,
 		operationManager: operationManager,
 	}

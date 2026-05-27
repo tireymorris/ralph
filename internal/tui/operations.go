@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -66,6 +67,17 @@ func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 			om.executor.RunImplementation(om.ctx, p)
 		})
 		return nil
+	}
+}
+
+func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) tea.Cmd {
+	return func() tea.Msg {
+		om.startBackground(func() {
+			if err := om.executor.RunCritiqueRevision(om.ctx, userPrompt, critique); err != nil {
+				om.emitError(fmt.Errorf("critique revision: %w", err))
+			}
+		})
+		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }
 
