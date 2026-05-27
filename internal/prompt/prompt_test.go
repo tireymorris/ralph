@@ -196,7 +196,6 @@ func TestStoryImplementation(t *testing.T) {
 		prdFile            string
 		completed          int
 		total              int
-		critique           string
 		mustInclude        []string
 		mustNotInclude     []string
 	}{
@@ -211,7 +210,6 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              3,
-			critique:           "",
 			mustInclude: []string{
 				"Add login",
 				"story-1",
@@ -234,7 +232,6 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              2,
-			critique:           "",
 			mustInclude: []string{
 				"Add feature",
 				"Implement feature",
@@ -257,7 +254,6 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:            "prd.json",
 			completed:          0,
 			total:              1,
-			critique:           "",
 			mustInclude:        []string{"A; B; C"},
 		},
 	}
@@ -275,7 +271,6 @@ func TestStoryImplementation(t *testing.T) {
 				tt.completed,
 				tt.total,
 				nil,
-				tt.critique,
 			)
 			for _, phrase := range tt.mustInclude {
 				if !strings.Contains(result, phrase) {
@@ -292,64 +287,26 @@ func TestStoryImplementation(t *testing.T) {
 }
 
 
-func TestStoryImplementationIncludesCritiqueWhenProvided(t *testing.T) {
-	result := StoryImplementation(
-		"story-1",
-		"Add login",
-		"Implement login functionality",
-		[]string{"User can login"},
-		"",
-		"",
-		"prd.json",
-		0,
-		1,
-		nil,
-		"The review missed the logout edge case.",
-	)
+func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
+	result := PRDCritiqueRevision("add login", "prd.json", "Needs more tests")
 
-	if !strings.Contains(result, "The review missed the logout edge case.") {
-		t.Fatal("StoryImplementation() should include critique text when provided")
+	if !strings.Contains(result, "Needs more tests") {
+		t.Fatal("PRDCritiqueRevision() should include critique text")
 	}
-	if !strings.Contains(result, "CRITIQUE") {
-		t.Fatal("StoryImplementation() should label critique section when provided")
+	if !strings.Contains(result, "add login") {
+		t.Fatal("PRDCritiqueRevision() should include user prompt")
+	}
+	if !strings.Contains(result, "prd.json") {
+		t.Fatal("PRDCritiqueRevision() should reference PRD file")
 	}
 }
 
-func TestStoryImplementationOmitsEmptyCritique(t *testing.T) {
-	result := StoryImplementation(
-		"story-1",
-		"Add login",
-		"Implement login functionality",
-		[]string{"User can login"},
-		"",
-		"",
-		"prd.json",
-		0,
-		1,
-		nil,
-		"",
-	)
+func TestPRDClarificationRevisionIncludesAnswers(t *testing.T) {
+	result := PRDClarificationRevision("add login", "prd.json", []QuestionAnswer{
+		{Question: "Which auth?", Answer: "OAuth"},
+	})
 
-	if strings.Contains(result, "CRITIQUE") {
-		t.Fatal("StoryImplementation() should not include critique section when empty")
-	}
-}
-
-func TestStoryImplementationOmitsCritiqueWhenNotProvided(t *testing.T) {
-	result := StoryImplementation(
-		"story-1",
-		"Add login",
-		"Implement login functionality",
-		[]string{"User can login"},
-		"",
-		"",
-		"prd.json",
-		0,
-		1,
-		nil,
-	)
-
-	if strings.Contains(result, "CRITIQUE") {
-		t.Fatal("StoryImplementation() should not include critique section when omitted")
+	if !strings.Contains(result, "Which auth?") || !strings.Contains(result, "OAuth") {
+		t.Fatal("PRDClarificationRevision() should include clarifications")
 	}
 }

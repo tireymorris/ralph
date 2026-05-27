@@ -106,6 +106,9 @@ func (m *Model) renderGenerating() string {
 	promptTextStyle := lipgloss.NewStyle().Foreground(textColor)
 	promptText := promptTextStyle.Render(truncate(m.prompt, 60))
 	generatingText := inProgressStyle.Render("Generating PRD from your requirements...")
+	if m.revisingPRD {
+		generatingText = inProgressStyle.Render("Revising PRD based on your critique...")
+	}
 
 	content := fmt.Sprintf("%s %s\n\n%s %s", promptLabel, promptText, m.spinner.View(), generatingText)
 	return infoStyle.Render(content)
@@ -133,7 +136,7 @@ func (m *Model) renderPRDReview() string {
 		b.WriteString(infoStyle.Render(storyItemStyle.Render(m.critiqueInput.View())))
 		b.WriteString("\n")
 	}
-	b.WriteString(helpStyle.Render("Press c to add critique or Enter to continue implementation"))
+		b.WriteString(helpStyle.Render("Press c to add critique or Enter to continue to implementation"))
 
 	return b.String()
 }

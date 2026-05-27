@@ -15,4 +15,5 @@ type (
 	EventCompleted           = events.EventCompleted
 	EventClarifyingQuestions = events.EventClarifyingQuestions
 	EventPRDReview           = events.EventPRDReview
+	EventPRDRevising         = events.EventPRDRevising
 )
