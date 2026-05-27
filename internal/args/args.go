@@ -72,5 +72,8 @@ Options:
   --resume       Resume implementation from existing prd.json
   --verbose, -v  Enable debug logging
   --help, -h     Show this help message
+
+Environment:
+  RALPH_RUNNER   Select the AI runner binary (pi, cursor, claude, opencode)
 `
 }
