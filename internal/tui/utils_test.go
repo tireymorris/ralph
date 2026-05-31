@@ -81,6 +81,12 @@ func TestWrapText(t *testing.T) {
 			width: 80,
 			want:  "hello",
 		},
+		{
+			name:  "empty string",
+			s:     "",
+			width: 40,
+			want:  "",
+		},
 	}
 
 	for _, tt := range tests {
