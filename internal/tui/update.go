@@ -16,6 +16,8 @@ func (m *Model) Init() tea.Cmd {
 	}
 	if m.prompt == "" && !m.resume {
 		m.phase = PhaseAwaitingPrompt
+		m.promptInput.Focus()
+		cmds = append(cmds, textinput.Blink)
 	} else {
 		cmds = append(cmds, m.operationManager.StartFullOperation(m.resume, m.prompt))
 	}

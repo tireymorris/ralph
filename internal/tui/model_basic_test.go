@@ -126,8 +126,8 @@ func TestInitEmptyPromptAwaitingPhase(t *testing.T) {
 	if m.phase != PhaseAwaitingPrompt {
 		t.Errorf("phase = %v, want PhaseAwaitingPrompt", m.phase)
 	}
-	if initBatchLen(m.Init()) != 3 {
-		t.Error("Init with empty prompt should not include StartFullOperation")
+	if initBatchLen(m.Init()) != 4 {
+		t.Error("Init with empty prompt should include blink but not StartFullOperation")
 	}
 }
 
