@@ -228,6 +228,20 @@ func TestUpdateAwaitingPromptEnterStartsWorkflowOnce(t *testing.T) {
 	}
 }
 
+func TestUpdateAwaitingPromptCtrlC(t *testing.T) {
+	m := awaitingPromptModel(t)
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	model := newModel.(*Model)
+
+	if !model.quitting {
+		t.Error("quitting should be true after ctrl+c from awaiting prompt")
+	}
+	if cmd == nil {
+		t.Fatal("expected tea.Quit")
+	}
+}
+
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
