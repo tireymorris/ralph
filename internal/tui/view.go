@@ -113,7 +113,8 @@ func (m *Model) renderClarifying() string {
 func (m *Model) renderFailed() string {
 	msg := "Workflow stopped."
 	if m.err != nil {
-		msg = m.err.Error()
+		wrapWidth := max(20, m.mainPane.Width-10)
+		msg = wrapText(m.err.Error(), wrapWidth)
 	}
 	return errorStyle.Render(msg)
 }

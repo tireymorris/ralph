@@ -151,6 +151,54 @@ func TestViewPhaseFailed(t *testing.T) {
 	}
 }
 
+func TestViewPhaseFailedLongError(t *testing.T) {
+	cfg := config.DefaultConfig()
+	errMsg := "START_" + strings.Repeat("x", 78) + "_END__"
+	if len(errMsg) != 90 {
+		t.Fatalf("error length = %d, want 90", len(errMsg))
+	}
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseFailed
+	m.err = errors.New(errMsg)
+	m.width = 60
+	m.height = 24
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, errMsg[:20]) {
+		t.Errorf("View() should contain first 20 chars of error, got %q", view)
+	}
+	if !strings.Contains(view, errMsg[len(errMsg)-20:]) {
+		t.Errorf("View() should contain last 20 chars of error, got %q", view)
+	}
+	if strings.Contains(view, "...") {
+		t.Errorf("View() should not truncate error with ellipsis, got %q", view)
+	}
+
+	wrapWidth := max(20, m.mainPane.Width-10)
+	wrapped := wrapText(errMsg, wrapWidth)
+	segments := strings.Split(wrapped, "\n")
+	if len(segments) < 2 {
+		t.Fatalf("sanity: error should wrap to at least 2 lines at width %d", wrapWidth)
+	}
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(segments[0])
+	secondLine := lineIndex(segments[1])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing wrapped error segments (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap error across lines, both segments on line %d", firstLine)
+	}
+}
+
 func TestViewPhaseImplementation(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
