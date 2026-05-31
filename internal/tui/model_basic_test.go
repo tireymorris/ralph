@@ -315,6 +315,28 @@ func TestUpdatePRDGeneratedMsgDryRun(t *testing.T) {
 	}
 }
 
+func TestUpdatePRDGeneratedMsgDryRunTUIPromptSubmit(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", true, false, false)
+	_ = m.Init()
+	m.promptInput.SetValue("build api")
+
+	newModel, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.prompt != "build api" {
+		t.Fatalf("prompt = %q, want %q", model.prompt, "build api")
+	}
+
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1"}}}
+	newModel, _ = model.Update(workflowEventMsg{event: events.EventPRDGenerated{PRD: testPRD}})
+	model = newModel.(*Model)
+
+	if model.phase != PhaseCompleted {
+		t.Errorf("phase = %v, want PhaseCompleted for dry run after TUI prompt", model.phase)
+	}
+}
+
 func TestUpdatePRDGeneratedMsgImplement(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
