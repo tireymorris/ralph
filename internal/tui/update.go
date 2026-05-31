@@ -9,12 +9,17 @@ import (
 )
 
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(
+	cmds := []tea.Cmd{
 		m.spinner.Tick,
 		m.operationManager.ListenForEvents(),
 		tea.WindowSize(),
-		m.operationManager.StartFullOperation(m.resume, m.prompt),
-	)
+	}
+	if m.prompt == "" && !m.resume {
+		m.phase = PhaseAwaitingPrompt
+	} else {
+		cmds = append(cmds, m.operationManager.StartFullOperation(m.resume, m.prompt))
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

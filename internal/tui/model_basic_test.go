@@ -105,6 +105,66 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func initBatchLen(cmd tea.Cmd) int {
+	if cmd == nil {
+		return 0
+	}
+	msg := cmd()
+	bm, ok := msg.(tea.BatchMsg)
+	if !ok {
+		return 1
+	}
+	return len(bm)
+}
+
+func TestInitEmptyPromptAwaitingPhase(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", false, false, false)
+
+	_ = m.Init()
+
+	if m.phase != PhaseAwaitingPrompt {
+		t.Errorf("phase = %v, want PhaseAwaitingPrompt", m.phase)
+	}
+	if initBatchLen(m.Init()) != 3 {
+		t.Error("Init with empty prompt should not include StartFullOperation")
+	}
+}
+
+func TestInitWithPromptStartsWorkflow(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "build api", false, false, false)
+
+	if initBatchLen(m.Init()) != 4 {
+		t.Fatal("Init with prompt should include StartFullOperation")
+	}
+
+	msg := m.operationManager.StartFullOperation(m.resume, m.prompt)()
+	newModel, _ := m.Update(msg)
+	m = newModel.(*Model)
+
+	if m.phase != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", m.phase)
+	}
+}
+
+func TestInitResumeEmptyPromptStartsWorkflow(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", false, true, false)
+
+	if initBatchLen(m.Init()) != 4 {
+		t.Fatal("Init with resume should include StartFullOperation")
+	}
+
+	msg := m.operationManager.StartFullOperation(true, "")()
+	newModel, _ := m.Update(msg)
+	m = newModel.(*Model)
+
+	if m.phase != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", m.phase)
+	}
+}
+
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
