@@ -115,6 +115,7 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 
 	promptInput := textinput.New()
 	promptInput.Placeholder = "Describe what you want to build"
+	promptInput.CharLimit = 2000
 
 	return &Model{
 		cfg:              cfg,
