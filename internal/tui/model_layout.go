@@ -20,6 +20,13 @@ func (m *Model) applyLayout(width, height int) {
 	// Leave room for the log panel border and padding.
 	m.logger.SetSize(width, paneHeight-4)
 	m.progress.Width = min(40, max(10, width-20))
+
+	if len(m.clarifyInputs) > 0 {
+		inputWidth := max(20, width-8)
+		for i := range m.clarifyInputs {
+			m.clarifyInputs[i].Width = inputWidth
+		}
+	}
 }
 
 func (m *Model) markMainScrollJump() {

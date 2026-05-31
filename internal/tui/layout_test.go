@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/textinput"
 
 	"ralph/internal/shared/config"
 )
@@ -38,6 +39,19 @@ func TestApplyLayoutCachesDimensions(t *testing.T) {
 	m.applyLayout(120, 40)
 	if m.mainPane.Height != origMainH {
 		t.Error("applyLayout should cache dimensions")
+	}
+}
+
+func TestApplyLayoutSetsClarifyInputWidth(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.clarifyInputs = []textinput.Model{textinput.New()}
+
+	m.applyLayout(100, 24)
+
+	want := max(20, 100-8)
+	if m.clarifyInputs[0].Width != want {
+		t.Errorf("clarifyInputs[0].Width = %d, want %d", m.clarifyInputs[0].Width, want)
 	}
 }
 
