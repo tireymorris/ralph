@@ -73,7 +73,8 @@ func (m *Model) renderClarifying() string {
 	instruction := "Please answer the following questions before we generate your PRD."
 	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText(instruction, contentWidth))))
 	b.WriteString("\n")
-	b.WriteString(mutedStyle.Render("  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"))
+	navHint := "  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"
+	b.WriteString(mutedStyle.Render(wrapText(navHint, contentWidth)))
 	b.WriteString("\n\n")
 
 	for i, q := range m.clarifyQuestions {

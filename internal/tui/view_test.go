@@ -387,6 +387,21 @@ func TestViewPhaseClarifyingInstructionWrap(t *testing.T) {
 	if firstLine == secondLine {
 		t.Errorf("View() should wrap instruction across lines, both segments on line %d", firstLine)
 	}
+
+	const navHint = "  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"
+	wrappedNav := wrapText(navHint, contentWidth)
+	navSegments := strings.Split(wrappedNav, "\n")
+	if len(navSegments) < 2 {
+		t.Fatalf("sanity: navigation hint should wrap to at least 2 lines at width %d", contentWidth)
+	}
+	navFirst := lineIndex(navSegments[0])
+	navSecond := lineIndex(navSegments[1])
+	if navFirst < 0 || navSecond < 0 {
+		t.Fatalf("View() missing wrapped navigation segments (first=%d second=%d)", navFirst, navSecond)
+	}
+	if navFirst == navSecond {
+		t.Errorf("View() should wrap navigation hint across lines, both segments on line %d", navFirst)
+	}
 }
 
 func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
