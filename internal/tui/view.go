@@ -121,7 +121,8 @@ func (m *Model) renderFailed() string {
 func (m *Model) renderGenerating() string {
 	promptLabel := labelStyle.Render("Prompt")
 	promptTextStyle := lipgloss.NewStyle().Foreground(textColor)
-	promptText := promptTextStyle.Render(truncate(m.prompt, 60))
+	wrapWidth := max(20, m.mainPane.Width-10)
+	promptText := promptTextStyle.Render(wrapText(m.prompt, wrapWidth))
 	generatingText := inProgressStyle.Render("Generating PRD from your requirements...")
 	if m.revisingPRD {
 		generatingText = inProgressStyle.Render("Revising PRD based on your critique...")

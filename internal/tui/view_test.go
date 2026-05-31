@@ -89,6 +89,50 @@ func TestViewPhasePRDGeneration(t *testing.T) {
 	}
 }
 
+func TestViewPhasePRDGenerationLongPrompt(t *testing.T) {
+	cfg := config.DefaultConfig()
+	prompt := "START_" + strings.Repeat("x", 88) + "_END__"
+	if len(prompt) != 100 {
+		t.Fatalf("prompt length = %d, want 100", len(prompt))
+	}
+	m := NewModel(cfg, prompt, false, false, false)
+	m.phase = PhasePRDGeneration
+	m.width = 80
+	m.height = 24
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, prompt[:20]) {
+		t.Errorf("View() should contain first 20 chars of prompt, got %q", view)
+	}
+	if !strings.Contains(view, prompt[len(prompt)-20:]) {
+		t.Errorf("View() should contain last 20 chars of prompt, got %q", view)
+	}
+
+	wrapWidth := max(20, m.mainPane.Width-10)
+	wrapped := wrapText(prompt, wrapWidth)
+	segments := strings.Split(wrapped, "\n")
+	if len(segments) < 2 {
+		t.Fatalf("sanity: prompt should wrap to at least 2 lines at width %d", wrapWidth)
+	}
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(segments[0])
+	secondLine := lineIndex(segments[1])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing wrapped prompt segments (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap prompt across lines, both segments on line %d", firstLine)
+	}
+}
+
 func TestViewPhaseFailed(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
