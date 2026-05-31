@@ -307,6 +307,51 @@ func TestViewPRDReviewShowsCritiqueShortcut(t *testing.T) {
 	}
 }
 
+func TestViewPhaseClarifyingLongQuestion(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	question := "START_" + strings.Repeat("x", 138) + "_END__"
+	if len(question) != 150 {
+		t.Fatalf("question length = %d, want 150", len(question))
+	}
+	m.phase = PhaseClarifying
+	m.clarifyQuestions = []string{question}
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, question[:20]) {
+		t.Errorf("View() should contain first 20 chars of question, got %q", view)
+	}
+	if !strings.Contains(view, question[len(question)-20:]) {
+		t.Errorf("View() should contain last 20 chars of question, got %q", view)
+	}
+
+	contentWidth := max(20, m.width-4)
+	wrapped := wrapText(question, contentWidth)
+	segments := strings.Split(wrapped, "\n")
+	if len(segments) < 2 {
+		t.Fatalf("sanity: question should wrap to at least 2 lines at width %d", contentWidth)
+	}
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(segments[0])
+	secondLine := lineIndex(segments[1])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing wrapped question segments (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap question across lines, both segments on line %d", firstLine)
+	}
+}
+
 func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

@@ -63,6 +63,11 @@ func (m *Model) renderClarifying() string {
 		return infoStyle.Render(mutedStyle.Render("Waiting for questions..."))
 	}
 
+	contentWidth := 76
+	if m.width > 0 {
+		contentWidth = max(20, m.width-4)
+	}
+
 	var b strings.Builder
 
 	b.WriteString(infoStyle.Render(inProgressStyle.Render("Please answer the following questions before we generate your PRD.")))
@@ -72,8 +77,13 @@ func (m *Model) renderClarifying() string {
 
 	for i, q := range m.clarifyQuestions {
 		num := labelStyle.Render(fmt.Sprintf("Q%d.", i+1))
-		question := valueStyle.Render(q)
-		b.WriteString(infoStyle.Render(fmt.Sprintf("%s %s", num, question)))
+		wrapped := wrapText(q, contentWidth)
+		lines := strings.Split(wrapped, "\n")
+		b.WriteString(infoStyle.Render(fmt.Sprintf("%s %s", num, valueStyle.Render(lines[0]))))
+		for _, line := range lines[1:] {
+			b.WriteString("\n")
+			b.WriteString(infoStyle.Render(valueStyle.Render(line)))
+		}
 		b.WriteString("\n")
 
 		if i < len(m.clarifyInputs) {
