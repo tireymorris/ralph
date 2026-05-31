@@ -58,9 +58,10 @@ func HelpText() string {
 	return `Ralph - Autonomous Software Development Agent
 
 Usage:
-  ralph                                            # TUI prompt screen
+  ralph                                            # TUI prompt screen (requires a terminal)
   ralph "your feature description"               # TUI mode
   ralph "your feature description" --dry-run     # Generate PRD only
+  ralph --dry-run                                  # Prompt in TUI, then generate PRD only
   ralph --resume                                 # Resume from existing prd.json
   ralph status                                   # Show current PRD status
 
@@ -71,6 +72,6 @@ Options:
   --help, -h     Show this help message
 
 Environment:
-  RALPH_RUNNER   Select the AI runner binary (pi, cursor, claude, opencode)
+  RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)
 `
 }
