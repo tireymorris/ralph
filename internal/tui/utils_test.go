@@ -68,12 +68,13 @@ func TestTruncate(t *testing.T) {
 
 func TestWrapText(t *testing.T) {
 	tests := []struct {
-		name      string
-		s         string
-		width     int
-		want      string
-		wantLines int
-		minLines  int
+		name          string
+		s             string
+		width         int
+		want          string
+		wantLines     int
+		minLines      int
+		wantNonEmpty  bool
 	}{
 		{
 			name:  "short text unchanged at width 80",
@@ -99,6 +100,12 @@ func TestWrapText(t *testing.T) {
 			width:     40,
 			minLines:  2,
 		},
+		{
+			name:         "unbroken token at width 20",
+			s:            strings.Repeat("x", 50),
+			width:        20,
+			wantNonEmpty: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -115,6 +122,9 @@ func TestWrapText(t *testing.T) {
 			}
 			if tt.wantLines > 0 && strings.Count(got, "\n") != tt.wantLines-1 {
 				t.Errorf("wrapText(%q, %d) line count = %d, want %d lines", tt.s, tt.width, strings.Count(got, "\n")+1, tt.wantLines)
+			}
+			if tt.wantNonEmpty && got == "" {
+				t.Errorf("wrapText(%q, %d) = empty, want non-empty output", tt.s, tt.width)
 			}
 		})
 	}
