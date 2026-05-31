@@ -404,6 +404,49 @@ func TestViewPhaseClarifyingInstructionWrap(t *testing.T) {
 	}
 }
 
+func TestViewPhasePRDReviewLongAcceptanceCriteria(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	criterion := "START_" + strings.Repeat("x", 108) + "_END__"
+	if len(criterion) != 120 {
+		t.Fatalf("criterion length = %d, want 120", len(criterion))
+	}
+	m.phase = PhasePRDReview
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:                 "1",
+			Title:              "Story",
+			Passes:             false,
+			AcceptanceCriteria: []string{criterion},
+		}},
+	}
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(criterion[:20])
+	secondLine := lineIndex(criterion[len(criterion)-20:])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing criterion text (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap acceptance criterion across lines, both segments on line %d", firstLine)
+	}
+	if !strings.Contains(strings.Split(view, "\n")[firstLine], "      - ") {
+		t.Errorf("first criterion line should start with indent prefix, got %q", strings.Split(view, "\n")[firstLine])
+	}
+}
+
 func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
