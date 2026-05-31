@@ -93,6 +93,12 @@ func TestWrapText(t *testing.T) {
 			width: 0,
 			want:  "hello world",
 		},
+		{
+			name:      "long text wraps at width 40",
+			s:         strings.Repeat("a", 100),
+			width:     40,
+			minLines:  2,
+		},
 	}
 
 	for _, tt := range tests {
