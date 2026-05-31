@@ -17,6 +17,7 @@ type Phase int
 
 const (
 	PhaseInit Phase = iota
+	PhaseAwaitingPrompt
 	PhaseClarifying
 	PhasePRDGeneration
 	PhasePRDReview
@@ -29,6 +30,8 @@ func (p Phase) String() string {
 	switch p {
 	case PhaseInit:
 		return "Initializing"
+	case PhaseAwaitingPrompt:
+		return "Awaiting Prompt"
 	case PhaseClarifying:
 		return "Clarifying Questions"
 	case PhasePRDGeneration:

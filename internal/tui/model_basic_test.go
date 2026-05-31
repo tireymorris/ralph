@@ -16,6 +16,7 @@ func TestPhaseString(t *testing.T) {
 		want  string
 	}{
 		{PhaseInit, "Initializing"},
+		{PhaseAwaitingPrompt, "Awaiting Prompt"},
 		{PhaseClarifying, "Clarifying Questions"},
 		{PhasePRDGeneration, "Phase 1: PRD Generation"},
 		{PhasePRDReview, "PRD Review"},
