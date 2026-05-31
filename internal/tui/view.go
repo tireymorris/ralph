@@ -202,7 +202,13 @@ func (m *Model) renderAwaitingPromptView() string {
 	b.WriteString("\n")
 	b.WriteString(m.renderPhase())
 	b.WriteString("\n")
-	b.WriteString(m.promptInput.View())
+	input := m.promptInput
+	width := m.width
+	if width <= 0 {
+		width = 80
+	}
+	input.Width = max(20, width-4)
+	b.WriteString(input.View())
 	return b.String()
 }
 

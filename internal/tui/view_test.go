@@ -46,6 +46,9 @@ func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	if !strings.Contains(view, "Awaiting Prompt") {
 		t.Error("View() during PhaseAwaitingPrompt should contain phase label")
 	}
+	if !strings.Contains(view, m.promptInput.Placeholder) {
+		t.Errorf("View() during PhaseAwaitingPrompt should contain placeholder %q", m.promptInput.Placeholder)
+	}
 }
 
 func TestViewPhaseInit(t *testing.T) {
