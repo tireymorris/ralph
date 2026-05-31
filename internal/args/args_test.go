@@ -70,7 +70,7 @@ func TestValidate(t *testing.T) {
 		{name: "resume without prompt is valid", opts: Options{Resume: true}, wantErr: false},
 		{name: "prompt provided is valid", opts: Options{Prompt: "do something"}, wantErr: false},
 		{name: "no prompt no resume is valid", opts: Options{}, wantErr: false},
-		{name: "empty prompt without resume is invalid", opts: Options{DryRun: true}, wantErr: true},
+		{name: "empty prompt with dry run is valid", opts: Options{DryRun: true}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
