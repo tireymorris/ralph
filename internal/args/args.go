@@ -1,7 +1,6 @@
 package args
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -48,9 +47,6 @@ func Parse(args []string) *Options {
 func (o *Options) Validate() error {
 	if o.Help || o.Status {
 		return nil
-	}
-	if !o.Resume && o.Prompt == "" {
-		return errors.New("prompt required when not resuming: provide a prompt or use --resume flag")
 	}
 	if len(o.UnknownFlags) > 0 {
 		return fmt.Errorf("unknown flags provided: %v", o.UnknownFlags)

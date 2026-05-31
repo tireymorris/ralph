@@ -69,7 +69,7 @@ func TestValidate(t *testing.T) {
 		{name: "status bypasses validation", opts: Options{Status: true}, wantErr: false},
 		{name: "resume without prompt is valid", opts: Options{Resume: true}, wantErr: false},
 		{name: "prompt provided is valid", opts: Options{Prompt: "do something"}, wantErr: false},
-		{name: "no prompt no resume is invalid", opts: Options{}, wantErr: true},
+		{name: "no prompt no resume is valid", opts: Options{}, wantErr: false},
 		{name: "empty prompt without resume is invalid", opts: Options{DryRun: true}, wantErr: true},
 	}
 	for _, tt := range tests {
