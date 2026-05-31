@@ -37,7 +37,11 @@ func TestViewQuitting(t *testing.T) {
 func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "", false, false, false)
+	m.phase = PhasePRDGeneration
+	m.prompt = "cached prompt"
+	prepMainView(m)
 	m.phase = PhaseAwaitingPrompt
+	m.prompt = ""
 
 	view := m.View()
 	if !strings.Contains(view, "RALPH") {
@@ -51,6 +55,9 @@ func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	}
 	if !strings.Contains(view, "enter") || !strings.Contains(view, "ctrl+c") {
 		t.Error("View() during PhaseAwaitingPrompt should show enter and ctrl+c help")
+	}
+	if strings.Contains(view, "Generating") {
+		t.Error("View() during PhaseAwaitingPrompt should not show PRD generation layout")
 	}
 }
 
