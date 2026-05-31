@@ -49,6 +49,9 @@ func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	if !strings.Contains(view, m.promptInput.Placeholder) {
 		t.Errorf("View() during PhaseAwaitingPrompt should contain placeholder %q", m.promptInput.Placeholder)
 	}
+	if !strings.Contains(view, "enter") || !strings.Contains(view, "ctrl+c") {
+		t.Error("View() during PhaseAwaitingPrompt should show enter and ctrl+c help")
+	}
 }
 
 func TestViewPhaseInit(t *testing.T) {

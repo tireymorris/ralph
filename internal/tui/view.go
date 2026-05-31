@@ -209,6 +209,8 @@ func (m *Model) renderAwaitingPromptView() string {
 	}
 	input.Width = max(20, width-4)
 	b.WriteString(input.View())
+	b.WriteString("\n")
+	b.WriteString(helpStyle.Render(m.helpText()))
 	return b.String()
 }
 
@@ -233,6 +235,9 @@ func (m *Model) renderLogsPane() string {
 }
 
 func (m *Model) helpText() string {
+	if m.phase == PhaseAwaitingPrompt {
+		return "enter: submit  ctrl+c: quit"
+	}
 	if m.phase == PhasePRDReview {
 		return "Tab switch pane • ↑/↓ scroll • c critique • Enter continue • q quit • ctrl+c exit"
 	}
