@@ -165,6 +165,32 @@ func TestInitResumeEmptyPromptStartsWorkflow(t *testing.T) {
 	}
 }
 
+func awaitingPromptModel(t *testing.T) *Model {
+	t.Helper()
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", false, false, false)
+	_ = m.Init()
+	return m
+}
+
+func TestUpdateAwaitingPromptEnterSubmitPrompt(t *testing.T) {
+	m := awaitingPromptModel(t)
+	m.promptInput.SetValue("  build api  ")
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.prompt != "build api" {
+		t.Errorf("prompt = %q, want %q", model.prompt, "build api")
+	}
+	if model.phase != PhasePRDGeneration {
+		t.Errorf("phase = %v, want PhasePRDGeneration", model.phase)
+	}
+	if cmd == nil {
+		t.Fatal("expected StartFullOperation cmd")
+	}
+}
+
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

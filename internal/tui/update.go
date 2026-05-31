@@ -30,6 +30,27 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.phase == PhaseAwaitingPrompt {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				m.operationManager.Cancel()
+				return m, tea.Quit
+			case "enter":
+				trimmed := strings.TrimSpace(m.promptInput.Value())
+				if len(trimmed) >= 1 {
+					m.prompt = trimmed
+					m.phase = PhasePRDGeneration
+					return m, m.operationManager.StartFullOperation(false, m.prompt)
+				}
+				return m, nil
+			default:
+				var cmd tea.Cmd
+				m.promptInput, cmd = m.promptInput.Update(msg)
+				return m, cmd
+			}
+		}
+
 		if m.phase == PhaseClarifying && len(m.clarifyInputs) > 0 {
 			switch msg.String() {
 			case "ctrl+c":
