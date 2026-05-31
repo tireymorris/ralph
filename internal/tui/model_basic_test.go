@@ -148,6 +148,17 @@ func TestInitWithPromptStartsWorkflow(t *testing.T) {
 	}
 }
 
+func TestInitResumeNeverPhaseAwaitingPrompt(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", false, true, false)
+
+	_ = m.Init()
+
+	if m.phase == PhaseAwaitingPrompt {
+		t.Errorf("phase = %v, resume with empty prompt must not enter PhaseAwaitingPrompt", m.phase)
+	}
+}
+
 func TestInitResumeEmptyPromptStartsWorkflow(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "", false, true, false)
