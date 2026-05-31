@@ -20,6 +20,11 @@ func (m *Model) View() string {
 		return b.String()
 	}
 
+	if m.phase == PhaseAwaitingPrompt {
+		b.WriteString(m.renderAwaitingPromptView())
+		return b.String()
+	}
+
 	if m.scrollPane == focusMain {
 		b.WriteString(m.mainPane.View())
 	} else {
@@ -189,6 +194,16 @@ func (m *Model) renderLogs() string {
 		return logBoxStyle.Render(mutedStyle.Render("Waiting for output..."))
 	}
 	return logBoxStyle.Render(viewportContent)
+}
+
+func (m *Model) renderAwaitingPromptView() string {
+	var b strings.Builder
+	b.WriteString(m.renderHeader())
+	b.WriteString("\n")
+	b.WriteString(m.renderPhase())
+	b.WriteString("\n")
+	b.WriteString(m.promptInput.View())
+	return b.String()
 }
 
 func (m *Model) renderClarifyingView() string {

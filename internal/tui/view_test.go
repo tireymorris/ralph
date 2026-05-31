@@ -34,6 +34,20 @@ func TestViewQuitting(t *testing.T) {
 	}
 }
 
+func TestViewPhaseAwaitingPrompt(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "", false, false, false)
+	m.phase = PhaseAwaitingPrompt
+
+	view := m.View()
+	if !strings.Contains(view, "RALPH") {
+		t.Error("View() during PhaseAwaitingPrompt should contain RALPH header")
+	}
+	if !strings.Contains(view, "Awaiting Prompt") {
+		t.Error("View() during PhaseAwaitingPrompt should contain phase label")
+	}
+}
+
 func TestViewPhaseInit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test prompt", false, false, false)
