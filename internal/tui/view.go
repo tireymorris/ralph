@@ -335,9 +335,18 @@ func (m *Model) renderReviewStory(s *prd.Story) string {
 	if len(s.AcceptanceCriteria) > 0 {
 		b.WriteString(mutedStyle.Render("    Acceptance criteria:"))
 		b.WriteString("\n")
+		wrapWidth := max(20, m.mainPane.Width-6)
 		for _, ac := range s.AcceptanceCriteria {
-			b.WriteString(mutedStyle.Render(fmt.Sprintf("      - %s", ac)))
-			b.WriteString("\n")
+			wrapped := wrapText(ac, wrapWidth)
+			lines := strings.Split(wrapped, "\n")
+			for i, line := range lines {
+				if i == 0 {
+					b.WriteString(mutedStyle.Render("      - " + line))
+				} else {
+					b.WriteString(mutedStyle.Render("        " + line))
+				}
+				b.WriteString("\n")
+			}
 		}
 	}
 	return b.String()
