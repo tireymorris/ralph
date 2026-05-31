@@ -352,6 +352,43 @@ func TestViewPhaseClarifyingLongQuestion(t *testing.T) {
 	}
 }
 
+func TestViewPhaseClarifyingInstructionWrap(t *testing.T) {
+	const instruction = "Please answer the following questions before we generate your PRD."
+
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseClarifying
+	m.clarifyQuestions = []string{"Short question?"}
+	m.width = 50
+	m.height = 40
+	prepMainView(m)
+
+	contentWidth := max(20, m.width-4)
+	wrapped := wrapText(instruction, contentWidth)
+	segments := strings.Split(wrapped, "\n")
+	if len(segments) < 2 {
+		t.Fatalf("sanity: instruction should wrap to at least 2 lines at width %d", contentWidth)
+	}
+
+	view := m.View()
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(segments[0])
+	secondLine := lineIndex(segments[1])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing wrapped instruction segments (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap instruction across lines, both segments on line %d", firstLine)
+	}
+}
+
 func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

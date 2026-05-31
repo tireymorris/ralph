@@ -70,7 +70,8 @@ func (m *Model) renderClarifying() string {
 
 	var b strings.Builder
 
-	b.WriteString(infoStyle.Render(inProgressStyle.Render("Please answer the following questions before we generate your PRD.")))
+	instruction := "Please answer the following questions before we generate your PRD."
+	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText(instruction, contentWidth))))
 	b.WriteString("\n")
 	b.WriteString(mutedStyle.Render("  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"))
 	b.WriteString("\n\n")
