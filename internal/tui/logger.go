@@ -82,8 +82,7 @@ func (l *Logger) refreshLogView() {
 	lines := make([]string, 0, len(l.logs))
 	for _, logText := range l.logs {
 
-		// Truncate before styling so ANSI sequences are not cut.
-		line := truncate(logText, max(10, w-2))
+		line := wrapText(logText, max(10, w-2))
 		style := logLineStyle
 
 		lowerText := strings.ToLower(logText)
