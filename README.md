@@ -36,6 +36,7 @@ go install .
 ## Usage
 
 ```bash
+ralph
 ralph "build a todo app"
 ralph "build a todo app" --dry-run
 ralph --resume
