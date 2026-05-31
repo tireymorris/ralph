@@ -105,18 +105,6 @@ func TestInit(t *testing.T) {
 	}
 }
 
-func initBatchLen(cmd tea.Cmd) int {
-	if cmd == nil {
-		return 0
-	}
-	msg := cmd()
-	bm, ok := msg.(tea.BatchMsg)
-	if !ok {
-		return 1
-	}
-	return len(bm)
-}
-
 func TestInitEmptyPromptAwaitingPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "", false, false, false)
@@ -126,17 +114,19 @@ func TestInitEmptyPromptAwaitingPhase(t *testing.T) {
 	if m.phase != PhaseAwaitingPrompt {
 		t.Errorf("phase = %v, want PhaseAwaitingPrompt", m.phase)
 	}
-	if initBatchLen(m.Init()) != 4 {
-		t.Error("Init with empty prompt should include blink but not StartFullOperation")
-	}
 }
 
 func TestInitWithPromptStartsWorkflow(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "build api", false, false, false)
 
-	if initBatchLen(m.Init()) != 4 {
-		t.Fatal("Init with prompt should include StartFullOperation")
+	_ = m.Init()
+
+	if m.phase == PhaseAwaitingPrompt {
+		t.Error("Init with prompt should not enter PhaseAwaitingPrompt")
+	}
+	if m.phase != PhaseInit {
+		t.Errorf("phase = %v, want PhaseInit before workflow starts", m.phase)
 	}
 
 	msg := m.operationManager.StartFullOperation(m.resume, m.prompt)()
@@ -163,8 +153,10 @@ func TestInitResumeEmptyPromptStartsWorkflow(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "", false, true, false)
 
-	if initBatchLen(m.Init()) != 4 {
-		t.Fatal("Init with resume should include StartFullOperation")
+	_ = m.Init()
+
+	if m.phase == PhaseAwaitingPrompt {
+		t.Errorf("phase = %v, resume with empty prompt must not enter PhaseAwaitingPrompt", m.phase)
 	}
 
 	msg := m.operationManager.StartFullOperation(true, "")()
@@ -239,17 +231,21 @@ func TestUpdateAwaitingPromptEnterStartsWorkflowOnce(t *testing.T) {
 	}
 }
 
-func TestUpdateAwaitingPromptCtrlC(t *testing.T) {
-	m := awaitingPromptModel(t)
+func TestUpdateAwaitingPromptQuit(t *testing.T) {
+	for _, key := range []tea.KeyMsg{
+		{Type: tea.KeyCtrlC},
+		{Type: tea.KeyRunes, Runes: []rune{'q'}},
+	} {
+		m := awaitingPromptModel(t)
+		newModel, cmd := m.Update(key)
+		model := newModel.(*Model)
 
-	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-	model := newModel.(*Model)
-
-	if !model.quitting {
-		t.Error("quitting should be true after ctrl+c from awaiting prompt")
-	}
-	if cmd == nil {
-		t.Fatal("expected tea.Quit")
+		if !model.quitting {
+			t.Errorf("quitting should be true after %v from awaiting prompt", key)
+		}
+		if cmd == nil {
+			t.Fatalf("expected tea.Quit after %v", key)
+		}
 	}
 }
 

@@ -236,7 +236,7 @@ func (m *Model) renderLogsPane() string {
 
 func (m *Model) helpText() string {
 	if m.phase == PhaseAwaitingPrompt {
-		return "enter: submit  ctrl+c: quit"
+		return "enter: submit  q/ctrl+c: quit"
 	}
 	if m.phase == PhasePRDReview {
 		return "Tab switch pane • ↑/↓ scroll • c critique • Enter continue • q quit • ctrl+c exit"
@@ -252,7 +252,7 @@ func (m *Model) clarifyingHelpText() string {
 }
 
 func (m *Model) mainScrollEnabled() bool {
-	return m.phase != PhaseClarifying
+	return m.phase != PhaseClarifying && m.phase != PhaseAwaitingPrompt
 }
 
 func (m *Model) rebuildMainScrollContent() {

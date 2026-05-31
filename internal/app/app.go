@@ -5,6 +5,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 
 	"ralph/internal/args"
 	"ralph/internal/shared/config"
@@ -45,6 +46,10 @@ func Run(argv []string) int {
 	}
 	if opts.Status {
 		return RunStatus(cfg)
+	}
+	if opts.Prompt == "" && !opts.Resume && !isatty.IsTerminal(os.Stdin.Fd()) {
+		fmt.Fprintf(os.Stderr, "Error: interactive prompt requires a terminal (provide a prompt argument or use --resume)\n")
+		return 1
 	}
 	return RunTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 }
