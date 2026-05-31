@@ -191,6 +191,43 @@ func TestUpdateAwaitingPromptEnterSubmitPrompt(t *testing.T) {
 	}
 }
 
+func TestUpdateAwaitingPromptEnterWhitespaceOnly(t *testing.T) {
+	m := awaitingPromptModel(t)
+	m.promptInput.SetValue("   ")
+
+	newModel, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := newModel.(*Model)
+
+	if model.prompt != "" {
+		t.Errorf("prompt = %q, want empty", model.prompt)
+	}
+	if model.phase != PhaseAwaitingPrompt {
+		t.Errorf("phase = %v, want PhaseAwaitingPrompt", model.phase)
+	}
+	if cmd != nil {
+		t.Error("whitespace-only enter should not start workflow")
+	}
+}
+
+func TestUpdateAwaitingPromptEnterStartsWorkflowOnce(t *testing.T) {
+	m := awaitingPromptModel(t)
+	m.promptInput.SetValue("build api")
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected StartFullOperation cmd")
+	}
+
+	msg := cmd()
+	pcm, ok := msg.(phaseChangeMsg)
+	if !ok {
+		t.Fatalf("cmd() = %T, want phaseChangeMsg", msg)
+	}
+	if Phase(pcm) != PhasePRDGeneration {
+		t.Errorf("phaseChangeMsg = %v, want PhasePRDGeneration", pcm)
+	}
+}
+
 func TestUpdateKeyMsgQuit(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
