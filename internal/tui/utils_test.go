@@ -68,13 +68,13 @@ func TestTruncate(t *testing.T) {
 
 func TestWrapText(t *testing.T) {
 	tests := []struct {
-		name          string
-		s             string
-		width         int
-		want          string
-		wantLines     int
-		minLines      int
-		wantNonEmpty  bool
+		name         string
+		s            string
+		width        int
+		want         string
+		wantLines    int
+		minLines     int
+		wantNonEmpty bool
 	}{
 		{
 			name:  "short text unchanged at width 80",
@@ -95,10 +95,10 @@ func TestWrapText(t *testing.T) {
 			want:  "hello world",
 		},
 		{
-			name:      "long text wraps at width 40",
-			s:         strings.Repeat("a", 100),
-			width:     40,
-			minLines:  2,
+			name:     "long text wraps at width 40",
+			s:        strings.Repeat("a", 100),
+			width:    40,
+			minLines: 2,
 		},
 		{
 			name:         "unbroken token at width 20",

@@ -286,7 +286,6 @@ func TestStoryImplementation(t *testing.T) {
 	}
 }
 
-
 func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 	result := PRDCritiqueRevision("add login", "prd.json", "Needs more tests")
 
