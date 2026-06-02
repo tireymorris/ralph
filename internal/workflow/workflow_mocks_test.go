@@ -2,8 +2,12 @@ package workflow
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"sync"
+	"testing"
 
+	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
 )
 
@@ -21,6 +25,20 @@ func newMockRunner() *mockRunner {
 		runnerName:  "mock",
 		commandName: "mock-cmd",
 	}
+}
+
+func newClarifyExecutor(t *testing.T, workDir string, runFunc func(context.Context, string, chan<- runner.OutputLine) error, eventsCh chan Event) *Executor {
+	t.Helper()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	mock := newMockRunner()
+	mock.runFunc = runFunc
+	return NewExecutorWithRunner(cfg, eventsCh, mock)
+}
+
+func writeQuestionsFile(t *testing.T, dir string, data string) error {
+	t.Helper()
+	return os.WriteFile(filepath.Join(dir, ClarifyingQuestionsFile), []byte(data), 0644)
 }
 
 func (m *mockRunner) Run(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
