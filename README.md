@@ -10,16 +10,16 @@ git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go
 
 From a clone: `go install .` or `go build -o ralph .`
 
-**Requires:** Go 1.24+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `agent` (Cursor).
+**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `agent` (Cursor).
 
 ## Usage
 
 ```bash
-ralph                          # TUI (needs a terminal)
+ralph                               # TUI (needs a terminal)
 ralph "build a todo app"
-ralph "build a todo app" --dry-run   # PRD only
-ralph --resume                 # continue from prd.json
-ralph status                   # non-interactive progress
+ralph "build a todo app" --dry-run    # PRD only
+ralph --resume                      # continue from prd.json
+ralph status                        # non-interactive progress
 ```
 
 Writes `prd.json` in the working directory.
@@ -33,7 +33,7 @@ Writes `prd.json` in the working directory.
 
 ## Runner
 
-Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (uses `agent`). Ralph does not pick a model—that stays in your runner’s config.
+Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `agent` (Cursor). Ralph does not pick a model itself—that stays in your runner’s config.
 
 Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
