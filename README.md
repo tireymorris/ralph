@@ -10,7 +10,7 @@ git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go
 
 From a clone: `go install .` or `go build -o ralph .`
 
-**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `agent` (Cursor).
+**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `cursor-agent` (Cursor).
 
 ## Usage
 
@@ -33,7 +33,7 @@ Writes `prd.json` in the working directory.
 
 ## Runner
 
-Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `agent` (Cursor). Ralph does not pick a model itself—that stays in your runner’s config.
+Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (Cursor Agent). Ralph does not pick a model itself—that stays in your runner’s config.
 
 Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
