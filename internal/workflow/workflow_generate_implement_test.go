@@ -15,6 +15,57 @@ import (
 	"ralph/internal/shared/runner"
 )
 
+func TestRunGenerateEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(prompt, "no existing source code") {
+			t.Error("expected PRD prompt for empty workdir to mention no existing source code")
+		}
+		prdPath := filepath.Join(tmpDir, "prd.json")
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		return os.WriteFile(prdPath, []byte(data), 0644)
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if _, err := exec.RunGenerate(context.Background(), "test prompt"); err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+}
+
+func TestRunGenerateWithSourceWorkdirUsesExistingCodebasePrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main"), 0644)
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(prompt, "no existing source code") {
+			t.Error("expected PRD prompt for workdir with source to not mention no existing source code")
+		}
+		if !strings.Contains(prompt, "ACTUALLY observe in the codebase") {
+			t.Error("expected PRD prompt for existing codebase to reference observed patterns")
+		}
+		prdPath := filepath.Join(tmpDir, "prd.json")
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		return os.WriteFile(prdPath, []byte(data), 0644)
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if _, err := exec.RunGenerate(context.Background(), "test prompt"); err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+}
+
 func TestRunGenerateSuccess(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()

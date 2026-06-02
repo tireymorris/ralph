@@ -5,12 +5,46 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
 )
+
+func TestRunClarifyEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	ch := make(chan Event, 100)
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, "new project (no existing source code)") {
+			t.Error("expected clarify prompt for empty workdir to mention new project")
+		}
+		return nil
+	}, ch)
+	if _, err := exec.RunClarify(context.Background(), "add login"); err != nil {
+		t.Fatalf("RunClarify() error = %v", err)
+	}
+}
+
+func TestRunClarifyWithSourceWorkdirUsesExistingCodebasePrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte("package main"), 0644)
+
+	ch := make(chan Event, 100)
+	exec := newClarifyExecutor(t, tmpDir, func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, "new project (no existing source code)") {
+			t.Error("expected clarify prompt for workdir with source to not mention new project")
+		}
+		if !strings.Contains(p, "an existing codebase") {
+			t.Error("expected clarify prompt for workdir with source to mention existing codebase")
+		}
+		return nil
+	}, ch)
+	if _, err := exec.RunClarify(context.Background(), "add login"); err != nil {
+		t.Fatalf("RunClarify() error = %v", err)
+	}
+}
 
 func TestRunClarifyNoQuestionsFile(t *testing.T) {
 	tmpDir := t.TempDir()
