@@ -9,11 +9,11 @@ import (
 
 // RunClarify emits questions and waits for consumer answers; skipped questions return nil.
 func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error) {
-	isEmpty := isEmptyCodebase(e.cfg.WorkDir)
+	hasSource := workdirContainsSource(e.cfg.WorkDir)
 
 	e.emit(EventOutput{Output: Output{Text: "Analyzing request and generating clarifying questions..."}})
 
-	if err := e.runClarifyRunner(ctx, userPrompt, isEmpty); err != nil {
+	if err := e.runClarifyRunner(ctx, userPrompt, !hasSource); err != nil {
 		logger.Warn("clarifying questions generation failed, proceeding without", "error", err)
 		return nil, nil
 	}

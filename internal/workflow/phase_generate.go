@@ -19,8 +19,8 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 	logger.Debug("generating PRD", "prompt_length", len(userPrompt))
 	e.emit(EventPRDGenerating{})
 
-	isEmpty := isEmptyCodebase(e.cfg.WorkDir)
-	if isEmpty {
+	hasSource := workdirContainsSource(e.cfg.WorkDir)
+	if !hasSource {
 		logger.Info("working directory has no source code, treating as new project", "work_dir", e.cfg.WorkDir)
 		e.emit(EventOutput{Output: Output{Text: "Warning: Working directory appears to have no source code. PRD will be generated for a new project."}})
 	}
@@ -30,7 +30,7 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	go e.forwardOutput(outputCh)
 
-	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, "feature", isEmpty, qas)
+	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, "feature", !hasSource, qas)
 	err := e.runner.Run(ctx, prdPrompt, outputCh)
 	close(outputCh)
 

@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-func isEmptyCodebase(workDir string) bool {
+func workdirContainsSource(workDir string) bool {
 	if workDir == "" {
-		return true
+		return false
 	}
 
 	sourceExts := map[string]bool{
@@ -39,5 +39,5 @@ func isEmptyCodebase(workDir string) bool {
 		return nil
 	})
 
-	return !found
+	return found
 }
