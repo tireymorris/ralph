@@ -6,7 +6,7 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-func (om *OperationManager) emitError(err error) {
+func (om *OperationManager) sendErrorEvent(err error) {
 	if err == nil {
 		return
 	}
@@ -16,10 +16,10 @@ func (om *OperationManager) emitError(err error) {
 	}
 }
 
-func (om *OperationManager) startBackground(fn func()) {
+func (om *OperationManager) launchBackgroundTask(fn func()) {
 	go fn()
 }
 
-func clarifyPhaseError(err error) error {
+func wrapClarifyPhaseError(err error) error {
 	return fmt.Errorf("clarification phase: %w", err)
 }

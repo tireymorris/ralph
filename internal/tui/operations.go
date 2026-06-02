@@ -43,14 +43,14 @@ func (om *OperationManager) Cancel() {
 // StartFullOperation runs clarify then PRD generation in the background.
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
-		om.startBackground(func() {
+		om.launchBackgroundTask(func() {
 			if resume {
 				om.executor.RunLoad(om.ctx)
 				return
 			}
 			qas, err := om.executor.RunClarify(om.ctx, userPrompt)
 			if err != nil {
-				om.emitError(clarifyPhaseError(err))
+				om.sendErrorEvent(wrapClarifyPhaseError(err))
 				return
 			}
 			om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
@@ -63,7 +63,7 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
-		om.startBackground(func() {
+		om.launchBackgroundTask(func() {
 			om.executor.RunImplementation(om.ctx, p)
 		})
 		return nil
@@ -72,9 +72,9 @@ func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 
 func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) tea.Cmd {
 	return func() tea.Msg {
-		om.startBackground(func() {
+		om.launchBackgroundTask(func() {
 			if err := om.executor.RunCritiqueRevision(om.ctx, userPrompt, critique); err != nil {
-				om.emitError(fmt.Errorf("critique revision: %w", err))
+				om.sendErrorEvent(fmt.Errorf("critique revision: %w", err))
 			}
 		})
 		return phaseChangeMsg(PhasePRDGeneration)
