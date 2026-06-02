@@ -17,7 +17,7 @@ From a clone: `go install .` or `go build -o ralph .`
 ```bash
 ralph                               # TUI (needs a terminal)
 ralph "build a todo app"
-ralph "build a todo app" --dry-run    # PRD only
+ralph "build a todo app" --dry-run  # PRD only
 ralph --resume                      # continue from prd.json
 ralph status                        # non-interactive progress
 ```
