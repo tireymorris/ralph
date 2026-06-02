@@ -7,7 +7,7 @@ Supported backends:
 - `pi`
 - `opencode`
 - `claude`
-- Cursor Agent CLI (`agent`; set `RALPH_RUNNER=cursor`)
+- Cursor Agent CLI (`cursor-agent`; set `RALPH_RUNNER=cursor`)
 
 ## High-level flow
 1. Parse CLI args
