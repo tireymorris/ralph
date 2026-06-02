@@ -58,12 +58,12 @@ func HelpText() string {
 	return `Ralph - Autonomous Software Development Agent
 
 Usage:
-  ralph                                            # TUI prompt screen (requires a terminal)
-  ralph "your feature description"               # TUI mode
-  ralph "your feature description" --dry-run     # Generate PRD only
-  ralph --dry-run                                  # Prompt in TUI, then generate PRD only
-  ralph --resume                                 # Resume from existing prd.json
-  ralph status                                   # Show current PRD status
+  ralph                                              # TUI prompt screen (requires a terminal)
+  ralph "your feature description"                   # TUI mode
+  ralph "your feature description" --dry-run         # Generate PRD only
+  ralph --dry-run                                    # Prompt in TUI, then generate PRD only
+  ralph --resume                                     # Resume from existing prd.json
+  ralph status                                       # Show current PRD status
 
 Options:
   --dry-run      Generate PRD only, don't implement

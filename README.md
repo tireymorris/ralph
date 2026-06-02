@@ -1,78 +1,44 @@
 # Ralph
 
-Ralph turns a natural-language goal into a PRD, then implements the work story by story using an AI coding backend.
+Turn a natural-language goal into a `prd.json`, then implement it story-by-story via an AI coding CLI (clarify → PRD → review → implement).
 
-Supported backends:
-- [pi](https://pi.dev)
-- [OpenCode](https://github.com/opencode-ai/opencode)
-- [Claude Code](https://github.com/anthropics/claude-code)
-- Cursor Agent (`agent`)
-
-## Flow
-
-1. optionally ask clarifying questions
-2. generate a PRD
-3. review the PRD
-4. implement stories in priority/dependency order
-5. run tests and retry failed stories
-
-## Requirements
-
-- Go 1.24+
-- Git
-- One of the supported CLIs on `PATH`:
-  - `pi`
-  - `opencode`
-  - `claude`
-  - `agent` (Cursor Agent)
-
-## Install
+## Quick start
 
 ```bash
-go build -o ralph .
-go install .
+git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go install . && cd .. && rm -rf .tmp-ralph
 ```
+
+From a clone: `go install .` or `go build -o ralph .`
+
+**Requires:** Go 1.24+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `agent` (Cursor).
 
 ## Usage
 
-Run with no arguments to open the TUI prompt screen (requires a terminal). Provide a prompt on the command line to start immediately.
-
 ```bash
-ralph                                            # TUI prompt screen
-ralph "build a todo app"                         # TUI mode
-ralph "build a todo app" --dry-run               # generate PRD only
-ralph --dry-run                                  # prompt in TUI, then generate PRD only
-ralph --resume                                   # resume from existing prd.json
-ralph status                                     # show current PRD status
+ralph                          # TUI (needs a terminal)
+ralph "build a todo app"
+ralph "build a todo app" --dry-run   # PRD only
+ralph --resume                 # continue from prd.json
+ralph status                   # non-interactive progress
 ```
 
-PRD output is written to `prd.json` in the working directory.
+Writes `prd.json` in the working directory.
 
-### Options
+| Flag | Purpose |
+|------|---------|
+| `--dry-run` | Generate PRD only |
+| `--resume` | Resume from existing `prd.json` |
+| `-v`, `--verbose` | Debug logging |
+| `-h`, `--help` | Help |
 
-```text
---dry-run      Generate PRD only, don't implement
---resume       Resume implementation from existing prd.json
---verbose, -v  Enable debug logging
---help, -h     Show help
-```
+## Runner
 
-## Environment
+Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (uses `agent`). Ralph does not pick a model—that stays in your runner’s config.
 
-Use `RALPH_RUNNER` to select the AI runner binary. Defaults to `claude`. Ralph does not pass a model to the runner; configure model selection in the runner itself.
-
-Supported values:
-
-```text
-pi
-cursor
-claude
-opencode
-```
+Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
 ## Development
 
 ```bash
 go test ./...
-go build -o ralph .
 ```
