@@ -310,6 +310,21 @@ func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
 	}
 }
 
+func TestCleanup_contains_DRY_conventions_and_consolidate(t *testing.T) {
+	result := Cleanup("Go 1.24 app", "prd.json")
+	if !strings.Contains(result, "DRY") {
+		t.Errorf("Cleanup() missing 'DRY'")
+	}
+	hasCodbaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
+	if !hasCodbaseConventions {
+		t.Errorf("Cleanup() missing 'codebase conventions' or 'existing conventions'")
+	}
+	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "combine")
+	if !hasConsolidate {
+		t.Errorf("Cleanup() missing 'consolidate' or 'combine' referencing specs")
+	}
+}
+
 func TestPRDClarificationRevisionIncludesAnswers(t *testing.T) {
 	result := PRDClarificationRevision("add login", "prd.json", []QuestionAnswer{
 		{Question: "Which auth?", Answer: "OAuth"},

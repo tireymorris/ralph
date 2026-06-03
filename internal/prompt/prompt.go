@@ -141,7 +141,7 @@ Review the codebase and apply the following improvements:
 1. Refactor repeated patterns — extract shared helpers and eliminate duplication
 2. Apply SOLID and DRY principles throughout the implementation
 3. Follow existing codebase conventions for naming, structure, and style
-4. Consolidate related specs and tests that cover overlapping scenarios
+4. Where possible, consolidate related specs and tests that cover overlapping scenarios
 5. Extract better abstractions where concrete implementations can be generalized
 
 After each change, run the full test suite. Only commit if all tests are green.
