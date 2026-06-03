@@ -47,6 +47,10 @@ func New(cfg *config.Config) RunnerInterface {
 		logger.Debug("using cursor-agent runner", "runner", cfg.Runner)
 		return NewCursorAgent(cfg)
 	}
+	if provider == config.RunnerMock {
+		logger.Debug("using mock runner", "runner", cfg.Runner)
+		return NewMock(cfg)
+	}
 
 	logger.Debug("using OpenCode runner", "runner", cfg.Runner)
 	return &Runner{cfg: cfg, CmdFunc: defaultCmdFunc(cfg.WorkDir)}

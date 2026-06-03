@@ -2,6 +2,7 @@ package args
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -12,14 +13,19 @@ type Options struct {
 	Verbose      bool
 	Help         bool
 	Status       bool
+	Web          bool
+	WebPort      int
 	UnknownFlags []string
 }
+
+const defaultWebPort = 8080
 
 func Parse(args []string) *Options {
 	opts := &Options{}
 	var promptParts []string
 
-	for _, arg := range args {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
 		switch arg {
 		case "--help", "-h":
 			opts.Help = true
@@ -31,6 +37,21 @@ func Parse(args []string) *Options {
 			opts.Verbose = true
 		case "status":
 			opts.Status = true
+		case "web":
+			opts.Web = true
+			opts.WebPort = defaultWebPort
+		case "--port":
+			if i+1 >= len(args) {
+				opts.UnknownFlags = append(opts.UnknownFlags, arg)
+				continue
+			}
+			port, err := strconv.Atoi(args[i+1])
+			if err != nil {
+				opts.UnknownFlags = append(opts.UnknownFlags, arg)
+				continue
+			}
+			opts.WebPort = port
+			i++
 		default:
 			if strings.HasPrefix(arg, "-") {
 				opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -45,7 +66,7 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
-	if o.Help || o.Status {
+	if o.Help || o.Status || o.Web {
 		return nil
 	}
 	if len(o.UnknownFlags) > 0 {
@@ -64,12 +85,14 @@ Usage:
   ralph --dry-run                                    # Prompt in TUI, then generate PRD only
   ralph --resume                                     # Resume from existing prd.json
   ralph status                                       # Show current PRD status
+  ralph web [--port PORT]                            # Start local web UI (default port 8080)
 
 Options:
   --dry-run      Generate PRD only, don't implement
   --resume       Resume implementation from existing prd.json
   --verbose, -v  Enable debug logging
   --help, -h     Show this help message
+  --port PORT    Web server port (with ralph web; default 8080)
 
 Environment:
   RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)

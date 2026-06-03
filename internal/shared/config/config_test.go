@@ -29,6 +29,7 @@ func TestDetectRunner(t *testing.T) {
 		{"cursor", RunnerCursor},
 		{"pi", RunnerPi},
 		{"opencode", RunnerOpenCode},
+		{"mock", RunnerMock},
 		{"invalid-runner", RunnerUnknown},
 		{"", RunnerUnknown},
 	}

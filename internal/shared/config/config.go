@@ -17,6 +17,7 @@ const (
 	RunnerCursor   RunnerKind = "cursor"
 	RunnerPi       RunnerKind = "pi"
 	RunnerOpenCode RunnerKind = "opencode"
+	RunnerMock     RunnerKind = "mock"
 	RunnerUnknown  RunnerKind = "unknown"
 )
 
@@ -30,6 +31,8 @@ func DetectRunner(runner string) RunnerKind {
 		return RunnerPi
 	case string(RunnerOpenCode):
 		return RunnerOpenCode
+	case string(RunnerMock):
+		return RunnerMock
 	default:
 		return RunnerUnknown
 	}
@@ -82,7 +85,7 @@ func (c *Config) ValidateRunner() error {
 		return errors.New("runner cannot be empty")
 	}
 	if DetectRunner(c.Runner) == RunnerUnknown {
-		return fmt.Errorf("unknown runner %q (supported runners: claude, cursor, pi, opencode)", c.Runner)
+		return fmt.Errorf("unknown runner %q (supported runners: claude, cursor, pi, opencode, mock)", c.Runner)
 	}
 	return nil
 }

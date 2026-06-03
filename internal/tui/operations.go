@@ -2,81 +2,44 @@ package tui
 
 import (
 	"context"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
 type OperationManager struct {
-	cfg        *config.Config
-	ctx        context.Context
-	cancelFunc context.CancelFunc
-	eventsCh   chan events.Event
-	executor   *workflow.Executor
+	*workflow.Driver
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
-	ctx, cancel := context.WithCancel(context.Background())
-	eventsCh := make(chan events.Event, constants.EventChannelBuffer)
-
-	return &OperationManager{
-		cfg:        cfg,
-		ctx:        ctx,
-		cancelFunc: cancel,
-		eventsCh:   eventsCh,
-		executor:   workflow.NewExecutor(cfg, eventsCh),
-	}
+	return &OperationManager{Driver: workflow.NewDriver(cfg)}
 }
 
-func (om *OperationManager) Cancel() {
-	if om.cancelFunc != nil {
-		om.cancelFunc()
-	}
-}
-
-// StartFullOperation runs clarify then PRD generation in the background.
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
-		om.launchBackgroundTask(func() {
-			if resume {
-				om.executor.RunLoad(om.ctx)
-				return
-			}
-			qas, err := om.executor.RunClarify(om.ctx, userPrompt)
-			if err != nil {
-				om.sendErrorEvent(wrapClarifyPhaseError(err))
-				return
-			}
-			om.executor.RunGenerateWithAnswers(om.ctx, userPrompt, qas)
-		})
-
-		// Return immediately so the UI shows PRD generation while work continues.
+		if resume {
+			om.StartResume(context.Background())
+		} else {
+			om.StartNew(context.Background(), userPrompt)
+		}
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
-		om.launchBackgroundTask(func() {
-			om.executor.RunImplementation(om.ctx, p)
-		})
+		om.Driver.StartImplementation(context.Background(), p)
 		return nil
 	}
 }
 
 func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) tea.Cmd {
 	return func() tea.Msg {
-		om.launchBackgroundTask(func() {
-			if err := om.executor.RunCritiqueRevision(om.ctx, userPrompt, critique); err != nil {
-				om.sendErrorEvent(fmt.Errorf("critique revision: %w", err))
-			}
-		})
+		om.Driver.StartCritiqueRevision(context.Background(), userPrompt, critique)
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }
@@ -84,9 +47,9 @@ func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) t
 func (om *OperationManager) ListenForEvents() tea.Cmd {
 	return func() tea.Msg {
 		select {
-		case <-om.ctx.Done():
+		case <-om.Ctx().Done():
 			return nil
-		case event, ok := <-om.eventsCh:
+		case event, ok := <-om.EventsCh():
 			if !ok {
 				return nil
 			}
