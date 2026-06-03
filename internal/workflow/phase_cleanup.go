@@ -3,6 +3,8 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
@@ -19,7 +21,8 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 
 	e.emit(EventCleanupStarted{})
 
-	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile)
+	changedFiles := branchChangedFiles(e.cfg.WorkDir)
+	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
 
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	done := make(chan struct{})
@@ -39,4 +42,20 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 
 	e.emit(EventCleanupCompleted{})
 	return nil
+}
+
+func branchChangedFiles(workDir string) []string {
+	cmd := exec.Command("git", "diff", "--name-only", "HEAD@{upstream}...HEAD")
+	cmd.Dir = workDir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line != "" {
+			files = append(files, line)
+		}
+	}
+	return files
 }

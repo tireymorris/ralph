@@ -10,8 +10,12 @@ export function useTimelineScroll(
     if (!el) return;
     const distanceFromBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceFromBottom <= 100) {
-      el.scrollTop = el.scrollHeight;
+    if (distanceFromBottom <= 150) {
+      if (typeof el.scrollTo === "function") {
+        el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+      } else {
+        el.scrollTop = el.scrollHeight;
+      }
     }
   }, [ref, entries]);
 }

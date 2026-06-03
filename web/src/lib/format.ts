@@ -1,5 +1,6 @@
 const statusLabels: Record<string, string> = {
   running: "Running",
+  implementing: "Implementing",
   waiting_clarify: "Needs Answers",
   waiting_review: "Needs Review",
   completed: "Completed",
@@ -14,6 +15,7 @@ export function formatStatus(status: string): string {
 export function statusBadgeClass(status: string): string {
   switch (status) {
     case "running":
+    case "implementing":
       return "run-status-badge--running";
     case "waiting_clarify":
     case "waiting_review":

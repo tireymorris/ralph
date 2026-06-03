@@ -45,6 +45,7 @@ type Config struct {
 	PRDFile     string `json:"prd_file"`
 	WorkDir     string `json:"-"`
 	TestCommand string `json:"test_command"`
+	SkipCleanup bool   `json:"-"`
 }
 
 func DefaultConfig() *Config {

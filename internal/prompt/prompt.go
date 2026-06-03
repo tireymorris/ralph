@@ -133,7 +133,7 @@ Preserve existing story IDs and "passes" values for stories that are unchanged.
 Write the updated PRD file, then STOP — do not implement anything.`, userPrompt, sb.String(), prdFile)
 }
 
-func Cleanup(codebaseContext, prdFile string) string {
+func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -142,8 +142,18 @@ CODEBASE CONTEXT:
 `, codebaseContext)
 	}
 
-	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+	filesSection := ""
+	if len(changedFiles) > 0 {
+		filesSection = fmt.Sprintf(`
+CHANGED FILES:
 %s
+
+Only modify the files listed above. Do not touch unrelated code.
+`, strings.Join(changedFiles, "\n"))
+	}
+
+	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+%s%s
 Review the codebase and apply the following improvements:
 
 1. Refactor repeated patterns — extract shared helpers and eliminate duplication
@@ -154,7 +164,7 @@ Review the codebase and apply the following improvements:
 
 After each change, run the full test suite. Only commit if all tests are green.
 
-PRD file: %s`, contextSection, prdFile)
+PRD file: %s`, contextSection, filesSection, prdFile)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {

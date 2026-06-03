@@ -301,7 +301,7 @@ func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 }
 
 func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
-	result := Cleanup("Go 1.24 app", "prd.json")
+	result := Cleanup("Go 1.24 app", "prd.json", nil)
 	if result == "" {
 		t.Fatal("Cleanup() returned empty string")
 	}
@@ -311,7 +311,7 @@ func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
 }
 
 func TestCleanup_instructs_running_tests_before_committing(t *testing.T) {
-	result := Cleanup("", "prd.json")
+	result := Cleanup("", "prd.json", nil)
 	hasTestInstruction := strings.Contains(result, "run") && strings.Contains(result, "test")
 	if !hasTestInstruction {
 		t.Errorf("Cleanup() should instruct running tests")
@@ -323,31 +323,58 @@ func TestCleanup_instructs_running_tests_before_committing(t *testing.T) {
 }
 
 func TestCleanup_omits_context_section_when_empty(t *testing.T) {
-	result := Cleanup("", "prd.json")
+	result := Cleanup("", "prd.json", nil)
 	if strings.Contains(result, "CODEBASE CONTEXT") {
 		t.Error("Cleanup() with empty context should not include CODEBASE CONTEXT section")
 	}
 }
 
 func TestCleanup_includes_codebaseContext_when_nonempty(t *testing.T) {
-	result := Cleanup("Go 1.24 with Bubble Tea", "prd.json")
+	result := Cleanup("Go 1.24 with Bubble Tea", "prd.json", nil)
 	if !strings.Contains(result, "Go 1.24 with Bubble Tea") {
 		t.Errorf("Cleanup() should include codebaseContext value")
 	}
 }
 
 func TestCleanup_contains_DRY_conventions_and_consolidate(t *testing.T) {
-	result := Cleanup("Go 1.24 app", "prd.json")
+	result := Cleanup("Go 1.24 app", "prd.json", nil)
 	if !strings.Contains(result, "DRY") {
 		t.Errorf("Cleanup() missing 'DRY'")
 	}
-	hasCodbaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
-	if !hasCodbaseConventions {
+	hasCodebaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
+	if !hasCodebaseConventions {
 		t.Errorf("Cleanup() missing 'codebase conventions' or 'existing conventions'")
 	}
 	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "combine")
 	if !hasConsolidate {
 		t.Errorf("Cleanup() missing 'consolidate' or 'combine' referencing specs")
+	}
+}
+
+func TestCleanup_includes_changed_files_when_provided(t *testing.T) {
+	files := []string{"internal/foo/bar.go", "internal/foo/bar_test.go"}
+	result := Cleanup("", "prd.json", files)
+	if !strings.Contains(result, "CHANGED FILES") {
+		t.Error("Cleanup() with changed files should include CHANGED FILES section")
+	}
+	for _, f := range files {
+		if !strings.Contains(result, f) {
+			t.Errorf("Cleanup() should include file %q", f)
+		}
+	}
+	if !strings.Contains(result, "Only modify") {
+		t.Error("Cleanup() should instruct limiting scope to changed files")
+	}
+}
+
+func TestCleanup_omits_changed_files_section_when_empty(t *testing.T) {
+	result := Cleanup("", "prd.json", nil)
+	if strings.Contains(result, "CHANGED FILES") {
+		t.Error("Cleanup() with nil changed files should not include CHANGED FILES section")
+	}
+	result2 := Cleanup("", "prd.json", []string{})
+	if strings.Contains(result2, "CHANGED FILES") {
+		t.Error("Cleanup() with empty changed files should not include CHANGED FILES section")
 	}
 }
 

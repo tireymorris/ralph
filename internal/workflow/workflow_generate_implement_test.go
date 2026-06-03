@@ -696,6 +696,62 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 	}
 }
 
+func TestRunImplementationSkipsCleanupWhenConfigured(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD)
+	if err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	var evts []Event
+	for len(ch) > 0 {
+		evts = append(evts, <-ch)
+	}
+
+	for _, e := range evts {
+		switch e.(type) {
+		case EventCleanupStarted:
+			t.Error("EventCleanupStarted should not be emitted when SkipCleanup is true")
+		case EventCleanupCompleted:
+			t.Error("EventCleanupCompleted should not be emitted when SkipCleanup is true")
+		}
+	}
+
+	foundCompleted := false
+	for _, e := range evts {
+		if _, ok := e.(EventCompleted); ok {
+			foundCompleted = true
+		}
+	}
+	if !foundCompleted {
+		t.Error("EventCompleted should still be emitted when SkipCleanup is true")
+	}
+
+	if mock.CallCount() != 1 {
+		t.Errorf("runner should be called once (story only), got %d", mock.CallCount())
+	}
+}
+
 func TestRunGenerateNoPRDFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()

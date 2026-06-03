@@ -153,8 +153,8 @@ func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
 	if cmd != nil {
 		t.Error("EventCleanupCompleted should return nil cmd")
 	}
-	if m.phase != PhaseCompleted {
-		t.Errorf("phase = %v, want PhaseCompleted", m.phase)
+	if m.phase != PhaseCleanup {
+		t.Errorf("phase = %v, want PhaseCleanup (EventCompleted handles the transition)", m.phase)
 	}
 }
 

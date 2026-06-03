@@ -203,3 +203,10 @@ func TestDefaultConfigTestCommand(t *testing.T) {
 		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
 	}
 }
+
+func TestDefaultConfigSkipCleanupIsFalse(t *testing.T) {
+	cfg := DefaultConfig()
+	if cfg.SkipCleanup {
+		t.Error("SkipCleanup should default to false")
+	}
+}
