@@ -59,3 +59,24 @@ func TestRemoveState_removesClarifyingQuestions(t *testing.T) {
 		t.Fatalf("%s still exists: %v", workflow.ClarifyingQuestionsFile, err)
 	}
 }
+
+func TestRemoveState_removesOrphanedPRDTemps(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+
+	tmpPath := filepath.Join(dir, ".prd.tmp.100.7")
+	if err := os.WriteFile(tmpPath, []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("RemoveState: %v", err)
+	}
+	matches, err := filepath.Glob(filepath.Join(dir, ".prd.tmp.*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
+	}
+}
