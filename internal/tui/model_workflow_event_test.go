@@ -130,6 +130,34 @@ func TestHandleWorkflowEventErrorDuringImplementation(t *testing.T) {
 	}
 }
 
+func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+
+	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{})
+	if cmd != nil {
+		t.Error("EventCleanupStarted should return nil cmd")
+	}
+	if m.phase != PhaseCleanup {
+		t.Errorf("phase = %v, want PhaseCleanup", m.phase)
+	}
+}
+
+func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseCleanup
+
+	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{})
+	if cmd != nil {
+		t.Error("EventCleanupCompleted should return nil cmd")
+	}
+	if m.phase != PhaseCleanup {
+		t.Errorf("phase = %v, want PhaseCleanup (EventCompleted handles the transition)", m.phase)
+	}
+}
+
 func TestHandleWorkflowEventOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

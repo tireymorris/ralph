@@ -79,3 +79,11 @@ func (EventPRDReview) isEvent() {}
 type EventPRDRevising struct{}
 
 func (EventPRDRevising) isEvent() {}
+
+type EventCleanupStarted struct{}
+
+func (EventCleanupStarted) isEvent() {}
+
+type EventCleanupCompleted struct{}
+
+func (EventCleanupCompleted) isEvent() {}

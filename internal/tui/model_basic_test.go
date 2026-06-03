@@ -21,6 +21,7 @@ func TestPhaseString(t *testing.T) {
 		{PhasePRDGeneration, "Phase 1: PRD Generation"},
 		{PhasePRDReview, "PRD Review"},
 		{PhaseImplementation, "Phase 2: Implementation"},
+		{PhaseCleanup, "Phase 3: Cleanup"},
 		{PhaseCompleted, "Completed"},
 		{PhaseFailed, "Failed"},
 		{Phase(99), "Unknown"},
@@ -33,6 +34,15 @@ func TestPhaseString(t *testing.T) {
 				t.Errorf("Phase.String() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestPhaseCleanupOrdering(t *testing.T) {
+	if PhaseCleanup <= PhaseImplementation {
+		t.Errorf("PhaseCleanup (%d) should be > PhaseImplementation (%d)", PhaseCleanup, PhaseImplementation)
+	}
+	if PhaseCleanup >= PhaseCompleted {
+		t.Errorf("PhaseCleanup (%d) should be < PhaseCompleted (%d)", PhaseCleanup, PhaseCompleted)
 	}
 }
 

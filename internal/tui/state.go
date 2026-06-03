@@ -22,6 +22,7 @@ const (
 	PhasePRDGeneration
 	PhasePRDReview
 	PhaseImplementation
+	PhaseCleanup
 	PhaseCompleted
 	PhaseFailed
 )
@@ -40,6 +41,8 @@ func (p Phase) String() string {
 		return "PRD Review"
 	case PhaseImplementation:
 		return "Phase 2: Implementation"
+	case PhaseCleanup:
+		return "Phase 3: Cleanup"
 	case PhaseCompleted:
 		return "Completed"
 	case PhaseFailed:

@@ -26,6 +26,7 @@ func TestParse(t *testing.T) {
 		{name: "status command", args: []string{"status"}, expected: Options{Status: true}},
 		{name: "web command", args: []string{"web"}, expected: Options{Web: true, WebPort: 8080}},
 		{name: "web with port", args: []string{"web", "--port", "3000"}, expected: Options{Web: true, WebPort: 3000}},
+		{name: "skip cleanup flag", args: []string{"--skip-cleanup", "do thing"}, expected: Options{Prompt: "do thing", SkipCleanup: true}},
 	}
 
 	for _, tt := range tests {
@@ -54,6 +55,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.WebPort != tt.expected.WebPort {
 				t.Errorf("WebPort = %v, want %v", got.WebPort, tt.expected.WebPort)
+			}
+			if got.SkipCleanup != tt.expected.SkipCleanup {
+				t.Errorf("SkipCleanup = %v, want %v", got.SkipCleanup, tt.expected.SkipCleanup)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -92,7 +96,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}

@@ -15,6 +15,7 @@ type Options struct {
 	Status       bool
 	Web          bool
 	WebPort      int
+	SkipCleanup  bool
 	UnknownFlags []string
 }
 
@@ -35,6 +36,8 @@ func Parse(args []string) *Options {
 			opts.Resume = true
 		case "--verbose", "-v":
 			opts.Verbose = true
+		case "--skip-cleanup":
+			opts.SkipCleanup = true
 		case "status":
 			opts.Status = true
 		case "web":
@@ -88,11 +91,12 @@ Usage:
   ralph web [--port PORT]                            # Start local web UI (default port 8080)
 
 Options:
-  --dry-run      Generate PRD only, don't implement
-  --resume       Resume implementation from existing prd.json
-  --verbose, -v  Enable debug logging
-  --help, -h     Show this help message
-  --port PORT    Web server port (with ralph web; default 8080)
+  --dry-run        Generate PRD only, don't implement
+  --resume         Resume implementation from existing prd.json
+  --skip-cleanup   Skip post-implementation cleanup phase
+  --verbose, -v    Enable debug logging
+  --help, -h       Show this help message
+  --port PORT      Web server port (with ralph web; default 8080)
 
 Environment:
   RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)

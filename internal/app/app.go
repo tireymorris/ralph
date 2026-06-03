@@ -47,6 +47,8 @@ func Run(argv []string) int {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
+	cfg.SkipCleanup = opts.SkipCleanup
+
 	if opts.Status {
 		return RunStatus(cfg)
 	}

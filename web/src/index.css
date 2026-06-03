@@ -531,9 +531,10 @@ textarea:focus-visible {
 .run-detail {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 3rem);
+  height: calc(100vh - var(--space-8) * 2);
   position: relative;
   padding-bottom: 7rem;
+  overflow: hidden;
 }
 
 .run-detail-header {
@@ -593,7 +594,8 @@ textarea:focus-visible {
   flex-direction: column;
   gap: var(--space-3);
   max-width: 45rem;
-  max-height: calc(100vh - 12rem);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scroll-behavior: smooth;
 }

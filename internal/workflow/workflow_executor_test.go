@@ -176,7 +176,8 @@ func TestRunImplementationAllCompleted(t *testing.T) {
 	}
 
 	ch := make(chan Event, 100)
-	exec := NewExecutor(cfg, ch)
+	mock := newMockRunner()
+	exec := NewExecutorWithRunner(cfg, ch, mock)
 
 	err := exec.RunImplementation(context.Background(), testPRD)
 	if err != nil {
@@ -225,7 +226,8 @@ func TestRunImplementationNoNextStory(t *testing.T) {
 	}
 
 	ch := make(chan Event, 100)
-	exec := NewExecutor(cfg, ch)
+	mock := newMockRunner()
+	exec := NewExecutorWithRunner(cfg, ch, mock)
 
 	err := exec.RunImplementation(context.Background(), testPRD)
 	if err != nil {
