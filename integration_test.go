@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"ralph/internal/clean"
+	"ralph/internal/shared/config"
 )
 
 func requireBinary(t *testing.T, name string) {
@@ -60,20 +63,10 @@ func TestIntegrationHelp(t *testing.T) {
 
 func seedCleanIntegrationState(t *testing.T, dir string) []string {
 	t.Helper()
-	paths := []string{
-		filepath.Join(dir, "prd.json"),
-		filepath.Join(dir, "prd.json.lock"),
-		filepath.Join(dir, ".ralph_questions.json"),
-		filepath.Join(dir, ".prd.tmp.1.999"),
-		filepath.Join(dir, ".ralph", "runs", "test-run", "meta.json"),
-	}
-	for _, p := range paths {
-		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, []byte("{}"), 0644); err != nil {
-			t.Fatal(err)
-		}
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+	paths, err := clean.SeedStateArtifacts(cfg)
+	if err != nil {
+		t.Fatal(err)
 	}
 	return paths
 }

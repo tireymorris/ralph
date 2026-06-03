@@ -30,12 +30,13 @@ func (e *VersionConflictError) Error() string {
 	return fmt.Sprintf("PRD version conflict: expected %d, got %d (concurrent modification detected)", e.Expected, e.Actual)
 }
 
-func getLockPath(prdPath string) string {
+// LockPath returns the flock file path for a PRD file.
+func LockPath(prdPath string) string {
 	return prdPath + ".lock"
 }
 
 func acquireSharedLock(cfg *config.Config) (*flock.Flock, error) {
-	lockPath := getLockPath(cfg.PRDPath())
+	lockPath := LockPath(cfg.PRDPath())
 	fileLock := flock.New(lockPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.FileLockTimeout)*time.Second)
@@ -53,7 +54,7 @@ func acquireSharedLock(cfg *config.Config) (*flock.Flock, error) {
 }
 
 func acquireExclusiveLock(cfg *config.Config) (*flock.Flock, error) {
-	lockPath := getLockPath(cfg.PRDPath())
+	lockPath := LockPath(cfg.PRDPath())
 	fileLock := flock.New(lockPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.FileLockTimeout)*time.Second)

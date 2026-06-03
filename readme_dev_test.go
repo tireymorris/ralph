@@ -25,12 +25,6 @@ func readmeUsageSection(t *testing.T) string {
 	return rest
 }
 
-func TestReadmeUsageDocumentsClean(t *testing.T) {
-	usage := readmeUsageSection(t)
-	if !strings.Contains(usage, "ralph clean") {
-		t.Fatal("README Usage section must contain the exact command string ralph clean")
-	}
-}
 
 func readmeStateFilesSection(t *testing.T) string {
 	t.Helper()
@@ -51,22 +45,23 @@ func readmeStateFilesSection(t *testing.T) string {
 	return rest
 }
 
-func TestReadmeStateFilesDocumentsPrdTmpAndClean(t *testing.T) {
+func TestReadmeDocumentsClean(t *testing.T) {
+	usage := readmeUsageSection(t)
+	if !strings.Contains(usage, "ralph clean") {
+		t.Fatal("README Usage section must contain the exact command string ralph clean")
+	}
+	for _, want := range []string{"prd.json", ".prd.tmp.*", ".ralph/"} {
+		if !strings.Contains(usage, want) {
+			t.Fatalf("README Usage section must mention %q near ralph clean", want)
+		}
+	}
+
 	section := readmeStateFilesSection(t)
 	if !strings.Contains(section, ".prd.tmp.*") {
 		t.Fatal("README State files section must document .prd.tmp.*")
 	}
 	if !strings.Contains(section, "ralph clean") {
 		t.Fatal("README State files section must note that ralph clean removes artifacts idempotently")
-	}
-}
-
-func TestReadmeUsageDocumentsCleanRemovesState(t *testing.T) {
-	usage := readmeUsageSection(t)
-	for _, want := range []string{"prd.json", ".prd.tmp.*", ".ralph/"} {
-		if !strings.Contains(usage, want) {
-			t.Fatalf("README Usage section must mention %q near ralph clean", want)
-		}
 	}
 }
 

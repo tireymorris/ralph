@@ -54,28 +54,20 @@ func TestRunClean(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if code := Run([]string{"clean"}); code != 0 {
-		t.Fatalf("Run(clean) = %d, want 0", code)
-	}
-	if _, err := os.Stat(prdPath); !os.IsNotExist(err) {
-		t.Fatalf("prd.json still exists after clean: %v", err)
-	}
-}
+	t.Run("removes prd.json", func(t *testing.T) {
+		if code := Run([]string{"clean"}); code != 0 {
+			t.Fatalf("Run(clean) = %d, want 0", code)
+		}
+		if _, err := os.Stat(prdPath); !os.IsNotExist(err) {
+			t.Fatalf("prd.json still exists after clean: %v", err)
+		}
+	})
 
-func TestRunCleanSkipsValidateResume(t *testing.T) {
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	tmpDir := t.TempDir()
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-
-	if code := Run([]string{"clean", "--resume"}); code != 0 {
-		t.Fatalf("Run(clean --resume) = %d, want 0 (ValidateResume must not run)", code)
-	}
+	t.Run("skips ValidateResume with --resume", func(t *testing.T) {
+		if code := Run([]string{"clean", "--resume"}); code != 0 {
+			t.Fatalf("Run(clean --resume) = %d, want 0 (ValidateResume must not run)", code)
+		}
+	})
 }
 
 func TestRunBareNoTTY(t *testing.T) {
