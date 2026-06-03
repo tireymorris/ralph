@@ -10,5 +10,9 @@ trap 'rm -rf "$tmpdir"' EXIT
 git clone --depth 1 --branch "$REF" "$REPO" "$tmpdir/ralph"
 (cd "$tmpdir/ralph" && go install .)
 
-bindir="$(go env GOPATH)/bin"
-echo "installed ${bindir}/ralph"
+gobin="$(go env GOBIN)"
+if [[ -n "$gobin" ]]; then
+  echo "installed ${gobin}/ralph"
+else
+  echo "installed $(go env GOPATH)/bin/ralph"
+fi

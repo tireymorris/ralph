@@ -96,6 +96,24 @@ func gopath(ctx context.Context, override string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+func installedBinaryPath(ctx context.Context, goPathOverride string) (string, error) {
+	if goPathOverride != "" {
+		return filepath.Join(goPathOverride, "bin", binaryName), nil
+	}
+	out, err := commandRunner.Output(ctx, "", "go", "env", "GOBIN")
+	if err != nil {
+		return "", err
+	}
+	if gobin := strings.TrimSpace(string(out)); gobin != "" {
+		return filepath.Join(gobin, binaryName), nil
+	}
+	gopathDir, err := gopath(ctx, "")
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(gopathDir, "bin", binaryName), nil
+}
+
 func Install(ctx context.Context, opts InstallOptions) error {
 	repo := opts.Repo
 	if repo == "" {
@@ -104,11 +122,6 @@ func Install(ctx context.Context, opts InstallOptions) error {
 	ref := opts.Ref
 	if ref == "" {
 		ref = DefaultRef
-	}
-
-	gopathDir, err := gopath(ctx, opts.GoPath)
-	if err != nil {
-		return err
 	}
 
 	tmp, err := os.MkdirTemp("", "ralph-install-*")
@@ -128,7 +141,10 @@ func Install(ctx context.Context, opts InstallOptions) error {
 		return err
 	}
 
-	bin := filepath.Join(gopathDir, "bin", binaryName)
+	bin, err := installedBinaryPath(ctx, opts.GoPath)
+	if err != nil {
+		return err
+	}
 	if _, err := os.Stat(bin); err != nil {
 		return fmt.Errorf("install succeeded but %s missing: %w", bin, err)
 	}
@@ -136,11 +152,7 @@ func Install(ctx context.Context, opts InstallOptions) error {
 }
 
 func InstalledBinaryPath(ctx context.Context, goPath string) (string, error) {
-	gopathDir, err := gopath(ctx, goPath)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(gopathDir, "bin", binaryName), nil
+	return installedBinaryPath(ctx, goPath)
 }
 
 func Check(ctx context.Context, repo, ref string) (upToDate bool, local, remote string, err error) {
