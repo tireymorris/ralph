@@ -28,6 +28,13 @@ func TestMapEventToStatusPhase_CleanupStarted(t *testing.T) {
 	}
 }
 
+func TestMapEventToStatusPhase_CleanupCompleted(t *testing.T) {
+	status, phase := mapEventToStatusPhase(events.EventCleanupCompleted{})
+	if status != "completed" || phase != "complete" {
+		t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "completed", "complete")
+	}
+}
+
 func TestMarshalEventEnvelope_CleanupCompleted(t *testing.T) {
 	data, err := MarshalEventEnvelope(events.EventCleanupCompleted{})
 	if err != nil {
