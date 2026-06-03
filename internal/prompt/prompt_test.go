@@ -300,6 +300,16 @@ func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 	}
 }
 
+func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
+	result := Cleanup("Go 1.24 app", "prd.json")
+	if result == "" {
+		t.Fatal("Cleanup() returned empty string")
+	}
+	if !strings.Contains(result, "SOLID") {
+		t.Errorf("Cleanup() missing 'SOLID' in:\n%s", result)
+	}
+}
+
 func TestPRDClarificationRevisionIncludesAnswers(t *testing.T) {
 	result := PRDClarificationRevision("add login", "prd.json", []QuestionAnswer{
 		{Question: "Which auth?", Answer: "OAuth"},
