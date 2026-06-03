@@ -19,7 +19,18 @@ func RemoveState(cfg *config.Config) error {
 	if err := removeIfExists(cfg.ConfigPath(workflow.ClarifyingQuestionsFile)); err != nil {
 		return err
 	}
-	return removeOrphanedPRDTemps(cfg)
+	if err := removeOrphanedPRDTemps(cfg); err != nil {
+		return err
+	}
+	return removeRalphDir(cfg)
+}
+
+func removeRalphDir(cfg *config.Config) error {
+	err := os.RemoveAll(cfg.ConfigPath(".ralph"))
+	if err == nil || errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func removeOrphanedPRDTemps(cfg *config.Config) error {

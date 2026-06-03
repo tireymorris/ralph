@@ -80,3 +80,23 @@ func TestRemoveState_removesOrphanedPRDTemps(t *testing.T) {
 		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
 	}
 }
+
+func TestRemoveState_removesRalphDir(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+
+	metaPath := filepath.Join(dir, ".ralph", "runs", "x", "meta.json")
+	if err := os.MkdirAll(filepath.Dir(metaPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(metaPath, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("RemoveState: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".ralph")); !os.IsNotExist(err) {
+		t.Fatalf(".ralph still exists: %v", err)
+	}
+}
