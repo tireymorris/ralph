@@ -5,10 +5,18 @@ Turn a natural-language goal into a `prd.json`, then implement it story-by-story
 ## Quick start
 
 ```bash
-git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go install . && cd .. && rm -rf .tmp-ralph
+curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
 ```
 
+Pin a branch or tag: `curl -fsSL .../install.sh | bash -s -- main`
+
 From a clone: `go install .` or `go build -o ralph .`
+
+Manual one-liner:
+
+```bash
+git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go install . && cd .. && rm -rf .tmp-ralph
+```
 
 **Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, or `cursor-agent` (Cursor).
 
