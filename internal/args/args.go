@@ -122,6 +122,7 @@ Usage:
   ralph --dry-run                                    # Prompt in TUI, then generate PRD only
   ralph --resume                                     # Resume from existing prd.json
   ralph status                                       # Show current PRD status
+  ralph clean                                        # Remove Ralph state files in the working directory
   ralph version                                      # Print build version and commit
   ralph update [--ref REF] [--check]                 # Install or check for updates
   ralph web [--port PORT]                            # Start local web UI (default port 8080)
