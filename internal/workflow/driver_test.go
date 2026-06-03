@@ -156,6 +156,44 @@ func TestDriverTrackEventState(t *testing.T) {
 	}
 }
 
+func TestDriverStartCleanupEmitsEvents(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.PRDFile = "prd.json"
+
+	mock := newMockRunner()
+	d := NewDriverWithRunner(cfg, mock)
+	t.Cleanup(d.Cancel)
+
+	p := &prd.PRD{ProjectName: "Test", Context: "test context"}
+	d.StartCleanup(context.Background(), p)
+
+	deadline := time.Now().Add(3 * time.Second)
+	var gotStarted, gotCompleted bool
+	for time.Now().Before(deadline) {
+		select {
+		case ev := <-d.EventsCh():
+			switch ev.(type) {
+			case events.EventCleanupStarted:
+				gotStarted = true
+			case events.EventCleanupCompleted:
+				gotCompleted = true
+			}
+		default:
+		}
+		if gotStarted && gotCompleted {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !gotStarted {
+		t.Fatal("expected EventCleanupStarted, never received")
+	}
+	if !gotCompleted {
+		t.Fatal("expected EventCleanupCompleted, never received")
+	}
+}
+
 func TestDriverCancel(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

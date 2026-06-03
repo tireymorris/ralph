@@ -95,6 +95,12 @@ func (d *Driver) StartImplementation(ctx context.Context, p *prd.PRD) {
 	})
 }
 
+func (d *Driver) StartCleanup(ctx context.Context, p *prd.PRD) {
+	go d.runWithCtx(ctx, func(runCtx context.Context) {
+		d.executor.RunCleanup(runCtx, p)
+	})
+}
+
 func (d *Driver) StartCritiqueRevision(ctx context.Context, userPrompt, critique string) {
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
 		if err := d.executor.RunCritiqueRevision(runCtx, userPrompt, critique); err != nil {
