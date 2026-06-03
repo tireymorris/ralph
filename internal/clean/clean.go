@@ -8,7 +8,10 @@ import (
 )
 
 func RemoveState(cfg *config.Config) error {
-	return removeIfExists(cfg.PRDPath())
+	if err := removeIfExists(cfg.PRDPath()); err != nil {
+		return err
+	}
+	return removeIfExists(cfg.PRDPath() + ".lock")
 }
 
 func removeIfExists(path string) error {
