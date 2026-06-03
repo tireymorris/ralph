@@ -60,6 +60,12 @@ Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](h
 
 ## Development
 
+Release-style build with git metadata embedded in the binary:
+
+```bash
+scripts/build.sh -o "$(go env GOPATH)/bin/ralph"
+```
+
 ```bash
 go test ./...                 # Go unit + integration tests
 cd web && npm test            # React/Vitest frontend tests
