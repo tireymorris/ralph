@@ -643,6 +643,59 @@ func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
 	}
 }
 
+func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	call := 0
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		call++
+		if call == 1 {
+			return nil
+		}
+		return errors.New("cleanup exploded")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD)
+	if err == nil {
+		t.Fatal("RunImplementation() should return error when cleanup fails")
+	}
+
+	foundCompleted := false
+	foundCleanupError := false
+	for len(ch) > 0 {
+		e := <-ch
+		switch ev := e.(type) {
+		case EventCompleted:
+			foundCompleted = true
+		case EventError:
+			if strings.Contains(ev.Err.Error(), "cleanup") {
+				foundCleanupError = true
+			}
+		}
+	}
+
+	if foundCompleted {
+		t.Error("EventCompleted should NOT be emitted when cleanup fails")
+	}
+	if !foundCleanupError {
+		t.Error("expected EventError with message containing 'cleanup'")
+	}
+}
+
 func TestRunGenerateNoPRDFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
