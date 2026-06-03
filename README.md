@@ -61,13 +61,14 @@ ralph web --port 3000               # web UI on another port
 
 ## State files
 
-Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`.
+Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`. Run `ralph clean` to delete these artifacts idempotently (safe to run when none exist).
 
 | Path | Created by | Purpose |
 |------|-----------|---------|
 | `prd.json` | TUI + web | The generated PRD |
 | `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
 | `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
+| `.prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
 | `.ralph/runs/<id>/meta.json` | Web UI | Per-run metadata (prompt, status, timestamps) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
 

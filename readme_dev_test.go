@@ -32,6 +32,35 @@ func TestReadmeUsageDocumentsClean(t *testing.T) {
 	}
 }
 
+func readmeStateFilesSection(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	content := string(data)
+	const heading = "## State files"
+	start := strings.Index(content, heading)
+	if start < 0 {
+		t.Fatal("README.md must have a ## State files section")
+	}
+	rest := content[start+len(heading):]
+	if next := strings.Index(rest, "\n## "); next >= 0 {
+		rest = rest[:next]
+	}
+	return rest
+}
+
+func TestReadmeStateFilesDocumentsPrdTmpAndClean(t *testing.T) {
+	section := readmeStateFilesSection(t)
+	if !strings.Contains(section, ".prd.tmp.*") {
+		t.Fatal("README State files section must document .prd.tmp.*")
+	}
+	if !strings.Contains(section, "ralph clean") {
+		t.Fatal("README State files section must note that ralph clean removes artifacts idempotently")
+	}
+}
+
 func TestReadmeUsageDocumentsCleanRemovesState(t *testing.T) {
 	usage := readmeUsageSection(t)
 	for _, want := range []string{"prd.json", ".prd.tmp.*", ".ralph/"} {
