@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   cancelRun,
+  createRun,
   getRun,
   openEventStream,
   submitClarify,
@@ -23,6 +24,7 @@ const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled"]);
 
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { run, loadError, setRun, setLoadError } = useRunPolling(id);
   const { prd, prdError } = usePRDLoader(id, run?.status);
 
@@ -33,6 +35,7 @@ export default function RunDetail() {
   const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [retrySubmitting, setRetrySubmitting] = useState(false);
   const [streamGeneration, setStreamGeneration] = useState(0);
 
   const timelineRef = useRef<HTMLUListElement>(null);
@@ -95,6 +98,20 @@ export default function RunDetail() {
     }
   }
 
+  async function handleRetry() {
+    if (!run || retrySubmitting) return;
+    setRetrySubmitting(true);
+    setLoadError(null);
+    try {
+      const { id: newId } = await createRun(run.prompt);
+      navigate(`/runs/${newId}`);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "retry failed");
+    } finally {
+      setRetrySubmitting(false);
+    }
+  }
+
   async function handleClarifySubmit(
     answers: { question: string; answer: string }[],
   ) {
@@ -137,6 +154,16 @@ export default function RunDetail() {
                 disabled={cancelSubmitting}
               >
                 Cancel
+              </button>
+            )}
+            {run.status === "cancelled" && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => void handleRetry()}
+                disabled={retrySubmitting}
+              >
+                Retry
               </button>
             )}
           </div>

@@ -47,9 +47,11 @@
   background: var(--bg);
 }
 
+html,
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 a {
@@ -148,7 +150,8 @@ textarea:focus-visible {
 .app-shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-sidebar {
@@ -203,6 +206,7 @@ textarea:focus-visible {
   padding: var(--space-8);
   max-width: 56rem;
   width: 100%;
+  overflow-y: auto;
 }
 
 /* ---------- Runs sidebar ---------- */
