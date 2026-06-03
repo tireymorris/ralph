@@ -100,3 +100,68 @@ func TestRemoveState_removesRalphDir(t *testing.T) {
 		t.Fatalf(".ralph still exists: %v", err)
 	}
 }
+
+func seedAllStateArtifacts(t *testing.T, dir string) {
+	t.Helper()
+	paths := []string{
+		filepath.Join(dir, "prd.json"),
+		filepath.Join(dir, "prd.json.lock"),
+		filepath.Join(dir, workflow.ClarifyingQuestionsFile),
+		filepath.Join(dir, ".prd.tmp.100.7"),
+		filepath.Join(dir, ".ralph", "runs", "x", "meta.json"),
+	}
+	for _, p := range paths {
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("{}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestRemoveState_allArtifacts(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+	seedAllStateArtifacts(t, dir)
+
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("RemoveState: %v", err)
+	}
+	for _, name := range []string{"prd.json", "prd.json.lock", workflow.ClarifyingQuestionsFile, ".ralph"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Fatalf("%s still exists: %v", name, err)
+		}
+	}
+	matches, err := filepath.Glob(filepath.Join(dir, ".prd.tmp.*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
+	}
+}
+
+func TestRemoveState_idempotent(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+
+	seedAllStateArtifacts(t, dir)
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("first RemoveState: %v", err)
+	}
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("second RemoveState: %v", err)
+	}
+}
+
+func TestRemoveState_idempotentOnEmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{WorkDir: dir, PRDFile: "prd.json"}
+
+	for i := 1; i <= 2; i++ {
+		if err := RemoveState(cfg); err != nil {
+			t.Fatalf("RemoveState call %d: %v", i, err)
+		}
+	}
+}
