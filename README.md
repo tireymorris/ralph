@@ -38,13 +38,15 @@ ralph "build a todo app"
 ralph "build a todo app" --dry-run  # PRD only
 ralph --resume                      # continue from prd.json
 ralph status                        # non-interactive progress
-ralph clean                         # remove Ralph agent state in cwd (see State files)
+ralph clean                         # remove all Ralph agent state in cwd
 ralph version                       # build version, commit, and ref
 ralph update                        # reinstall from GitHub (default branch main)
 ralph update --check                # compare local commit to remote
 ralph web                           # local web UI (default http://127.0.0.1:8080)
 ralph web --port 3000               # web UI on another port
 ```
+
+`ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, `.ralph_questions.json`, orphaned `.prd.tmp.*` files, and `.ralph/` run data.
 
 | Flag / env | Purpose |
 |------------|---------|

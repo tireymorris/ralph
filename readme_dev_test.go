@@ -32,6 +32,15 @@ func TestReadmeUsageDocumentsClean(t *testing.T) {
 	}
 }
 
+func TestReadmeUsageDocumentsCleanRemovesState(t *testing.T) {
+	usage := readmeUsageSection(t)
+	for _, want := range []string{"prd.json", ".prd.tmp.*", ".ralph/"} {
+		if !strings.Contains(usage, want) {
+			t.Fatalf("README Usage section must mention %q near ralph clean", want)
+		}
+	}
+}
+
 func TestReadmeDocumentsReleaseBuild(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {
