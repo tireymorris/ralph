@@ -14,6 +14,9 @@ type Options struct {
 	Help         bool
 	Status       bool
 	Version      bool
+	Update       bool
+	UpdateRef    string
+	UpdateCheck  bool
 	Web          bool
 	WebPort      int
 	SkipCleanup  bool
@@ -25,9 +28,30 @@ const defaultWebPort = 8080
 func Parse(args []string) *Options {
 	opts := &Options{}
 	var promptParts []string
+	inUpdate := false
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		if inUpdate {
+			switch arg {
+			case "--ref":
+				if i+1 >= len(args) {
+					opts.UnknownFlags = append(opts.UnknownFlags, arg)
+					continue
+				}
+				opts.UpdateRef = args[i+1]
+				i++
+				continue
+			case "--check":
+				opts.UpdateCheck = true
+				continue
+			default:
+				if strings.HasPrefix(arg, "-") {
+					opts.UnknownFlags = append(opts.UnknownFlags, arg)
+				}
+				continue
+			}
+		}
 		switch arg {
 		case "--help", "-h":
 			opts.Help = true
@@ -43,6 +67,10 @@ func Parse(args []string) *Options {
 			opts.Status = true
 		case "version":
 			opts.Version = true
+		case "update":
+			opts.Update = true
+			opts.UpdateRef = "main"
+			inUpdate = true
 		case "web":
 			opts.Web = true
 			opts.WebPort = defaultWebPort
@@ -72,7 +100,7 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
-	if o.Help || o.Status || o.Version || o.Web {
+	if o.Help || o.Status || o.Version || o.Update || o.Web {
 		return nil
 	}
 	if len(o.UnknownFlags) > 0 {
@@ -91,6 +119,8 @@ Usage:
   ralph --dry-run                                    # Prompt in TUI, then generate PRD only
   ralph --resume                                     # Resume from existing prd.json
   ralph status                                       # Show current PRD status
+  ralph version                                      # Print build version and commit
+  ralph update [--ref REF] [--check]                 # Install or check for updates
   ralph web [--port PORT]                            # Start local web UI (default port 8080)
 
 Options:
@@ -100,8 +130,11 @@ Options:
   --verbose, -v    Enable debug logging
   --help, -h       Show this help message
   --port PORT      Web server port (with ralph web; default 8080)
+  --ref REF        Git branch or tag for ralph update (default: main)
+  --check          With ralph update: compare local commit to remote; exit 2 if update available
 
 Environment:
   RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)
+  RALPH_REPO     Git URL for ralph update (default: https://github.com/tireymorris/ralph.git)
 `
 }

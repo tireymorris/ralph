@@ -10,7 +10,17 @@ curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/inst
 
 Pin a branch or tag: `curl -fsSL .../install.sh | bash -s -- main`
 
-From a clone: `go install .` or `go build -o ralph .`
+Upgrade an existing install (same flow as `scripts/install.sh`):
+
+```bash
+ralph update
+ralph update --check    # exit 0 if up to date, 2 if a newer commit is on the remote
+ralph update --ref main # install a specific branch or tag
+```
+
+Override the git remote: `RALPH_REPO=https://github.com/you/ralph.git ralph update`
+
+From a clone: `go install .` or `scripts/build.sh -o ralph` (embeds git version metadata)
 
 Manual one-liner:
 
@@ -28,15 +38,21 @@ ralph "build a todo app"
 ralph "build a todo app" --dry-run  # PRD only
 ralph --resume                      # continue from prd.json
 ralph status                        # non-interactive progress
+ralph version                       # build version, commit, and ref
+ralph update                        # reinstall from GitHub (default branch main)
+ralph update --check                # compare local commit to remote
 ralph web                           # local web UI (default http://127.0.0.1:8080)
 ralph web --port 3000               # web UI on another port
 ```
 
-| Flag | Purpose |
-|------|---------|
+| Flag / env | Purpose |
+|------------|---------|
 | `--dry-run` | Generate PRD only |
 | `--resume` | Resume from existing `prd.json` |
 | `--port PORT` | Web server port (with `ralph web`; default 8080) |
+| `--ref REF` | Branch or tag for `ralph update` (default `main`) |
+| `--check` | With `ralph update`: report whether a newer commit exists on the remote |
+| `RALPH_REPO` | Git URL for `ralph update` (default `https://github.com/tireymorris/ralph.git`) |
 | `-v`, `--verbose` | Debug logging |
 | `-h`, `--help` | Help |
 

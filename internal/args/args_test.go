@@ -25,6 +25,9 @@ func TestParse(t *testing.T) {
 		{name: "multiple unknown flags captured", args: []string{"--foo", "-x", "prompt", "--bar"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}}},
 		{name: "status command", args: []string{"status"}, expected: Options{Status: true}},
 		{name: "version command", args: []string{"version"}, expected: Options{Version: true}},
+		{name: "update command", args: []string{"update"}, expected: Options{Update: true, UpdateRef: "main"}},
+		{name: "update with ref", args: []string{"update", "--ref", "v1.0"}, expected: Options{Update: true, UpdateRef: "v1.0"}},
+		{name: "update check", args: []string{"update", "--check"}, expected: Options{Update: true, UpdateRef: "main", UpdateCheck: true}},
 		{name: "web command", args: []string{"web"}, expected: Options{Web: true, WebPort: 8080}},
 		{name: "web with port", args: []string{"web", "--port", "3000"}, expected: Options{Web: true, WebPort: 3000}},
 		{name: "skip cleanup flag", args: []string{"--skip-cleanup", "do thing"}, expected: Options{Prompt: "do thing", SkipCleanup: true}},
@@ -38,6 +41,15 @@ func TestParse(t *testing.T) {
 			}
 			if got.Version != tt.expected.Version {
 				t.Errorf("Version = %v, want %v", got.Version, tt.expected.Version)
+			}
+			if got.Update != tt.expected.Update {
+				t.Errorf("Update = %v, want %v", got.Update, tt.expected.Update)
+			}
+			if got.UpdateRef != tt.expected.UpdateRef {
+				t.Errorf("UpdateRef = %q, want %q", got.UpdateRef, tt.expected.UpdateRef)
+			}
+			if got.UpdateCheck != tt.expected.UpdateCheck {
+				t.Errorf("UpdateCheck = %v, want %v", got.UpdateCheck, tt.expected.UpdateCheck)
 			}
 			if got.Prompt != tt.expected.Prompt {
 				t.Errorf("Prompt = %q, want %q", got.Prompt, tt.expected.Prompt)
@@ -85,6 +97,7 @@ func TestValidate(t *testing.T) {
 		{name: "status bypasses validation", opts: Options{Status: true}, wantErr: false},
 		{name: "version bypasses validation", opts: Options{Version: true}, wantErr: false},
 		{name: "version with unknown flags bypasses validation", opts: Options{Version: true, UnknownFlags: []string{"--bogus"}}, wantErr: false},
+		{name: "update bypasses validation", opts: Options{Update: true}, wantErr: false},
 		{name: "resume without prompt is valid", opts: Options{Resume: true}, wantErr: false},
 		{name: "prompt provided is valid", opts: Options{Prompt: "do something"}, wantErr: false},
 		{name: "no prompt no resume is valid", opts: Options{}, wantErr: false},
@@ -103,7 +116,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}

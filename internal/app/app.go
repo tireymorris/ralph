@@ -11,6 +11,7 @@ import (
 
 	"ralph/internal/args"
 	"ralph/internal/shared/config"
+	"ralph/internal/version"
 	"ralph/internal/shared/logger"
 	sharedprd "ralph/internal/shared/prd"
 	"ralph/internal/status"
@@ -31,6 +32,16 @@ func Run(argv []string) int {
 	}
 	for _, flag := range opts.UnknownFlags {
 		fmt.Fprintf(os.Stderr, "Warning: unknown flag %q (ignored)\n", flag)
+	}
+	if opts.Version {
+		fmt.Println(version.Info())
+		return 0
+	}
+	if opts.Update {
+		if opts.UpdateCheck {
+			return RunUpdateCheck(opts)
+		}
+		return RunUpdate(opts)
 	}
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
