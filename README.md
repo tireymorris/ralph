@@ -59,10 +59,10 @@ cd web && npm test            # React/Vitest frontend tests
 cd e2e && npx playwright test # Playwright E2E tests (builds Go + frontend first)
 ```
 
-When you change the web UI (`web/`), build the embedded assets before Go tests:
+When you change the web UI (`web/`), rebuild the embedded assets:
 
 ```bash
-cd web && npm ci && npm run build
+go generate ./internal/web/...
 ```
 
 CI runs all three test suites on push and PR via GitHub Actions (`.github/workflows/ci.yml`).

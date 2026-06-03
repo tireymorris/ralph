@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+//go:generate sh -c "cd ../../web && npm ci --silent && npm run build"
+
 //go:embed static/dist/*
 var staticFS embed.FS
 
