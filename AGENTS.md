@@ -70,7 +70,6 @@ Ralph writes these files in the working directory (all covered by `.gitignore`):
 - `.ralph_questions.json` — temporary clarification questions (deleted after read)
 - `.ralph/runs/<id>/meta.json` — per-run metadata (web UI)
 - `.ralph/runs/<id>/events.ndjson` — per-run event log for SSE replay (web UI)
-- `ralph.log` — application log
 
 ## Testing notes
 - Broad test coverage exists across args/config, PRD storage/validation, runner parsing, workflow phases, TUI behavior, and status output

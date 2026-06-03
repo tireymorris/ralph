@@ -23,8 +23,6 @@ Thumbs.db
 
 prd.json
 prd.json.lock
-ralph.log
-debug.log
 
 .ralph/
 .ralph_questions.json

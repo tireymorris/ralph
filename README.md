@@ -43,7 +43,6 @@ Ralph writes the following files in the working directory. All are covered by th
 | `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
 | `.ralph/runs/<id>/meta.json` | Web UI | Per-run metadata (prompt, status, timestamps) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
-| `ralph.log` | All modes | Application log |
 
 ## Runner
 
