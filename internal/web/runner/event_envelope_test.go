@@ -33,8 +33,15 @@ func TestMapEventToStatusPhase_CleanupStarted(t *testing.T) {
 
 func TestMapEventToStatusPhase_CleanupCompleted(t *testing.T) {
 	status, phase := mapEventToStatusPhase(events.EventCleanupCompleted{})
-	if status != "completed" || phase != "complete" {
-		t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "completed", "complete")
+	if status != "implementing" || phase != "cleanup" {
+		t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
+	}
+}
+
+func TestMapEventToStatusPhase_CleanupCompletedIsNotTerminal(t *testing.T) {
+	status, _ := mapEventToStatusPhase(events.EventCleanupCompleted{})
+	if runs.IsTerminalStatus(status) {
+		t.Errorf("EventCleanupCompleted status %q must not be terminal", status)
 	}
 }
 
@@ -76,6 +83,7 @@ func TestControllerHandlesCleanupEventsWithoutPanic(t *testing.T) {
 
 	ctrl.EmitEvent(events.EventCleanupStarted{})
 	ctrl.EmitEvent(events.EventCleanupCompleted{})
+	ctrl.EmitEvent(events.EventCompleted{})
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {

@@ -110,10 +110,19 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 
 	revisionPrompt := prompt.FollowUpRevision(message, runCfg.PRDFile, transcript)
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+	done := make(chan struct{})
+	go func() {
+		workflow.NewOutputForwarder(c.EmitEvent).Forward(outputCh)
+		close(done)
+	}()
 	if err := c.RunPrompt(ctx, revisionPrompt, outputCh); err != nil {
+		close(outputCh)
+		<-done
 		fail(fmt.Errorf("follow-up revision: %w", err))
 		return
 	}
+	close(outputCh)
+	<-done
 
 	p, err := prd.Load(&runCfg)
 	if err != nil {
@@ -210,10 +219,8 @@ func mapEventToStatusPhase(ev events.Event) (status, phase string) {
 		return "waiting_review", "review"
 	case events.EventStoryStarted, events.EventStoryCompleted:
 		return "implementing", "implement"
-	case events.EventCleanupStarted:
+	case events.EventCleanupStarted, events.EventCleanupCompleted:
 		return "implementing", "cleanup"
-	case events.EventCleanupCompleted:
-		return "completed", "complete"
 	case events.EventCompleted:
 		return "completed", "complete"
 	case events.EventError:
