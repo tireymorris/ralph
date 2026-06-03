@@ -6,6 +6,32 @@ import (
 	"testing"
 )
 
+func readmeUsageSection(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	content := string(data)
+	const heading = "## Usage"
+	start := strings.Index(content, heading)
+	if start < 0 {
+		t.Fatal("README.md must have a ## Usage section")
+	}
+	rest := content[start+len(heading):]
+	if next := strings.Index(rest, "\n## "); next >= 0 {
+		rest = rest[:next]
+	}
+	return rest
+}
+
+func TestReadmeUsageDocumentsClean(t *testing.T) {
+	usage := readmeUsageSection(t)
+	if !strings.Contains(usage, "ralph clean") {
+		t.Fatal("README Usage section must contain the exact command string ralph clean")
+	}
+}
+
 func TestReadmeDocumentsReleaseBuild(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {

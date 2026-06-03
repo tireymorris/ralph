@@ -38,6 +38,7 @@ ralph "build a todo app"
 ralph "build a todo app" --dry-run  # PRD only
 ralph --resume                      # continue from prd.json
 ralph status                        # non-interactive progress
+ralph clean                         # remove Ralph agent state in cwd (see State files)
 ralph version                       # build version, commit, and ref
 ralph update                        # reinstall from GitHub (default branch main)
 ralph update --check                # compare local commit to remote
