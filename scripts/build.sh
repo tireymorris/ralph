@@ -23,14 +23,5 @@ if [[ -z "$out" ]]; then
   exit 1
 fi
 
-version="$(git describe --tags --always 2>/dev/null || echo dev)"
-commit="$(git rev-parse HEAD)"
-ref="$(git symbolic-ref -q --short HEAD 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || echo unknown)"
-
-ldflags=(
-  "-X" "ralph/internal/version.Version=${version}"
-  "-X" "ralph/internal/version.Commit=${commit}"
-  "-X" "ralph/internal/version.Ref=${ref}"
-)
-
-go build -ldflags "${ldflags[*]}" -o "$out" .
+ldflags="$("${root}/scripts/version-ldflags.sh")"
+go build -ldflags "$ldflags" -o "$out" .

@@ -30,10 +30,10 @@ jobs:
         go-version: 1.24.0
 
     - name: Go unit tests
-      run: go test ./... -cover
+      run: go test ./... -cover -ldflags "$(./scripts/version-ldflags.sh)"
 
     - name: Go integration tests
-      run: go test -tags=integration -timeout 2m -run TestWebIntegration ./...
+      run: go test -tags=integration -timeout 2m -run TestWebIntegration ./... -ldflags "$(./scripts/version-ldflags.sh)"
 
   e2e:
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
       working-directory: web
 
     - name: Build Go binary
-      run: go build -o .ralph-e2e-bin .
+      run: ./scripts/build.sh -o .ralph-e2e-bin
 
     - name: Install E2E dependencies
       run: npm ci
