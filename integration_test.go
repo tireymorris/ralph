@@ -58,6 +58,71 @@ func TestIntegrationHelp(t *testing.T) {
 	}
 }
 
+func seedCleanIntegrationState(t *testing.T, dir string) []string {
+	t.Helper()
+	paths := []string{
+		filepath.Join(dir, "prd.json"),
+		filepath.Join(dir, "prd.json.lock"),
+		filepath.Join(dir, ".ralph_questions.json"),
+		filepath.Join(dir, ".prd.tmp.1.999"),
+		filepath.Join(dir, ".ralph", "runs", "test-run", "meta.json"),
+	}
+	for _, p := range paths {
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte("{}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return paths
+}
+
+func assertPathsNotExist(t *testing.T, paths ...string) {
+	t.Helper()
+	for _, p := range paths {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			t.Fatalf("expected %s to not exist, stat err = %v", p, err)
+		}
+	}
+}
+
+func assertNoPRDTempFiles(t *testing.T, dir string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(dir, ".prd.tmp.*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
+	}
+}
+
+func TestIntegrationClean(t *testing.T) {
+	binaryPath := buildTestBinary(t)
+	workDir := t.TempDir()
+	seeded := seedCleanIntegrationState(t, workDir)
+
+	runClean := func() {
+		t.Helper()
+		cmd := exec.Command(binaryPath, "clean")
+		cmd.Dir = workDir
+		output, err := cmd.CombinedOutput()
+		if err != nil && cmd.ProcessState == nil {
+			t.Fatalf("command failed: %v\nOutput: %s", err, output)
+		}
+		if got := cmd.ProcessState.ExitCode(); got != 0 {
+			t.Fatalf("exit code = %d, want 0. Output: %s", got, output)
+		}
+	}
+
+	runClean()
+	assertPathsNotExist(t, seeded...)
+	assertNoPRDTempFiles(t, workDir)
+
+	runClean()
+}
+
 func TestIntegrationInvalidConfig(t *testing.T) {
 	binaryPath := buildTestBinary(t)
 
