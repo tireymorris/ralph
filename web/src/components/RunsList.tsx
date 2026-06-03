@@ -1,13 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listRuns } from "../api/client";
-import { formatStatus, relativeTime, statusBadgeClass } from "../lib/format";
+import {
+  formatStatus,
+  isTerminalRunStatus,
+  relativeTime,
+  statusBadgeClass,
+} from "../lib/format";
 import type { Run } from "../api/types";
 
 const POLL_MS = 3000;
 const RUN_PATH_RE = /^\/runs\/([^/]+)/;
 
-export default function RunsList() {
+export interface RunsListProps {
+  activeOnly?: boolean;
+  heading?: string;
+  hideWhenEmpty?: boolean;
+}
+
+export default function RunsList({
+  activeOnly = false,
+  heading = "Runs",
+  hideWhenEmpty = false,
+}: RunsListProps) {
   const location = useLocation();
   const match = RUN_PATH_RE.exec(location.pathname);
   const activeId = match?.[1];
@@ -39,15 +54,26 @@ export default function RunsList() {
     };
   }, []);
 
+  const visibleRuns =
+    runs?.filter((run) => !activeOnly || !isTerminalRunStatus(run.status)) ??
+    null;
+
+  if (hideWhenEmpty && visibleRuns !== null && visibleRuns.length === 0) {
+    return null;
+  }
+
   if (fetchError && runs === null) {
     return <p className="form-error">{fetchError}</p>;
   }
 
   if (runs === null) {
+    if (hideWhenEmpty) {
+      return null;
+    }
     return <p className="runs-loading">Loading runs…</p>;
   }
 
-  if (runs.length === 0) {
+  if (visibleRuns.length === 0) {
     return (
       <div className="runs-empty-state">
         <p className="runs-empty">No runs yet</p>
@@ -60,9 +86,9 @@ export default function RunsList() {
 
   return (
     <div className="runs-section">
-      <h2 className="runs-heading">Runs</h2>
+      <h2 className="runs-heading">{heading}</h2>
       <ul className="runs-list">
-        {runs.map((run) => (
+        {visibleRuns.map((run) => (
           <li key={run.id} className={run.id === activeId ? "active" : ""}>
             <Link
               to={`/runs/${run.id}`}

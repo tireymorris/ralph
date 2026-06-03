@@ -9,7 +9,11 @@ import {
   submitFollowUp,
 } from "../api/client";
 import type { EventClarifyingQuestionsPayload, EventEnvelope } from "../api/types";
-import { formatStatus, statusBadgeClass } from "../lib/format";
+import {
+  formatStatus,
+  isTerminalRunStatus,
+  statusBadgeClass,
+} from "../lib/format";
 import { makeSystemEntry, type TimelineEntry } from "../lib/timeline";
 import { usePRDLoader } from "../hooks/usePRDLoader";
 import { useRunEventStream } from "../hooks/useRunEventStream";
@@ -19,8 +23,6 @@ import ClarifyForm from "../components/ClarifyForm";
 import FollowUpComposer from "../components/FollowUpComposer";
 import PRDReviewPanel from "../components/PRDReviewPanel";
 import TimelineEntryBubble from "../components/TimelineEntry";
-
-const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled"]);
 
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
@@ -85,7 +87,7 @@ export default function RunDetail() {
 
   async function handleCancel() {
     if (!id || cancelSubmitting || !run) return;
-    if (TERMINAL_RUN_STATUSES.has(run.status)) return;
+    if (isTerminalRunStatus(run.status)) return;
     setCancelSubmitting(true);
     setLoadError(null);
     try {
@@ -129,7 +131,7 @@ export default function RunDetail() {
   }
 
   const progress = run?.story_progress;
-  const isTerminal = run ? TERMINAL_RUN_STATUSES.has(run.status) : false;
+  const isTerminal = run ? isTerminalRunStatus(run.status) : false;
 
   return (
     <div className="run-detail">

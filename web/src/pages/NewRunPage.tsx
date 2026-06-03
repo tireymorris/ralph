@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createRun } from "../api/client";
+import RunsList from "../components/RunsList";
 
 export default function NewRunPage() {
   const navigate = useNavigate();
@@ -35,38 +36,43 @@ export default function NewRunPage() {
 
   return (
     <section className="new-run-page">
-      <header className="new-run-header">
-        <h1 className="app-wordmark">Ralph</h1>
-        <p className="app-tagline">Describe a goal. Ralph plans and implements it.</p>
-      </header>
-      <form className="new-run-composer" onSubmit={handleSubmit}>
-        <textarea
-          id="goal-prompt"
-          aria-label="Goal prompt"
-          className="composer-input"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={4}
-          disabled={submitting}
-          placeholder="What do you want to build?"
-        />
-        {error ? (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        ) : null}
-        <div className="new-run-actions">
-          <button
-            type="submit"
-            className="btn btn--primary"
-            disabled={submitting || !prompt.trim()}
-          >
-            Start run
-          </button>
-          <kbd className="kbd-hint">{navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"} Enter</kbd>
-        </div>
-      </form>
+      <RunsList activeOnly heading="Active chats" hideWhenEmpty />
+      <div className="new-run-main">
+        <header className="new-run-header">
+          <h1 className="app-wordmark">Ralph</h1>
+          <p className="app-tagline">Describe a goal. Ralph plans and implements it.</p>
+        </header>
+        <form className="new-run-composer" onSubmit={handleSubmit}>
+          <textarea
+            id="goal-prompt"
+            aria-label="Goal prompt"
+            className="composer-input"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={4}
+            disabled={submitting}
+            placeholder="What do you want to build?"
+          />
+          {error ? (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <div className="new-run-actions">
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={submitting || !prompt.trim()}
+            >
+              Start run
+            </button>
+            <kbd className="kbd-hint">
+              {navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"} Enter
+            </kbd>
+          </div>
+        </form>
+      </div>
     </section>
   );
 }

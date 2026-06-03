@@ -1,3 +1,13 @@
+export const TERMINAL_RUN_STATUSES = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+export function isTerminalRunStatus(status: string): boolean {
+  return TERMINAL_RUN_STATUSES.has(status);
+}
+
 const statusLabels: Record<string, string> = {
   running: "Running",
   implementing: "Implementing",

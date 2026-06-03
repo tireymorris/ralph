@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { listRuns } from "../api/client";
 import RunsList from "./RunsList";
 
@@ -9,6 +9,68 @@ vi.mock("../api/client", () => ({
 }));
 
 describe("RunsList", () => {
+  beforeEach(() => {
+    vi.mocked(listRuns).mockReset();
+  });
+
+  it("hides active-only list when all runs are terminal", async () => {
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: "run-done",
+        prompt: "Old goal",
+        status: "completed",
+        phase: "complete",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    const { container } = render(
+      <MemoryRouter>
+        <RunsList activeOnly hideWhenEmpty />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(listRuns).toHaveBeenCalled();
+    });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("shows only non-terminal runs when activeOnly", async () => {
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: "run-active",
+        prompt: "In progress",
+        status: "running",
+        phase: "implement",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "run-done",
+        prompt: "Finished",
+        status: "completed",
+        phase: "complete",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RunsList activeOnly heading="Active chats" />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("In progress")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("heading", { name: "Active chats" })).toBeInTheDocument();
+    expect(screen.queryByText("Finished")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("listitem")).toHaveLength(1);
+  });
+
   it("renders 0 rows when API returns []", async () => {
     vi.mocked(listRuns).mockResolvedValue([]);
 
