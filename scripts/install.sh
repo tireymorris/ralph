@@ -102,20 +102,26 @@ resolve_bindir() {
   fi
 
   local gobin gopath
+  gopath=$(go env GOPATH)
+  case "$gopath" in
+    *:*) gopath=${gopath%%:*} ;;
+  esac
+  gopath=${gopath%/}
+  case "$gopath" in
+    */packages)
+      printf '%s' "${gopath%/packages}/bin"
+      return
+      ;;
+  esac
+
   gobin=$(go env GOBIN 2>/dev/null || true)
+  gobin=${gobin%/}
   if [ -n "$gobin" ]; then
     printf '%s' "$gobin"
     return
   fi
 
-  gopath=$(go env GOPATH)
-  case "$gopath" in
-    *:*) gopath=${gopath%%:*} ;;
-  esac
-  case "$gopath" in
-    */packages) printf '%s' "${gopath%/packages}/bin" ;;
-    *) printf '%s' "${gopath}/bin" ;;
-  esac
+  printf '%s' "${gopath}/bin"
 }
 
 ensure_git
