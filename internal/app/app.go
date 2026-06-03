@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -13,6 +15,7 @@ import (
 	sharedprd "ralph/internal/shared/prd"
 	"ralph/internal/status"
 	"ralph/internal/tui"
+	"ralph/internal/web"
 )
 
 func Run(argv []string) int {
@@ -47,6 +50,9 @@ func Run(argv []string) int {
 	if opts.Status {
 		return RunStatus(cfg)
 	}
+	if opts.Web {
+		return RunWeb(cfg, opts.WebPort)
+	}
 	if opts.Prompt == "" && !opts.Resume && !isatty.IsTerminal(os.Stdin.Fd()) {
 		fmt.Fprintf(os.Stderr, "Error: interactive prompt requires a terminal (provide a prompt argument or use --resume)\n")
 		return 1
@@ -64,6 +70,32 @@ func RunTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int
 	}
 	if m, ok := finalModel.(*tui.Model); ok {
 		return m.ExitCode()
+	}
+	return 0
+}
+
+func RunWeb(cfg *config.Config, port int) int {
+	addr := web.ListenAddr(port)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- web.Run(cfg, addr)
+	}()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if web.ServerURL() != "" {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if u := web.ServerURL(); u != "" {
+		fmt.Fprintf(os.Stdout, "ralph web listening on %s\n", u)
+	}
+
+	err := <-errCh
+	if err != nil && err != http.ErrServerClosed {
+		fmt.Fprintf(os.Stderr, "Error running web server: %v\n", err)
+		return 1
 	}
 	return 0
 }

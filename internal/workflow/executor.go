@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"context"
 	"fmt"
 
 	"ralph/internal/shared/config"
@@ -54,4 +55,8 @@ func (e *Executor) emit(event Event) {
 
 func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 	NewOutputForwarder(e.emit).Forward(outputCh)
+}
+
+func (e *Executor) RunPrompt(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+	return e.runner.Run(ctx, prompt, outputCh)
 }

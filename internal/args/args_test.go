@@ -24,6 +24,8 @@ func TestParse(t *testing.T) {
 		{name: "unknown flag captured", args: []string{"--unknown", "prompt"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--unknown"}}},
 		{name: "multiple unknown flags captured", args: []string{"--foo", "-x", "prompt", "--bar"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}}},
 		{name: "status command", args: []string{"status"}, expected: Options{Status: true}},
+		{name: "web command", args: []string{"web"}, expected: Options{Web: true, WebPort: 8080}},
+		{name: "web with port", args: []string{"web", "--port", "3000"}, expected: Options{Web: true, WebPort: 3000}},
 	}
 
 	for _, tt := range tests {
@@ -46,6 +48,12 @@ func TestParse(t *testing.T) {
 			}
 			if got.Help != tt.expected.Help {
 				t.Errorf("Help = %v, want %v", got.Help, tt.expected.Help)
+			}
+			if got.Web != tt.expected.Web {
+				t.Errorf("Web = %v, want %v", got.Web, tt.expected.Web)
+			}
+			if got.WebPort != tt.expected.WebPort {
+				t.Errorf("WebPort = %v, want %v", got.WebPort, tt.expected.WebPort)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
@@ -84,7 +92,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "# TUI prompt screen (requires a terminal)", "ralph --dry-run"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}

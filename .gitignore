@@ -25,3 +25,15 @@ prd.json
 prd.json.lock
 ralph.log
 debug.log
+
+.ralph/
+.ralph_questions.json
+
+web/node_modules/
+internal/web/static/dist/assets/
+
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+.ralph-e2e-bin
+ralph-test
