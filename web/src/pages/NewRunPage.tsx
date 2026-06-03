@@ -35,6 +35,10 @@ export default function NewRunPage() {
 
   return (
     <section className="new-run-page">
+      <header className="new-run-header">
+        <h1 className="app-wordmark">Ralph</h1>
+        <p className="app-tagline">Describe a goal. Ralph plans and implements it.</p>
+      </header>
       <form className="new-run-composer" onSubmit={handleSubmit}>
         <textarea
           id="goal-prompt"
