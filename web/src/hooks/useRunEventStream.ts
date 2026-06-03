@@ -21,6 +21,7 @@ export function useRunEventStream(
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let source: EventSource | null = null;
     let stopped = false;
+    const seenIds = new Set<string>();
 
     function attachHandlers(stream: EventSource) {
       stream.onmessage = (ev: MessageEvent) => {
@@ -29,6 +30,8 @@ export function useRunEventStream(
           onEnvelope?.(envelope);
           const entry = entryFromEnvelope(envelope);
           if (entry) {
+            if (seenIds.has(entry.id)) return;
+            seenIds.add(entry.id);
             onEntry(entry);
           }
         } catch {
@@ -47,7 +50,7 @@ export function useRunEventStream(
     }
 
     function connect() {
-      source = openStream(id);
+      source = openStream(id!);
       attachHandlers(source);
     }
 

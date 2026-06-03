@@ -74,6 +74,7 @@ func replayRunEvents(w http.ResponseWriter, workDir, runID string) error {
 	defer f.Close()
 
 	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := sc.Bytes()
 		if len(line) == 0 {

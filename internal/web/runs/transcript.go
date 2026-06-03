@@ -20,6 +20,7 @@ func ReadEventTranscript(workDir, runID string, maxLines int) (string, error) {
 
 	var lines []string
 	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		if line != "" {

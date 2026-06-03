@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -43,5 +44,5 @@ func (a *API) FollowUpRun(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusAccepted)
 
-	go ctrl.RunFollowUp(r.Context(), message, a.cfg)
+	go ctrl.RunFollowUp(context.Background(), message, a.cfg)
 }

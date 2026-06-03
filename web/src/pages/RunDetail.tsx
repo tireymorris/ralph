@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   cancelRun,
@@ -24,11 +24,12 @@ const TERMINAL_RUN_STATUSES = new Set(["completed", "failed", "cancelled"]);
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
   const { run, loadError, setRun, setLoadError } = useRunPolling(id);
-  const { prd } = usePRDLoader(id, run?.status);
+  const { prd, prdError } = usePRDLoader(id, run?.status);
 
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
   const [clarifySubmitting, setClarifySubmitting] = useState(false);
+  const [clarifyError, setClarifyError] = useState<string | null>(null);
   const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
@@ -47,6 +48,14 @@ export default function RunDetail() {
       setClarifyQuestions(payload.Questions ?? []);
     }
   }, []);
+
+  useEffect(() => {
+    setEntries([]);
+    setClarifyQuestions([]);
+    setClarifyError(null);
+    setFollowUpError(null);
+    setStreamGeneration(0);
+  }, [id]);
 
   useRunEventStream(id, openEventStream, appendEntry, handleEnvelope, streamGeneration);
 
@@ -91,9 +100,12 @@ export default function RunDetail() {
   ) {
     if (!id || clarifySubmitting) return;
     setClarifySubmitting(true);
+    setClarifyError(null);
     try {
       await submitClarify(id, answers);
       setClarifyQuestions([]);
+    } catch (e) {
+      setClarifyError(e instanceof Error ? e.message : "failed to submit answers");
     } finally {
       setClarifySubmitting(false);
     }
@@ -147,12 +159,18 @@ export default function RunDetail() {
         </header>
       )}
       {run?.status === "waiting_clarify" && clarifyQuestions.length > 0 && (
-        <ClarifyForm
-          key={clarifyQuestions.join("\0")}
-          questions={clarifyQuestions}
-          onSubmit={(answers) => void handleClarifySubmit(answers)}
-          submitting={clarifySubmitting}
-        />
+        <>
+          {clarifyError && <p className="form-error">{clarifyError}</p>}
+          <ClarifyForm
+            key={clarifyQuestions.join("\0")}
+            questions={clarifyQuestions}
+            onSubmit={(answers) => void handleClarifySubmit(answers)}
+            submitting={clarifySubmitting}
+          />
+        </>
+      )}
+      {run?.status === "waiting_review" && prdError && (
+        <p className="form-error">{prdError}</p>
       )}
       {run?.status === "waiting_review" && prd && id && (
         <PRDReviewPanel runId={id} prd={prd} />

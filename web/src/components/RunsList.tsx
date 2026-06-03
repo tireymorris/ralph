@@ -12,6 +12,7 @@ export default function RunsList() {
   const match = RUN_PATH_RE.exec(location.pathname);
   const activeId = match?.[1];
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -21,10 +22,11 @@ export default function RunsList() {
         const data = await listRuns();
         if (!cancelled) {
           setRuns(data);
+          setFetchError(null);
         }
-      } catch {
+      } catch (e) {
         if (!cancelled) {
-          setRuns([]);
+          setFetchError(e instanceof Error ? e.message : "failed to load runs");
         }
       }
     }
@@ -36,6 +38,10 @@ export default function RunsList() {
       clearInterval(timer);
     };
   }, []);
+
+  if (fetchError && runs === null) {
+    return <p className="form-error">{fetchError}</p>;
+  }
 
   if (runs === null) {
     return <p className="runs-loading">Loading runs…</p>;

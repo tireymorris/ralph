@@ -6,8 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+
+	"ralph/internal/shared/logger"
 )
 
 const runDirPerm = 0o750
@@ -54,17 +57,23 @@ func (r *Registry) LoadFromWorkDir(workDir string) error {
 			if os.IsNotExist(err) {
 				continue
 			}
-			return fmt.Errorf("read run meta %q: %w", metaPath, err)
+			logger.Warn("skipping unreadable run meta", "path", metaPath, "error", err)
+			continue
 		}
 		var run Run
 		if err := json.Unmarshal(data, &run); err != nil {
-			return fmt.Errorf("parse run meta %q: %w", metaPath, err)
+			logger.Warn("skipping corrupt run meta", "path", metaPath, "error", err)
+			continue
 		}
 		if run.ID == "" {
 			run.ID = ent.Name()
 		}
 		if run.WorkDir == "" {
 			run.WorkDir = workDir
+		}
+		if run.PRDPath != "" && (strings.Contains(run.PRDPath, "..") || filepath.IsAbs(run.PRDPath)) {
+			logger.Warn("skipping run with unsafe PRDPath", "id", run.ID, "prd_path", run.PRDPath)
+			continue
 		}
 		stored := run
 		r.mu.Lock()

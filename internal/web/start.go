@@ -39,30 +39,6 @@ func setBaseURL(ln net.Listener) error {
 	return nil
 }
 
-func Start(cfg *config.Config, addr string) error {
-	ln, err := listen(cfg, addr)
-	if err != nil {
-		return err
-	}
-	if err := setBaseURL(ln); err != nil {
-		_ = ln.Close()
-		return err
-	}
-	h, err := NewHandler(cfg)
-	if err != nil {
-		_ = ln.Close()
-		return err
-	}
-	serverMu.Lock()
-	server = &http.Server{Handler: h}
-	srv := server
-	serverMu.Unlock()
-	go func() {
-		_ = srv.Serve(ln)
-	}()
-	return nil
-}
-
 func Run(cfg *config.Config, addr string) error {
 	ln, err := listen(cfg, addr)
 	if err != nil {

@@ -15,7 +15,7 @@ export function useRunPolling(id: string | undefined) {
 
     async function load() {
       try {
-        const data = await getRun(id);
+        const data = await getRun(id!);
         if (!cancelled) {
           setRun(data);
           setError(null);

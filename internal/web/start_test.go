@@ -2,6 +2,7 @@ package web
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -10,34 +11,37 @@ import (
 	"ralph/internal/shared/config"
 )
 
-func TestStartServesHealth(t *testing.T) {
+func TestRunServesHealth(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
 
-	done := make(chan struct{})
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	ln.Close()
+
+	done := make(chan error, 1)
 	go func() {
-		_ = Start(cfg, "127.0.0.1:0")
-		close(done)
+		done <- Run(cfg, addr)
 	}()
 
-	var baseURL string
+	var base string
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		baseURL = ServerURL()
-		if baseURL != "" {
+		base = ServerURL()
+		if base != "" {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	if baseURL == "" {
+	if base == "" {
 		t.Fatal("server did not become ready")
 	}
-	defer func() {
-		Shutdown()
-		<-done
-	}()
+	defer Shutdown()
 
-	resp, err := http.Get(baseURL + "/health")
+	resp, err := http.Get(base + "/health")
 	if err != nil {
 		t.Fatalf("GET /health: %v", err)
 	}

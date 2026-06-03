@@ -31,7 +31,7 @@ vi.mock("../api/client", async (importOriginal) => {
         onmessage: null,
         onerror: null,
       };
-      return mockEventSource;
+      return mockEventSource as unknown as EventSource;
     }),
   };
 });
@@ -67,7 +67,7 @@ afterEach(() => {
       onmessage: null,
       onerror: null,
     };
-    return mockEventSource;
+    return mockEventSource as unknown as EventSource;
   });
   vi.mocked(submitFollowUp).mockResolvedValue(undefined);
 });
@@ -160,7 +160,7 @@ describe("RunDetail", () => {
           onerror: null,
         };
         sources.push(src);
-        return src;
+        return src as unknown as EventSource;
       });
 
       renderRunDetail();

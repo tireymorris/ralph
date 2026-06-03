@@ -76,6 +76,7 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 	runner, err := a.runnerFactory(a.cfg)
 	if err != nil {
+		_ = a.registry.UpdateStatus(id, "failed", "failed")
 		writeJSONError(w, http.StatusInternalServerError, "runner unavailable")
 		return
 	}

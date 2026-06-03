@@ -58,7 +58,7 @@ export default function FollowUpComposer({
         >
           Send
         </button>
-        <kbd className="kbd-hint">⌘ Enter</kbd>
+        <kbd className="kbd-hint">{navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"} Enter</kbd>
       </div>
     </form>
   );

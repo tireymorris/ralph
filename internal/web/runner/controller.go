@@ -18,10 +18,7 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-var (
-	errNotWaitingReview  = errors.New("run is not waiting for review")
-	errNoPRDForImplement = errors.New("no PRD available for implementation")
-)
+var errNoPRDForImplement = errors.New("no PRD available for implementation")
 
 type RunController struct {
 	*workflow.Driver
@@ -153,7 +150,7 @@ func (c *RunController) processEvents() {
 }
 
 func (c *RunController) Subscribe() (<-chan events.Event, func()) {
-	ch := make(chan events.Event, 16)
+	ch := make(chan events.Event, 64)
 	c.mu.Lock()
 	c.subscribers[ch] = struct{}{}
 	c.mu.Unlock()
@@ -161,7 +158,6 @@ func (c *RunController) Subscribe() (<-chan events.Event, func()) {
 		c.mu.Lock()
 		delete(c.subscribers, ch)
 		c.mu.Unlock()
-		close(ch)
 	}
 	return ch, unsub
 }
@@ -174,7 +170,10 @@ func (c *RunController) fanOut(ev events.Event) {
 	}
 	c.mu.Unlock()
 	for _, ch := range subs {
-		ch <- ev
+		select {
+		case ch <- ev:
+		default:
+		}
 	}
 }
 
@@ -182,6 +181,11 @@ func (c *RunController) handleEvent(ev events.Event) {
 	c.TrackEventState(ev)
 	c.fanOut(ev)
 	status, phase := mapEventToStatusPhase(ev)
+	if status != "" || phase != "" {
+		if run, ok := c.registry.Get(c.runID); ok && run.Status == "cancelled" {
+			status, phase = "", ""
+		}
+	}
 	if status != "" || phase != "" {
 		_ = c.registry.UpdateStatus(c.runID, status, phase)
 	}
