@@ -21,6 +21,7 @@ func TestEventTypes(t *testing.T) {
 		EventClarifyingQuestions{Questions: []string{"Q?"}, AnswersCh: answersCh},
 		EventPRDReview{PRD: &prd.PRD{}},
 		EventPRDRevising{},
+		EventCleanupStarted{},
 	}
 
 	for _, e := range evs {
@@ -39,6 +40,7 @@ func TestAllEventIsEventMethods(t *testing.T) {
 	EventCompleted{}.isEvent()
 	EventPRDReview{}.isEvent()
 	EventPRDRevising{}.isEvent()
+	EventCleanupStarted{}.isEvent()
 }
 
 func TestAllEventIsEventMethodsIncludesClarifying(t *testing.T) {
