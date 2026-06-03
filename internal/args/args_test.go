@@ -83,9 +83,12 @@ func TestValidate(t *testing.T) {
 	}{
 		{name: "help bypasses validation", opts: Options{Help: true}, wantErr: false},
 		{name: "status bypasses validation", opts: Options{Status: true}, wantErr: false},
+		{name: "version bypasses validation", opts: Options{Version: true}, wantErr: false},
+		{name: "version with unknown flags bypasses validation", opts: Options{Version: true, UnknownFlags: []string{"--bogus"}}, wantErr: false},
 		{name: "resume without prompt is valid", opts: Options{Resume: true}, wantErr: false},
 		{name: "prompt provided is valid", opts: Options{Prompt: "do something"}, wantErr: false},
 		{name: "no prompt no resume is valid", opts: Options{}, wantErr: false},
+		{name: "unknown flags invalid without subcommand", opts: Options{UnknownFlags: []string{"--bogus"}}, wantErr: true},
 		{name: "empty prompt with dry run is valid", opts: Options{DryRun: true}, wantErr: false},
 	}
 	for _, tt := range tests {

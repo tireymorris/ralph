@@ -72,7 +72,7 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
-	if o.Help || o.Status || o.Web {
+	if o.Help || o.Status || o.Version || o.Web {
 		return nil
 	}
 	if len(o.UnknownFlags) > 0 {
