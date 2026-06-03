@@ -144,6 +144,20 @@ func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
 	}
 }
 
+func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseCleanup
+
+	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{})
+	if cmd != nil {
+		t.Error("EventCleanupCompleted should return nil cmd")
+	}
+	if m.phase != PhaseCompleted {
+		t.Errorf("phase = %v, want PhaseCompleted", m.phase)
+	}
+}
+
 func TestHandleWorkflowEventOutput(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

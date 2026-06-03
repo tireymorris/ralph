@@ -103,6 +103,11 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.logger.AddLog("Running post-implementation cleanup...")
 		m.markMainScrollJump()
 
+	case events.EventCleanupCompleted:
+		m.phase = PhaseCompleted
+		m.logger.AddLog("Cleanup complete!")
+		m.markMainScrollJump()
+
 	case events.EventOutput:
 		if !e.Verbose || m.verbose {
 			m.logger.AddOutputLine(runner.OutputLine{Text: e.Text, IsErr: e.IsErr})
