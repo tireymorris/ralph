@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/**' ]
   pull_request:
     branches: [ main ]
 
@@ -13,8 +13,59 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Build web UI
+      run: npm ci && npm run build
+      working-directory: web
+
+    - name: Frontend unit tests
+      run: npm test
+      working-directory: web
+
     - uses: actions/setup-go@v4
       with:
         go-version: 1.24.0
 
-    - run: go test ./... -cover
+    - name: Go unit tests
+      run: go test ./... -cover
+
+    - name: Go integration tests
+      run: go test -tags=integration -timeout 2m -run TestWebIntegration ./...
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - uses: actions/setup-go@v4
+      with:
+        go-version: 1.24.0
+
+    - name: Build web UI
+      run: npm ci && npm run build
+      working-directory: web
+
+    - name: Build Go binary
+      run: go build -o .ralph-e2e-bin .
+
+    - name: Install E2E dependencies
+      run: npm ci
+      working-directory: e2e
+
+    - name: Install Playwright browsers
+      run: npx playwright install chromium --with-deps
+      working-directory: e2e
+
+    - name: E2E tests
+      run: npm test
+      working-directory: e2e
+      env:
+        SKIP_BUILD: "1"
