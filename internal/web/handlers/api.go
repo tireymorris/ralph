@@ -90,3 +90,15 @@ func (a *API) registerControllerLocked(id string, ctrl *runctrl.RunController) {
 	ctrl.SetOnTerminal(func() { a.releaseController(id) })
 	a.controllers[id] = ctrl
 }
+
+func (a *API) ReleaseAllControllers() {
+	a.mu.Lock()
+	ids := make([]string, 0, len(a.controllers))
+	for id := range a.controllers {
+		ids = append(ids, id)
+	}
+	a.mu.Unlock()
+	for _, id := range ids {
+		a.releaseController(id)
+	}
+}
