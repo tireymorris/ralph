@@ -10,6 +10,12 @@ description: >-
 
 Ralph turns a natural-language goal into `prd.json`, then implements it story by story via an AI runner.
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
+```
+
 ## Use
 
 Run from the target repo root:
@@ -51,4 +57,3 @@ Gitignore these in the target repo:
 - large PRD runs can overscope badly
 - `--dry-run` may still need a real TTY in some environments
 - Ralph does not load `CLAUDE.md` unless the runner does
-
