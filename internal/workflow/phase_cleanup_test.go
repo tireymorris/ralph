@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -111,5 +112,45 @@ func TestRunCleanupSuccess(t *testing.T) {
 	}
 	if startedIdx >= completedIdx {
 		t.Error("EventCleanupStarted should come before EventCleanupCompleted")
+	}
+}
+
+func TestRunCleanupRunnerError(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		return errors.New("something broke")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p := &prd.PRD{Context: "ctx"}
+
+	err := exec.RunCleanup(context.Background(), p)
+	if err == nil {
+		t.Fatal("RunCleanup() should return error when runner fails")
+	}
+
+	foundError := false
+	foundCompleted := false
+	for len(ch) > 0 {
+		e := <-ch
+		switch ev := e.(type) {
+		case EventError:
+			if strings.Contains(ev.Err.Error(), "cleanup") {
+				foundError = true
+			}
+		case EventCleanupCompleted:
+			foundCompleted = true
+		}
+	}
+
+	if !foundError {
+		t.Error("expected EventError with message containing 'cleanup'")
+	}
+	if foundCompleted {
+		t.Error("EventCleanupCompleted should not be emitted on runner failure")
 	}
 }
