@@ -5,25 +5,34 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
   --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --bg: #09090b;
-  --bg-subtle: #0c0c0f;
-  --surface: #141416;
-  --surface-raised: #1a1a1e;
-  --surface-hover: #222226;
-  --surface-glass: color-mix(in srgb, var(--surface-raised) 82%, transparent);
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --text: #f4f4f5;
-  --text-secondary: #a1a1aa;
+  --bg: #f8f8fa;
+  --bg-subtle: #f4f4f5;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f4f4f5;
+  --surface-glass: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --text: #18181b;
+  --text-secondary: #52525b;
   --muted: #71717a;
-  --accent: #8b7cf6;
-  --accent-hover: #a599f7;
-  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-ring: color-mix(in srgb, var(--accent) 35%, transparent);
+  --accent: #6d5dd8;
+  --accent-hover: #5b4cc4;
+  --accent-bright: #8b7cf6;
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-ring: color-mix(in srgb, var(--accent) 40%, transparent);
+  --on-accent: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-panel: 0 0 0 1px var(--border), 0 8px 30px rgba(0, 0, 0, 0.08);
+  --gradient-hero: rgba(109, 93, 216, 0.1);
+  --gradient-side: rgba(96, 165, 250, 0.06);
+  --gradient-foot: rgba(109, 93, 216, 0.05);
+  --composer-bar-bg: color-mix(in srgb, var(--bg) 88%, transparent);
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -46,10 +55,6 @@
   --radius-xl: 18px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
-  --shadow-panel: 0 0 0 1px var(--border), 0 12px 40px rgba(0, 0, 0, 0.45);
-
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 140ms;
   --duration-normal: 220ms;
@@ -69,6 +74,34 @@
   -webkit-font-smoothing: antialiased;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --bg-subtle: #0c0c0f;
+    --surface: #141416;
+    --surface-raised: #1a1a1e;
+    --surface-hover: #222226;
+    --surface-glass: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+    --border: rgba(255, 255, 255, 0.07);
+    --border-strong: rgba(255, 255, 255, 0.12);
+    --text: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --muted: #71717a;
+    --accent: #8b7cf6;
+    --accent-hover: #a599f7;
+    --accent-bright: #a599f7;
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+    --accent-ring: color-mix(in srgb, var(--accent) 35%, transparent);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.35);
+    --shadow-panel: 0 0 0 1px var(--border), 0 12px 40px rgba(0, 0, 0, 0.45);
+    --gradient-hero: rgba(139, 124, 246, 0.14);
+    --gradient-side: rgba(96, 165, 250, 0.06);
+    --gradient-foot: rgba(139, 124, 246, 0.05);
+    --composer-bar-bg: color-mix(in srgb, var(--bg) 75%, transparent);
+  }
+}
+
 html,
 body {
   margin: 0;
@@ -78,9 +111,9 @@ body {
 
 body {
   background-image:
-    radial-gradient(ellipse 90% 60% at 50% -30%, rgba(139, 124, 246, 0.14), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 50%, rgba(96, 165, 250, 0.06), transparent 50%),
-    radial-gradient(ellipse 40% 30% at 0% 80%, rgba(139, 124, 246, 0.05), transparent 45%);
+    radial-gradient(ellipse 90% 60% at 50% -30%, var(--gradient-hero), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 50%, var(--gradient-side), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 0% 80%, var(--gradient-foot), transparent 45%);
 }
 
 #root {
@@ -132,17 +165,17 @@ textarea:focus-visible {
 }
 
 .btn--primary {
-  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
-  color: #fff;
+  background: linear-gradient(180deg, var(--accent-bright) 0%, var(--accent) 100%);
+  color: var(--on-accent);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    var(--shadow-sm),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #b4a8f8 0%, var(--accent-hover) 100%);
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
   box-shadow:
-    0 4px 16px rgba(139, 124, 246, 0.35),
+    0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
@@ -732,7 +765,7 @@ textarea:focus-visible {
   border: 1px solid color-mix(in srgb, var(--status-failed) 28%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-5);
-  color: color-mix(in srgb, var(--status-failed) 25%, var(--text));
+  color: color-mix(in srgb, var(--status-failed) 55%, var(--text));
 }
 
 .timeline-entry-text {
@@ -773,7 +806,7 @@ textarea:focus-visible {
   gap: var(--space-3);
   padding: var(--space-5);
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  background: var(--composer-bar-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }

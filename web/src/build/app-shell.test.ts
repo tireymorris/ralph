@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { readIndexCss, ruleBlock } from "./css-test-utils";
+import { mediaBlock, readIndexCss, ruleBlock } from "./css-test-utils";
+
+describe("index.css color scheme", () => {
+  it("supports light and dark via prefers-color-scheme", () => {
+    const css = readIndexCss();
+    expect(css).toMatch(/color-scheme:\s*light\s+dark/);
+    const dark = mediaBlock(css, "(prefers-color-scheme: dark)") ?? "";
+    expect(dark).toMatch(/--bg:\s*#09090b/);
+    expect(ruleBlock(css, ":root")).toMatch(/--bg:\s*#f8f8fa/);
+  });
+});
 
 describe("index.css app shell", () => {
   it("fills viewport with a centered single-column main", () => {
