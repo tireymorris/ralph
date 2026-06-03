@@ -310,6 +310,25 @@ func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
 	}
 }
 
+func TestCleanup_instructs_running_tests_before_committing(t *testing.T) {
+	result := Cleanup("", "prd.json")
+	hasTestInstruction := strings.Contains(result, "run") && strings.Contains(result, "test")
+	if !hasTestInstruction {
+		t.Errorf("Cleanup() should instruct running tests")
+	}
+	hasCommitInstruction := strings.Contains(result, "commit")
+	if !hasCommitInstruction {
+		t.Errorf("Cleanup() should reference committing")
+	}
+}
+
+func TestCleanup_omits_context_section_when_empty(t *testing.T) {
+	result := Cleanup("", "prd.json")
+	if strings.Contains(result, "CODEBASE CONTEXT") {
+		t.Error("Cleanup() with empty context should not include CODEBASE CONTEXT section")
+	}
+}
+
 func TestCleanup_includes_codebaseContext_when_nonempty(t *testing.T) {
 	result := Cleanup("Go 1.24 with Bubble Tea", "prd.json")
 	if !strings.Contains(result, "Go 1.24 with Bubble Tea") {
