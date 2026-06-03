@@ -8,7 +8,7 @@ tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t ralph-install)
 trap 'rm -rf "$tmpdir"' EXIT
 
 git clone --depth 1 --branch "$REF" "$REPO" "$tmpdir/ralph"
-(cd "$tmpdir/ralph" && go install .)
+(cd "$tmpdir/ralph" && go install -ldflags "$(./scripts/version-ldflags.sh)" .)
 
 gobin="$(go env GOBIN)"
 if [[ -n "$gobin" ]]; then

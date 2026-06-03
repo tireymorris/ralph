@@ -134,7 +134,12 @@ func Install(ctx context.Context, opts InstallOptions) error {
 	if _, err := commandRunner.Output(ctx, "", "git", "clone", "--depth", "1", "--branch", ref, repo, cloneDir); err != nil {
 		return err
 	}
-	if _, err := commandRunner.Output(ctx, cloneDir, "go", "install", "."); err != nil {
+	ldflags, err := commandRunner.Output(ctx, cloneDir, "bash", "scripts/version-ldflags.sh")
+	if err != nil {
+		return fmt.Errorf("version ldflags: %w", err)
+	}
+	installArgs := []string{"install", "-ldflags", strings.TrimSpace(string(ldflags)), "."}
+	if _, err := commandRunner.Output(ctx, cloneDir, "go", installArgs...); err != nil {
 		if !strings.Contains(err.Error(), "go install") {
 			return fmt.Errorf("go install: %w", err)
 		}

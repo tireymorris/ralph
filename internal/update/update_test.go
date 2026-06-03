@@ -93,8 +93,10 @@ func TestInstallInvokesCloneAndGoInstall(t *testing.T) {
 					gotClone = true
 					return nil, nil
 				}
+			case "bash":
+				return []byte("-X ralph/internal/version.Version=test"), nil
 			case "go":
-				if c.dir != "" && len(c.args) == 2 && c.args[0] == "install" && c.args[1] == "." {
+				if c.dir != "" && len(c.args) >= 2 && c.args[0] == "install" && c.args[len(c.args)-1] == "." {
 					gotGoInstall = true
 					bin := filepath.Join(gopath, "bin", "ralph")
 					if err := os.MkdirAll(filepath.Dir(bin), 0o755); err != nil {
@@ -129,6 +131,9 @@ func TestInstallGoInstallFailure(t *testing.T) {
 		fn: func(c call) ([]byte, error) {
 			if c.name == "git" {
 				return nil, nil
+			}
+			if c.name == "bash" {
+				return []byte("-X test"), nil
 			}
 			if c.name == "go" {
 				return nil, errors.New("go install .: exit status 1")
