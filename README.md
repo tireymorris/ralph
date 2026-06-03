@@ -10,6 +10,8 @@ curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/inst
 
 Pin a branch or tag: `curl -fsSL .../install.sh | bash -s -- main`
 
+The install script targets **macOS and Linux** (bash). On **Windows**, use WSL or Git Bash. If Go or Git is missing, it tries **Homebrew** when available, otherwise downloads Go from [go.dev](https://go.dev/dl/) into `~/.local/go` (no sudo). Set `RALPH_INSTALL_DEPS=0` to require dependencies upfront. Override install location with `RALPH_BIN_DIR` or Go with `RALPH_GO_ROOT`.
+
 From a clone: `go install .` or `go build -o ralph .`
 
 Manual one-liner:
