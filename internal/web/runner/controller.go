@@ -210,6 +210,10 @@ func mapEventToStatusPhase(ev events.Event) (status, phase string) {
 		return "waiting_review", "review"
 	case events.EventStoryStarted, events.EventStoryCompleted:
 		return "implementing", "implement"
+	case events.EventCleanupStarted:
+		return "implementing", "cleanup"
+	case events.EventCleanupCompleted:
+		return "completed", "complete"
 	case events.EventCompleted:
 		return "completed", "complete"
 	case events.EventError:
