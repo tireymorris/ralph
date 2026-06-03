@@ -51,7 +51,7 @@ export default function RunsList() {
     return (
       <div className="runs-empty-state">
         <p className="runs-empty">No runs yet</p>
-        <Link to="/new" className="btn btn--primary btn--sm">
+        <Link to="/" className="btn btn--primary btn--sm">
           Start your first run
         </Link>
       </div>

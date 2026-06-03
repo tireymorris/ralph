@@ -12,9 +12,9 @@ vi.mock("../api/client", () => ({
 
 function renderComposer() {
   return render(
-    <MemoryRouter initialEntries={["/new"]}>
+    <MemoryRouter initialEntries={["/"]}>
       <Routes>
-        <Route path="/new" element={<NewRunPage />} />
+        <Route path="/" element={<NewRunPage />} />
         <Route path="/runs/:id" element={<div data-testid="run-detail" />} />
       </Routes>
     </MemoryRouter>,

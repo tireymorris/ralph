@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   cancelRun,
   createRun,
@@ -135,53 +135,40 @@ export default function RunDetail() {
     <div className="run-detail">
       {loadError && <p className="form-error">{loadError}</p>}
       {run && (
-        <header className="run-detail-header">
-          <h1 className="run-detail-title">{run.prompt}</h1>
-          <div className="run-detail-meta">
-            <span className={`run-status-badge ${statusBadgeClass(run.status)}`}>
-              {formatStatus(run.status)}
-            </span>
-            {progress && progress.total > 0 && (
-              <span className="run-detail-progress-label">
-                {progress.completed} of {progress.total} stories
-              </span>
-            )}
-            {!isTerminal && (
-              <button
-                type="button"
-                className="btn btn--secondary btn--sm run-detail-cancel"
-                onClick={() => void handleCancel()}
-                disabled={cancelSubmitting}
-              >
-                Cancel
-              </button>
-            )}
-            {run.status === "cancelled" && (
-              <button
-                type="button"
-                className="btn btn--primary btn--sm"
-                onClick={() => void handleRetry()}
-                disabled={retrySubmitting}
-              >
-                Retry
-              </button>
-            )}
-          </div>
+        <header className="run-detail-toolbar">
+          <Link to="/" className="run-detail-home">
+            New
+          </Link>
+          <p className="run-detail-prompt" title={run.prompt}>
+            {run.prompt}
+          </p>
+          <span className={`run-status-badge ${statusBadgeClass(run.status)}`}>
+            {formatStatus(run.status)}
+          </span>
           {progress && progress.total > 0 && (
-            <div
-              className="run-detail-progress-bar"
-              role="progressbar"
-              aria-valuenow={progress.completed}
-              aria-valuemin={0}
-              aria-valuemax={progress.total}
+            <span className="run-detail-progress-label">
+              {progress.completed}/{progress.total}
+            </span>
+          )}
+          {!isTerminal && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm run-detail-cancel"
+              onClick={() => void handleCancel()}
+              disabled={cancelSubmitting}
             >
-              <div
-                className="run-detail-progress-bar-fill"
-                style={{
-                  width: `${(progress.completed / progress.total) * 100}%`,
-                }}
-              />
-            </div>
+              Cancel
+            </button>
+          )}
+          {run.status === "cancelled" && (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={() => void handleRetry()}
+              disabled={retrySubmitting}
+            >
+              Retry
+            </button>
           )}
         </header>
       )}

@@ -1,45 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { mediaBlock, readIndexCss, ruleBlock } from "./css-test-utils";
+import { readIndexCss, ruleBlock } from "./css-test-utils";
 
 describe("index.css app shell", () => {
-  it("sets .app-shell grid to --sidebar-width token", () => {
-    const block = ruleBlock(readIndexCss(), ".app-shell");
-    expect(block).toMatch(/grid-template-columns:\s*var\(--sidebar-width\)\s+1fr/);
+  it("fills viewport with a centered single-column main", () => {
+    const block = ruleBlock(readIndexCss(), ".app-main");
+    expect(block).toMatch(/height:\s*100vh/);
+    expect(block).toMatch(/max-width:\s*48rem/);
+    expect(block).toMatch(/margin:\s*0\s+auto/);
   });
 
-  it("adds 150ms background transition on nav links", () => {
-    const block = ruleBlock(readIndexCss(), ".app-nav a");
-    expect(block).toMatch(/transition:[^;]*background[^;]*150ms/);
-  });
-
-  it("adds accent color on current nav link", () => {
-    const block = ruleBlock(readIndexCss(), '.app-nav a[aria-current="page"]');
-    expect(block).toMatch(/color:\s*var\(--accent\)/);
-  });
-
-  it("offsets .follow-up-composer left to match sidebar width", () => {
+  it("anchors follow-up composer to full viewport width", () => {
     const block = ruleBlock(readIndexCss(), ".follow-up-composer");
-    expect(block).toMatch(/left:\s*var\(--sidebar-width\)/);
-  });
-});
-
-describe("index.css app shell at 768px", () => {
-  const narrowCss = () =>
-    mediaBlock(readIndexCss(), "(max-width: 768px)") ?? "";
-
-  it("stacks .app-shell to a single column", () => {
-    const block = ruleBlock(narrowCss(), ".app-shell");
-    expect(block).toMatch(/grid-template-columns:\s*1fr/);
-  });
-
-  it("resets .follow-up-composer left offset for full width", () => {
-    const block = ruleBlock(narrowCss(), ".follow-up-composer");
     expect(block).toMatch(/left:\s*0/);
+    expect(block).toMatch(/right:\s*0/);
   });
 
-  it("caps .runs-list height with scroll", () => {
-    const block = ruleBlock(narrowCss(), ".runs-list");
-    expect(block).toMatch(/max-height:\s*200px/);
-    expect(block).toMatch(/overflow-y:\s*auto/);
+  it("styles run toolbar as a single compact row", () => {
+    const block = ruleBlock(readIndexCss(), ".run-detail-toolbar");
+    expect(block).toMatch(/display:\s*flex/);
+    expect(block).toMatch(/align-items:\s*center/);
   });
 });

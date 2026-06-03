@@ -106,7 +106,7 @@ describe("RunDetail", () => {
 
     await waitFor(() => {
       const badge = document.querySelector(
-        ".run-detail-header .run-status-badge--running",
+        ".run-detail-toolbar .run-status-badge--running",
       );
       expect(badge).not.toBeNull();
       expect(badge).toHaveTextContent("Running");
@@ -215,7 +215,7 @@ describe("RunDetail", () => {
     expect(screen.getByText(longText)).toBeInTheDocument();
   });
 
-  it("sets progress bar fill width from story_progress", async () => {
+  it("shows story progress in the toolbar", async () => {
     vi.mocked(getRun).mockResolvedValue({
       ...baseRun,
       status: "implementing",
@@ -226,9 +226,7 @@ describe("RunDetail", () => {
     renderRunDetail();
 
     await waitFor(() => {
-      const fill = document.querySelector(".run-detail-progress-bar-fill");
-      expect(fill).not.toBeNull();
-      expect(fill).toHaveStyle({ width: "50%" });
+      expect(screen.getByText("2/4")).toBeInTheDocument();
     });
   });
 

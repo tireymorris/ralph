@@ -35,15 +35,7 @@ export default function NewRunPage() {
 
   return (
     <section className="new-run-page">
-      <h1 className="new-run-heading">New run</h1>
-      <p className="new-run-hint">
-        Describe what you want to build. Ralph will generate a PRD, ask
-        clarifying questions if needed, then implement story by story.
-      </p>
       <form className="new-run-composer" onSubmit={handleSubmit}>
-        <label htmlFor="goal-prompt" className="field-label">
-          Goal
-        </label>
         <textarea
           id="goal-prompt"
           aria-label="Goal prompt"
@@ -51,9 +43,9 @@ export default function NewRunPage() {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
-          rows={6}
+          rows={4}
           disabled={submitting}
-          placeholder="Describe your goal…"
+          placeholder="What do you want to build?"
         />
         {error ? (
           <p className="form-error" role="alert">

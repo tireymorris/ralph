@@ -8,7 +8,7 @@ test.describe("create run", () => {
     await page.getByRole("button", { name: /start run/i }).click();
 
     await expect(page).toHaveURL(/\/runs\/.+/);
-    await expect(page.locator(".run-detail-title")).toHaveText("build a widget");
+    await expect(page.locator(".run-detail-prompt")).toHaveText("build a widget");
   });
 
   test("status badge appears after run is created", async ({ serverPage: page }) => {

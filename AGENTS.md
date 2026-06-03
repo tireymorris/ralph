@@ -60,7 +60,7 @@ Supported backends:
 - `web/src/api` — API client (`client.ts`) and shared types (`types.ts`)
 - `web/src/hooks` — React hooks (`useRunEventStream`, `useRunPolling`, `usePRDLoader`, `useTimelineScroll`)
 - `web/src/lib` — pure utility modules (`format.ts`, `timeline.ts`)
-- `web/src/pages` — routed page components (`RunDetail`, `NewRunPage`, `HomePage`)
+- `web/src/pages` — routed page components (`RunDetail`, `NewRunPage`)
 - `web/src/components` — reusable UI components (`ClarifyForm`, `PRDReviewPanel`, `FollowUpComposer`, etc.)
 - `e2e/` — Playwright E2E test suite (builds Go binary + frontend, runs against mock runner)
 
