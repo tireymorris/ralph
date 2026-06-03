@@ -48,23 +48,36 @@ Supported backends:
 - `internal/shared/constants` — tuning constants
 - `internal/shared/logger` — shared slog wrapper
 - `internal/shared/prd` — PRD model, validation, locking, and storage
-- `internal/shared/runner` — runner abstraction and concrete integrations
-- `internal/workflow` — workflow phases, events, persistence, and test execution
-- `internal/tui` — Bubble Tea model, view, update loop, and workflow integration
+- `internal/shared/runner` — runner abstraction, concrete integrations, and configurable mock runner
+- `internal/workflow` — workflow phases, events, persistence, test execution, and shared `Driver`
+- `internal/workflow/driver.go` — `Driver` encapsulates phase sequencing, clarify state, and PRD tracking (shared by TUI and web)
+- `internal/tui` — Bubble Tea model, view, update loop, and workflow integration (embeds `Driver`)
 - `internal/status` — plain-text PRD status output
 - `internal/web` — HTTP server, static file embedding, handler registration
 - `internal/web/handlers` — REST/SSE API handlers (one file per endpoint group) and `respond.go` for shared response helpers
-- `internal/web/runner` — `RunController` that bridges workflow execution to the web API
+- `internal/web/runner` — `RunController` that bridges workflow execution to the web API (embeds `Driver`)
 - `internal/web/runs` — run persistence (`Registry`), `IsTerminalStatus`, and `ReadEventTranscript`
 - `web/src/api` — API client (`client.ts`) and shared types (`types.ts`)
 - `web/src/hooks` — React hooks (`useRunEventStream`, `useRunPolling`, `usePRDLoader`, `useTimelineScroll`)
 - `web/src/lib` — pure utility modules (`format.ts`, `timeline.ts`)
 - `web/src/pages` — routed page components (`RunDetail`, `NewRunPage`, `HomePage`)
 - `web/src/components` — reusable UI components (`ClarifyForm`, `PRDReviewPanel`, `FollowUpComposer`, etc.)
+- `e2e/` — Playwright E2E test suite (builds Go binary + frontend, runs against mock runner)
+
+## State files
+Ralph writes these files in the working directory (all covered by `.gitignore`):
+- `prd.json` / `prd.json.lock` — PRD and its file lock
+- `.ralph_questions.json` — temporary clarification questions (deleted after read)
+- `.ralph/runs/<id>/meta.json` — per-run metadata (web UI)
+- `.ralph/runs/<id>/events.ndjson` — per-run event log for SSE replay (web UI)
+- `ralph.log` — application log
 
 ## Testing notes
 - Broad test coverage exists across args/config, PRD storage/validation, runner parsing, workflow phases, TUI behavior, and status output
 - Top-level integration tests exercise CLI behavior, context persistence, and the web server (`web_integration_test.go`)
+- Frontend unit tests via Vitest (`web/src/**/*.test.{ts,tsx}`)
+- E2E tests via Playwright (`e2e/tests/*.spec.ts`) covering run creation, clarify, PRD review, follow-up, cancellation, and sidebar navigation
+- CI runs all test suites via GitHub Actions (`.github/workflows/ci.yml`)
 
 ## Start here
 If you need to understand the system quickly:

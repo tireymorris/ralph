@@ -24,8 +24,6 @@ ralph web                           # local web UI (default http://127.0.0.1:808
 ralph web --port 3000               # web UI on another port
 ```
 
-Writes `prd.json` in the working directory. The web UI also stores per-run metadata under `.ralph/runs/` in the working directory.
-
 | Flag | Purpose |
 |------|---------|
 | `--dry-run` | Generate PRD only |
@@ -34,16 +32,31 @@ Writes `prd.json` in the working directory. The web UI also stores per-run metad
 | `-v`, `--verbose` | Debug logging |
 | `-h`, `--help` | Help |
 
+## State files
+
+Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`.
+
+| Path | Created by | Purpose |
+|------|-----------|---------|
+| `prd.json` | TUI + web | The generated PRD |
+| `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
+| `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
+| `.ralph/runs/<id>/meta.json` | Web UI | Per-run metadata (prompt, status, timestamps) |
+| `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
+| `ralph.log` | All modes | Application log |
+
 ## Runner
 
-Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (Cursor Agent). Ralph does not pick a model itself—that stays in your runner’s config.
+Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (Cursor Agent). Ralph does not pick a model itself—that stays in your runner's config.
 
 Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
 ## Development
 
 ```bash
-go test ./...
+go test ./...                 # Go unit + integration tests
+cd web && npm test            # React/Vitest frontend tests
+cd e2e && npx playwright test # Playwright E2E tests (builds Go + frontend first)
 ```
 
 When you change the web UI (`web/`), build the embedded assets before Go tests:
@@ -51,3 +64,5 @@ When you change the web UI (`web/`), build the embedded assets before Go tests:
 ```bash
 cd web && npm ci && npm run build
 ```
+
+CI runs all three test suites on push and PR via GitHub Actions (`.github/workflows/ci.yml`).
