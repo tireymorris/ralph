@@ -310,6 +310,13 @@ func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
 	}
 }
 
+func TestCleanup_includes_codebaseContext_when_nonempty(t *testing.T) {
+	result := Cleanup("Go 1.24 with Bubble Tea", "prd.json")
+	if !strings.Contains(result, "Go 1.24 with Bubble Tea") {
+		t.Errorf("Cleanup() should include codebaseContext value")
+	}
+}
+
 func TestCleanup_contains_DRY_conventions_and_consolidate(t *testing.T) {
 	result := Cleanup("Go 1.24 app", "prd.json")
 	if !strings.Contains(result, "DRY") {

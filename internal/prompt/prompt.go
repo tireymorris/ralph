@@ -134,8 +134,16 @@ Write the updated PRD file, then STOP — do not implement anything.`, userPromp
 }
 
 func Cleanup(codebaseContext, prdFile string) string {
-	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+	contextSection := ""
+	if codebaseContext != "" {
+		contextSection = fmt.Sprintf(`
+CODEBASE CONTEXT:
+%s
+`, codebaseContext)
+	}
 
+	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+%s
 Review the codebase and apply the following improvements:
 
 1. Refactor repeated patterns — extract shared helpers and eliminate duplication
@@ -146,7 +154,7 @@ Review the codebase and apply the following improvements:
 
 After each change, run the full test suite. Only commit if all tests are green.
 
-PRD file: %s`, prdFile)
+PRD file: %s`, contextSection, prdFile)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
