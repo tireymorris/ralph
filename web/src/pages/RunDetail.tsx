@@ -38,8 +38,8 @@ export default function RunDetail() {
   const [retrySubmitting, setRetrySubmitting] = useState(false);
   const [streamGeneration, setStreamGeneration] = useState(0);
 
-  const timelineRef = useRef<HTMLUListElement>(null);
-  useTimelineScroll(timelineRef, entries);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useTimelineScroll(scrollRef, entries);
 
   const appendEntry = useCallback((entry: TimelineEntry) => {
     setEntries((prev) => [...prev, entry]);
@@ -172,35 +172,37 @@ export default function RunDetail() {
           )}
         </header>
       )}
-      {run?.status === "waiting_clarify" && clarifyQuestions.length > 0 && (
-        <>
-          {clarifyError && <p className="form-error">{clarifyError}</p>}
-          <ClarifyForm
-            key={clarifyQuestions.join("\0")}
-            questions={clarifyQuestions}
-            onSubmit={(answers) => void handleClarifySubmit(answers)}
-            submitting={clarifySubmitting}
-          />
-        </>
-      )}
-      {run?.status === "waiting_review" && prdError && (
-        <p className="form-error">{prdError}</p>
-      )}
-      {run?.status === "waiting_review" && prd && id && (
-        <PRDReviewPanel runId={id} prd={prd} />
-      )}
-      <ul ref={timelineRef} className="run-timeline" aria-live="polite">
-        {entries.length === 0 && run && !isTerminal && (
-          <li className="timeline-empty">Waiting for events…</li>
+      <div ref={scrollRef} className="run-detail-body">
+        {run?.status === "waiting_clarify" && clarifyQuestions.length > 0 && (
+          <>
+            {clarifyError && <p className="form-error">{clarifyError}</p>}
+            <ClarifyForm
+              key={clarifyQuestions.join("\0")}
+              questions={clarifyQuestions}
+              onSubmit={(answers) => void handleClarifySubmit(answers)}
+              submitting={clarifySubmitting}
+            />
+          </>
         )}
-        {entries.map((entry) => (
-          <TimelineEntryBubble
-            key={entry.id}
-            variant={entry.variant}
-            text={entry.text}
-          />
-        ))}
-      </ul>
+        {run?.status === "waiting_review" && prdError && (
+          <p className="form-error">{prdError}</p>
+        )}
+        {run?.status === "waiting_review" && prd && id && (
+          <PRDReviewPanel runId={id} prd={prd} />
+        )}
+        <ul className="run-timeline" aria-live="polite">
+          {entries.length === 0 && run && !isTerminal && (
+            <li className="timeline-empty">Waiting for events…</li>
+          )}
+          {entries.map((entry) => (
+            <TimelineEntryBubble
+              key={entry.id}
+              variant={entry.variant}
+              text={entry.text}
+            />
+          ))}
+        </ul>
+      </div>
       {run && isTerminal && (
         <FollowUpComposer
           onSubmit={(message) => handleFollowUpSubmit(message)}

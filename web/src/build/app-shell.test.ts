@@ -20,4 +20,10 @@ describe("index.css app shell", () => {
     expect(block).toMatch(/display:\s*flex/);
     expect(block).toMatch(/align-items:\s*center/);
   });
+
+  it("scrolls run content below the toolbar", () => {
+    const block = ruleBlock(readIndexCss(), ".run-detail-body");
+    expect(block).toMatch(/overflow-y:\s*auto/);
+    expect(block).toMatch(/flex:\s*1/);
+  });
 });
