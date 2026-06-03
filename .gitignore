@@ -1,6 +1,9 @@
 .ralph-bin
 ralph
 .claude/
+!.claude/skills/
+!.claude/skills/ralph/
+!.claude/skills/ralph/SKILL.md
 
 *.exe
 *.exe~
