@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"ralph/internal/version"
@@ -34,6 +35,46 @@ func TestRunVersion(t *testing.T) {
 	want := version.Info() + "\n"
 	if got := buf.String(); got != want {
 		t.Errorf("stdout = %q, want %q", got, want)
+	}
+}
+
+func TestRunClean(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	prdPath := filepath.Join(tmpDir, "prd.json")
+	if err := os.WriteFile(prdPath, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := Run([]string{"clean"}); code != 0 {
+		t.Fatalf("Run(clean) = %d, want 0", code)
+	}
+	if _, err := os.Stat(prdPath); !os.IsNotExist(err) {
+		t.Fatalf("prd.json still exists after clean: %v", err)
+	}
+}
+
+func TestRunCleanSkipsValidateResume(t *testing.T) {
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	if code := Run([]string{"clean", "--resume"}); code != 0 {
+		t.Fatalf("Run(clean --resume) = %d, want 0 (ValidateResume must not run)", code)
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/mattn/go-isatty"
 
 	"ralph/internal/args"
+	"ralph/internal/clean"
 	"ralph/internal/shared/config"
 	"ralph/internal/version"
 	"ralph/internal/shared/logger"
@@ -53,6 +54,10 @@ func Run(argv []string) int {
 		return 1
 	}
 	logger.Debug("config loaded", "runner", cfg.Runner)
+
+	if opts.Clean {
+		return RunClean(cfg)
+	}
 
 	if err := ValidateResume(cfg, opts.Resume); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -117,6 +122,15 @@ func RunStatus(cfg *config.Config) int {
 	if err := status.Display(cfg); err != nil {
 		return 1
 	}
+	return 0
+}
+
+func RunClean(cfg *config.Config) int {
+	if err := clean.RemoveState(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+	fmt.Println("Ralph state removed.")
 	return 0
 }
 
