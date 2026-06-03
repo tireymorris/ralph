@@ -24,6 +24,7 @@ func TestParse(t *testing.T) {
 		{name: "unknown flag captured", args: []string{"--unknown", "prompt"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--unknown"}}},
 		{name: "multiple unknown flags captured", args: []string{"--foo", "-x", "prompt", "--bar"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}}},
 		{name: "status command", args: []string{"status"}, expected: Options{Status: true}},
+		{name: "version command", args: []string{"version"}, expected: Options{Version: true}},
 		{name: "web command", args: []string{"web"}, expected: Options{Web: true, WebPort: 8080}},
 		{name: "web with port", args: []string{"web", "--port", "3000"}, expected: Options{Web: true, WebPort: 3000}},
 		{name: "skip cleanup flag", args: []string{"--skip-cleanup", "do thing"}, expected: Options{Prompt: "do thing", SkipCleanup: true}},
@@ -34,6 +35,9 @@ func TestParse(t *testing.T) {
 			got := Parse(tt.args)
 			if got.Status != tt.expected.Status {
 				t.Errorf("Status = %v, want %v", got.Status, tt.expected.Status)
+			}
+			if got.Version != tt.expected.Version {
+				t.Errorf("Version = %v, want %v", got.Version, tt.expected.Version)
 			}
 			if got.Prompt != tt.expected.Prompt {
 				t.Errorf("Prompt = %q, want %q", got.Prompt, tt.expected.Prompt)

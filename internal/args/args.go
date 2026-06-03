@@ -13,6 +13,7 @@ type Options struct {
 	Verbose      bool
 	Help         bool
 	Status       bool
+	Version      bool
 	Web          bool
 	WebPort      int
 	SkipCleanup  bool
@@ -40,6 +41,8 @@ func Parse(args []string) *Options {
 			opts.SkipCleanup = true
 		case "status":
 			opts.Status = true
+		case "version":
+			opts.Version = true
 		case "web":
 			opts.Web = true
 			opts.WebPort = defaultWebPort
