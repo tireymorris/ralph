@@ -36,6 +36,9 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
+			if err := e.RunCleanup(ctx, p); err != nil {
+				return err
+			}
 			e.emit(EventCompleted{})
 			return nil
 		}

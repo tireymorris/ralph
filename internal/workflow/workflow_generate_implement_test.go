@@ -577,6 +577,72 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	}
 }
 
+func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunImplementation(context.Background(), testPRD)
+	if err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	var evts []Event
+	for len(ch) > 0 {
+		evts = append(evts, <-ch)
+	}
+
+	cleanupStartedIdx := -1
+	cleanupCompletedIdx := -1
+	completedIdx := -1
+	for i, e := range evts {
+		switch e.(type) {
+		case EventCleanupStarted:
+			cleanupStartedIdx = i
+		case EventCleanupCompleted:
+			cleanupCompletedIdx = i
+		case EventCompleted:
+			completedIdx = i
+		}
+	}
+
+	if cleanupStartedIdx == -1 {
+		t.Fatal("expected EventCleanupStarted to be emitted")
+	}
+	if cleanupCompletedIdx == -1 {
+		t.Fatal("expected EventCleanupCompleted to be emitted")
+	}
+	if completedIdx == -1 {
+		t.Fatal("expected EventCompleted to be emitted")
+	}
+	if cleanupStartedIdx >= completedIdx {
+		t.Error("EventCleanupStarted must come before EventCompleted")
+	}
+	if cleanupCompletedIdx >= completedIdx {
+		t.Error("EventCleanupCompleted must come before EventCompleted")
+	}
+
+	if mock.CallCount() < 2 {
+		t.Errorf("runner should be called at least twice (story + cleanup), got %d", mock.CallCount())
+	}
+}
+
 func TestRunGenerateNoPRDFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
