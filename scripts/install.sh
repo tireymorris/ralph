@@ -47,7 +47,7 @@ install_go_user_local() {
   goarch=$(detect_goarch)
   command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || \
     die "curl or wget is required to download Go"
-  version=$(curl -fsSL https://go.dev/VERSION?m=text | sed 's/^go//')
+  version=$(curl -fsSL https://go.dev/VERSION?m=text | head -n1 | sed 's/^go//')
   archive="go${version}.${goos}-${goarch}.tar.gz"
   url="https://go.dev/dl/${archive}"
   tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t ralph-go)
@@ -138,12 +138,17 @@ git clone --depth 1 --branch "$REF" "$REPO" "$tmpdir/ralph"
 
 [[ -x "$target" ]] || die "install failed: ${target} not found (GOPATH=$(go env GOPATH))"
 
-if command -v ralph >/dev/null 2>&1; then
-  echo "installed $(command -v ralph)"
-  ralph --help | head -n 1
+if [ -x "$target" ] && { [ "$(command -v ralph 2>/dev/null || true)" = "$target" ] || ! command -v ralph >/dev/null 2>&1; }; then
+  echo "installed ${target}"
+  "$target" --help | head -n 1
+elif command -v ralph >/dev/null 2>&1; then
+  echo "installed ${target}"
+  echo "note: $(command -v ralph) is earlier on PATH than ${target}"
+  "$target" --help | head -n 1
 else
   echo "installed ${target}"
   echo "add to PATH: export PATH=\"${bindir}:\$PATH\""
+  "$target" --help | head -n 1
 fi
 
 case ":${PATH}:" in
