@@ -5,13 +5,17 @@ import (
 	"os"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/workflow"
 )
 
 func RemoveState(cfg *config.Config) error {
 	if err := removeIfExists(cfg.PRDPath()); err != nil {
 		return err
 	}
-	return removeIfExists(cfg.PRDPath() + ".lock")
+	if err := removeIfExists(cfg.PRDPath() + ".lock"); err != nil {
+		return err
+	}
+	return removeIfExists(cfg.ConfigPath(workflow.ClarifyingQuestionsFile))
 }
 
 func removeIfExists(path string) error {
