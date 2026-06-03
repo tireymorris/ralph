@@ -22,16 +22,32 @@ export interface StoryCompletedPayload {
   Success?: boolean;
 }
 
-let entryCounter = 0;
+let ephemeralEntryCounter = 0;
 
-function nextEntryId(): string {
-  entryCounter += 1;
-  return `entry-${entryCounter}`;
+function nextEphemeralEntryId(): string {
+  ephemeralEntryCounter += 1;
+  return `local-${ephemeralEntryCounter}`;
+}
+
+function hashString(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export function stableEnvelopeEntryId(envelope: EventEnvelope): string {
+  const payload = JSON.stringify(envelope.payload ?? null);
+  return `${envelope.type}:${hashString(payload)}`;
 }
 
 export function entryFromEnvelope(
   envelope: EventEnvelope,
 ): TimelineEntry | null {
+  const id = stableEnvelopeEntryId(envelope);
+
   switch (envelope.type) {
     case "EventOutput": {
       const payload = envelope.payload as EventOutputPayload;
@@ -39,7 +55,7 @@ export function entryFromEnvelope(
         return null;
       }
       return {
-        id: nextEntryId(),
+        id,
         variant: payload.IsErr ? "error" : "assistant",
         text: payload.Text,
       };
@@ -48,7 +64,7 @@ export function entryFromEnvelope(
       const story = envelope.payload as StoryPayload;
       const label = story.title?.trim() || story.id || "unknown";
       return {
-        id: nextEntryId(),
+        id,
         variant: "system",
         text: `Started story: ${label}`,
       };
@@ -59,7 +75,7 @@ export function entryFromEnvelope(
       const label = story?.title?.trim() || story?.id || "unknown";
       const outcome = payload.Success ? "completed" : "failed";
       return {
-        id: nextEntryId(),
+        id,
         variant: "system",
         text: `Story ${outcome}: ${label}`,
       };
@@ -67,7 +83,7 @@ export function entryFromEnvelope(
     case "EventError": {
       const payload = envelope.payload as EventErrorPayload;
       return {
-        id: nextEntryId(),
+        id,
         variant: "error",
         text: payload.error || "Unknown error",
       };
@@ -79,12 +95,12 @@ export function entryFromEnvelope(
 
 export function makeSystemEntry(text: string): TimelineEntry {
   return {
-    id: nextEntryId(),
+    id: nextEphemeralEntryId(),
     variant: "system",
     text,
   };
 }
 
 export function resetTimelineEntryIdsForTests(): void {
-  entryCounter = 0;
+  ephemeralEntryCounter = 0;
 }
