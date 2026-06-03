@@ -1,6 +1,9 @@
 package version
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestDefaults(t *testing.T) {
 	if Version != "dev" {
@@ -11,5 +14,15 @@ func TestDefaults(t *testing.T) {
 	}
 	if Ref != "unknown" {
 		t.Errorf("Ref = %q, want unknown", Ref)
+	}
+}
+
+func TestInfo(t *testing.T) {
+	info := Info()
+	if info == "" {
+		t.Fatal("Info() returned empty string")
+	}
+	if !strings.Contains(info, "commit=unknown") {
+		t.Errorf("Info() = %q, want substring commit=unknown", info)
 	}
 }
