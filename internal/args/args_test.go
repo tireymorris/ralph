@@ -24,6 +24,7 @@ func TestParse(t *testing.T) {
 		{name: "unknown flag captured", args: []string{"--unknown", "prompt"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--unknown"}}},
 		{name: "multiple unknown flags captured", args: []string{"--foo", "-x", "prompt", "--bar"}, expected: Options{Prompt: "prompt", UnknownFlags: []string{"--foo", "-x", "--bar"}}},
 		{name: "status command", args: []string{"status"}, expected: Options{Status: true}},
+		{name: "clean command", args: []string{"clean"}, expected: Options{Clean: true}},
 		{name: "version command", args: []string{"version"}, expected: Options{Version: true}},
 		{name: "update command", args: []string{"update"}, expected: Options{Update: true, UpdateRef: "main"}},
 		{name: "update with ref", args: []string{"update", "--ref", "v1.0"}, expected: Options{Update: true, UpdateRef: "v1.0"}},
@@ -38,6 +39,9 @@ func TestParse(t *testing.T) {
 			got := Parse(tt.args)
 			if got.Status != tt.expected.Status {
 				t.Errorf("Status = %v, want %v", got.Status, tt.expected.Status)
+			}
+			if got.Clean != tt.expected.Clean {
+				t.Errorf("Clean = %v, want %v", got.Clean, tt.expected.Clean)
 			}
 			if got.Version != tt.expected.Version {
 				t.Errorf("Version = %v, want %v", got.Version, tt.expected.Version)

@@ -13,6 +13,7 @@ type Options struct {
 	Verbose      bool
 	Help         bool
 	Status       bool
+	Clean        bool
 	Version      bool
 	Update       bool
 	UpdateRef    string
@@ -65,6 +66,8 @@ func Parse(args []string) *Options {
 			opts.SkipCleanup = true
 		case "status":
 			opts.Status = true
+		case "clean":
+			opts.Clean = true
 		case "version":
 			opts.Version = true
 		case "update":
