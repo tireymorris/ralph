@@ -23,21 +23,44 @@ if [ "$go_major" -lt "$MIN_GO_MAJOR" ] 2>/dev/null || { [ "$go_major" -eq "$MIN_
   die "Go ${MIN_GO_MAJOR}.${MIN_GO_MINOR}+ is required (found $(go env GOVERSION))"
 fi
 
+resolve_bindir() {
+  if [ -n "${RALPH_BIN_DIR:-}" ]; then
+    printf '%s' "$RALPH_BIN_DIR"
+    return
+  fi
+
+  gobin=$(go env GOBIN 2>/dev/null || true)
+  if [ -n "$gobin" ]; then
+    printf '%s' "$gobin"
+    return
+  fi
+
+  gopath=$(go env GOPATH)
+  case "$gopath" in
+    *:*) gopath=${gopath%%:*} ;;
+  esac
+  case "$gopath" in
+    */packages) printf '%s' "${gopath%/packages}/bin" ;;
+    *) printf '%s' "${gopath}/bin" ;;
+  esac
+}
+
 tmpdir=$(mktemp -d 2>/dev/null || mktemp -d -t ralph-install)
 cleanup() { rm -rf "$tmpdir"; }
 trap cleanup EXIT
+
+bindir=$(resolve_bindir)
+mkdir -p "$bindir"
+target="${bindir}/ralph"
 
 echo "installing ralph from ${REPO}@${REF}..."
 git clone --depth 1 --branch "$REF" "$REPO" "$tmpdir/ralph"
 (
   cd "$tmpdir/ralph"
-  go install .
+  GOBIN="$bindir" go install .
 )
 
-bindir="$(go env GOPATH)/bin"
-target="${bindir}/ralph"
-
-[[ -x "$target" ]] || die "install failed: ${target} not found"
+[[ -x "$target" ]] || die "install failed: ${target} not found (GOPATH=$(go env GOPATH))"
 
 if command -v ralph >/dev/null 2>&1; then
   echo "installed $(command -v ralph)"
