@@ -99,6 +99,8 @@ func TestValidate(t *testing.T) {
 	}{
 		{name: "help bypasses validation", opts: Options{Help: true}, wantErr: false},
 		{name: "status bypasses validation", opts: Options{Status: true}, wantErr: false},
+		{name: "clean bypasses validation", opts: Options{Clean: true}, wantErr: false},
+		{name: "clean with unknown flags bypasses validation", opts: Options{Clean: true, UnknownFlags: []string{"--bogus"}}, wantErr: false},
 		{name: "version bypasses validation", opts: Options{Version: true}, wantErr: false},
 		{name: "version with unknown flags bypasses validation", opts: Options{Version: true, UnknownFlags: []string{"--bogus"}}, wantErr: false},
 		{name: "update bypasses validation", opts: Options{Update: true}, wantErr: false},
