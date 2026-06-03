@@ -26,6 +26,7 @@ Thumbs.db
 
 prd.json
 prd.json.lock
+.prd.tmp.*
 
 .ralph/
 .ralph_questions.json
