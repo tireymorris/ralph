@@ -16,4 +16,6 @@ type (
 	EventClarifyingQuestions = events.EventClarifyingQuestions
 	EventPRDReview           = events.EventPRDReview
 	EventPRDRevising         = events.EventPRDRevising
+	EventCleanupStarted      = events.EventCleanupStarted
+	EventCleanupCompleted    = events.EventCleanupCompleted
 )
