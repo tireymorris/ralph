@@ -22,7 +22,7 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	changedFiles := branchChangedFiles(e.cfg.WorkDir)
 
 	for pass := 1; pass <= constants.CleanupPassCount; pass++ {
-		e.emit(EventCleanupStarted{})
+		e.emit(EventCleanupStarted{Pass: pass, Total: constants.CleanupPassCount})
 
 		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, pass, constants.CleanupPassCount)
 
@@ -42,7 +42,7 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 			return runErr
 		}
 
-		e.emit(EventCleanupCompleted{})
+		e.emit(EventCleanupCompleted{Pass: pass, Total: constants.CleanupPassCount})
 	}
 
 	return nil
