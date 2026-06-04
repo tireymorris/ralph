@@ -39,6 +39,15 @@ type Run struct {
 	LastReviewTranscriptPath string    `json:"last_review_transcript_path,omitempty"`
 }
 
+type ReviewLoopUpdate struct {
+	Checkpoint               string
+	ReviewIteration          int
+	ReviewFingerprint        string
+	ReviewElapsedMs          int64
+	StopReason               string
+	LastReviewTranscriptPath string
+}
+
 type Registry struct {
 	mu   sync.RWMutex
 	runs map[string]*Run
@@ -216,6 +225,26 @@ func (r *Registry) UpdateCheckpoint(id, checkpoint string) error {
 	}
 
 	run.Checkpoint = checkpoint
+	run.UpdatedAt = time.Now()
+
+	return persistRun(run)
+}
+
+func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	run, ok := r.runs[id]
+	if !ok {
+		return fmt.Errorf("run %q not found", id)
+	}
+
+	run.Checkpoint = u.Checkpoint
+	run.ReviewIteration = u.ReviewIteration
+	run.ReviewFingerprint = u.ReviewFingerprint
+	run.ReviewElapsedMs = u.ReviewElapsedMs
+	run.StopReason = u.StopReason
+	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)
