@@ -158,6 +158,28 @@ func TestRegistryClearList(t *testing.T) {
 	}
 }
 
+func TestRegistryClearGet(t *testing.T) {
+	reg := NewRegistry()
+	workDir := t.TempDir()
+	ts := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	run := &Run{
+		ID:        "run-gone",
+		WorkDir:   workDir,
+		CreatedAt: ts,
+		UpdatedAt: ts,
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	reg.Clear()
+
+	if _, ok := reg.Get("run-gone"); ok {
+		t.Fatal("Get() ok = true after Clear, want false")
+	}
+}
+
 func TestConcurrentRegisterList(t *testing.T) {
 	reg := NewRegistry()
 	workDir := t.TempDir()
