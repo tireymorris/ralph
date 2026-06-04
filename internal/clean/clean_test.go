@@ -43,57 +43,69 @@ func assertNoPRDTempFiles(t *testing.T, dir string) {
 	}
 }
 
-func TestRemoveState_seededArtifacts(t *testing.T) {
-	tests := []struct {
-		name        string
-		seed        func(*config.Config) string
-		assertExtra func(*testing.T, string, *config.Config)
-	}{
+type stateArtifactCase struct {
+	name         string
+	seed         func(*config.Config) string
+	backupRel    string
+	removeAssert func(t *testing.T, dir string, cfg *config.Config, seedPath string)
+}
+
+func stateArtifactCases() []stateArtifactCase {
+	return []stateArtifactCase{
 		{
-			name: "PRD",
-			seed: func(cfg *config.Config) string { return cfg.PRDPath() },
+			name:      "PRD",
+			seed:      func(cfg *config.Config) string { return cfg.PRDPath() },
+			backupRel: "prd.json",
 		},
 		{
-			name: "PRD lock",
-			seed: func(cfg *config.Config) string { return prd.LockPath(cfg.PRDPath()) },
+			name:      "PRD lock",
+			seed:      func(cfg *config.Config) string { return prd.LockPath(cfg.PRDPath()) },
+			backupRel: "prd.json.lock",
 		},
 		{
 			name: "clarifying questions",
 			seed: func(cfg *config.Config) string {
 				return cfg.ConfigPath(workflow.ClarifyingQuestionsFile)
 			},
+			backupRel: ".ralph_questions.json",
 		},
 		{
 			name: "orphaned PRD temps",
 			seed: func(cfg *config.Config) string {
 				return filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.100.7")
 			},
-			assertExtra: func(t *testing.T, dir string, _ *config.Config) {
+			backupRel: ".prd.tmp.100.7",
+			removeAssert: func(t *testing.T, dir string, _ *config.Config, _ string) {
 				assertNoPRDTempFiles(t, dir)
 			},
 		},
 		{
-			name: ".ralph run data",
+			name: "runs",
 			seed: func(cfg *config.Config) string {
-				return filepath.Join(cfg.WorkDir, ralphDataDir, "runs", "x", "meta.json")
+				return filepath.Join(runsDir(cfg), "test-run", "meta.json")
 			},
-			assertExtra: func(t *testing.T, _ string, cfg *config.Config) {
+			backupRel: "runs/test-run/meta.json",
+			removeAssert: func(t *testing.T, _ string, cfg *config.Config, _ string) {
 				assertNotExist(t, filepath.Join(cfg.WorkDir, ralphDataDir))
 			},
 		},
 	}
-	for _, tt := range tests {
+}
+
+func TestRemoveState_seededArtifacts(t *testing.T) {
+	for _, tt := range stateArtifactCases() {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			cfg := testConfig(t, dir)
-			writeSeedFile(t, tt.seed(cfg))
+			seedPath := tt.seed(cfg)
+			writeSeedFile(t, seedPath)
 			if err := RemoveState(cfg); err != nil {
 				t.Fatalf("RemoveState: %v", err)
 			}
-			if tt.assertExtra != nil {
-				tt.assertExtra(t, dir, cfg)
+			if tt.removeAssert != nil {
+				tt.removeAssert(t, dir, cfg, seedPath)
 			} else {
-				assertNotExist(t, tt.seed(cfg))
+				assertNotExist(t, seedPath)
 			}
 		})
 	}

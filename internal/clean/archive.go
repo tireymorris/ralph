@@ -35,17 +35,12 @@ func ArchivePriorState(cfg *config.Config) (backupDir string, err error) {
 }
 
 func archiveRunsTree(cfg *config.Config, backupDir string) error {
-	runsSrc := filepath.Join(cfg.WorkDir, ralphDataDir, "runs")
-	if _, err := os.Stat(runsSrc); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
+	runsSrc := runsDir(cfg)
+	exists, err := pathExists(runsSrc)
+	if err != nil || !exists {
 		return err
 	}
-	runsDest := filepath.Join(backupDir, "runs")
-	if err := os.MkdirAll(filepath.Dir(runsDest), 0755); err != nil {
-		return err
-	}
-	return os.Rename(runsSrc, runsDest)
+	return moveIntoBackup(backupDir, runsSrc, "runs")
 }
 
 func archiveOrphanedPRDTemps(cfg *config.Config, backupDir string) error {
@@ -63,10 +58,9 @@ func archiveOrphanedPRDTemps(cfg *config.Config, backupDir string) error {
 
 func hasStateArtifacts(cfg *config.Config) (bool, error) {
 	for _, path := range stateFilePaths(cfg) {
-		if _, err := os.Stat(path); err == nil {
-			return true, nil
-		} else if !os.IsNotExist(err) {
-			return false, err
+		exists, err := pathExists(path)
+		if err != nil || exists {
+			return exists, err
 		}
 	}
 	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
@@ -76,13 +70,7 @@ func hasStateArtifacts(cfg *config.Config) (bool, error) {
 	if len(matches) > 0 {
 		return true, nil
 	}
-	runsDir := filepath.Join(cfg.WorkDir, ralphDataDir, "runs")
-	if _, err := os.Stat(runsDir); err == nil {
-		return true, nil
-	} else if !os.IsNotExist(err) {
-		return false, err
-	}
-	return false, nil
+	return pathExists(runsDir(cfg))
 }
 
 func releasePRDLock(cfg *config.Config) {
@@ -92,12 +80,22 @@ func releasePRDLock(cfg *config.Config) {
 }
 
 func archiveFileIfExists(backupDir, src string) error {
-	if _, err := os.Stat(src); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
+	exists, err := pathExists(src)
+	if err != nil || !exists {
 		return err
 	}
 	return moveIntoBackup(backupDir, src, filepath.Base(src))
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
 
 func newBackupDir(cfg *config.Config) (string, error) {

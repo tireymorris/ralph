@@ -23,11 +23,15 @@ func prdTempGlobPattern(cfg *config.Config) string {
 	return filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*")
 }
 
+func runsDir(cfg *config.Config) string {
+	return filepath.Join(cfg.WorkDir, ralphDataDir, "runs")
+}
+
 // SeedStateArtifacts creates all known Ralph state artifacts under cfg.WorkDir.
 // Returned paths are the seeded files (not the .ralph directory itself).
 func SeedStateArtifacts(cfg *config.Config) ([]string, error) {
 	tmpPath := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.1.999")
-	metaPath := filepath.Join(cfg.WorkDir, ralphDataDir, "runs", "test-run", "meta.json")
+	metaPath := filepath.Join(runsDir(cfg), "test-run", "meta.json")
 	paths := append(stateFilePaths(cfg), tmpPath, metaPath)
 	for _, p := range paths {
 		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
