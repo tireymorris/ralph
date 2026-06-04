@@ -22,7 +22,7 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	e.emit(EventCleanupStarted{})
 
 	changedFiles := branchChangedFiles(e.cfg.WorkDir)
-	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
+	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, 1, constants.CleanupPassCount)
 
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	done := make(chan struct{})

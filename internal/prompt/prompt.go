@@ -133,7 +133,7 @@ Preserve existing story IDs and "passes" values for stories that are unchanged.
 Write the updated PRD file, then STOP — do not implement anything.`, userPrompt, sb.String(), prdFile)
 }
 
-func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
+func Cleanup(codebaseContext, prdFile string, changedFiles []string, pass, total int) string {
 	contextSection := ""
 	if codebaseContext != "" {
 		contextSection = fmt.Sprintf(`
@@ -153,6 +153,8 @@ Only modify the files listed above. Do not touch unrelated code.
 	}
 
 	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+
+Cleanup pass %d of %d.
 %s%s
 Review the codebase and apply the following improvements:
 
@@ -164,7 +166,7 @@ Review the codebase and apply the following improvements:
 
 After each change, run the full test suite. Only commit if all tests are green.
 
-PRD file: %s`, contextSection, filesSection, prdFile)
+PRD file: %s`, pass, total, contextSection, filesSection, prdFile)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
