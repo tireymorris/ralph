@@ -685,6 +685,8 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 
 	foundCompleted := false
 	foundCleanupError := false
+	var cleanupStarted int
+	var cleanupCompleted int
 	for len(ch) > 0 {
 		e := <-ch
 		switch ev := e.(type) {
@@ -694,7 +696,24 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 			if strings.Contains(ev.Err.Error(), "cleanup") {
 				foundCleanupError = true
 			}
+		case EventCleanupStarted:
+			cleanupStarted++
+			if ev.Pass != 1 {
+				t.Errorf("EventCleanupStarted Pass=%d, want 1 on first cleanup failure", ev.Pass)
+			}
+			if ev.Total != 3 {
+				t.Errorf("EventCleanupStarted Total=%d, want 3", ev.Total)
+			}
+		case EventCleanupCompleted:
+			cleanupCompleted++
 		}
+	}
+
+	if cleanupStarted != 1 {
+		t.Errorf("expected exactly 1 EventCleanupStarted before failure, got %d", cleanupStarted)
+	}
+	if cleanupCompleted != 0 {
+		t.Errorf("EventCleanupCompleted should not be emitted when cleanup fails, got %d", cleanupCompleted)
 	}
 
 	if foundCompleted {
