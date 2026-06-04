@@ -2,10 +2,12 @@ package workflow
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runner"
 )
 
 func TestRunImplementationReviewEventsAfterStoryCompleted(t *testing.T) {
@@ -168,4 +170,38 @@ func assertReviewBeforeCleanup(evts []Event) error {
 		return errEventOrder{"cleanup must follow implementation review"}
 	}
 	return nil
+}
+
+func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
+	cfg, testPRD := saveSingleStoryPRDInGitRepo(t, true)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	inStory := false
+	mock.runFunc = func(_ context.Context, p string, _ chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") && inStory {
+			t.Fatal("implementation review runner invoked between story start and complete")
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	eventsDone := make(chan struct{})
+	go func() {
+		defer close(eventsDone)
+		for ev := range ch {
+			switch ev.(type) {
+			case EventStoryStarted:
+				inStory = true
+			case EventStoryCompleted:
+				inStory = false
+			}
+		}
+	}()
+
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+	close(ch)
+	<-eventsDone
 }
