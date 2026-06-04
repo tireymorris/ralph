@@ -8,7 +8,11 @@ import {
   submitClarify,
   submitFollowUp,
 } from "../api/client";
-import type { EventClarifyingQuestionsPayload, EventEnvelope } from "../api/types";
+import {
+  LOCAL_PRD_RUN_ID,
+  type EventClarifyingQuestionsPayload,
+  type EventEnvelope,
+} from "../api/types";
 import {
   formatStatus,
   isTerminalRunStatus,
@@ -26,6 +30,7 @@ import TimelineEntryBubble from "../components/TimelineEntry";
 
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
+  const isLocalPRD = id === LOCAL_PRD_RUN_ID;
   const navigate = useNavigate();
   const { run, loadError, setRun, setLoadError } = useRunPolling(id);
   const { prd, prdError } = usePRDLoader(id, run?.status);
@@ -62,7 +67,13 @@ export default function RunDetail() {
     setStreamGeneration(0);
   }, [id]);
 
-  useRunEventStream(id, openEventStream, appendEntry, handleEnvelope, streamGeneration);
+  useRunEventStream(
+    isLocalPRD ? undefined : id,
+    openEventStream,
+    appendEntry,
+    handleEnvelope,
+    streamGeneration,
+  );
 
   async function handleFollowUpSubmit(message: string) {
     if (!id || followUpSubmitting) return;
@@ -152,7 +163,7 @@ export default function RunDetail() {
               {progress.completed}/{progress.total}
             </span>
           )}
-          {!isTerminal && (
+          {!isTerminal && !isLocalPRD && (
             <button
               type="button"
               className="btn btn--secondary btn--sm run-detail-cancel"
@@ -193,7 +204,13 @@ export default function RunDetail() {
           <PRDReviewPanel runId={id} prd={prd} />
         )}
         <ul className="run-timeline" aria-live="polite">
-          {entries.length === 0 && run && !isTerminal && (
+          {entries.length === 0 && run && !isTerminal && isLocalPRD && (
+            <li className="timeline-empty">
+              This run is in progress in the terminal (Ralph CLI or TUI). Continue
+              there, or run <code>ralph clean</code> to reset.
+            </li>
+          )}
+          {entries.length === 0 && run && !isTerminal && !isLocalPRD && (
             <li className="timeline-empty">Waiting for events…</li>
           )}
           {entries.map((entry) => (

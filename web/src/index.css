@@ -306,10 +306,26 @@ textarea:focus-visible {
 }
 
 .run-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.run-source-tag {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  color: var(--muted);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
 }
 
 .run-meta {

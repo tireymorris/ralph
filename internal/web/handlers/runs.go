@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ type runResponse struct {
 	Phase         string         `json:"phase"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
+	Source        string         `json:"source,omitempty"`
 	StoryProgress *storyProgress `json:"story_progress,omitempty"`
 }
 
@@ -49,6 +51,10 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 	workDir := a.cfg.WorkDir
 	if active, ok := a.registry.ActiveForWorkDir(workDir); ok {
 		writeJSONError(w, http.StatusConflict, fmt.Sprintf("active run %q in progress", active.ID))
+		return
+	}
+	if _, ok := runs.OngoingLocalPRD(a.cfg, a.registry); ok {
+		writeJSONError(w, http.StatusConflict, "local prd.json run in progress; finish or run ralph clean")
 		return
 	}
 
@@ -101,9 +107,13 @@ func newRunID() (string, error) {
 
 func (a *API) ListRuns(w http.ResponseWriter, r *http.Request) {
 	listed := a.registry.List()
-	out := make([]runResponse, 0, len(listed))
+	out := make([]runResponse, 0, len(listed)+1)
 	for _, run := range listed {
 		out = append(out, a.runResponse(run))
+	}
+	if local, ok := runs.OngoingLocalPRD(a.cfg, a.registry); ok {
+		out = append(out, a.runResponse(local))
+		sortRunResponses(out)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -114,8 +124,17 @@ func (a *API) GetRun(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	run, ok := a.registry.Get(id)
 	if !ok {
-		writeJSONError(w, http.StatusNotFound, "run not found")
-		return
+		if id == runs.LocalPRDRunID {
+			if local, ok := runs.OngoingLocalPRD(a.cfg, a.registry); ok {
+				run = local
+			} else {
+				writeJSONError(w, http.StatusNotFound, "run not found")
+				return
+			}
+		} else {
+			writeJSONError(w, http.StatusNotFound, "run not found")
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -131,15 +150,28 @@ func (a *API) runResponse(run *runs.Run) runResponse {
 		CreatedAt: run.CreatedAt,
 		UpdatedAt: run.UpdatedAt,
 	}
+	if run.ID == runs.LocalPRDRunID {
+		resp.Source = "local_prd"
+	}
 	if sp := a.storyProgress(run); sp != nil {
 		resp.StoryProgress = sp
 	}
 	return resp
 }
 
+func sortRunResponses(list []runResponse) {
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].CreatedAt.After(list[j].CreatedAt)
+	})
+}
+
 func (a *API) storyProgress(run *runs.Run) *storyProgress {
 	runCfg := *a.cfg
-	runCfg.WorkDir = run.WorkDir
+	if run.ID == runs.LocalPRDRunID {
+		runCfg.WorkDir = a.cfg.WorkDir
+	} else {
+		runCfg.WorkDir = run.WorkDir
+	}
 	if run.PRDPath != "" {
 		runCfg.PRDFile = run.PRDPath
 	}

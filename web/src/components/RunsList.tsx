@@ -94,7 +94,12 @@ export default function RunsList({
               to={`/runs/${run.id}`}
               aria-current={run.id === activeId ? "page" : undefined}
             >
-              <span className="run-prompt">{run.prompt}</span>
+              <span className="run-prompt">
+                {run.prompt}
+                {run.source === "local_prd" ? (
+                  <span className="run-source-tag">CLI</span>
+                ) : null}
+              </span>
               <span className="run-meta">
                 <span
                   className={`run-status-badge ${statusBadgeClass(run.status)}`}

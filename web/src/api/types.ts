@@ -31,6 +31,8 @@ export interface EventErrorPayload {
   error: string;
 }
 
+export const LOCAL_PRD_RUN_ID = "prd-local";
+
 export interface Run {
   id: string;
   prompt: string;
@@ -38,6 +40,7 @@ export interface Run {
   phase: string;
   created_at: string;
   updated_at: string;
+  source?: string;
   story_progress?: StoryProgress;
 }
 

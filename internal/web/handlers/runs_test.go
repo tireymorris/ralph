@@ -201,6 +201,113 @@ func TestGetRunStoryProgress(t *testing.T) {
 	}
 }
 
+func TestListRunsIncludesOngoingLocalPRD(t *testing.T) {
+	workDir := t.TempDir()
+	prdJSON := `{
+  "version": 1,
+  "project_name": "CLI goal",
+  "stories": [
+    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	api := handlers.NewAPI(cfg, runs.NewRegistry())
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs", nil)
+	rec := httptest.NewRecorder()
+	api.ListRuns(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var list []struct {
+		ID     string `json:"id"`
+		Prompt string `json:"prompt"`
+		Source string `json:"source"`
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("len(list) = %d, want 1", len(list))
+	}
+	if list[0].ID != runs.LocalPRDRunID {
+		t.Fatalf("id = %q, want %q", list[0].ID, runs.LocalPRDRunID)
+	}
+	if list[0].Prompt != "CLI goal" {
+		t.Fatalf("prompt = %q, want CLI goal", list[0].Prompt)
+	}
+	if list[0].Source != "local_prd" {
+		t.Fatalf("source = %q, want local_prd", list[0].Source)
+	}
+	if list[0].Status != "implementing" {
+		t.Fatalf("status = %q, want implementing", list[0].Status)
+	}
+}
+
+func TestGetRunLocalPRD(t *testing.T) {
+	workDir := t.TempDir()
+	prdJSON := `{
+  "version": 1,
+  "project_name": "CLI goal",
+  "stories": [
+    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	api := handlers.NewAPI(cfg, runs.NewRegistry())
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/"+runs.LocalPRDRunID, nil)
+	req.SetPathValue("id", runs.LocalPRDRunID)
+	rec := httptest.NewRecorder()
+	api.GetRun(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+}
+
+func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
+	workDir := t.TempDir()
+	prdJSON := `{
+  "version": 1,
+  "project_name": "CLI goal",
+  "stories": [
+    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	api := handlers.NewAPI(cfg, runs.NewRegistry())
+	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
+		return &noopRunner{}, nil
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"new web run"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	api.CreateRun(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+}
+
 func TestListRunsEmpty(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

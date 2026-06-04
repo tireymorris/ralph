@@ -13,8 +13,17 @@ import (
 
 func TestRunUpdateSuccess(t *testing.T) {
 	oldInstall := updateInstall
-	defer func() { updateInstall = oldInstall }()
+	oldCheck := updateCheck
+	defer func() {
+		updateInstall = oldInstall
+		updateCheck = oldCheck
+	}()
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	installCalled := false
 	updateInstall = func(ctx context.Context, opts update.InstallOptions) error {
+		installCalled = true
 		return nil
 	}
 
@@ -40,14 +49,75 @@ func TestRunUpdateSuccess(t *testing.T) {
 	if code := <-codeCh; code != 0 {
 		t.Errorf("Run(update) = %d, want 0", code)
 	}
-	if !strings.Contains(buf.String(), "bin/ralph") {
-		t.Errorf("stdout = %q, want substring bin/ralph", buf.String())
+	out := buf.String()
+	if !installCalled {
+		t.Fatal("Install was not called")
+	}
+	if !strings.Contains(out, "updating ralph") {
+		t.Errorf("stdout = %q, want substring updating ralph", out)
+	}
+	if !strings.Contains(out, "updated:") {
+		t.Errorf("stdout = %q, want substring updated:", out)
+	}
+	if strings.Contains(out, "already up to date") {
+		t.Errorf("stdout = %q, should not say already up to date", out)
+	}
+}
+
+func TestRunUpdateAlreadyUpToDate(t *testing.T) {
+	const sha = "cccccccccccccccccccccccccccccccccccccccc"
+	oldInstall := updateInstall
+	oldCheck := updateCheck
+	defer func() {
+		updateInstall = oldInstall
+		updateCheck = oldCheck
+	}()
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return true, sha, sha, nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		t.Fatal("Install should not run when already up to date")
+		return nil
+	}
+
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+
+	code := Run([]string{"update"})
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	if code != 0 {
+		t.Errorf("Run(update) = %d, want 0", code)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "already up to date") {
+		t.Errorf("stdout = %q, want substring already up to date", out)
+	}
+	if !strings.Contains(out, sha) {
+		t.Errorf("stdout = %q, want commit %s", out, sha)
+	}
+	if strings.Contains(out, "updating ralph") || strings.Contains(out, "updated:") {
+		t.Errorf("stdout = %q, should not install or report update", out)
 	}
 }
 
 func TestRunUpdateFailure(t *testing.T) {
 	oldInstall := updateInstall
-	defer func() { updateInstall = oldInstall }()
+	oldCheck := updateCheck
+	defer func() {
+		updateInstall = oldInstall
+		updateCheck = oldCheck
+	}()
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
 	updateInstall = func(ctx context.Context, opts update.InstallOptions) error {
 		return context.Canceled
 	}

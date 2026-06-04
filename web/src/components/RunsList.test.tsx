@@ -37,6 +37,31 @@ describe("RunsList", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("shows local_prd CLI tag on sidebar entry", async () => {
+    vi.mocked(listRuns).mockResolvedValue([
+      {
+        id: "prd-local",
+        prompt: "CLI project",
+        status: "implementing",
+        phase: "implement",
+        source: "local_prd",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RunsList activeOnly heading="Active chats" />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("CLI")).toHaveClass("run-source-tag");
+    });
+    expect(screen.getByText("CLI project")).toBeInTheDocument();
+  });
+
   it("shows only non-terminal runs when activeOnly", async () => {
     vi.mocked(listRuns).mockResolvedValue([
       {
