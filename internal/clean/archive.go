@@ -28,7 +28,24 @@ func ArchivePriorState(cfg *config.Config) (backupDir string, err error) {
 	if err := archiveOrphanedPRDTemps(cfg, backupDir); err != nil {
 		return "", err
 	}
+	if err := archiveRunsTree(cfg, backupDir); err != nil {
+		return "", err
+	}
 	return backupDir, nil
+}
+
+func archiveRunsTree(cfg *config.Config, backupDir string) error {
+	runsSrc := filepath.Join(cfg.WorkDir, ralphDataDir, "runs")
+	if _, err := os.Stat(runsSrc); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	runsDest := filepath.Join(backupDir, "runs")
+	if err := os.MkdirAll(filepath.Dir(runsDest), 0755); err != nil {
+		return err
+	}
+	return os.Rename(runsSrc, runsDest)
 }
 
 func archiveOrphanedPRDTemps(cfg *config.Config, backupDir string) error {

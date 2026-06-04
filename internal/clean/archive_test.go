@@ -81,6 +81,23 @@ func TestArchivePriorState_prdTemps(t *testing.T) {
 	}
 }
 
+func TestArchivePriorState_runs(t *testing.T) {
+	dir := t.TempDir()
+	cfg := testConfig(t, dir)
+	metaPath := filepath.Join(dir, ralphDataDir, "runs", "test-run", "meta.json")
+	writeSeedFile(t, metaPath)
+
+	backupDir, err := ArchivePriorState(cfg)
+	if err != nil {
+		t.Fatalf("ArchivePriorState: %v", err)
+	}
+	assertNotExist(t, metaPath)
+	backedUp := filepath.Join(backupDir, "runs", "test-run", "meta.json")
+	if _, err := os.Stat(backedUp); err != nil {
+		t.Fatalf("run meta not in backup: %v", err)
+	}
+}
+
 func TestArchivePriorState_noArtifacts(t *testing.T) {
 	dir := t.TempDir()
 	cfg := testConfig(t, dir)
