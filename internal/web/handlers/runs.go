@@ -26,14 +26,19 @@ type storyProgress struct {
 }
 
 type runResponse struct {
-	ID            string         `json:"id"`
-	Prompt        string         `json:"prompt"`
-	Status        string         `json:"status"`
-	Phase         string         `json:"phase"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	Source        string         `json:"source,omitempty"`
-	StoryProgress *storyProgress `json:"story_progress,omitempty"`
+	ID                string         `json:"id"`
+	Prompt            string         `json:"prompt"`
+	Status            string         `json:"status"`
+	Phase             string         `json:"phase"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	Source            string         `json:"source,omitempty"`
+	StoryProgress     *storyProgress `json:"story_progress,omitempty"`
+	Checkpoint        string         `json:"checkpoint,omitempty"`
+	ReviewIteration   int            `json:"review_iteration,omitempty"`
+	ReviewFingerprint string         `json:"review_fingerprint,omitempty"`
+	ReviewElapsedMs   int64          `json:"review_elapsed_ms,omitempty"`
+	StopReason        string         `json:"stop_reason,omitempty"`
 }
 
 func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
@@ -145,12 +150,17 @@ func (a *API) GetRun(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) runResponse(run *runs.Run) runResponse {
 	resp := runResponse{
-		ID:        run.ID,
-		Prompt:    run.Prompt,
-		Status:    run.Status,
-		Phase:     run.Phase,
-		CreatedAt: run.CreatedAt,
-		UpdatedAt: run.UpdatedAt,
+		ID:                run.ID,
+		Prompt:            run.Prompt,
+		Status:            run.Status,
+		Phase:             run.Phase,
+		CreatedAt:         run.CreatedAt,
+		UpdatedAt:         run.UpdatedAt,
+		Checkpoint:        run.Checkpoint,
+		ReviewIteration:   run.ReviewIteration,
+		ReviewFingerprint: run.ReviewFingerprint,
+		ReviewElapsedMs:   run.ReviewElapsedMs,
+		StopReason:        run.StopReason,
 	}
 	if run.ID == runs.LocalPRDRunID {
 		resp.Source = "local_prd"
