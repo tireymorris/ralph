@@ -19,28 +19,32 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	default:
 	}
 
-	e.emit(EventCleanupStarted{})
-
 	changedFiles := branchChangedFiles(e.cfg.WorkDir)
-	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, 1, constants.CleanupPassCount)
 
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	done := make(chan struct{})
-	go func() {
-		e.forwardOutput(outputCh)
-		close(done)
-	}()
+	for pass := 1; pass <= constants.CleanupPassCount; pass++ {
+		e.emit(EventCleanupStarted{})
 
-	runErr := e.runner.Run(ctx, cleanupPrompt, outputCh)
-	close(outputCh)
-	<-done
+		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, pass, constants.CleanupPassCount)
 
-	if runErr != nil {
-		e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
-		return runErr
+		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+		done := make(chan struct{})
+		go func() {
+			e.forwardOutput(outputCh)
+			close(done)
+		}()
+
+		runErr := e.runner.Run(ctx, cleanupPrompt, outputCh)
+		close(outputCh)
+		<-done
+
+		if runErr != nil {
+			e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
+			return runErr
+		}
+
+		e.emit(EventCleanupCompleted{})
 	}
 
-	e.emit(EventCleanupCompleted{})
 	return nil
 }
 
