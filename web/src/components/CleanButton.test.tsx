@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { postClean } from "../api/client";
@@ -30,6 +30,20 @@ describe("CleanButton", () => {
       expect.stringMatching(/prd\.json/i),
     );
     expect(confirm.mock.calls[0]?.[0]).toMatch(/\.ralph\//);
+    vi.unstubAllGlobals();
+  });
+
+  it("calls postClean once when confirm is accepted", async () => {
+    vi.mocked(postClean).mockResolvedValue(undefined);
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const user = userEvent.setup();
+    render(<CleanButton />);
+
+    await user.click(screen.getByRole("button", { name: "Clean" }));
+
+    await waitFor(() => {
+      expect(postClean).toHaveBeenCalledTimes(1);
+    });
     vi.unstubAllGlobals();
   });
 
