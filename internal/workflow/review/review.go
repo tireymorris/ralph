@@ -71,8 +71,14 @@ func ReviewDiff(ctx context.Context, p Params) (Result, error) {
 		return Result{}, err
 	}
 
+	findings, err := ParseFindings(transcript)
+	if err != nil {
+		return Result{}, err
+	}
+
 	return Result{
-		Clean:                    true,
+		Clean:                    len(findings) == 0,
+		Findings:                 findings,
 		Transcript:               transcript,
 		LastReviewTranscriptPath: relPath,
 	}, nil

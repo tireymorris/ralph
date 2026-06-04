@@ -35,7 +35,7 @@ func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
 	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
 	runner := &recordingRunner{
 		t:          t,
-		transcript: "critical review transcript\n",
+		transcript: "critical review transcript\n===ralph-findings===\n[]\n===/ralph-findings===\n",
 	}
 
 	result, err := ReviewDiff(context.Background(), Params{
@@ -72,7 +72,46 @@ func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
 		t.Errorf("transcript = %q, want %q", string(data), runner.transcript)
 	}
 	if !result.Clean {
-		t.Error("Clean = false, want true with unparsed findings")
+		t.Error("Clean = false, want true with empty findings block")
+	}
+	if len(result.Findings) != 0 {
+		t.Errorf("Findings = %v, want none", result.Findings)
+	}
+}
+
+func TestReviewDiffParsesFindingsFromTranscript(t *testing.T) {
+	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
+	transcript := `===ralph-findings===
+[{"category":"bug","path":"` + changedFile + `","summary":"missing test"}]
+===/ralph-findings===`
+	runner := &recordingRunner{t: t, transcript: transcript}
+
+	result, err := ReviewDiff(context.Background(), Params{
+		WorkDir:   workDir,
+		RunID:     "run-findings",
+		Iteration: 1,
+		PRDFile:   "prd.json",
+		Context:   "ctx",
+		Runner:    runner,
+	})
+	if err != nil {
+		t.Fatalf("ReviewDiff() err = %v", err)
+	}
+	if result.Clean {
+		t.Fatal("Clean = true, want false when findings present")
+	}
+	if len(result.Findings) != 1 {
+		t.Fatalf("len(Findings) = %d, want 1", len(result.Findings))
+	}
+	f := result.Findings[0]
+	if f.Category != "bug" || f.Path != changedFile || f.Summary != "missing test" {
+		t.Errorf("Finding = %+v, want bug/%s/missing test", f, changedFile)
+	}
+	if f.ID == "" {
+		t.Error("Finding.ID is empty")
+	}
+	if fp := Fingerprint(result.Findings); len(fp) != 64 {
+		t.Errorf("Fingerprint() = %q, want 64-char hex", fp)
 	}
 }
 
