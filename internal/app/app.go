@@ -12,6 +12,7 @@ import (
 	"ralph/internal/args"
 	"ralph/internal/clean"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/workdir"
 	"ralph/internal/version"
 	"ralph/internal/shared/logger"
 	sharedprd "ralph/internal/shared/prd"
@@ -74,6 +75,12 @@ func Run(argv []string) int {
 	if opts.Prompt == "" && !opts.Resume && !isatty.IsTerminal(os.Stdin.Fd()) {
 		fmt.Fprintf(os.Stderr, "Error: interactive prompt requires a terminal (provide a prompt argument or use --resume)\n")
 		return 1
+	}
+	if opts.Prompt != "" || opts.Resume {
+		if err := workdir.ValidateGit(cfg.WorkDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
 	}
 	return RunTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 }
