@@ -74,6 +74,35 @@ describe("NewRunPage", () => {
     });
   });
 
+  it("cleans state and retries when conflict confirm is accepted", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.mocked(listRuns).mockResolvedValue([]);
+    vi.mocked(createRun)
+      .mockRejectedValueOnce(
+        new ApiError(409, 'active run "abc" in progress'),
+      )
+      .mockResolvedValueOnce({ id: "new-run" });
+    vi.mocked(postClean).mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    renderComposer();
+
+    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
+    await user.type(textarea, "my goal");
+    await user.click(screen.getByRole("button", { name: /start run/i }));
+
+    await waitFor(() => {
+      expect(postClean).toHaveBeenCalledTimes(1);
+    });
+    expect(createRun).toHaveBeenCalledTimes(2);
+    expect(createRun).toHaveBeenNthCalledWith(1, "my goal");
+    expect(createRun).toHaveBeenNthCalledWith(2, "my goal");
+    await waitFor(() => {
+      expect(screen.getByTestId("run-detail")).toBeInTheDocument();
+    });
+    vi.unstubAllGlobals();
+  });
+
   it("shows 409 error without calling postClean when conflict confirm is declined", async () => {
     const confirm = vi.fn(() => false);
     vi.stubGlobal("confirm", confirm);
