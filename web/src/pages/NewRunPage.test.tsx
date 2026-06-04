@@ -103,6 +103,29 @@ describe("NewRunPage", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows postClean error when conflict clean fails", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.mocked(listRuns).mockResolvedValue([]);
+    vi.mocked(createRun).mockRejectedValueOnce(
+      new ApiError(409, 'active run "abc" in progress'),
+    );
+    vi.mocked(postClean).mockRejectedValue(new ApiError(500, "clean failed"));
+
+    const user = userEvent.setup();
+    renderComposer();
+
+    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
+    await user.type(textarea, "my goal");
+    await user.click(screen.getByRole("button", { name: /start run/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("clean failed");
+    });
+    expect(createRun).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: /start run/i })).toBeEnabled();
+    vi.unstubAllGlobals();
+  });
+
   it("shows 409 error without calling postClean when conflict confirm is declined", async () => {
     const confirm = vi.fn(() => false);
     vi.stubGlobal("confirm", confirm);
