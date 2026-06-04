@@ -7,7 +7,7 @@ import (
 
 func TestDefaults(t *testing.T) {
 	if Version != "dev" {
-		t.Errorf("Version = %q, want dev", Version)
+		t.Skip("version vars set via -ldflags")
 	}
 	if Commit != "unknown" {
 		t.Errorf("Commit = %q, want unknown", Commit)
@@ -22,7 +22,11 @@ func TestInfo(t *testing.T) {
 	if info == "" {
 		t.Fatal("Info() returned empty string")
 	}
-	if !strings.Contains(info, "commit=unknown") {
-		t.Errorf("Info() = %q, want substring commit=unknown", info)
+	wantSub := "commit=unknown"
+	if Version != "dev" {
+		wantSub = "commit=" + Commit
+	}
+	if !strings.Contains(info, wantSub) {
+		t.Errorf("Info() = %q, want substring %q", info, wantSub)
 	}
 }
