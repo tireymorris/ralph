@@ -15,15 +15,28 @@ import (
 
 const runDirPerm = 0o750
 
+const (
+	CheckpointPRDReview  = "prd_review"
+	CheckpointImplReview = "impl_review"
+	CheckpointFollowup   = "followup"
+	CheckpointComplete   = "complete"
+)
+
 type Run struct {
-	ID        string    `json:"id"`
-	WorkDir   string    `json:"work_dir"`
-	Prompt    string    `json:"prompt"`
-	Status    string    `json:"status"`
-	Phase     string    `json:"phase"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	PRDPath   string    `json:"prd_path"`
+	ID                       string    `json:"id"`
+	WorkDir                  string    `json:"work_dir"`
+	Prompt                   string    `json:"prompt"`
+	Status                   string    `json:"status"`
+	Phase                    string    `json:"phase"`
+	CreatedAt                time.Time `json:"created_at"`
+	UpdatedAt                time.Time `json:"updated_at"`
+	PRDPath                  string    `json:"prd_path"`
+	Checkpoint               string    `json:"checkpoint,omitempty"`
+	ReviewIteration          int       `json:"review_iteration,omitempty"`
+	ReviewFingerprint        string    `json:"review_fingerprint,omitempty"`
+	ReviewElapsedMs          int64     `json:"review_elapsed_ms,omitempty"`
+	StopReason               string    `json:"stop_reason,omitempty"`
+	LastReviewTranscriptPath string    `json:"last_review_transcript_path,omitempty"`
 }
 
 type Registry struct {

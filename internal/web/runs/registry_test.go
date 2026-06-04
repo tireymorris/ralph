@@ -97,6 +97,59 @@ func TestUpdateStatus(t *testing.T) {
 	}
 }
 
+func TestReviewLoopFieldsRoundTrip(t *testing.T) {
+	workDir := t.TempDir()
+	reg := NewRegistry()
+
+	run := &Run{
+		ID:                       "run-review-loop",
+		WorkDir:                  workDir,
+		Prompt:                   "build feature",
+		Status:                   "implementing",
+		Phase:                    "implement",
+		CreatedAt:                time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC),
+		UpdatedAt:                time.Date(2026, 6, 4, 12, 30, 0, 0, time.UTC),
+		PRDPath:                  "prd.json",
+		Checkpoint:               CheckpointImplReview,
+		ReviewIteration:          2,
+		ReviewFingerprint:        "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
+		ReviewElapsedMs:          1500,
+		StopReason:               "duplicate_findings",
+		LastReviewTranscriptPath: "review-2.txt",
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	reloaded := NewRegistry()
+	if err := reloaded.LoadFromWorkDir(workDir); err != nil {
+		t.Fatalf("LoadFromWorkDir() error = %v", err)
+	}
+
+	got, ok := reloaded.Get("run-review-loop")
+	if !ok {
+		t.Fatal("Get() ok = false after reload")
+	}
+	if got.Checkpoint != run.Checkpoint {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, run.Checkpoint)
+	}
+	if got.ReviewIteration != run.ReviewIteration {
+		t.Errorf("ReviewIteration = %d, want %d", got.ReviewIteration, run.ReviewIteration)
+	}
+	if got.ReviewFingerprint != run.ReviewFingerprint {
+		t.Errorf("ReviewFingerprint = %q, want %q", got.ReviewFingerprint, run.ReviewFingerprint)
+	}
+	if got.ReviewElapsedMs != run.ReviewElapsedMs {
+		t.Errorf("ReviewElapsedMs = %d, want %d", got.ReviewElapsedMs, run.ReviewElapsedMs)
+	}
+	if got.StopReason != run.StopReason {
+		t.Errorf("StopReason = %q, want %q", got.StopReason, run.StopReason)
+	}
+	if got.LastReviewTranscriptPath != run.LastReviewTranscriptPath {
+		t.Errorf("LastReviewTranscriptPath = %q, want %q", got.LastReviewTranscriptPath, run.LastReviewTranscriptPath)
+	}
+}
+
 func TestLoadFromWorkDir(t *testing.T) {
 	workDir := t.TempDir()
 	reg := NewRegistry()
