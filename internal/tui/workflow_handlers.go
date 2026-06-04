@@ -98,6 +98,26 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 			}
 		}
 
+	case events.EventImplementationReviewStarted:
+		m.logger.AddLog(fmt.Sprintf("Implementation review started (iteration %d)", e.Iteration))
+		m.markMainScrollJump()
+
+	case events.EventImplementationReview:
+		for _, f := range e.Findings {
+			if f.Summary != "" {
+				m.logger.AddLog(fmt.Sprintf("Review finding: %s", f.Summary))
+			}
+		}
+		m.markMainScrollJump()
+
+	case events.EventImplementationReviewCompleted:
+		outcome := "clean"
+		if !e.Clean {
+			outcome = "findings"
+		}
+		m.logger.AddLog(fmt.Sprintf("Implementation review completed (iteration %d, %s)", e.Iteration, outcome))
+		m.markMainScrollJump()
+
 	case events.EventCleanupStarted:
 		m.phase = PhaseCleanup
 		m.logger.AddLog("Running post-implementation cleanup...")
