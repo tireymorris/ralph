@@ -30,4 +30,7 @@ const (
 
 	// TempFileRandomRange provides entropy for temporary file names.
 	TempFileRandomRange = 100000
+
+	// CleanupPassCount is the number of post-implementation cleanup runner invocations.
+	CleanupPassCount = 3
 )

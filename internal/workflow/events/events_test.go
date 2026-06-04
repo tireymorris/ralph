@@ -49,3 +49,22 @@ func TestAllEventIsEventMethodsIncludesClarifying(t *testing.T) {
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	EventClarifyingQuestions{Questions: []string{"Q?"}, AnswersCh: answersCh}.isEvent()
 }
+
+func TestCleanupPassProgress(t *testing.T) {
+	cases := []struct {
+		name  string
+		pass  int
+		total int
+	}{
+		{name: "started pass 2", pass: 2, total: 3},
+		{name: "completed pass 1", pass: 1, total: 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			progress := CleanupPassProgress{Pass: tc.pass, Total: tc.total}
+			if progress.Pass != tc.pass || progress.Total != tc.total {
+				t.Fatalf("Pass=%d Total=%d, want Pass=%d Total=%d", progress.Pass, progress.Total, tc.pass, tc.total)
+			}
+		})
+	}
+}

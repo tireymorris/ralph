@@ -42,9 +42,9 @@ func eventEnvelopeParts(ev events.Event) (string, any, error) {
 			Success bool
 		}{Story: e.Story, Success: e.Success}, nil
 	case events.EventCleanupStarted:
-		return "EventCleanupStarted", struct{}{}, nil
+		return "EventCleanupStarted", e, nil
 	case events.EventCleanupCompleted:
-		return "EventCleanupCompleted", struct{}{}, nil
+		return "EventCleanupCompleted", e, nil
 	case events.EventCompleted:
 		return "EventCompleted", struct{}{}, nil
 	case events.EventError:

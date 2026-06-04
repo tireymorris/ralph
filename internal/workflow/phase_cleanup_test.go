@@ -69,49 +69,21 @@ func TestRunCleanupSuccess(t *testing.T) {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	if mock.CallCount() != 3 {
+		t.Fatalf("runner call count = %d, want 3", mock.CallCount())
 	}
 
-	var evts []Event
-	for len(ch) > 0 {
-		evts = append(evts, <-ch)
-	}
+	evts := drainEvents(ch)
+	assertCleanupPassSequence(t, evts, 3)
 
-	if len(evts) < 2 {
-		t.Fatalf("expected at least 2 events, got %d", len(evts))
-	}
-
-	foundStarted := false
-	foundCompleted := false
 	foundOutput := false
-	startedIdx := -1
-	completedIdx := -1
-
-	for i, e := range evts {
-		switch e.(type) {
-		case EventCleanupStarted:
-			foundStarted = true
-			startedIdx = i
-		case EventCleanupCompleted:
-			foundCompleted = true
-			completedIdx = i
-		case EventOutput:
+	for _, e := range evts {
+		if _, ok := e.(EventOutput); ok {
 			foundOutput = true
 		}
 	}
-
-	if !foundStarted {
-		t.Error("expected EventCleanupStarted to be emitted")
-	}
-	if !foundCompleted {
-		t.Error("expected EventCleanupCompleted to be emitted")
-	}
 	if !foundOutput {
 		t.Error("expected runner output to be forwarded as EventOutput")
-	}
-	if startedIdx >= completedIdx {
-		t.Error("EventCleanupStarted should come before EventCleanupCompleted")
 	}
 }
 
@@ -133,8 +105,13 @@ func TestRunCleanupRunnerError(t *testing.T) {
 		t.Fatal("RunCleanup() should return error when runner fails")
 	}
 
+	if mock.CallCount() != 1 {
+		t.Fatalf("runner call count = %d, want 1 on first-pass failure", mock.CallCount())
+	}
+
 	foundError := false
 	foundCompleted := false
+	var startedPass, startedTotal int
 	for len(ch) > 0 {
 		e := <-ch
 		switch ev := e.(type) {
@@ -142,9 +119,19 @@ func TestRunCleanupRunnerError(t *testing.T) {
 			if strings.Contains(ev.Err.Error(), "cleanup") {
 				foundError = true
 			}
+		case EventCleanupStarted:
+			startedPass = ev.Pass
+			startedTotal = ev.Total
 		case EventCleanupCompleted:
 			foundCompleted = true
 		}
+	}
+
+	if startedPass != 1 {
+		t.Errorf("EventCleanupStarted Pass=%d, want 1 on first-pass failure", startedPass)
+	}
+	if startedTotal != 3 {
+		t.Errorf("EventCleanupStarted Total=%d, want 3", startedTotal)
 	}
 
 	if !foundError {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/runner"
 )
@@ -59,4 +60,17 @@ func (e *Executor) forwardOutput(outputCh <-chan runner.OutputLine) {
 
 func (e *Executor) RunPrompt(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 	return e.runner.Run(ctx, prompt, outputCh)
+}
+
+func (e *Executor) runWithForwardedOutput(ctx context.Context, prompt string) error {
+	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+	done := make(chan struct{})
+	go func() {
+		e.forwardOutput(outputCh)
+		close(done)
+	}()
+	runErr := e.runner.Run(ctx, prompt, outputCh)
+	close(outputCh)
+	<-done
+	return runErr
 }

@@ -133,28 +133,36 @@ Preserve existing story IDs and "passes" values for stories that are unchanged.
 Write the updated PRD file, then STOP — do not implement anything.`, userPrompt, sb.String(), prdFile)
 }
 
-func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
-	contextSection := ""
-	if codebaseContext != "" {
-		contextSection = fmt.Sprintf(`
+func codebaseContextSection(codebaseContext string) string {
+	if codebaseContext == "" {
+		return ""
+	}
+	return fmt.Sprintf(`
 CODEBASE CONTEXT:
 %s
 `, codebaseContext)
-	}
+}
 
-	filesSection := ""
-	if len(changedFiles) > 0 {
-		filesSection = fmt.Sprintf(`
+func changedFilesSection(changedFiles []string) string {
+	if len(changedFiles) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(`
 CHANGED FILES:
 %s
 
 Only modify the files listed above. Do not touch unrelated code.
 `, strings.Join(changedFiles, "\n"))
-	}
+}
 
+func Cleanup(codebaseContext, prdFile string, changedFiles []string, pass, total int) string {
 	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
+
+Cleanup pass %d of %d.
 %s%s
-Review the codebase and apply the following improvements:
+If the changed files already follow project conventions with no duplication or refactor worth doing, stop without modifying files and without committing — no cleanup is needed on this pass.
+
+Otherwise, review the codebase and apply the following improvements:
 
 1. Refactor repeated patterns — extract shared helpers and eliminate duplication
 2. Apply SOLID and DRY principles throughout the implementation
@@ -162,20 +170,12 @@ Review the codebase and apply the following improvements:
 4. Where possible, consolidate related specs and tests that cover overlapping scenarios
 5. Extract better abstractions where concrete implementations can be generalized
 
-After each change, run the full test suite. Only commit if all tests are green.
+Before any commit, run the full test suite. Only commit if all tests are green.
 
-PRD file: %s`, contextSection, filesSection, prdFile)
+PRD file: %s`, pass, total, codebaseContextSection(codebaseContext), changedFilesSection(changedFiles), prdFile)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
-	contextSection := ""
-	if codebaseContext != "" {
-		contextSection = fmt.Sprintf(`
-CODEBASE CONTEXT:
-%s
-`, codebaseContext)
-	}
-
 	testSection := ""
 	if featureTestSpec != "" {
 		testSection = fmt.Sprintf(`
@@ -220,7 +220,7 @@ After completing this story, update the "context" field in %s ONLY if you establ
 Progress: %d/%d stories completed`,
 		title,
 		storyID,
-		contextSection,
+		codebaseContextSection(codebaseContext),
 		testSection,
 		dependsSection,
 		description,
