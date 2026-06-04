@@ -66,7 +66,12 @@ func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
 func (c *RunController) ApproveReview(ctx context.Context) error {
 	p := c.CurrentPRD()
 	if p == nil {
-		return errNoPRDForImplement
+		runCfg := c.runConfig()
+		loaded, err := prd.Load(runCfg)
+		if err != nil {
+			return fmt.Errorf("load PRD for implementation: %w", err)
+		}
+		p = loaded
 	}
 	c.Driver.StartImplementation(ctx, p)
 	return nil

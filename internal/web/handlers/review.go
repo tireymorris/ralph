@@ -42,11 +42,9 @@ func (a *API) ReviewRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.mu.Lock()
-	ctrl := a.controllers[id]
-	a.mu.Unlock()
-	if ctrl == nil {
-		writeJSONError(w, http.StatusConflict, "run controller unavailable")
+	ctrl, err := a.ensureController(id)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "runner unavailable")
 		return
 	}
 
