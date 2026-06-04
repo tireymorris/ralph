@@ -91,6 +91,7 @@ func (c *RunController) ReviseReview(ctx context.Context, critique string) error
 
 func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *config.Config) {
 	_ = c.registry.UpdateStatus(c.runID, "running", "followup")
+	_ = c.registry.UpdateCheckpoint(c.runID, runs.CheckpointFollowup)
 	fail := func(err error) {
 		c.EmitEvent(events.EventError{Err: err})
 	}
@@ -203,6 +204,9 @@ func (c *RunController) handleEvent(ev events.Event) {
 	if status != "" || phase != "" {
 		_ = c.registry.UpdateStatus(c.runID, status, phase)
 	}
+	if checkpoint := mapEventToCheckpoint(ev); checkpoint != "" {
+		_ = c.registry.UpdateCheckpoint(c.runID, checkpoint)
+	}
 	_ = appendRunEvent(c.cfg.WorkDir, c.runID, ev)
 	if runs.IsTerminalStatus(status) {
 		c.mu.Lock()
@@ -211,6 +215,17 @@ func (c *RunController) handleEvent(ev events.Event) {
 		if fn != nil {
 			fn()
 		}
+	}
+}
+
+func mapEventToCheckpoint(ev events.Event) string {
+	switch ev.(type) {
+	case events.EventPRDReview:
+		return runs.CheckpointPRDReview
+	case events.EventCompleted:
+		return runs.CheckpointComplete
+	default:
+		return ""
 	}
 }
 
