@@ -89,6 +89,10 @@ func (d *Driver) StartResume(ctx context.Context) {
 	})
 }
 
+func (d *Driver) SetReviewLoop(runID string, updater ReviewLoopUpdater) {
+	d.executor.SetReviewLoop(runID, updater)
+}
+
 func (d *Driver) StartImplementation(ctx context.Context, p *prd.PRD) {
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
 		d.executor.RunImplementation(runCtx, p)

@@ -47,6 +47,7 @@ func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID 
 		runID:       runID,
 		subscribers: make(map[chan events.Event]struct{}),
 	}
+	d.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
 	go c.processEvents()
 	return c
 }
@@ -222,6 +223,8 @@ func mapEventToCheckpoint(ev events.Event) string {
 	switch ev.(type) {
 	case events.EventPRDReview:
 		return runs.CheckpointPRDReview
+	case events.EventImplementationReviewStarted, events.EventImplementationReview, events.EventImplementationReviewCompleted:
+		return runs.CheckpointImplReview
 	case events.EventCompleted:
 		return runs.CheckpointComplete
 	default:
@@ -239,6 +242,8 @@ func mapEventToStatusPhase(ev events.Event) (status, phase string) {
 		return "waiting_review", "review"
 	case events.EventStoryStarted, events.EventStoryCompleted:
 		return "implementing", "implement"
+	case events.EventImplementationReview:
+		return "waiting_review", "implement"
 	case events.EventCleanupStarted, events.EventCleanupCompleted:
 		return "implementing", "cleanup"
 	case events.EventCompleted:

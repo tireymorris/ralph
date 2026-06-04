@@ -41,6 +41,12 @@ func eventEnvelopeParts(ev events.Event) (string, any, error) {
 			Story   any `json:"Story"`
 			Success bool
 		}{Story: e.Story, Success: e.Success}, nil
+	case events.EventImplementationReviewStarted:
+		return "EventImplementationReviewStarted", e, nil
+	case events.EventImplementationReviewCompleted:
+		return "EventImplementationReviewCompleted", e, nil
+	case events.EventImplementationReview:
+		return "EventImplementationReview", e, nil
 	case events.EventCleanupStarted:
 		return "EventCleanupStarted", e, nil
 	case events.EventCleanupCompleted:
