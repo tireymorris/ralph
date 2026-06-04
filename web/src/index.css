@@ -245,6 +245,8 @@ textarea:focus-visible {
 .app-topbar {
   display: flex;
   justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--space-3);
   flex-shrink: 0;
   margin-bottom: var(--space-4);
 }
@@ -254,6 +256,27 @@ textarea:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.clean-button-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.clean-button-message {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  max-width: 16rem;
+  text-align: right;
+}
+
+.clean-button-error {
+  margin: 0;
+  max-width: 16rem;
+  text-align: right;
 }
 
 .update-button-wrap {
