@@ -8,6 +8,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/workflow/review"
 )
 
 func TestRunImplementationReviewEventsAfterStoryCompleted(t *testing.T) {
@@ -204,4 +205,165 @@ func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
 	}
 	close(ch)
 	<-eventsDone
+}
+
+func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{ProjectName: "Test", Context: "ctx"}
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"missing test"}]
+===/ralph-findings===`
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: findingsTranscript}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec.runID = "run-dup"
+	exec.reviewFingerprint = reviewFingerprintFromTranscript(t, findingsTranscript)
+
+	if _, err := exec.runImplementationReview(context.Background(), testPRD); err == nil {
+		t.Fatal("second review with duplicate fingerprint should return error")
+	}
+
+	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
+	if storyCalls != 0 {
+		t.Errorf("story runner calls = %d, want 0", storyCalls)
+	}
+	if reviewCalls != 1 {
+		t.Errorf("review runner calls = %d, want 1 without a third review attempt", reviewCalls)
+	}
+}
+
+func reviewFingerprintFromTranscript(t *testing.T, transcript string) string {
+	t.Helper()
+	findings, err := review.ParseFindings(transcript)
+	if err != nil {
+		t.Fatalf("ParseFindings() err = %v", err)
+	}
+	return review.Fingerprint(findings)
+}
+
+type recordingReviewLoop struct {
+	iteration   int
+	fingerprint string
+	elapsedMs   int64
+	stopReason  string
+	updates     []ReviewLoopUpdate
+}
+
+func (r *recordingReviewLoop) Snapshot() (int, string, int64) {
+	return r.iteration, r.fingerprint, r.elapsedMs
+}
+
+func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
+	r.iteration = u.ReviewIteration
+	r.fingerprint = u.ReviewFingerprint
+	r.elapsedMs = u.ReviewElapsedMs
+	r.stopReason = u.StopReason
+	r.updates = append(r.updates, u)
+	return nil
+}
+
+func TestRunImplementationDuplicateFingerprintUpdatesStopReason(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"missing test"}]
+===/ralph-findings===`
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: findingsTranscript}
+		}
+		return nil
+	}
+
+	updater := &recordingReviewLoop{fingerprint: reviewFingerprintFromTranscript(t, findingsTranscript)}
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec.SetReviewLoop("run-stop", updater)
+
+	_, _ = exec.runImplementationReview(context.Background(), &prd.PRD{Context: "ctx"})
+
+	if updater.stopReason != StopReasonDuplicateFindings {
+		t.Fatalf("stop_reason = %q, want %q", updater.stopReason, StopReasonDuplicateFindings)
+	}
+}
+
+func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{
+			{ID: "story-1", Title: "One", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 2, Passes: false},
+		},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("save PRD: %v", err)
+	}
+	commitPRDFile(t, workDir, cfg.PRDFile)
+
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"issue"}]
+===/ralph-findings===`
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: findingsTranscript}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	evts := drainEvents(ch)
+	var foundReview bool
+	var foundSecondStory bool
+	for _, e := range evts {
+		if _, ok := e.(EventImplementationReview); ok {
+			foundReview = true
+		}
+		if ev, ok := e.(EventStoryStarted); ok && ev.Story.ID == "story-2" {
+			foundSecondStory = true
+		}
+	}
+	if !foundReview {
+		t.Fatal("expected EventImplementationReview with findings")
+	}
+	if foundSecondStory {
+		t.Fatal("story-2 should not start after review findings")
+	}
+	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
+	if storyCalls != 1 {
+		t.Errorf("story runner calls = %d, want 1", storyCalls)
+	}
+	if reviewCalls != 1 {
+		t.Errorf("review runner calls = %d, want 1", reviewCalls)
+	}
 }
