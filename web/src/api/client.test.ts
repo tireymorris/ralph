@@ -87,6 +87,33 @@ describe("postClean", () => {
       body: JSON.stringify({}),
     });
   });
+
+  it("resolves without throwing on HTTP 200", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+    );
+
+    await expect(postClean()).resolves.toBeUndefined();
+  });
+
+  it("throws ApiError with server status on HTTP 4xx/5xx", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        json: async () => ({ error: "clean failed" }),
+      }),
+    );
+
+    await expect(postClean()).rejects.toMatchObject({
+      message: "clean failed",
+      status: 500,
+    });
+    await expect(postClean()).rejects.toBeInstanceOf(ApiError);
+  });
 });
 
 describe("openEventStream", () => {
