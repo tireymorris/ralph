@@ -97,6 +97,51 @@ func TestUpdateStatus(t *testing.T) {
 	}
 }
 
+func TestUpdateCheckpoint(t *testing.T) {
+	reg := NewRegistry()
+	workDir := t.TempDir()
+
+	run := &Run{
+		ID:         "run-ckpt",
+		WorkDir:    workDir,
+		Status:     "waiting_review",
+		Phase:      "review",
+		Checkpoint: CheckpointPRDReview,
+		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	if err := reg.UpdateCheckpoint("run-ckpt", CheckpointImplReview); err != nil {
+		t.Fatalf("UpdateCheckpoint() error = %v", err)
+	}
+
+	got, ok := reg.Get("run-ckpt")
+	if !ok {
+		t.Fatal("Get() ok = false")
+	}
+	if got.Checkpoint != CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	}
+	if !got.UpdatedAt.After(run.UpdatedAt) {
+		t.Errorf("UpdatedAt = %v, want after %v", got.UpdatedAt, run.UpdatedAt)
+	}
+
+	reloaded := NewRegistry()
+	if err := reloaded.LoadFromWorkDir(workDir); err != nil {
+		t.Fatalf("LoadFromWorkDir() error = %v", err)
+	}
+	got, ok = reloaded.Get("run-ckpt")
+	if !ok {
+		t.Fatal("Get() ok = false after reload")
+	}
+	if got.Checkpoint != CheckpointImplReview {
+		t.Errorf("reloaded Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	}
+}
+
 func TestReviewLoopFieldsRoundTrip(t *testing.T) {
 	workDir := t.TempDir()
 	reg := NewRegistry()

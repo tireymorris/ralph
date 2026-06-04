@@ -205,3 +205,18 @@ func (r *Registry) UpdateStatus(id, status, phase string) error {
 
 	return persistRun(run)
 }
+
+func (r *Registry) UpdateCheckpoint(id, checkpoint string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	run, ok := r.runs[id]
+	if !ok {
+		return fmt.Errorf("run %q not found", id)
+	}
+
+	run.Checkpoint = checkpoint
+	run.UpdatedAt = time.Now()
+
+	return persistRun(run)
+}
