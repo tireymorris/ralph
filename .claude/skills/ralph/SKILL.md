@@ -18,13 +18,13 @@ curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/inst
 
 ## Use
 
-Run from the target repo root:
+Run from the target repo root (must be a **git** repo for implementation):
 
 ```bash
 ralph                 # TUI
 ralph "..."          # TUI flow
 ralph "..." --dry-run # PRD only
-ralph --resume        # continue from existing prd.json
+ralph --resume        # continue from prd.json (+ checkpoint if saved)
 ralph status          # current PRD status
 ralph web             # local UI
 ```
@@ -35,8 +35,10 @@ Set `RALPH_RUNNER` to `claude`, `cursor`, `opencode`, or `pi`.
 
 1. Clarify — runner may write `.ralph_questions.json`; Ralph reads and removes it
 2. Generate/load PRD — runner writes `prd.json`
-3. Review PRD — via TUI or `ralph web`
-4. Implement — Ralph spawns one runner session per ready story and marks `passes: true` when the runner exits 0
+3. Review PRD — via TUI or `ralph web` (approve or revise)
+4. Implement — one runner session per ready story; Ralph marks `passes: true` when the runner exits 0
+5. Implementation review — after each story, critical diff review on changed files; may pause on findings (TUI: Enter to continue; web: Continue implementation)
+6. Cleanup — optional final diff pass (skip with `--skip-cleanup`)
 
 Ralph is an orchestrator; it does not write code.
 
@@ -47,7 +49,7 @@ Gitignore these in the target repo:
 - `prd.json`
 - `prd.json.lock`
 - `.ralph_questions.json`
-- `.ralph/` (web UI session history)
+- `.ralph/` (run metadata, events, review transcripts; TUI uses `runs/prd-local/`)
 - `.prd.tmp.*`
 
 ## Caveats
@@ -57,3 +59,4 @@ Gitignore these in the target repo:
 - large PRD runs can overscope badly
 - `--dry-run` may still need a real TTY in some environments
 - Ralph does not load `CLAUDE.md` unless the runner does
+- implementation review requires git and a runner that emits `===ralph-findings===` JSON in its transcript

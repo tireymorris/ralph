@@ -48,10 +48,24 @@ ralph web --port 3000               # web UI on another port
 
 `ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, `.ralph_questions.json`, orphaned `.prd.tmp.*` files, and `.ralph/` run data.
 
+Implementation requires a **git repository** in the working directory (used for diff-based review between stories).
+
+## Workflow
+
+1. **Clarify** — optional questions via `.ralph_questions.json`
+2. **Generate PRD** — runner writes `prd.json`
+3. **Review PRD** — approve to implement, or revise with critique
+4. **Implement** — one runner session per story; Ralph marks `passes: true` after each
+5. **Implementation review** — after each story, a critical diff review runs on changed files. If findings are reported, Ralph pauses until you continue (TUI: **Enter**; web: **Continue implementation**). The same unchanged diff is not re-reviewed (duplicate fingerprint).
+6. **Cleanup** — optional final pass over the branch diff (skip with `--skip-cleanup`)
+
+`ralph --resume` continues from `prd.json` and any saved checkpoint under `.ralph/runs/prd-local/meta.json` when using the TUI. The web UI can **Force resume** stuck runs.
+
 | Flag / env | Purpose |
 |------------|---------|
 | `--dry-run` | Generate PRD only |
-| `--resume` | Resume from existing `prd.json` |
+| `--resume` | Resume from existing `prd.json` (and checkpoint if present) |
+| `--skip-cleanup` | Skip post-implementation cleanup |
 | `--port PORT` | Web server port (with `ralph web`; default 8080) |
 | `--ref REF` | Branch or tag for `ralph update` (default `main`) |
 | `--check` | With `ralph update`: report whether a newer commit exists on the remote |
