@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"ralph/internal/clean"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/workdir"
 	"ralph/internal/web/runs"
@@ -64,9 +65,8 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("active run %q in progress", active.ID), "run_conflict")
 		return
 	}
-	if _, ok := runs.OngoingLocalPRD(a.cfg, a.registry); ok {
-		writeJSONErrorCode(w, http.StatusConflict,
-			"local prd.json run in progress; finish or run ralph clean", "run_conflict")
+	if _, err := clean.ArchivePriorState(a.cfg); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "archive prior state: "+err.Error())
 		return
 	}
 

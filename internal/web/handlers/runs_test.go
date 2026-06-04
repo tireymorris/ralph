@@ -303,6 +303,7 @@ func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
 		return &noopRunner{}, nil
 	})
+	t.Cleanup(api.ReleaseAllControllers)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"new web run"}`))
 	req.Header.Set("Content-Type", "application/json")
