@@ -4,11 +4,21 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"ralph/internal/shared/config"
 )
+
+func initGitRepoInDir(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+}
 
 func TestHealthEndpoint(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
@@ -40,8 +50,10 @@ func TestHealthEndpoint(t *testing.T) {
 }
 
 func TestCreateRunRouteRegistered(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
 	cfg := config.DefaultConfig()
-	cfg.WorkDir = t.TempDir()
+	cfg.WorkDir = workDir
 
 	req := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"goal"}`))
 	req.Header.Set("Content-Type", "application/json")
