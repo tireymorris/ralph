@@ -21,6 +21,7 @@ var runIDPattern = regexp.MustCompile(`^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[
 
 func TestCreateRunTable(t *testing.T) {
 	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	reg := runs.NewRegistry()
@@ -86,6 +87,7 @@ func TestCreateRunTable(t *testing.T) {
 
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 
@@ -283,6 +285,7 @@ func TestGetRunLocalPRD(t *testing.T) {
 
 func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
 	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
 	prdJSON := `{
   "version": 1,
   "project_name": "CLI goal",

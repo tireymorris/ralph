@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/workdir"
 	"ralph/internal/web/runs"
 )
 
@@ -54,6 +55,10 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workDir := a.cfg.WorkDir
+	if err := workdir.ValidateGit(workDir); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if active, ok := a.registry.ActiveForWorkDir(workDir); ok {
 		writeJSONErrorCode(w, http.StatusConflict,
 			fmt.Sprintf("active run %q in progress", active.ID), "run_conflict")
