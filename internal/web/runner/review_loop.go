@@ -28,8 +28,8 @@ func (r *registryReviewLoop) Apply(u workflow.ReviewLoopUpdate) error {
 		ReviewIteration:            u.ReviewIteration,
 		ReviewFingerprint:          u.ReviewFingerprint,
 		ReviewElapsedMs:            u.ReviewElapsedMs,
-		StopReason:                   u.StopReason,
-		LastReviewTranscriptPath:     u.LastReviewTranscriptPath,
-		LastReviewChangedFilesHash:   u.LastReviewChangedFilesHash,
+		StopReason:                 u.StopReason,
+		LastReviewTranscriptPath:   u.LastReviewTranscriptPath,
+		LastReviewChangedFilesHash: u.LastReviewChangedFilesHash,
 	})
 }

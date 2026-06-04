@@ -56,9 +56,9 @@ func OngoingLocalPRD(cfg *config.Config, registry *Registry) (*Run, bool) {
 		Checkpoint:                 meta.Checkpoint,
 		ReviewIteration:            meta.ReviewIteration,
 		ReviewFingerprint:          meta.ReviewFingerprint,
-		ReviewElapsedMs:              meta.ReviewElapsedMs,
-		StopReason:                   meta.StopReason,
-		LastReviewTranscriptPath:     meta.LastReviewTranscriptPath,
+		ReviewElapsedMs:            meta.ReviewElapsedMs,
+		StopReason:                 meta.StopReason,
+		LastReviewTranscriptPath:   meta.LastReviewTranscriptPath,
 		LastReviewChangedFilesHash: meta.LastReviewChangedFilesHash,
 	}
 	if !meta.UpdatedAt.IsZero() {

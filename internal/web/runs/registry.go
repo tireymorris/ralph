@@ -24,29 +24,29 @@ const (
 )
 
 type Run struct {
-	ID                       string    `json:"id"`
-	WorkDir                  string    `json:"work_dir"`
-	Prompt                   string    `json:"prompt"`
-	Status                   string    `json:"status"`
-	Phase                    string    `json:"phase"`
-	CreatedAt                time.Time `json:"created_at"`
-	UpdatedAt                time.Time `json:"updated_at"`
-	PRDPath                  string    `json:"prd_path"`
-	Checkpoint               string    `json:"checkpoint,omitempty"`
-	ReviewIteration          int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint        string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs          int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason               string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string `json:"last_review_changed_files_hash,omitempty"`
+	ID                         string    `json:"id"`
+	WorkDir                    string    `json:"work_dir"`
+	Prompt                     string    `json:"prompt"`
+	Status                     string    `json:"status"`
+	Phase                      string    `json:"phase"`
+	CreatedAt                  time.Time `json:"created_at"`
+	UpdatedAt                  time.Time `json:"updated_at"`
+	PRDPath                    string    `json:"prd_path"`
+	Checkpoint                 string    `json:"checkpoint,omitempty"`
+	ReviewIteration            int       `json:"review_iteration,omitempty"`
+	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
+	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
+	StopReason                 string    `json:"stop_reason,omitempty"`
+	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
+	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
 }
 
 type ReviewLoopUpdate struct {
-	Checkpoint               string
-	ReviewIteration          int
-	ReviewFingerprint        string
-	ReviewElapsedMs          int64
-	StopReason               string
+	Checkpoint                 string
+	ReviewIteration            int
+	ReviewFingerprint          string
+	ReviewElapsedMs            int64
+	StopReason                 string
 	LastReviewTranscriptPath   string
 	LastReviewChangedFilesHash string
 }
@@ -183,11 +183,11 @@ func IsTerminalStatus(status string) bool {
 }
 
 var activeRunStatuses = map[string]bool{
-	"running":          true,
-	"waiting_clarify":  true,
-	"waiting_review":                true,
+	"running":                        true,
+	"waiting_clarify":                true,
+	"waiting_review":                 true,
 	runstate.StatusWaitingImplReview: true,
-	"implementing":                    true,
+	"implementing":                   true,
 }
 
 func (r *Registry) ActiveForWorkDir(workDir string) (*Run, bool) {

@@ -39,7 +39,7 @@ func (c *RunController) ForceResume(ctx context.Context) {
 		}
 		switch run.Checkpoint {
 		case runs.CheckpointPRDReview:
-				c.Driver.StartCheckpointResume(ctx)
+			c.Driver.StartCheckpointResume(ctx)
 			return
 		case runs.CheckpointImplReview, runs.CheckpointFollowup:
 			c.Driver.StartImplementation(ctx, p)

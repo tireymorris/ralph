@@ -9,14 +9,14 @@ import (
 )
 
 type fileRunMeta struct {
-	Checkpoint                   string    `json:"checkpoint,omitempty"`
-	ReviewIteration              int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint            string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs              int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                   string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath     string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash   string    `json:"last_review_changed_files_hash,omitempty"`
-	UpdatedAt                    time.Time `json:"updated_at,omitempty"`
+	Checkpoint                 string    `json:"checkpoint,omitempty"`
+	ReviewIteration            int       `json:"review_iteration,omitempty"`
+	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
+	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
+	StopReason                 string    `json:"stop_reason,omitempty"`
+	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
+	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
+	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
 }
 
 type FileReviewLoop struct {

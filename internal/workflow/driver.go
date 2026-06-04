@@ -55,8 +55,8 @@ func NewDriverWithRunner(cfg *config.Config, r runner.RunnerInterface) *Driver {
 }
 
 func (d *Driver) Ctx() context.Context          { return d.ctx }
-func (d *Driver) EventsCh() <-chan events.Event  { return d.eventsCh }
-func (d *Driver) Cancel()                        { d.cancel() }
+func (d *Driver) EventsCh() <-chan events.Event { return d.eventsCh }
+func (d *Driver) Cancel()                       { d.cancel() }
 
 func (d *Driver) CurrentPRD() *prd.PRD {
 	d.mu.Lock()
