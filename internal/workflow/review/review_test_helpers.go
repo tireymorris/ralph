@@ -32,3 +32,13 @@ func setupCleanGitRepo(t *testing.T) string {
 	runGit("commit", "-m", "initial")
 	return workDir
 }
+
+func setupGitRepoWithWorkingTreeDiff(t *testing.T) (workDir, changedFile string) {
+	t.Helper()
+	workDir = setupCleanGitRepo(t)
+	changedFile = "delta.txt"
+	if err := os.WriteFile(filepath.Join(workDir, changedFile), []byte("changed\n"), 0644); err != nil {
+		t.Fatalf("write %s: %v", changedFile, err)
+	}
+	return workDir, changedFile
+}

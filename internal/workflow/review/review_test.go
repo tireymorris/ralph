@@ -3,10 +3,58 @@ package review
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"ralph/internal/shared/runner"
 )
+
+func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
+	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
+	runner := &recordingRunner{
+		t:          t,
+		transcript: "critical review transcript\n",
+	}
+
+	result, err := ReviewDiff(context.Background(), Params{
+		WorkDir:   workDir,
+		RunID:     "run-diff",
+		Iteration: 2,
+		PRDFile:   "prd.json",
+		Context:   "Go test stack",
+		Runner:    runner,
+	})
+	if err != nil {
+		t.Fatalf("ReviewDiff() err = %v", err)
+	}
+	if runner.calls != 1 {
+		t.Fatalf("runner calls = %d, want 1", runner.calls)
+	}
+	if !strings.Contains(runner.lastPrompt, changedFile) {
+		t.Errorf("prompt missing changed file %q:\n%s", changedFile, runner.lastPrompt)
+	}
+	if !strings.Contains(runner.lastPrompt, "Go test stack") {
+		t.Error("prompt missing codebase context")
+	}
+
+	wantRel := "review-2.txt"
+	if result.LastReviewTranscriptPath != wantRel {
+		t.Errorf("LastReviewTranscriptPath = %q, want %q", result.LastReviewTranscriptPath, wantRel)
+	}
+	absPath := filepath.Join(workDir, ".ralph", "runs", "run-diff", wantRel)
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		t.Fatalf("read transcript %q: %v", absPath, err)
+	}
+	if string(data) != runner.transcript {
+		t.Errorf("transcript = %q, want %q", string(data), runner.transcript)
+	}
+	if !result.Clean {
+		t.Error("Clean = false, want true with unparsed findings")
+	}
+}
 
 func TestReviewDiffEmptyChangedFilesSkipsRunner(t *testing.T) {
 	workDir := setupCleanGitRepo(t)
@@ -71,12 +119,18 @@ func TestReviewDiffNonGitWorkdirReturnsGitError(t *testing.T) {
 }
 
 type recordingRunner struct {
-	t     *testing.T
-	calls int
+	t          *testing.T
+	calls      int
+	lastPrompt string
+	transcript string
 }
 
-func (r *recordingRunner) Run(context.Context, string, chan<- runner.OutputLine) error {
+func (r *recordingRunner) Run(_ context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 	r.calls++
+	r.lastPrompt = prompt
+	if outputCh != nil && r.transcript != "" {
+		outputCh <- runner.OutputLine{Text: r.transcript}
+	}
 	return nil
 }
 
