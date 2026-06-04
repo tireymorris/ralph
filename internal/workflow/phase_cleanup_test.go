@@ -161,6 +161,7 @@ func TestRunCleanupRunnerError(t *testing.T) {
 
 	foundError := false
 	foundCompleted := false
+	var startedPass, startedTotal int
 	for len(ch) > 0 {
 		e := <-ch
 		switch ev := e.(type) {
@@ -168,9 +169,19 @@ func TestRunCleanupRunnerError(t *testing.T) {
 			if strings.Contains(ev.Err.Error(), "cleanup") {
 				foundError = true
 			}
+		case EventCleanupStarted:
+			startedPass = ev.Pass
+			startedTotal = ev.Total
 		case EventCleanupCompleted:
 			foundCompleted = true
 		}
+	}
+
+	if startedPass != 1 {
+		t.Errorf("EventCleanupStarted Pass=%d, want 1 on first-pass failure", startedPass)
+	}
+	if startedTotal != 3 {
+		t.Errorf("EventCleanupStarted Total=%d, want 3", startedTotal)
 	}
 
 	if !foundError {
