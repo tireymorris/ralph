@@ -47,6 +47,22 @@ describe("CleanButton", () => {
     vi.unstubAllGlobals();
   });
 
+  it("shows success status after postClean resolves", async () => {
+    vi.mocked(postClean).mockResolvedValue(undefined);
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const user = userEvent.setup();
+    render(<CleanButton />);
+
+    await user.click(screen.getByRole("button", { name: "Clean" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Ralph state removed.",
+      );
+    });
+    vi.unstubAllGlobals();
+  });
+
   it("does not call postClean when confirm is declined", async () => {
     vi.stubGlobal("confirm", vi.fn(() => false));
     const user = userEvent.setup();
