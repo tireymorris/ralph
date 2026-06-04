@@ -307,6 +307,15 @@ func TestCleanup_includes_pass_label(t *testing.T) {
 	}
 }
 
+func TestCleanup_allows_exit_without_changes_when_no_cleanup_needed(t *testing.T) {
+	result := Cleanup("", "prd.json", nil, 1, 3)
+	hasPassLabel := strings.Contains(result, "pass 1 of 3")
+	hasSkipWording := strings.Contains(result, "without modifying") && strings.Contains(result, "without committing")
+	if !hasPassLabel || !hasSkipWording {
+		t.Errorf("Cleanup() should include pass label and no-changes-needed skip wording, got:\n%s", result)
+	}
+}
+
 func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
 	result := Cleanup("Go 1.24 app", "prd.json", nil, 1, 3)
 	if result == "" {

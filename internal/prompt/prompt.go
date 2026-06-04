@@ -156,7 +156,9 @@ Only modify the files listed above. Do not touch unrelated code.
 
 Cleanup pass %d of %d.
 %s%s
-Review the codebase and apply the following improvements:
+If the changed files already follow project conventions with no duplication or refactor worth doing, stop without modifying files and without committing — no cleanup is needed on this pass.
+
+Otherwise, review the codebase and apply the following improvements:
 
 1. Refactor repeated patterns — extract shared helpers and eliminate duplication
 2. Apply SOLID and DRY principles throughout the implementation
@@ -164,7 +166,7 @@ Review the codebase and apply the following improvements:
 4. Where possible, consolidate related specs and tests that cover overlapping scenarios
 5. Extract better abstractions where concrete implementations can be generalized
 
-After each change, run the full test suite. Only commit if all tests are green.
+Before any commit, run the full test suite. Only commit if all tests are green.
 
 PRD file: %s`, pass, total, contextSection, filesSection, prdFile)
 }
