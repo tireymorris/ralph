@@ -2,14 +2,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRun, listRuns } from "../api/client";
+import { ApiError, createRun, listRuns, postClean } from "../api/client";
 
 import NewRunPage from "./NewRunPage";
 
-vi.mock("../api/client", () => ({
-  createRun: vi.fn(),
-  listRuns: vi.fn(),
-}));
+vi.mock("../api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api/client")>();
+  return {
+    ...actual,
+    createRun: vi.fn(),
+    listRuns: vi.fn(),
+    postClean: vi.fn(),
+  };
+});
 
 function renderComposer() {
   return render(
@@ -26,6 +31,7 @@ describe("NewRunPage", () => {
   beforeEach(() => {
     vi.mocked(listRuns).mockReset();
     vi.mocked(createRun).mockReset();
+    vi.mocked(postClean).mockReset();
   });
 
   it("shows active chats when non-terminal runs exist", async () => {
@@ -66,6 +72,32 @@ describe("NewRunPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("run-detail")).toBeInTheDocument();
     });
+  });
+
+  it("shows 409 error without calling postClean when conflict confirm is declined", async () => {
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal("confirm", confirm);
+    vi.mocked(listRuns).mockResolvedValue([]);
+    vi.mocked(createRun).mockRejectedValueOnce(
+      new ApiError(409, 'active run "abc" in progress'),
+    );
+
+    const user = userEvent.setup();
+    renderComposer();
+
+    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
+    await user.type(textarea, "my goal");
+    await user.click(screen.getByRole("button", { name: /start run/i }));
+
+    await waitFor(() => {
+      expect(confirm).toHaveBeenCalledTimes(1);
+    });
+    expect(postClean).not.toHaveBeenCalled();
+    expect(createRun).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      'active run "abc" in progress',
+    );
+    vi.unstubAllGlobals();
   });
 
   it("submit button uses btn and btn--primary classes", () => {

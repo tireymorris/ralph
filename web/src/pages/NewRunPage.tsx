@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createRun } from "../api/client";
+import { ApiError, createRun, postClean } from "../api/client";
+
+const CONFLICT_CONFIRM_MESSAGE =
+  "An active run is blocking a new start. Remove Ralph state (prd.json and .ralph/ run data) and try again?";
 import RunsList from "../components/RunsList";
 
 export default function NewRunPage() {
@@ -21,6 +24,26 @@ export default function NewRunPage() {
       const { id } = await createRun(trimmed);
       navigate(`/runs/${id}`);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        const conflictMessage = err.message;
+        if (!window.confirm(CONFLICT_CONFIRM_MESSAGE)) {
+          setError(conflictMessage);
+          setSubmitting(false);
+          return;
+        }
+        try {
+          await postClean();
+          const { id } = await createRun(trimmed);
+          navigate(`/runs/${id}`);
+          return;
+        } catch (retryErr) {
+          setError(
+            retryErr instanceof Error ? retryErr.message : "Failed to start run",
+          );
+          setSubmitting(false);
+          return;
+        }
+      }
       setError(err instanceof Error ? err.message : "Failed to start run");
       setSubmitting(false);
     }
