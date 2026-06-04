@@ -62,6 +62,11 @@ export interface Run {
   updated_at: string;
   source?: string;
   story_progress?: StoryProgress;
+  checkpoint?: string;
+  review_iteration?: number;
+  review_fingerprint?: string;
+  review_elapsed_ms?: number;
+  stop_reason?: string;
 }
 
 export interface PRDStory {

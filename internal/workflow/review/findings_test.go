@@ -51,7 +51,7 @@ func TestParseFindings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseFindings(tt.input)
+			got, err := ParseFindings(tt.input, false)
 			if err != nil {
 				t.Fatalf("ParseFindings() err = %v", err)
 			}
@@ -79,7 +79,7 @@ func TestParseFindings(t *testing.T) {
 				}
 			}
 			if tt.wantLen > 0 {
-				again, err := ParseFindings(tt.input)
+				again, err := ParseFindings(tt.input, false)
 				if err != nil {
 					t.Fatalf("ParseFindings() second call err = %v", err)
 				}
@@ -93,8 +93,15 @@ func TestParseFindings(t *testing.T) {
 	}
 }
 
+func TestParseFindingsRequiresBlockWhenNonEmptyDiff(t *testing.T) {
+	_, err := ParseFindings("Review done without markers.", true)
+	if err == nil {
+		t.Fatal("ParseFindings() err = nil, want ErrMissingFindingsBlock")
+	}
+}
+
 func TestParseFindingsEmptyTranscript(t *testing.T) {
-	got, err := ParseFindings("")
+	got, err := ParseFindings("", false)
 	if err != nil {
 		t.Fatalf("ParseFindings() err = %v", err)
 	}

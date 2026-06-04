@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/workflow/review"
@@ -230,7 +231,12 @@ func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	exec.runID = "run-dup"
+	changed, err := gitdiff.ChangedFiles(workDir)
+	if err != nil {
+		t.Fatalf("ChangedFiles() err = %v", err)
+	}
 	exec.reviewFingerprint = reviewFingerprintFromTranscript(t, findingsTranscript)
+	exec.reviewChangedFilesHash = gitdiff.HashFiles(changed)
 
 	if _, err := exec.runImplementationReview(context.Background(), testPRD); err == nil {
 		t.Fatal("second review with duplicate fingerprint should return error")
@@ -240,14 +246,14 @@ func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.
 	if storyCalls != 0 {
 		t.Errorf("story runner calls = %d, want 0", storyCalls)
 	}
-	if reviewCalls != 1 {
-		t.Errorf("review runner calls = %d, want 1 without a third review attempt", reviewCalls)
+	if reviewCalls != 0 {
+		t.Errorf("review runner calls = %d, want 0 when duplicate diff and fingerprint", reviewCalls)
 	}
 }
 
 func reviewFingerprintFromTranscript(t *testing.T, transcript string) string {
 	t.Helper()
-	findings, err := review.ParseFindings(transcript)
+	findings, err := review.ParseFindings(transcript, true)
 	if err != nil {
 		t.Fatalf("ParseFindings() err = %v", err)
 	}
@@ -262,8 +268,8 @@ type recordingReviewLoop struct {
 	updates     []ReviewLoopUpdate
 }
 
-func (r *recordingReviewLoop) Snapshot() (int, string, int64) {
-	return r.iteration, r.fingerprint, r.elapsedMs
+func (r *recordingReviewLoop) Snapshot() (int, string, int64, string) {
+	return r.iteration, r.fingerprint, r.elapsedMs, ""
 }
 
 func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {

@@ -8,7 +8,7 @@ export function isRunAwaitingUser(
   status: string,
   clarifyQuestionCount: number,
 ): boolean {
-  if (status === "waiting_review") {
+  if (status === "waiting_review" || status === "waiting_implementation_review") {
     return true;
   }
   if (status === "waiting_clarify" && clarifyQuestionCount > 0) {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"ralph/internal/prompt"
+	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/runner"
 )
 
@@ -27,27 +28,23 @@ type Result struct {
 	LastReviewTranscriptPath string
 }
 
-type GitError struct {
-	WorkDir string
-	Command string
-	Output  string
-}
-
-func (e *GitError) Error() string {
-	return "git error in " + e.WorkDir + ": " + e.Command + ": " + e.Output
-}
+type GitError = gitdiff.GitError
 
 func ReviewDiff(ctx context.Context, p Params) (Result, error) {
+	changed, err := gitdiff.ChangedFiles(p.WorkDir)
+	if err != nil {
+		return Result{}, err
+	}
+	return ReviewDiffWithChanged(ctx, p, changed)
+}
+
+func ReviewDiffWithChanged(ctx context.Context, p Params, changed []string) (Result, error) {
 	select {
 	case <-ctx.Done():
 		return Result{}, ctx.Err()
 	default:
 	}
 
-	changed, err := branchChangedFiles(p.WorkDir)
-	if err != nil {
-		return Result{}, err
-	}
 	if len(changed) == 0 {
 		return Result{Clean: true}, nil
 	}
@@ -63,7 +60,7 @@ func ReviewDiff(ctx context.Context, p Params) (Result, error) {
 		return Result{}, err
 	}
 
-	findings, err := ParseFindings(transcript)
+	findings, err := ParseFindings(transcript, len(changed) > 0)
 	if err != nil {
 		return Result{}, err
 	}
@@ -100,6 +97,10 @@ func runRunner(ctx context.Context, r runner.RunnerInterface, reviewPrompt strin
 		return buf.String(), err
 	}
 	return buf.String(), nil
+}
+
+func transcriptRelPath(iteration int) string {
+	return fmt.Sprintf("review-%d.txt", iteration)
 }
 
 func writeTranscript(workDir, runID, relPath, transcript string) error {

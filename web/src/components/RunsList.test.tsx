@@ -141,6 +141,11 @@ describe("RunsList", () => {
   it.each([
     ["waiting_clarify", "run-status-badge--waiting", "Needs Answers"],
     ["waiting_review", "run-status-badge--waiting", "Needs Review"],
+    [
+      "waiting_implementation_review",
+      "run-status-badge--waiting",
+      "Review Findings",
+    ],
     ["completed", "run-status-badge--completed", "Completed"],
     ["failed", "run-status-badge--failed", "Failed"],
     ["cancelled", "run-status-badge--cancelled", "Cancelled"],

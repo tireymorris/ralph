@@ -6,6 +6,10 @@ describe("isRunAwaitingUser", () => {
     expect(isRunAwaitingUser("waiting_review", 0)).toBe(true);
   });
 
+  it("returns true for waiting_implementation_review", () => {
+    expect(isRunAwaitingUser("waiting_implementation_review", 0)).toBe(true);
+  });
+
   it("returns true for waiting_clarify with questions", () => {
     expect(isRunAwaitingUser("waiting_clarify", 2)).toBe(true);
   });

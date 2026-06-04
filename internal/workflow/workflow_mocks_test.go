@@ -4,12 +4,15 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
 )
+
+const cleanReviewTranscript = "===ralph-findings===\n[]\n===/ralph-findings===\n"
 
 type mockRunner struct {
 	runFunc      func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error
@@ -48,6 +51,9 @@ func (m *mockRunner) Run(ctx context.Context, prompt string, outputCh chan<- run
 
 	if m.runFunc != nil {
 		return m.runFunc(ctx, prompt, outputCh)
+	}
+	if strings.Contains(prompt, "critical diff review") {
+		outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 	}
 	return nil
 }

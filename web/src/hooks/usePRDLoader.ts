@@ -7,6 +7,7 @@ const POLL_MS = 3000;
 const PRD_REVIEW_STATUS = "waiting_review";
 const PRD_POLL_STATUSES = new Set([
   PRD_REVIEW_STATUS,
+  "waiting_implementation_review",
   "implementing",
   "running",
   "completed",

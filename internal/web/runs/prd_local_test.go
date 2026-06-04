@@ -1,12 +1,14 @@
 package runs
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/runstate"
 )
 
 func TestOngoingLocalPRD_incompletePRD(t *testing.T) {
@@ -94,6 +96,48 @@ func TestOngoingLocalPRD_skipsCompleted(t *testing.T) {
 
 	if _, ok := OngoingLocalPRD(cfg, NewRegistry()); ok {
 		t.Fatal("OngoingLocalPRD() = true, want false for completed PRD")
+	}
+}
+
+func TestOngoingLocalPRD_implReviewCheckpoint(t *testing.T) {
+	workDir := t.TempDir()
+	prdJSON := `{
+  "version": 1,
+  "project_name": "Review blocked",
+  "stories": [
+    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+	metaDir := filepath.Join(workDir, ".ralph", "runs", LocalPRDRunID)
+	if err := os.MkdirAll(metaDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	meta := map[string]any{
+		"checkpoint":       runstate.CheckpointImplReview,
+		"review_iteration": 1,
+	}
+	data, err := json.Marshal(meta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), data, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	run, ok := OngoingLocalPRD(cfg, NewRegistry())
+	if !ok {
+		t.Fatal("OngoingLocalPRD() = false, want true")
+	}
+	if run.Status != runstate.StatusWaitingImplReview {
+		t.Fatalf("Status = %q, want %q", run.Status, runstate.StatusWaitingImplReview)
+	}
+	if run.ReviewIteration != 1 {
+		t.Fatalf("ReviewIteration = %d, want 1", run.ReviewIteration)
 	}
 }
 

@@ -13,6 +13,7 @@ const statusLabels: Record<string, string> = {
   implementing: "Implementing",
   waiting_clarify: "Needs Answers",
   waiting_review: "Needs Review",
+  waiting_implementation_review: "Review Findings",
   completed: "Completed",
   failed: "Failed",
   cancelled: "Cancelled",
@@ -29,6 +30,7 @@ export function statusBadgeClass(status: string): string {
       return "run-status-badge--running";
     case "waiting_clarify":
     case "waiting_review":
+    case "waiting_implementation_review":
       return "run-status-badge--waiting";
     case "completed":
       return "run-status-badge--completed";

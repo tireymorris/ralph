@@ -30,9 +30,14 @@ type rawFinding struct {
 	Summary  string `json:"summary"`
 }
 
-func ParseFindings(transcript string) ([]Finding, error) {
+var ErrMissingFindingsBlock = fmt.Errorf("transcript missing %s block", findingsBlockStart)
+
+func ParseFindings(transcript string, requireBlock bool) ([]Finding, error) {
 	block, ok := extractFindingsBlock(transcript)
 	if !ok {
+		if requireBlock && strings.TrimSpace(transcript) != "" {
+			return nil, ErrMissingFindingsBlock
+		}
 		return nil, nil
 	}
 	var raw []rawFinding

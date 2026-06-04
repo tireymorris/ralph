@@ -160,6 +160,14 @@ func (m *Model) renderPRDReview() string {
 	return b.String()
 }
 
+func (m *Model) renderImplementationReview() string {
+	var b strings.Builder
+	b.WriteString(inProgressStyle.Render("Implementation review found issues."))
+	b.WriteString("\n")
+	b.WriteString(mutedStyle.Render("Address findings in the log, then press Enter to continue implementation."))
+	return b.String()
+}
+
 func (m *Model) renderImplementation() string {
 	if m.prd == nil {
 		return ""
@@ -285,6 +293,8 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderFailed())
 	case PhasePRDReview:
 		b.WriteString(m.renderPRDReview())
+	case PhaseImplementationReview:
+		b.WriteString(m.renderImplementationReview())
 	case PhaseImplementation:
 		b.WriteString(m.renderImplementation())
 	case PhaseCompleted:

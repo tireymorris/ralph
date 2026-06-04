@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"ralph/internal/shared/logger"
+	"ralph/internal/shared/runstate"
 )
 
 const runDirPerm = 0o750
 
 const (
-	CheckpointPRDReview  = "prd_review"
-	CheckpointImplReview = "impl_review"
-	CheckpointFollowup   = "followup"
-	CheckpointComplete   = "complete"
+	CheckpointPRDReview  = runstate.CheckpointPRDReview
+	CheckpointImplReview = runstate.CheckpointImplReview
+	CheckpointFollowup   = runstate.CheckpointFollowup
+	CheckpointComplete   = runstate.CheckpointComplete
 )
 
 type Run struct {
@@ -36,7 +37,8 @@ type Run struct {
 	ReviewFingerprint        string    `json:"review_fingerprint,omitempty"`
 	ReviewElapsedMs          int64     `json:"review_elapsed_ms,omitempty"`
 	StopReason               string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath string    `json:"last_review_transcript_path,omitempty"`
+	LastReviewTranscriptPath   string `json:"last_review_transcript_path,omitempty"`
+	LastReviewChangedFilesHash string `json:"last_review_changed_files_hash,omitempty"`
 }
 
 type ReviewLoopUpdate struct {
@@ -45,7 +47,8 @@ type ReviewLoopUpdate struct {
 	ReviewFingerprint        string
 	ReviewElapsedMs          int64
 	StopReason               string
-	LastReviewTranscriptPath string
+	LastReviewTranscriptPath   string
+	LastReviewChangedFilesHash string
 }
 
 type Registry struct {
@@ -182,8 +185,9 @@ func IsTerminalStatus(status string) bool {
 var activeRunStatuses = map[string]bool{
 	"running":          true,
 	"waiting_clarify":  true,
-	"waiting_review":   true,
-	"implementing":     true,
+	"waiting_review":                true,
+	runstate.StatusWaitingImplReview: true,
+	"implementing":                    true,
 }
 
 func (r *Registry) ActiveForWorkDir(workDir string) (*Run, bool) {
@@ -245,6 +249,7 @@ func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
 	run.ReviewElapsedMs = u.ReviewElapsedMs
 	run.StopReason = u.StopReason
 	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
+	run.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)

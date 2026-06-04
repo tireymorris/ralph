@@ -103,6 +103,24 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		if m.phase == PhaseImplementationReview {
+			if msg.String() == "enter" {
+				if m.prd != nil {
+					m.phase = PhaseImplementation
+					m.scrollPane = focusMain
+					if m.width > 0 && m.height > 0 {
+						m.applyLayout(m.width, m.height)
+					}
+					m.rebuildMainScrollContent()
+					m.mainPane.GotoTop()
+					return m, tea.Batch(
+						m.operationManager.StartImplementation(m.prd),
+						m.operationManager.ListenForEvents(),
+					)
+				}
+			}
+		}
+
 		if m.phase == PhasePRDReview {
 			if m.critiqueActive {
 				switch msg.String() {

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"ralph/internal/shared/gitdiff"
 )
 
 func TestBranchChangedFilesIncludesWorktreeChanges(t *testing.T) {
@@ -13,11 +15,14 @@ func TestBranchChangedFilesIncludesWorktreeChanges(t *testing.T) {
 		t.Fatalf("write worktree file: %v", err)
 	}
 
-	got := branchChangedFiles(workDir)
+	got, err := gitdiff.ChangedFiles(workDir)
+	if err != nil {
+		t.Fatalf("ChangedFiles() err = %v", err)
+	}
 	for _, name := range got {
 		if name == created {
 			return
 		}
 	}
-	t.Fatalf("branchChangedFiles() = %v, want to include %q", got, created)
+	t.Fatalf("ChangedFiles() = %v, want to include %q", got, created)
 }

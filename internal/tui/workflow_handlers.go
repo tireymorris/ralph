@@ -103,6 +103,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.markMainScrollJump()
 
 	case events.EventImplementationReview:
+		m.phase = PhaseImplementationReview
 		for _, f := range e.Findings {
 			if f.Summary != "" {
 				m.logger.AddLog(fmt.Sprintf("Review finding: %s", f.Summary))

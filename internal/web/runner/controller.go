@@ -13,6 +13,7 @@ import (
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
@@ -61,6 +62,21 @@ func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
 		return err
 	}
 	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
+	return nil
+}
+
+func (c *RunController) ContinueImplementationReview(ctx context.Context) error {
+	p := c.CurrentPRD()
+	if p == nil {
+		runCfg := c.runConfig()
+		loaded, err := prd.Load(runCfg)
+		if err != nil {
+			return fmt.Errorf("load PRD for implementation: %w", err)
+		}
+		p = loaded
+	}
+	c.Driver.StartImplementation(ctx, p)
+	_ = c.registry.UpdateStatus(c.runID, "implementing", "implement")
 	return nil
 }
 
@@ -243,7 +259,7 @@ func mapEventToStatusPhase(ev events.Event) (status, phase string) {
 	case events.EventStoryStarted, events.EventStoryCompleted:
 		return "implementing", "implement"
 	case events.EventImplementationReview:
-		return "waiting_review", "implement"
+		return runstate.StatusWaitingImplReview, "implement"
 	case events.EventCleanupStarted, events.EventCleanupCompleted:
 		return "implementing", "cleanup"
 	case events.EventCompleted:

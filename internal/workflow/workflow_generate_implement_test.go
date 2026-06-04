@@ -147,6 +147,10 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	mock := newMockRunner()
 
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(prompt, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
 		outputCh <- runner.OutputLine{Text: "Working on story..."}
 		return nil
 	}

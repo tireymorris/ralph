@@ -100,6 +100,10 @@ export async function submitReview(
   await apiPost(`/api/runs/${id}/review`, body);
 }
 
+export async function continueImplementationReview(id: string): Promise<void> {
+  await apiPost(`/api/runs/${id}/implementation-review`, {});
+}
+
 export async function submitFollowUp(
   id: string,
   message: string,

@@ -1,6 +1,6 @@
 # Ralph
 
-Turn a natural-language goal into a `prd.json`, then implement it story-by-story via an AI coding CLI (clarify → PRD → review → implement).
+Turn a natural-language goal into a `prd.json`, then implement it story-by-story via an AI coding CLI (clarify → PRD → review → implement → critical diff review).
 
 ## Quick start
 
@@ -69,8 +69,9 @@ Ralph writes the following files in the working directory. All are covered by th
 | `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
 | `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
 | `.prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
-| `.ralph/runs/<id>/meta.json` | Web UI | Per-run metadata (prompt, status, timestamps) |
+| `.ralph/runs/<id>/meta.json` | TUI + web | Per-run metadata (status, checkpoint, review loop) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
+| `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |
 
 ## Runner
 

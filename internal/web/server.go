@@ -30,6 +30,7 @@ func NewHandler(cfg *config.Config) (http.Handler, error) {
 	mux.HandleFunc("GET /api/runs/{id}/events", api.RunEvents)
 	mux.HandleFunc("POST /api/runs/{id}/clarify", api.ClarifyRun)
 	mux.HandleFunc("POST /api/runs/{id}/review", api.ReviewRun)
+	mux.HandleFunc("POST /api/runs/{id}/implementation-review", api.ContinueImplementationReview)
 	mux.HandleFunc("POST /api/runs/{id}/cancel", api.CancelRun)
 	mux.HandleFunc("POST /api/runs/{id}/resume", api.ResumeRun)
 	mux.HandleFunc("POST /api/runs/{id}/followup", api.FollowUpRun)

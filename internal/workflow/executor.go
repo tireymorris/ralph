@@ -17,11 +17,12 @@ type Executor struct {
 	runner   runner.RunnerInterface
 	store    PRDStore
 
-	runID             string
-	reviewLoop        ReviewLoopUpdater
-	reviewIteration   int
-	reviewFingerprint string
-	reviewElapsedMs   int64
+	runID                  string
+	reviewLoop             ReviewLoopUpdater
+	reviewIteration        int
+	reviewFingerprint      string
+	reviewElapsedMs        int64
+	reviewChangedFilesHash string
 }
 
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {

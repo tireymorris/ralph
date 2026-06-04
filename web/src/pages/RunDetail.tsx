@@ -29,6 +29,7 @@ import { FORCE_RESUME_CONFIRM_MESSAGE } from "../lib/stall";
 import ClarifyForm from "../components/ClarifyForm";
 import FollowUpComposer from "../components/FollowUpComposer";
 import GroupedTimeline from "../components/GroupedTimeline";
+import ImplementationReviewPanel from "../components/ImplementationReviewPanel";
 import PRDReviewPanel from "../components/PRDReviewPanel";
 import RunPrompt from "../components/RunPrompt";
 import StoryProgressPanel from "../components/StoryProgressPanel";
@@ -184,7 +185,8 @@ export default function RunDetail() {
   const showStoryProgress =
     prd &&
     prd.stories.length > 0 &&
-    run?.status !== "waiting_review";
+    run?.status !== "waiting_review" &&
+    run?.status !== "waiting_implementation_review";
 
   return (
     <div
@@ -258,6 +260,12 @@ export default function RunDetail() {
         )}
         {run?.status === "waiting_review" && prd && id && (
           <PRDReviewPanel runId={id} prd={prd} />
+        )}
+        {run?.status === "waiting_implementation_review" && id && (
+          <ImplementationReviewPanel
+            runId={id}
+            iteration={run.review_iteration}
+          />
         )}
         {entries.length === 0 && run && !isTerminal && isLocalPRD && (
           <p className="timeline-empty">

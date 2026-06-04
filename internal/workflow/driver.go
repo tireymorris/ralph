@@ -11,6 +11,7 @@ import (
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/events"
 )
 
@@ -87,6 +88,42 @@ func (d *Driver) StartResume(ctx context.Context) {
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
 		d.executor.RunLoad(runCtx)
 	})
+}
+
+func (d *Driver) StartCheckpointResume(ctx context.Context) {
+	go d.runWithCtx(ctx, func(runCtx context.Context) {
+		checkpoint := d.reviewLoopCheckpoint()
+		p, err := prd.Load(d.cfg)
+		if err != nil {
+			d.executor.RunLoad(runCtx)
+			return
+		}
+		d.mu.Lock()
+		d.currentPRD = p
+		d.mu.Unlock()
+
+		switch checkpoint {
+		case runstate.CheckpointPRDReview:
+			d.executor.RunLoad(runCtx)
+		case runstate.CheckpointImplReview, runstate.CheckpointFollowup:
+			d.executor.RunImplementation(runCtx, p)
+		case runstate.CheckpointComplete:
+			return
+		default:
+			if !p.AllCompleted() {
+				d.executor.RunImplementation(runCtx, p)
+			} else {
+				d.executor.RunLoad(runCtx)
+			}
+		}
+	})
+}
+
+func (d *Driver) reviewLoopCheckpoint() string {
+	if r, ok := d.executor.reviewLoop.(checkpointReader); ok {
+		return r.Checkpoint()
+	}
+	return ""
 }
 
 func (d *Driver) SetReviewLoop(runID string, updater ReviewLoopUpdater) {

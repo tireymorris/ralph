@@ -7,6 +7,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
@@ -16,13 +17,15 @@ type OperationManager struct {
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
-	return &OperationManager{Driver: workflow.NewDriver(cfg)}
+	d := workflow.NewDriver(cfg)
+	d.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+	return &OperationManager{Driver: d}
 }
 
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
 		if resume {
-			om.StartResume(context.Background())
+			om.StartCheckpointResume(context.Background())
 		} else {
 			om.StartNew(context.Background(), userPrompt)
 		}

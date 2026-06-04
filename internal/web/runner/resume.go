@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
 )
@@ -32,9 +33,13 @@ func (c *RunController) ForceResume(ctx context.Context) {
 	runCfg := c.runConfig()
 	p, err := prd.Load(runCfg)
 	if err == nil {
+		if run.Status == runstate.StatusWaitingImplReview {
+			c.Driver.StartImplementation(ctx, p)
+			return
+		}
 		switch run.Checkpoint {
 		case runs.CheckpointPRDReview:
-			c.Driver.StartResume(ctx)
+				c.Driver.StartCheckpointResume(ctx)
 			return
 		case runs.CheckpointImplReview, runs.CheckpointFollowup:
 			c.Driver.StartImplementation(ctx, p)
@@ -42,11 +47,11 @@ func (c *RunController) ForceResume(ctx context.Context) {
 		case runs.CheckpointComplete:
 			return
 		}
-		if !p.AllCompleted() && run.Status != "waiting_review" {
+		if !p.AllCompleted() && run.Status != "waiting_review" && run.Status != runstate.StatusWaitingImplReview {
 			c.Driver.StartImplementation(ctx, p)
 			return
 		}
-		c.Driver.StartResume(ctx)
+		c.Driver.StartCheckpointResume(ctx)
 		return
 	}
 	if run.Prompt != "" {
