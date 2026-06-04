@@ -195,6 +195,103 @@ func TestReviewLoopFieldsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestUpdateReviewLoop(t *testing.T) {
+	reg := NewRegistry()
+	workDir := t.TempDir()
+
+	run := &Run{
+		ID:        "run-review-upd",
+		WorkDir:   workDir,
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	fp := "abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
+	if err := reg.UpdateReviewLoop("run-review-upd", ReviewLoopUpdate{
+		Checkpoint:               CheckpointImplReview,
+		ReviewIteration:          3,
+		ReviewFingerprint:        fp,
+		ReviewElapsedMs:          4200,
+		StopReason:               "guardrail",
+		LastReviewTranscriptPath: "review-3.txt",
+	}); err != nil {
+		t.Fatalf("UpdateReviewLoop() error = %v", err)
+	}
+
+	got, ok := reg.Get("run-review-upd")
+	if !ok {
+		t.Fatal("Get() ok = false")
+	}
+	if got.Checkpoint != CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	}
+	if got.ReviewIteration != 3 {
+		t.Errorf("ReviewIteration = %d, want 3", got.ReviewIteration)
+	}
+	if got.ReviewFingerprint != fp {
+		t.Errorf("ReviewFingerprint = %q, want %q", got.ReviewFingerprint, fp)
+	}
+	if got.ReviewElapsedMs != 4200 {
+		t.Errorf("ReviewElapsedMs = %d, want 4200", got.ReviewElapsedMs)
+	}
+	if got.StopReason != "guardrail" {
+		t.Errorf("StopReason = %q, want guardrail", got.StopReason)
+	}
+	if got.LastReviewTranscriptPath != "review-3.txt" {
+		t.Errorf("LastReviewTranscriptPath = %q, want review-3.txt", got.LastReviewTranscriptPath)
+	}
+
+	reloaded := NewRegistry()
+	if err := reloaded.LoadFromWorkDir(workDir); err != nil {
+		t.Fatalf("LoadFromWorkDir() error = %v", err)
+	}
+	got, ok = reloaded.Get("run-review-upd")
+	if !ok {
+		t.Fatal("Get() ok = false after reload")
+	}
+	if got.ReviewFingerprint != fp {
+		t.Errorf("reloaded ReviewFingerprint = %q, want %q", got.ReviewFingerprint, fp)
+	}
+}
+
+func TestResumeCheckpointFromReloadedMeta(t *testing.T) {
+	workDir := t.TempDir()
+	reg := NewRegistry()
+
+	run := &Run{
+		ID:         "run-resume-ckpt",
+		WorkDir:    workDir,
+		Prompt:     "build feature",
+		Status:     "implementing",
+		Phase:      "implement",
+		Checkpoint: CheckpointImplReview,
+		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		PRDPath:    "prd.json",
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	reloaded := NewRegistry()
+	if err := reloaded.LoadFromWorkDir(workDir); err != nil {
+		t.Fatalf("LoadFromWorkDir() error = %v", err)
+	}
+
+	got, ok := reloaded.Get("run-resume-ckpt")
+	if !ok {
+		t.Fatal("Get() ok = false after reload")
+	}
+	if got.Checkpoint != CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q for resume", got.Checkpoint, CheckpointImplReview)
+	}
+}
+
 func TestLoadFromWorkDir(t *testing.T) {
 	workDir := t.TempDir()
 	reg := NewRegistry()
