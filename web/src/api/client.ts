@@ -110,6 +110,10 @@ export async function cancelRun(id: string): Promise<void> {
   await apiPost(`/api/runs/${id}/cancel`, {});
 }
 
+export async function postClean(): Promise<void> {
+  await apiPost("/api/clean", {});
+}
+
 export async function getVersion(): Promise<VersionInfo> {
   return apiFetch<VersionInfo>("/api/version");
 }

@@ -5,6 +5,7 @@ import {
   getRun,
   listRuns,
   openEventStream,
+  postClean,
 } from "./client";
 
 afterEach(() => {
@@ -69,6 +70,21 @@ describe("createRun", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt: "build feature" }),
+    });
+  });
+});
+
+describe("postClean", () => {
+  it("POSTs empty JSON to /api/clean with Content-Type application/json", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postClean();
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/clean", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
     });
   });
 });
