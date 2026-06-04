@@ -25,7 +25,23 @@ func ArchivePriorState(cfg *config.Config) (backupDir string, err error) {
 			return "", err
 		}
 	}
+	if err := archiveOrphanedPRDTemps(cfg, backupDir); err != nil {
+		return "", err
+	}
 	return backupDir, nil
+}
+
+func archiveOrphanedPRDTemps(cfg *config.Config, backupDir string) error {
+	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
+	if err != nil {
+		return err
+	}
+	for _, path := range matches {
+		if err := moveIntoBackup(backupDir, path, filepath.Base(path)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func hasStateArtifacts(cfg *config.Config) (bool, error) {

@@ -65,6 +65,22 @@ func TestArchivePriorState_stateFiles(t *testing.T) {
 	}
 }
 
+func TestArchivePriorState_prdTemps(t *testing.T) {
+	dir := t.TempDir()
+	cfg := testConfig(t, dir)
+	tmpPath := filepath.Join(dir, ".prd.tmp.100.7")
+	writeSeedFile(t, tmpPath)
+
+	backupDir, err := ArchivePriorState(cfg)
+	if err != nil {
+		t.Fatalf("ArchivePriorState: %v", err)
+	}
+	assertNoPRDTempFiles(t, dir)
+	if _, err := os.Stat(filepath.Join(backupDir, ".prd.tmp.100.7")); err != nil {
+		t.Fatalf("temp not in backup: %v", err)
+	}
+}
+
 func TestArchivePriorState_noArtifacts(t *testing.T) {
 	dir := t.TempDir()
 	cfg := testConfig(t, dir)
