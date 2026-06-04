@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +38,25 @@ func setupTestAPI(t *testing.T, seed ...*runs.Run) (*handlers.API, *runs.Registr
 	}
 	api := handlers.NewAPI(cfg, reg)
 	return api, reg
+}
+
+func assertPathNotExist(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("%s still exists: %v", path, err)
+	}
+}
+
+func assertRegistryEmpty(t *testing.T, reg *runs.Registry) {
+	t.Helper()
+	if n := len(reg.List()); n != 0 {
+		t.Fatalf("registry: %d runs, want 0", n)
+	}
+}
+
+func assertRalphRunsRemoved(t *testing.T, workDir string) {
+	t.Helper()
+	assertPathNotExist(t, filepath.Join(workDir, ".ralph", "runs"))
 }
 
 func postJSON(t *testing.T, handler http.HandlerFunc, path, pathVal, body string) *httptest.ResponseRecorder {

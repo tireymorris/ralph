@@ -87,7 +87,7 @@ export default function UpdateButton() {
           : undefined);
 
   return (
-    <div className="update-button-wrap">
+    <div className="topbar-action-wrap">
       <button
         type="button"
         className={className}
@@ -99,12 +99,12 @@ export default function UpdateButton() {
         {label}
       </button>
       {message ? (
-        <p className="update-button-message" role="status">
+        <p className="topbar-action-message" role="status">
           {message}
         </p>
       ) : null}
       {error && state === "available" ? (
-        <p className="form-error update-button-error" role="alert">
+        <p className="form-error topbar-action-error" role="alert">
           {error}
         </p>
       ) : null}

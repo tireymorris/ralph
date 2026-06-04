@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, createRun, listRuns, postClean } from "../api/client";
-
+import { stubConfirm } from "../test/helpers";
 import NewRunPage from "./NewRunPage";
 
 vi.mock("../api/client", async (importOriginal) => {
@@ -25,6 +25,12 @@ function renderComposer() {
       </Routes>
     </MemoryRouter>,
   );
+}
+
+async function submitGoal(user: ReturnType<typeof userEvent.setup>, goal: string) {
+  const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
+  await user.type(textarea, goal);
+  await user.click(screen.getByRole("button", { name: /start run/i }));
 }
 
 describe("NewRunPage", () => {
@@ -60,10 +66,7 @@ describe("NewRunPage", () => {
     vi.mocked(createRun).mockResolvedValue({ id: "run-1" });
 
     renderComposer();
-
-    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
-    await user.type(textarea, "build the web ui");
-    await user.click(screen.getByRole("button", { name: /start run/i }));
+    await submitGoal(user, "build the web ui");
 
     await waitFor(() => {
       expect(createRun).toHaveBeenCalledTimes(1);
@@ -75,7 +78,7 @@ describe("NewRunPage", () => {
   });
 
   it("cleans state and retries when conflict confirm is accepted", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    stubConfirm(true);
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun)
       .mockRejectedValueOnce(
@@ -86,10 +89,7 @@ describe("NewRunPage", () => {
 
     const user = userEvent.setup();
     renderComposer();
-
-    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
-    await user.type(textarea, "my goal");
-    await user.click(screen.getByRole("button", { name: /start run/i }));
+    await submitGoal(user, "my goal");
 
     await waitFor(() => {
       expect(postClean).toHaveBeenCalledTimes(1);
@@ -104,7 +104,7 @@ describe("NewRunPage", () => {
   });
 
   it("shows postClean error when conflict clean fails", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    stubConfirm(true);
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun).mockRejectedValueOnce(
       new ApiError(409, 'active run "abc" in progress'),
@@ -113,10 +113,7 @@ describe("NewRunPage", () => {
 
     const user = userEvent.setup();
     renderComposer();
-
-    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
-    await user.type(textarea, "my goal");
-    await user.click(screen.getByRole("button", { name: /start run/i }));
+    await submitGoal(user, "my goal");
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("clean failed");
@@ -127,8 +124,7 @@ describe("NewRunPage", () => {
   });
 
   it("shows 409 error without calling postClean when conflict confirm is declined", async () => {
-    const confirm = vi.fn(() => false);
-    vi.stubGlobal("confirm", confirm);
+    const confirm = stubConfirm(false);
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun).mockRejectedValueOnce(
       new ApiError(409, 'active run "abc" in progress'),
@@ -136,10 +132,7 @@ describe("NewRunPage", () => {
 
     const user = userEvent.setup();
     renderComposer();
-
-    const textarea = screen.getByRole("textbox", { name: "Goal prompt" });
-    await user.type(textarea, "my goal");
-    await user.click(screen.getByRole("button", { name: /start run/i }));
+    await submitGoal(user, "my goal");
 
     await waitFor(() => {
       expect(confirm).toHaveBeenCalledTimes(1);

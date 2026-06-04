@@ -258,14 +258,14 @@ textarea:focus-visible {
   flex-direction: column;
 }
 
-.clean-button-wrap {
+.topbar-action-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-2);
 }
 
-.clean-button-message {
+.topbar-action-message {
   margin: 0;
   font-size: var(--text-xs);
   color: var(--muted);
@@ -273,28 +273,7 @@ textarea:focus-visible {
   text-align: right;
 }
 
-.clean-button-error {
-  margin: 0;
-  max-width: 16rem;
-  text-align: right;
-}
-
-.update-button-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
-
-.update-button-message {
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--muted);
-  max-width: 16rem;
-  text-align: right;
-}
-
-.update-button-error {
+.topbar-action-error {
   margin: 0;
   max-width: 16rem;
   text-align: right;

@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, postClean } from "../api/client";
+import { CLEAN_SUCCESS_MESSAGE } from "../lib/clean";
+import { stubConfirm } from "../test/helpers";
 import CleanButton from "./CleanButton";
 
 vi.mock("../api/client", async (importOriginal) => {
@@ -23,8 +25,7 @@ describe("CleanButton", () => {
   });
 
   it("asks to confirm removal of prd.json and .ralph/ before cleaning", async () => {
-    const confirm = vi.fn(() => false);
-    vi.stubGlobal("confirm", confirm);
+    const confirm = stubConfirm(false);
     const user = userEvent.setup();
     render(<CleanButton />);
 
@@ -37,9 +38,20 @@ describe("CleanButton", () => {
     vi.unstubAllGlobals();
   });
 
-  it("calls postClean once when confirm is accepted", async () => {
+  it("does not call postClean when confirm is declined", async () => {
+    stubConfirm(false);
+    const user = userEvent.setup();
+    render(<CleanButton />);
+
+    await user.click(screen.getByRole("button", { name: "Clean" }));
+
+    expect(postClean).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("calls postClean and shows success when confirm is accepted", async () => {
     vi.mocked(postClean).mockResolvedValue(undefined);
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    stubConfirm(true);
     const user = userEvent.setup();
     render(<CleanButton />);
 
@@ -47,21 +59,8 @@ describe("CleanButton", () => {
 
     await waitFor(() => {
       expect(postClean).toHaveBeenCalledTimes(1);
-    });
-    vi.unstubAllGlobals();
-  });
-
-  it("shows success status after postClean resolves", async () => {
-    vi.mocked(postClean).mockResolvedValue(undefined);
-    vi.stubGlobal("confirm", vi.fn(() => true));
-    const user = userEvent.setup();
-    render(<CleanButton />);
-
-    await user.click(screen.getByRole("button", { name: "Clean" }));
-
-    await waitFor(() => {
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Ralph state removed.",
+        CLEAN_SUCCESS_MESSAGE,
       );
     });
     vi.unstubAllGlobals();
@@ -71,7 +70,7 @@ describe("CleanButton", () => {
     vi.mocked(postClean).mockRejectedValue(
       new ApiError(500, "server blew up"),
     );
-    vi.stubGlobal("confirm", vi.fn(() => true));
+    stubConfirm(true);
     const user = userEvent.setup();
     render(<CleanButton />);
 
@@ -80,17 +79,6 @@ describe("CleanButton", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("server blew up");
     });
-    vi.unstubAllGlobals();
-  });
-
-  it("does not call postClean when confirm is declined", async () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
-    const user = userEvent.setup();
-    render(<CleanButton />);
-
-    await user.click(screen.getByRole("button", { name: "Clean" }));
-
-    expect(postClean).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 });

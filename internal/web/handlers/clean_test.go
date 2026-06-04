@@ -3,8 +3,6 @@ package handlers_test
 import (
 	"encoding/json"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"ralph/internal/clean"
@@ -41,14 +39,7 @@ func TestCleanState(t *testing.T) {
 		t.Fatalf("body = %v, want {}", body)
 	}
 
-	if _, err := os.Stat(cfg.PRDPath()); !os.IsNotExist(err) {
-		t.Fatalf("prd.json still exists: %v", err)
-	}
-	ralphRuns := filepath.Join(cfg.WorkDir, ".ralph", "runs")
-	if _, err := os.Stat(ralphRuns); !os.IsNotExist(err) {
-		t.Fatalf(".ralph/runs still exists: %v", err)
-	}
-	if n := len(reg.List()); n != 0 {
-		t.Fatalf("registry after clean: %d runs, want 0", n)
-	}
+	assertPathNotExist(t, cfg.PRDPath())
+	assertRalphRunsRemoved(t, cfg.WorkDir)
+	assertRegistryEmpty(t, reg)
 }

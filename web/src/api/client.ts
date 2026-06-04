@@ -17,19 +17,23 @@ export class ApiError extends Error {
   }
 }
 
+async function apiErrorFromResponse(res: Response): Promise<ApiError> {
+  let message = res.statusText;
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error) {
+      message = body.error;
+    }
+  } catch {
+    // ignore non-JSON error bodies
+  }
+  return new ApiError(res.status, message);
+}
+
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) {
-        message = body.error;
-      }
-    } catch {
-      // ignore non-JSON error bodies
-    }
-    throw new ApiError(res.status, message);
+    throw await apiErrorFromResponse(res);
   }
   return res.json() as Promise<T>;
 }
@@ -41,16 +45,7 @@ async function apiPost(url: string, body: unknown): Promise<void> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const errBody = (await res.json()) as { error?: string };
-      if (errBody.error) {
-        message = errBody.error;
-      }
-    } catch {
-      // ignore non-JSON error bodies
-    }
-    throw new ApiError(res.status, message);
+    throw await apiErrorFromResponse(res);
   }
 }
 

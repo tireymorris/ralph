@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { postClean } from "../api/client";
-
-const CONFIRM_MESSAGE =
-  "Remove Ralph state from this project? This deletes prd.json and .ralph/ run data.";
+import {
+  CLEAN_CONFIRM_MESSAGE,
+  CLEAN_SUCCESS_MESSAGE,
+} from "../lib/clean";
+import { errorMessage } from "../lib/errors";
 
 export default function CleanButton() {
   const [busy, setBusy] = useState(false);
@@ -10,7 +12,7 @@ export default function CleanButton() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleClick() {
-    if (!window.confirm(CONFIRM_MESSAGE)) {
+    if (!window.confirm(CLEAN_CONFIRM_MESSAGE)) {
       return;
     }
     setBusy(true);
@@ -18,16 +20,16 @@ export default function CleanButton() {
     setError(null);
     try {
       await postClean();
-      setMessage("Ralph state removed.");
+      setMessage(CLEAN_SUCCESS_MESSAGE);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "clean failed");
+      setError(errorMessage(e, "clean failed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="clean-button-wrap">
+    <div className="topbar-action-wrap">
       <button
         type="button"
         className="btn btn--sm btn--secondary"
@@ -38,12 +40,12 @@ export default function CleanButton() {
         {busy ? "Cleaning…" : "Clean"}
       </button>
       {message ? (
-        <p className="clean-button-message" role="status">
+        <p className="topbar-action-message" role="status">
           {message}
         </p>
       ) : null}
       {error ? (
-        <p className="form-error clean-button-error" role="alert">
+        <p className="form-error topbar-action-error" role="alert">
           {error}
         </p>
       ) : null}

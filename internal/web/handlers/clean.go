@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"ralph/internal/clean"
@@ -14,7 +13,5 @@ func (a *API) CleanState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.registry.Clear()
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]any{})
+	writeJSON(w, http.StatusOK, map[string]any{})
 }
