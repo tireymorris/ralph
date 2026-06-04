@@ -233,6 +233,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.phase = Phase(msg)
 		needsMainRebuild = true
 
+	case operationErrorMsg:
+		m.err = msg.err
+		m.phase = PhaseFailed
+		needsMainRebuild = true
+
 	case clarifyQuestionsMsg:
 		m.phase = PhaseClarifying
 		m.clarifyQuestions = msg.questions

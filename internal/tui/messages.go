@@ -7,6 +7,10 @@ import (
 type (
 	phaseChangeMsg Phase
 
+	operationErrorMsg struct {
+		err error
+	}
+
 	clarifyQuestionsMsg struct {
 		questions []string
 		answersCh chan<- []prompt.QuestionAnswer

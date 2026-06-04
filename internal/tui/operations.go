@@ -2,9 +2,11 @@ package tui
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"ralph/internal/clean"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
@@ -14,12 +16,13 @@ import (
 
 type OperationManager struct {
 	*workflow.Driver
+	cfg *config.Config
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
 	d := workflow.NewDriver(cfg)
 	d.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
-	return &OperationManager{Driver: d}
+	return &OperationManager{Driver: d, cfg: cfg}
 }
 
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
@@ -27,6 +30,9 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 		if resume {
 			om.StartCheckpointResume(context.Background())
 		} else {
+			if _, err := clean.ArchivePriorState(om.cfg); err != nil {
+				return operationErrorMsg{err: fmt.Errorf("archive prior state: %w", err)}
+			}
 			om.StartNew(context.Background(), userPrompt)
 		}
 		return phaseChangeMsg(PhasePRDGeneration)
