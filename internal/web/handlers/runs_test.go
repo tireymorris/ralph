@@ -309,8 +309,35 @@ func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
 	rec := httptest.NewRecorder()
 	api.CreateRun(rec, req)
 
-	if rec.Code != http.StatusConflict {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusConflict, rec.Body.String())
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	var body map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	id := body["id"]
+	if id == "" {
+		t.Fatal("id field missing")
+	}
+	if id == runs.LocalPRDRunID {
+		t.Fatalf("id = %q, want a new web run id not %q", id, runs.LocalPRDRunID)
+	}
+	if !runIDPattern.MatchString(id) {
+		t.Fatalf("id %q does not match UUID or 32+ hex", id)
+	}
+	if _, err := os.Stat(filepath.Join(workDir, "prd.json")); !os.IsNotExist(err) {
+		t.Fatalf("prd.json should be absent at workdir root, stat err=%v", err)
+	}
+	backups, err := filepath.Glob(filepath.Join(workDir, ".ralph", "backups", "*"))
+	if err != nil {
+		t.Fatalf("glob backups: %v", err)
+	}
+	if len(backups) != 1 {
+		t.Fatalf("expected one backup dir, got %d: %v", len(backups), backups)
+	}
+	if _, err := os.Stat(filepath.Join(backups[0], "prd.json")); err != nil {
+		t.Fatalf("archived prd.json: %v", err)
 	}
 }
 
