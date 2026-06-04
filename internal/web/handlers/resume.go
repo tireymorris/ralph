@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"ralph/internal/shared/workdir"
 	"ralph/internal/web/runs"
 )
 
@@ -16,6 +17,10 @@ func (a *API) ResumeRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if runs.IsTerminalStatus(run.Status) {
 		writeJSONError(w, http.StatusConflict, "run is already finished")
+		return
+	}
+	if err := workdir.ValidateGit(run.WorkDir); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

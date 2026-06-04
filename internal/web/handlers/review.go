@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"ralph/internal/shared/workdir"
 )
 
 type reviewRequest struct {
@@ -21,6 +23,10 @@ func (a *API) ReviewRun(w http.ResponseWriter, r *http.Request) {
 	}
 	if run.Status != "waiting_review" {
 		writeJSONError(w, http.StatusConflict, "run is not waiting for review")
+		return
+	}
+	if err := workdir.ValidateGit(run.WorkDir); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
