@@ -104,7 +104,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.markMainScrollJump()
 
 	case events.EventCleanupCompleted:
-		m.logger.AddLog("Cleanup complete!")
+		m.logger.AddLog(fmt.Sprintf("Cleanup pass %d/%d complete", e.Pass, e.Total))
 		m.markMainScrollJump()
 
 	case events.EventOutput:

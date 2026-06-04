@@ -154,13 +154,18 @@ func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseCleanup
+	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{})
+	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{Pass: 2, Total: 3})
 	if cmd != nil {
 		t.Error("EventCleanupCompleted should return nil cmd")
 	}
 	if m.phase != PhaseCleanup {
 		t.Errorf("phase = %v, want PhaseCleanup (EventCompleted handles the transition)", m.phase)
+	}
+	logView := m.logger.GetView().View()
+	if !strings.Contains(logView, "pass 2/3") {
+		t.Errorf("log view should contain pass 2/3, got %q", logView)
 	}
 }
 
