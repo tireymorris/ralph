@@ -9,7 +9,8 @@ import (
 func (a *API) CleanState(w http.ResponseWriter, r *http.Request) {
 	a.ReleaseAllControllers()
 	if err := clean.RemoveState(a.cfg); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		writeJSONError(w, http.StatusInternalServerError,
+			"clean failed after stopping active runs; retry clean or check file permissions: "+err.Error())
 		return
 	}
 	a.registry.Clear()

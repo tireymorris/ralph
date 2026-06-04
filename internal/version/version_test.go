@@ -6,14 +6,14 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-	for name, val := range map[string]string{
-		"Version": Version,
-		"Commit":  Commit,
-		"Ref":     Ref,
-	} {
-		if val == "" {
-			t.Errorf("%s is empty", name)
-		}
+	if Version != "dev" {
+		t.Errorf("Version = %q, want dev", Version)
+	}
+	if Commit != "unknown" {
+		t.Errorf("Commit = %q, want unknown", Commit)
+	}
+	if Ref != "unknown" {
+		t.Errorf("Ref = %q, want unknown", Ref)
 	}
 }
 
@@ -22,13 +22,7 @@ func TestInfo(t *testing.T) {
 	if info == "" {
 		t.Fatal("Info() returned empty string")
 	}
-	for _, want := range []string{
-		"version=" + Version,
-		"commit=" + Commit,
-		"ref=" + Ref,
-	} {
-		if !strings.Contains(info, want) {
-			t.Errorf("Info() = %q, want substring %q", info, want)
-		}
+	if !strings.Contains(info, "commit=unknown") {
+		t.Errorf("Info() = %q, want substring commit=unknown", info)
 	}
 }

@@ -30,6 +30,27 @@ describe("getRun", () => {
     });
     await expect(getRun("missing")).rejects.toBeInstanceOf(ApiError);
   });
+
+  it("parses error code from JSON body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        statusText: "Conflict",
+        json: async () => ({
+          error: 'active run "x" in progress',
+          code: "run_conflict",
+        }),
+      }),
+    );
+
+    await expect(createRun("goal")).rejects.toMatchObject({
+      message: 'active run "x" in progress',
+      status: 409,
+      code: "run_conflict",
+    });
+  });
 });
 
 describe("listRuns", () => {

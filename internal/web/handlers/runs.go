@@ -50,11 +50,13 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 	workDir := a.cfg.WorkDir
 	if active, ok := a.registry.ActiveForWorkDir(workDir); ok {
-		writeJSONError(w, http.StatusConflict, fmt.Sprintf("active run %q in progress", active.ID))
+		writeJSONErrorCode(w, http.StatusConflict,
+			fmt.Sprintf("active run %q in progress", active.ID), "run_conflict")
 		return
 	}
 	if _, ok := runs.OngoingLocalPRD(a.cfg, a.registry); ok {
-		writeJSONError(w, http.StatusConflict, "local prd.json run in progress; finish or run ralph clean")
+		writeJSONErrorCode(w, http.StatusConflict,
+			"local prd.json run in progress; finish or run ralph clean", "run_conflict")
 		return
 	}
 

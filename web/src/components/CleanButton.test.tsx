@@ -1,10 +1,19 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { ApiError, postClean } from "../api/client";
 import { CLEAN_SUCCESS_MESSAGE } from "../lib/clean";
 import { stubConfirm } from "../test/helpers";
 import CleanButton from "./CleanButton";
+
+function renderCleanButton() {
+  return render(
+    <MemoryRouter>
+      <CleanButton />
+    </MemoryRouter>,
+  );
+}
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
@@ -20,14 +29,14 @@ describe("CleanButton", () => {
   });
 
   it("renders a Clean button in the header", () => {
-    render(<CleanButton />);
+    renderCleanButton();
     expect(screen.getByRole("button", { name: "Clean" })).toBeInTheDocument();
   });
 
   it("asks to confirm removal of prd.json and .ralph/ before cleaning", async () => {
     const confirm = stubConfirm(false);
     const user = userEvent.setup();
-    render(<CleanButton />);
+    renderCleanButton();
 
     await user.click(screen.getByRole("button", { name: "Clean" }));
 
@@ -41,7 +50,7 @@ describe("CleanButton", () => {
   it("does not call postClean when confirm is declined", async () => {
     stubConfirm(false);
     const user = userEvent.setup();
-    render(<CleanButton />);
+    renderCleanButton();
 
     await user.click(screen.getByRole("button", { name: "Clean" }));
 
@@ -53,7 +62,7 @@ describe("CleanButton", () => {
     vi.mocked(postClean).mockResolvedValue(undefined);
     stubConfirm(true);
     const user = userEvent.setup();
-    render(<CleanButton />);
+    renderCleanButton();
 
     await user.click(screen.getByRole("button", { name: "Clean" }));
 
@@ -72,7 +81,7 @@ describe("CleanButton", () => {
     );
     stubConfirm(true);
     const user = userEvent.setup();
-    render(<CleanButton />);
+    renderCleanButton();
 
     await user.click(screen.getByRole("button", { name: "Clean" }));
 

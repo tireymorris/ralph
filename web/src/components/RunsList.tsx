@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listRuns } from "../api/client";
+import { CLEAN_COMPLETED_EVENT } from "../lib/clean";
 import {
   formatStatus,
   isTerminalRunStatus,
@@ -48,9 +49,12 @@ export default function RunsList({
 
     void load();
     const timer = setInterval(() => void load(), POLL_MS);
+    const onClean = () => void load();
+    window.addEventListener(CLEAN_COMPLETED_EVENT, onClean);
     return () => {
       cancelled = true;
       clearInterval(timer);
+      window.removeEventListener(CLEAN_COMPLETED_EVENT, onClean);
     };
   }, []);
 

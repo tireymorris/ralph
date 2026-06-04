@@ -77,6 +77,9 @@ func TestCreateRunTable(t *testing.T) {
 			if resp["error"] == "" {
 				t.Fatalf("error field empty, body = %s", rec.Body.String())
 			}
+			if tt.wantStatus == http.StatusConflict && resp["code"] != "run_conflict" {
+				t.Fatalf("code = %q, want run_conflict, body = %s", resp["code"], rec.Body.String())
+			}
 		})
 	}
 }

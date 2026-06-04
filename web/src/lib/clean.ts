@@ -11,12 +11,24 @@ export const CONFLICT_CLEAN_CONFIRM_MESSAGE =
 
 export const CLEAN_SUCCESS_MESSAGE = "Ralph state removed.";
 
+export const CLEAN_COMPLETED_EVENT = "ralph:clean-completed";
+
+export function notifyCleanCompleted() {
+  if (typeof globalThis.dispatchEvent === "function") {
+    globalThis.dispatchEvent(new Event(CLEAN_COMPLETED_EVENT));
+  }
+}
+
 export type RunConflictRetryResult =
   | { ok: true; id: string }
   | { ok: false; error: string };
 
 export function isRunConflict(err: unknown): err is ApiError {
-  return err instanceof ApiError && err.status === 409;
+  return (
+    err instanceof ApiError &&
+    err.status === 409 &&
+    err.code === "run_conflict"
+  );
 }
 
 export async function retryRunAfterClean(
@@ -28,6 +40,7 @@ export async function retryRunAfterClean(
   }
   try {
     await postClean();
+    notifyCleanCompleted();
     const { id } = await createRun(prompt);
     return { ok: true, id };
   } catch (err) {

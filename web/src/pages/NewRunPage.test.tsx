@@ -82,7 +82,7 @@ describe("NewRunPage", () => {
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun)
       .mockRejectedValueOnce(
-        new ApiError(409, 'active run "abc" in progress'),
+        new ApiError(409, 'active run "abc" in progress', "run_conflict"),
       )
       .mockResolvedValueOnce({ id: "new-run" });
     vi.mocked(postClean).mockResolvedValue(undefined);
@@ -107,7 +107,7 @@ describe("NewRunPage", () => {
     stubConfirm(true);
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun).mockRejectedValueOnce(
-      new ApiError(409, 'active run "abc" in progress'),
+      new ApiError(409, 'active run "abc" in progress', "run_conflict"),
     );
     vi.mocked(postClean).mockRejectedValue(new ApiError(500, "clean failed"));
 
@@ -127,7 +127,7 @@ describe("NewRunPage", () => {
     const confirm = stubConfirm(false);
     vi.mocked(listRuns).mockResolvedValue([]);
     vi.mocked(createRun).mockRejectedValueOnce(
-      new ApiError(409, 'active run "abc" in progress'),
+      new ApiError(409, 'active run "abc" in progress', "run_conflict"),
     );
 
     const user = userEvent.setup();

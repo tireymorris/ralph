@@ -9,25 +9,31 @@ import type {
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
 
 async function apiErrorFromResponse(res: Response): Promise<ApiError> {
   let message = res.statusText;
+  let code: string | undefined;
   try {
-    const body = (await res.json()) as { error?: string };
+    const body = (await res.json()) as { error?: string; code?: string };
     if (body.error) {
       message = body.error;
+    }
+    if (body.code) {
+      code = body.code;
     }
   } catch {
     // ignore non-JSON error bodies
   }
-  return new ApiError(res.status, message);
+  return new ApiError(res.status, message, code);
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {

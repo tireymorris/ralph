@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { postClean } from "../api/client";
 import {
   CLEAN_CONFIRM_MESSAGE,
+  notifyCleanCompleted,
   CLEAN_SUCCESS_MESSAGE,
 } from "../lib/clean";
 import { errorMessage } from "../lib/errors";
 
 export default function CleanButton() {
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,9 @@ export default function CleanButton() {
     setError(null);
     try {
       await postClean();
+      notifyCleanCompleted();
       setMessage(CLEAN_SUCCESS_MESSAGE);
+      navigate("/new");
     } catch (e) {
       setError(errorMessage(e, "clean failed"));
     } finally {
