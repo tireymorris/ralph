@@ -33,6 +33,26 @@ export interface EventErrorPayload {
 
 export const LOCAL_PRD_RUN_ID = "prd-local";
 
+export type VersionStatus = "current" | "available" | "unknown";
+
+export interface VersionInfo {
+  version: string;
+  commit: string;
+  ref: string;
+  status: VersionStatus;
+  local_commit?: string;
+  remote_commit?: string;
+  check_error?: string;
+}
+
+export interface UpdateResult {
+  status: "current" | "updated";
+  message: string;
+  binary?: string;
+  local_commit?: string;
+  remote_commit?: string;
+}
+
 export interface Run {
   id: string;
   prompt: string;

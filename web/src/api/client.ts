@@ -3,6 +3,8 @@ import type {
   PRDDocument,
   QuestionAnswer,
   Run,
+  UpdateResult,
+  VersionInfo,
 } from "./types";
 
 export class ApiError extends Error {
@@ -106,4 +108,12 @@ export async function submitFollowUp(
 
 export async function cancelRun(id: string): Promise<void> {
   await apiPost(`/api/runs/${id}/cancel`, {});
+}
+
+export async function getVersion(): Promise<VersionInfo> {
+  return apiFetch<VersionInfo>("/api/version");
+}
+
+export async function postUpdate(): Promise<UpdateResult> {
+  return apiFetch<UpdateResult>("/api/update", { method: "POST" });
 }

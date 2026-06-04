@@ -25,8 +25,10 @@ import { useRunPolling } from "../hooks/useRunPolling";
 import { useTimelineScroll } from "../hooks/useTimelineScroll";
 import ClarifyForm from "../components/ClarifyForm";
 import FollowUpComposer from "../components/FollowUpComposer";
+import GroupedTimeline from "../components/GroupedTimeline";
 import PRDReviewPanel from "../components/PRDReviewPanel";
-import TimelineEntryBubble from "../components/TimelineEntry";
+import RunPrompt from "../components/RunPrompt";
+import StoryProgressPanel from "../components/StoryProgressPanel";
 
 export default function RunDetail() {
   const { id } = useParams<{ id: string }>();
@@ -144,48 +146,56 @@ export default function RunDetail() {
   const progress = run?.story_progress;
   const isTerminal = run ? isTerminalRunStatus(run.status) : false;
 
+  const showStoryProgress =
+    prd &&
+    prd.stories.length > 0 &&
+    run?.status !== "waiting_review";
+
   return (
-    <div className="run-detail">
+    <div
+      className={`run-detail${isTerminal ? " run-detail--terminal" : ""}`}
+    >
       {loadError && <p className="form-error">{loadError}</p>}
       {run && (
-        <header className="run-detail-toolbar">
-          <Link to="/" className="run-detail-home">
-            New
-          </Link>
-          <p className="run-detail-prompt" title={run.prompt}>
-            {run.prompt}
-          </p>
-          <span className={`run-status-badge ${statusBadgeClass(run.status)}`}>
-            {formatStatus(run.status)}
-          </span>
-          {progress && progress.total > 0 && (
-            <span className="run-detail-progress-label">
-              {progress.completed}/{progress.total}
+        <header className="run-detail-header">
+          <div className="run-detail-toolbar">
+            <Link to="/" className="run-detail-home">
+              New
+            </Link>
+            <span className={`run-status-badge ${statusBadgeClass(run.status)}`}>
+              {formatStatus(run.status)}
             </span>
-          )}
-          {!isTerminal && !isLocalPRD && (
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm run-detail-cancel"
-              onClick={() => void handleCancel()}
-              disabled={cancelSubmitting}
-            >
-              Cancel
-            </button>
-          )}
-          {run.status === "cancelled" && (
-            <button
-              type="button"
-              className="btn btn--primary btn--sm"
-              onClick={() => void handleRetry()}
-              disabled={retrySubmitting}
-            >
-              Retry
-            </button>
-          )}
+            {progress && progress.total > 0 && (
+              <span className="run-detail-progress-label">
+                {progress.completed}/{progress.total}
+              </span>
+            )}
+            {!isTerminal && !isLocalPRD && (
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm run-detail-cancel"
+                onClick={() => void handleCancel()}
+                disabled={cancelSubmitting}
+              >
+                Cancel
+              </button>
+            )}
+            {run.status === "cancelled" && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => void handleRetry()}
+                disabled={retrySubmitting}
+              >
+                Retry
+              </button>
+            )}
+          </div>
+          <RunPrompt prompt={run.prompt} />
         </header>
       )}
       <div ref={scrollRef} className="run-detail-body">
+        {showStoryProgress && <StoryProgressPanel prd={prd} />}
         {run?.status === "waiting_clarify" && clarifyQuestions.length > 0 && (
           <>
             {clarifyError && <p className="form-error">{clarifyError}</p>}
@@ -203,24 +213,16 @@ export default function RunDetail() {
         {run?.status === "waiting_review" && prd && id && (
           <PRDReviewPanel runId={id} prd={prd} />
         )}
-        <ul className="run-timeline" aria-live="polite">
-          {entries.length === 0 && run && !isTerminal && isLocalPRD && (
-            <li className="timeline-empty">
-              This run is in progress in the terminal (Ralph CLI or TUI). Continue
-              there, or run <code>ralph clean</code> to reset.
-            </li>
-          )}
-          {entries.length === 0 && run && !isTerminal && !isLocalPRD && (
-            <li className="timeline-empty">Waiting for events…</li>
-          )}
-          {entries.map((entry) => (
-            <TimelineEntryBubble
-              key={entry.id}
-              variant={entry.variant}
-              text={entry.text}
-            />
-          ))}
-        </ul>
+        {entries.length === 0 && run && !isTerminal && isLocalPRD && (
+          <p className="timeline-empty">
+            This run is in progress in the terminal (Ralph CLI or TUI). Continue
+            there, or run <code>ralph clean</code> to reset.
+          </p>
+        )}
+        {entries.length === 0 && run && !isTerminal && !isLocalPRD && (
+          <p className="timeline-empty">Waiting for events…</p>
+        )}
+        {entries.length > 0 && <GroupedTimeline entries={entries} />}
       </div>
       {run && isTerminal && (
         <FollowUpComposer
