@@ -11,7 +11,7 @@ import (
 )
 
 func TestMarshalEventEnvelope_CleanupStarted(t *testing.T) {
-	data, err := MarshalEventEnvelope(events.EventCleanupStarted{})
+	data, err := MarshalEventEnvelope(events.EventCleanupStarted{Pass: 1, Total: 3})
 	if err != nil {
 		t.Fatalf("MarshalEventEnvelope() error = %v", err)
 	}
@@ -21,6 +21,20 @@ func TestMarshalEventEnvelope_CleanupStarted(t *testing.T) {
 	}
 	if env.Type != "EventCleanupStarted" {
 		t.Errorf("Type = %q, want %q", env.Type, "EventCleanupStarted")
+	}
+	payload, err := json.Marshal(env.Payload)
+	if err != nil {
+		t.Fatalf("Marshal payload: %v", err)
+	}
+	var got struct {
+		Pass  int `json:"Pass"`
+		Total int `json:"Total"`
+	}
+	if err := json.Unmarshal(payload, &got); err != nil {
+		t.Fatalf("Unmarshal payload: %v", err)
+	}
+	if got.Pass != 1 || got.Total != 3 {
+		t.Errorf("payload Pass=%d Total=%d, want Pass=1 Total=3", got.Pass, got.Total)
 	}
 }
 
@@ -46,7 +60,7 @@ func TestMapEventToStatusPhase_CleanupCompletedIsNotTerminal(t *testing.T) {
 }
 
 func TestMarshalEventEnvelope_CleanupCompleted(t *testing.T) {
-	data, err := MarshalEventEnvelope(events.EventCleanupCompleted{})
+	data, err := MarshalEventEnvelope(events.EventCleanupCompleted{Pass: 2, Total: 3})
 	if err != nil {
 		t.Fatalf("MarshalEventEnvelope() error = %v", err)
 	}
@@ -56,6 +70,20 @@ func TestMarshalEventEnvelope_CleanupCompleted(t *testing.T) {
 	}
 	if env.Type != "EventCleanupCompleted" {
 		t.Errorf("Type = %q, want %q", env.Type, "EventCleanupCompleted")
+	}
+	payload, err := json.Marshal(env.Payload)
+	if err != nil {
+		t.Fatalf("Marshal payload: %v", err)
+	}
+	var got struct {
+		Pass  int `json:"Pass"`
+		Total int `json:"Total"`
+	}
+	if err := json.Unmarshal(payload, &got); err != nil {
+		t.Fatalf("Unmarshal payload: %v", err)
+	}
+	if got.Pass != 2 || got.Total != 3 {
+		t.Errorf("payload Pass=%d Total=%d, want Pass=2 Total=3", got.Pass, got.Total)
 	}
 }
 
