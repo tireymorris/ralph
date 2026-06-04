@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 
 	"ralph/internal/shared/config"
@@ -134,13 +135,18 @@ func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
+	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{})
+	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{Pass: 2, Total: 3})
 	if cmd != nil {
 		t.Error("EventCleanupStarted should return nil cmd")
 	}
 	if m.phase != PhaseCleanup {
 		t.Errorf("phase = %v, want PhaseCleanup", m.phase)
+	}
+	logView := m.logger.GetView().View()
+	if !strings.Contains(logView, "pass 2/3") {
+		t.Errorf("log view should contain pass 2/3, got %q", logView)
 	}
 }
 
