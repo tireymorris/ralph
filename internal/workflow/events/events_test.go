@@ -49,3 +49,17 @@ func TestAllEventIsEventMethodsIncludesClarifying(t *testing.T) {
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	EventClarifyingQuestions{Questions: []string{"Q?"}, AnswersCh: answersCh}.isEvent()
 }
+
+func TestEventCleanupStartedPassTotal(t *testing.T) {
+	ev := EventCleanupStarted{Pass: 2, Total: 3}
+	if ev.Pass != 2 || ev.Total != 3 {
+		t.Fatalf("Pass=%d Total=%d, want Pass=2 Total=3", ev.Pass, ev.Total)
+	}
+}
+
+func TestEventCleanupCompletedPassTotal(t *testing.T) {
+	ev := EventCleanupCompleted{Pass: 1, Total: 3}
+	if ev.Pass != 1 || ev.Total != 3 {
+		t.Fatalf("Pass=%d Total=%d, want Pass=1 Total=3", ev.Pass, ev.Total)
+	}
+}
