@@ -22,6 +22,24 @@ export interface StoryCompletedPayload {
   Success?: boolean;
 }
 
+export interface ImplementationReviewStartedPayload {
+  Iteration?: number;
+}
+
+export interface ImplementationFindingPayload {
+  ID?: string;
+  Summary?: string;
+}
+
+export interface ImplementationReviewPayload {
+  Findings?: ImplementationFindingPayload[];
+}
+
+export interface ImplementationReviewCompletedPayload {
+  Iteration?: number;
+  Clean?: boolean;
+}
+
 let ephemeralEntryCounter = 0;
 
 function nextEphemeralEntryId(): string {
@@ -78,6 +96,43 @@ export function entryFromEnvelope(
         id,
         variant: "system",
         text: `Story ${outcome}: ${label}`,
+      };
+    }
+    case "EventImplementationReviewStarted": {
+      const payload = envelope.payload as ImplementationReviewStartedPayload;
+      const iteration = payload.Iteration ?? 0;
+      return {
+        id,
+        variant: "system",
+        text: `Implementation review started (iteration ${iteration})`,
+      };
+    }
+    case "EventImplementationReview": {
+      const payload = envelope.payload as ImplementationReviewPayload;
+      const summaries = (payload.Findings ?? [])
+        .map((f) => f.Summary?.trim())
+        .filter((s): s is string => Boolean(s));
+      if (summaries.length === 0) {
+        return {
+          id,
+          variant: "system",
+          text: "Implementation review reported findings",
+        };
+      }
+      return {
+        id,
+        variant: "system",
+        text: `Review findings: ${summaries.join("; ")}`,
+      };
+    }
+    case "EventImplementationReviewCompleted": {
+      const payload = envelope.payload as ImplementationReviewCompletedPayload;
+      const iteration = payload.Iteration ?? 0;
+      const outcome = payload.Clean ? "clean" : "findings";
+      return {
+        id,
+        variant: "system",
+        text: `Implementation review completed (iteration ${iteration}, ${outcome})`,
       };
     }
     case "EventError": {
