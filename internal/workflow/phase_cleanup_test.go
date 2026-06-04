@@ -133,6 +133,10 @@ func TestRunCleanupRunnerError(t *testing.T) {
 		t.Fatal("RunCleanup() should return error when runner fails")
 	}
 
+	if mock.CallCount() != 1 {
+		t.Fatalf("runner call count = %d, want 1 on first-pass failure", mock.CallCount())
+	}
+
 	foundError := false
 	foundCompleted := false
 	for len(ch) > 0 {
