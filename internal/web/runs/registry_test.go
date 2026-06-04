@@ -134,6 +134,30 @@ func TestRegistryClearEmpty(t *testing.T) {
 	reg.Clear()
 }
 
+func TestRegistryClearList(t *testing.T) {
+	reg := NewRegistry()
+	workDir := t.TempDir()
+	ts := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	for _, id := range []string{"run-a", "run-b"} {
+		run := &Run{
+			ID:        id,
+			WorkDir:   workDir,
+			CreatedAt: ts,
+			UpdatedAt: ts,
+		}
+		if err := reg.Register(run); err != nil {
+			t.Fatalf("Register(%s) error = %v", id, err)
+		}
+	}
+
+	reg.Clear()
+
+	if len(reg.List()) != 0 {
+		t.Fatalf("len(List()) = %d, want 0 after Clear", len(reg.List()))
+	}
+}
+
 func TestConcurrentRegisterList(t *testing.T) {
 	reg := NewRegistry()
 	workDir := t.TempDir()
