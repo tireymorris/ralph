@@ -58,6 +58,16 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 		return os.WriteFile(prdPath, []byte(data), 0o644)
 	}
 
+	if strings.Contains(prompt, "===ralph-findings===") {
+		findings := "===ralph-findings===\n[]\n===/ralph-findings==="
+		select {
+		case outputCh <- OutputLine{Text: findings, Time: time.Now()}:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		return nil
+	}
+
 	if d := os.Getenv("RALPH_MOCK_IMPL_DELAY_MS"); d != "" {
 		if ms, err := strconv.Atoi(d); err == nil && ms > 0 {
 			select {
