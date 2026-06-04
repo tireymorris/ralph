@@ -8,6 +8,35 @@ import (
 	"ralph/internal/shared/runner"
 )
 
+func TestReviewDiffEmptyChangedFilesSkipsRunner(t *testing.T) {
+	workDir := setupCleanGitRepo(t)
+	runner := &recordingRunner{t: t}
+
+	result, err := ReviewDiff(context.Background(), Params{
+		WorkDir:   workDir,
+		RunID:     "run-clean",
+		Iteration: 1,
+		PRDFile:   "prd.json",
+		Context:   "ctx",
+		Runner:    runner,
+	})
+	if err != nil {
+		t.Fatalf("ReviewDiff() err = %v", err)
+	}
+	if !result.Clean {
+		t.Error("Clean = false, want true")
+	}
+	if len(result.Findings) != 0 {
+		t.Errorf("Findings = %v, want none", result.Findings)
+	}
+	if runner.calls != 0 {
+		t.Errorf("runner calls = %d, want 0", runner.calls)
+	}
+	if result.LastReviewTranscriptPath != "" {
+		t.Errorf("LastReviewTranscriptPath = %q, want empty", result.LastReviewTranscriptPath)
+	}
+}
+
 func TestReviewDiffNonGitWorkdirReturnsGitError(t *testing.T) {
 	workDir := t.TempDir()
 	runner := &recordingRunner{t: t}
