@@ -703,6 +703,9 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 	if !foundCleanupError {
 		t.Error("expected EventError with message containing 'cleanup'")
 	}
+	if mock.CallCount() != 2 {
+		t.Errorf("runner should be called twice (1 story + 1 cleanup pass), got %d", mock.CallCount())
+	}
 }
 
 func TestRunImplementationSkipsCleanupWhenConfigured(t *testing.T) {
