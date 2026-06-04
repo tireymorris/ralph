@@ -69,8 +69,8 @@ func TestRunCleanupSuccess(t *testing.T) {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	if mock.CallCount() != 3 {
+		t.Fatalf("runner call count = %d, want 3", mock.CallCount())
 	}
 
 	var evts []Event
