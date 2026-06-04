@@ -137,7 +137,9 @@ func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
 	m.phase = PhaseImplementation
 	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{Pass: 2, Total: 3})
+	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{
+		CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3},
+	})
 	if cmd != nil {
 		t.Error("EventCleanupStarted should return nil cmd")
 	}
@@ -156,7 +158,9 @@ func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
 	m.phase = PhaseCleanup
 	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{Pass: 2, Total: 3})
+	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{
+		CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3},
+	})
 	if cmd != nil {
 		t.Error("EventCleanupCompleted should return nil cmd")
 	}

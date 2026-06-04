@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
@@ -62,9 +60,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		e.emit(EventStoryStarted{Story: story})
 
-		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-		go e.forwardOutput(outputCh)
-
 		storyPrompt := prompt.StoryImplementation(
 			story.ID,
 			story.Title,
@@ -78,9 +73,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			story.DependsOn,
 		)
 
-		runErr := e.runner.Run(ctx, storyPrompt, outputCh)
-		close(outputCh)
-		if runErr != nil {
+		if runErr := e.runWithForwardedOutput(ctx, storyPrompt); runErr != nil {
 			logger.Error("implementation runner failed", "error", runErr, "story_id", story.ID)
 			e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
 			return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)

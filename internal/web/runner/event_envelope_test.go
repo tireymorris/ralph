@@ -10,80 +10,78 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-func TestMarshalEventEnvelope_CleanupStarted(t *testing.T) {
-	data, err := MarshalEventEnvelope(events.EventCleanupStarted{Pass: 1, Total: 3})
-	if err != nil {
-		t.Fatalf("MarshalEventEnvelope() error = %v", err)
+func TestMarshalEventEnvelope_CleanupPassEvents(t *testing.T) {
+	cases := []struct {
+		name      string
+		ev        events.Event
+		wantType  string
+		wantPass  int
+		wantTotal int
+	}{
+		{
+			name:      "started",
+			ev:        events.EventCleanupStarted{CleanupPassProgress: events.CleanupPassProgress{Pass: 1, Total: 3}},
+			wantType:  "EventCleanupStarted",
+			wantPass:  1,
+			wantTotal: 3,
+		},
+		{
+			name:      "completed",
+			ev:        events.EventCleanupCompleted{CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3}},
+			wantType:  "EventCleanupCompleted",
+			wantPass:  2,
+			wantTotal: 3,
+		},
 	}
-	var env eventEnvelope
-	if err := json.Unmarshal(data, &env); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
-	}
-	if env.Type != "EventCleanupStarted" {
-		t.Errorf("Type = %q, want %q", env.Type, "EventCleanupStarted")
-	}
-	payload, err := json.Marshal(env.Payload)
-	if err != nil {
-		t.Fatalf("Marshal payload: %v", err)
-	}
-	var got struct {
-		Pass  int `json:"Pass"`
-		Total int `json:"Total"`
-	}
-	if err := json.Unmarshal(payload, &got); err != nil {
-		t.Fatalf("Unmarshal payload: %v", err)
-	}
-	if got.Pass != 1 || got.Total != 3 {
-		t.Errorf("payload Pass=%d Total=%d, want Pass=1 Total=3", got.Pass, got.Total)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := MarshalEventEnvelope(tc.ev)
+			if err != nil {
+				t.Fatalf("MarshalEventEnvelope() error = %v", err)
+			}
+			var env eventEnvelope
+			if err := json.Unmarshal(data, &env); err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+			if env.Type != tc.wantType {
+				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
+			}
+			payload, err := json.Marshal(env.Payload)
+			if err != nil {
+				t.Fatalf("Marshal payload: %v", err)
+			}
+			var got struct {
+				Pass  int `json:"Pass"`
+				Total int `json:"Total"`
+			}
+			if err := json.Unmarshal(payload, &got); err != nil {
+				t.Fatalf("Unmarshal payload: %v", err)
+			}
+			if got.Pass != tc.wantPass || got.Total != tc.wantTotal {
+				t.Errorf("payload Pass=%d Total=%d, want Pass=%d Total=%d", got.Pass, got.Total, tc.wantPass, tc.wantTotal)
+			}
+		})
 	}
 }
 
-func TestMapEventToStatusPhase_CleanupStarted(t *testing.T) {
-	status, phase := mapEventToStatusPhase(events.EventCleanupStarted{})
-	if status != "implementing" || phase != "cleanup" {
-		t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
+func TestMapEventToStatusPhase_CleanupEvents(t *testing.T) {
+	cases := []struct {
+		name string
+		ev   events.Event
+	}{
+		{name: "started", ev: events.EventCleanupStarted{}},
+		{name: "completed", ev: events.EventCleanupCompleted{}},
 	}
-}
-
-func TestMapEventToStatusPhase_CleanupCompleted(t *testing.T) {
-	status, phase := mapEventToStatusPhase(events.EventCleanupCompleted{})
-	if status != "implementing" || phase != "cleanup" {
-		t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
-	}
-}
-
-func TestMapEventToStatusPhase_CleanupCompletedIsNotTerminal(t *testing.T) {
-	status, _ := mapEventToStatusPhase(events.EventCleanupCompleted{})
-	if runs.IsTerminalStatus(status) {
-		t.Errorf("EventCleanupCompleted status %q must not be terminal", status)
-	}
-}
-
-func TestMarshalEventEnvelope_CleanupCompleted(t *testing.T) {
-	data, err := MarshalEventEnvelope(events.EventCleanupCompleted{Pass: 2, Total: 3})
-	if err != nil {
-		t.Fatalf("MarshalEventEnvelope() error = %v", err)
-	}
-	var env eventEnvelope
-	if err := json.Unmarshal(data, &env); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
-	}
-	if env.Type != "EventCleanupCompleted" {
-		t.Errorf("Type = %q, want %q", env.Type, "EventCleanupCompleted")
-	}
-	payload, err := json.Marshal(env.Payload)
-	if err != nil {
-		t.Fatalf("Marshal payload: %v", err)
-	}
-	var got struct {
-		Pass  int `json:"Pass"`
-		Total int `json:"Total"`
-	}
-	if err := json.Unmarshal(payload, &got); err != nil {
-		t.Fatalf("Unmarshal payload: %v", err)
-	}
-	if got.Pass != 2 || got.Total != 3 {
-		t.Errorf("payload Pass=%d Total=%d, want Pass=2 Total=3", got.Pass, got.Total)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			status, phase := mapEventToStatusPhase(tc.ev)
+			if status != "implementing" || phase != "cleanup" {
+				t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
+			}
+			if runs.IsTerminalStatus(status) {
+				t.Errorf("cleanup event status %q must not be terminal", status)
+			}
+		})
 	}
 }
 

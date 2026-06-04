@@ -300,29 +300,33 @@ func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 	}
 }
 
-func TestCleanup_includes_pass_label(t *testing.T) {
+func TestCleanup_pass_label_and_skip_wording(t *testing.T) {
 	result := Cleanup("", "prd.json", nil, 1, 3)
 	if !strings.Contains(result, "pass 1 of 3") {
 		t.Errorf("Cleanup() should include pass label, got:\n%s", result)
 	}
-}
-
-func TestCleanup_allows_exit_without_changes_when_no_cleanup_needed(t *testing.T) {
-	result := Cleanup("", "prd.json", nil, 1, 3)
-	hasPassLabel := strings.Contains(result, "pass 1 of 3")
-	hasSkipWording := strings.Contains(result, "without modifying") && strings.Contains(result, "without committing")
-	if !hasPassLabel || !hasSkipWording {
-		t.Errorf("Cleanup() should include pass label and no-changes-needed skip wording, got:\n%s", result)
+	if !strings.Contains(result, "without modifying") || !strings.Contains(result, "without committing") {
+		t.Errorf("Cleanup() should include no-changes-needed skip wording, got:\n%s", result)
 	}
 }
 
-func TestCleanup_returns_nonempty_string_containing_SOLID(t *testing.T) {
+func TestCleanup_includes_improvement_guidance(t *testing.T) {
 	result := Cleanup("Go 1.24 app", "prd.json", nil, 1, 3)
 	if result == "" {
 		t.Fatal("Cleanup() returned empty string")
 	}
-	if !strings.Contains(result, "SOLID") {
-		t.Errorf("Cleanup() missing 'SOLID' in:\n%s", result)
+	for _, want := range []string{"SOLID", "DRY"} {
+		if !strings.Contains(result, want) {
+			t.Errorf("Cleanup() missing %q", want)
+		}
+	}
+	hasCodebaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
+	if !hasCodebaseConventions {
+		t.Errorf("Cleanup() missing 'codebase conventions' or 'existing conventions'")
+	}
+	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "combine")
+	if !hasConsolidate {
+		t.Errorf("Cleanup() missing 'consolidate' or 'combine' referencing specs")
 	}
 }
 
@@ -349,21 +353,6 @@ func TestCleanup_includes_codebaseContext_when_nonempty(t *testing.T) {
 	result := Cleanup("Go 1.24 with Bubble Tea", "prd.json", nil, 1, 3)
 	if !strings.Contains(result, "Go 1.24 with Bubble Tea") {
 		t.Errorf("Cleanup() should include codebaseContext value")
-	}
-}
-
-func TestCleanup_contains_DRY_conventions_and_consolidate(t *testing.T) {
-	result := Cleanup("Go 1.24 app", "prd.json", nil, 1, 3)
-	if !strings.Contains(result, "DRY") {
-		t.Errorf("Cleanup() missing 'DRY'")
-	}
-	hasCodebaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
-	if !hasCodebaseConventions {
-		t.Errorf("Cleanup() missing 'codebase conventions' or 'existing conventions'")
-	}
-	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "combine")
-	if !hasConsolidate {
-		t.Errorf("Cleanup() missing 'consolidate' or 'combine' referencing specs")
 	}
 }
 

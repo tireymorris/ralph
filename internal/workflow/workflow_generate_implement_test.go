@@ -578,74 +578,16 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 }
 
 func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-	cfg.PRDFile = "prd.json"
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
-	}
-	if err := prd.Save(cfg, testPRD); err != nil {
-		t.Fatalf("failed to save test PRD: %v", err)
-	}
+	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		return nil
-	}
-
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	err := exec.RunImplementation(context.Background(), testPRD)
-	if err != nil {
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	var evts []Event
-	for len(ch) > 0 {
-		evts = append(evts, <-ch)
-	}
-
-	var cleanupStartedIdxs []int
-	var cleanupCompletedIdxs []int
-	completedIdx := -1
-	for i, e := range evts {
-		switch e.(type) {
-		case EventCleanupStarted:
-			cleanupStartedIdxs = append(cleanupStartedIdxs, i)
-		case EventCleanupCompleted:
-			cleanupCompletedIdxs = append(cleanupCompletedIdxs, i)
-		case EventCompleted:
-			completedIdx = i
-		}
-	}
-
-	if len(cleanupStartedIdxs) != 3 {
-		t.Fatalf("expected 3 EventCleanupStarted events, got %d", len(cleanupStartedIdxs))
-	}
-	if len(cleanupCompletedIdxs) != 3 {
-		t.Fatalf("expected 3 EventCleanupCompleted events, got %d", len(cleanupCompletedIdxs))
-	}
-	if completedIdx == -1 {
-		t.Fatal("expected EventCompleted to be emitted")
-	}
-	for _, idx := range cleanupStartedIdxs {
-		if idx >= completedIdx {
-			t.Error("each EventCleanupStarted must come before EventCompleted")
-		}
-	}
-	for _, idx := range cleanupCompletedIdxs {
-		if idx >= completedIdx {
-			t.Error("each EventCleanupCompleted must come before EventCompleted")
-		}
-	}
-	for i := 0; i < 3; i++ {
-		if cleanupStartedIdxs[i] >= cleanupCompletedIdxs[i] {
-			t.Errorf("cleanup pass %d: EventCleanupStarted must come before EventCleanupCompleted", i+1)
-		}
-	}
+	assertCleanupBeforeCompleted(t, drainEvents(ch))
 
 	if mock.CallCount() < 4 {
 		t.Errorf("runner should be called at least 4 times (1 story + 3 cleanup), got %d", mock.CallCount())
@@ -653,18 +595,7 @@ func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
 }
 
 func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-	cfg.PRDFile = "prd.json"
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
-	}
-	if err := prd.Save(cfg, testPRD); err != nil {
-		t.Fatalf("failed to save test PRD: %v", err)
-	}
+	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -728,44 +659,19 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 }
 
 func TestRunImplementationSkipsCleanupWhenConfigured(t *testing.T) {
-	tmpDir := t.TempDir()
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
-	cfg.PRDFile = "prd.json"
-	cfg.SkipCleanup = true
-
-	testPRD := &prd.PRD{
-		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
-	}
-	if err := prd.Save(cfg, testPRD); err != nil {
-		t.Fatalf("failed to save test PRD: %v", err)
-	}
+	cfg, testPRD := saveSingleStoryPRD(t, true)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		return nil
-	}
-
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	err := exec.RunImplementation(context.Background(), testPRD)
-	if err != nil {
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	var evts []Event
-	for len(ch) > 0 {
-		evts = append(evts, <-ch)
-	}
-
-	for _, e := range evts {
-		switch e.(type) {
-		case EventCleanupStarted:
-			t.Error("EventCleanupStarted should not be emitted when SkipCleanup is true")
-		case EventCleanupCompleted:
-			t.Error("EventCleanupCompleted should not be emitted when SkipCleanup is true")
-		}
+	evts := drainEvents(ch)
+	counts := countCleanupEvents(evts)
+	if counts.started != 0 || counts.completed != 0 {
+		t.Errorf("expected no cleanup events with SkipCleanup, got started=%d completed=%d", counts.started, counts.completed)
 	}
 
 	foundCompleted := false

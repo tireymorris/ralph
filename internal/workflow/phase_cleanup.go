@@ -9,7 +9,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
+	"ralph/internal/workflow/events"
 )
 
 func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
@@ -19,47 +19,64 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	default:
 	}
 
-	changedFiles := branchChangedFiles(e.cfg.WorkDir)
+	total := constants.CleanupPassCount
 
-	for pass := 1; pass <= constants.CleanupPassCount; pass++ {
-		e.emit(EventCleanupStarted{Pass: pass, Total: constants.CleanupPassCount})
+	for pass := 1; pass <= total; pass++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 
-		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, pass, constants.CleanupPassCount)
+		changedFiles := branchChangedFiles(e.cfg.WorkDir)
 
-		outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-		done := make(chan struct{})
-		go func() {
-			e.forwardOutput(outputCh)
-			close(done)
-		}()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 
-		runErr := e.runner.Run(ctx, cleanupPrompt, outputCh)
-		close(outputCh)
-		<-done
+		progress := events.CleanupPassProgress{Pass: pass, Total: total}
+		e.emit(EventCleanupStarted{CleanupPassProgress: progress})
 
-		if runErr != nil {
+		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, pass, total)
+
+		if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
 			e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
 			return runErr
 		}
 
-		e.emit(EventCleanupCompleted{Pass: pass, Total: constants.CleanupPassCount})
+		e.emit(EventCleanupCompleted{CleanupPassProgress: progress})
 	}
 
 	return nil
 }
 
 func branchChangedFiles(workDir string) []string {
-	cmd := exec.Command("git", "diff", "--name-only", "HEAD@{upstream}...HEAD")
-	cmd.Dir = workDir
-	out, err := cmd.Output()
-	if err != nil {
-		return nil
-	}
 	var files []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if line != "" {
+	seen := make(map[string]struct{})
+	addFiles := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = workDir
+		out, err := cmd.Output()
+		if err != nil {
+			return
+		}
+		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+			if line == "" {
+				continue
+			}
+			if _, ok := seen[line]; ok {
+				continue
+			}
+			seen[line] = struct{}{}
 			files = append(files, line)
 		}
 	}
+
+	addFiles("diff", "--name-only", "HEAD@{upstream}...HEAD")
+	addFiles("diff", "--name-only", "HEAD")
+	addFiles("ls-files", "--others", "--exclude-standard")
+
 	return files
 }
