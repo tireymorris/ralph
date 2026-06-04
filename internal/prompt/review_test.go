@@ -14,6 +14,11 @@ func TestCriticalDiffReviewIncludesChangedFilesAndPRD(t *testing.T) {
 		"web/bar.ts",
 		"CHANGED FILES:",
 		"critical diff review",
+		"===ralph-findings===",
+		"===/ralph-findings===",
+		"category",
+		"path",
+		"summary",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("CriticalDiffReview() missing %q", want)
