@@ -34,3 +34,21 @@ func TestFingerprintNonEmptyFindings(t *testing.T) {
 		t.Errorf("Fingerprint() = %q, want 64-char lowercase hex", got)
 	}
 }
+
+func TestFingerprintStableAcrossFindingOrder(t *testing.T) {
+	a := Finding{ID: "alpha", Category: "bug", Path: "a.go", Summary: "one"}
+	b := Finding{ID: "beta", Category: "style", Path: "b.go", Summary: "two"}
+	first := Fingerprint([]Finding{b, a})
+	second := Fingerprint([]Finding{a, b})
+	if first != second {
+		t.Errorf("fingerprints differ: %q vs %q", first, second)
+	}
+}
+
+func TestFingerprintChangesWhenSummaryChanges(t *testing.T) {
+	base := []Finding{{ID: "same-id", Category: "bug", Path: "f.go", Summary: "before"}}
+	changed := []Finding{{ID: "same-id", Category: "bug", Path: "f.go", Summary: "after"}}
+	if Fingerprint(base) == Fingerprint(changed) {
+		t.Fatal("expected different fingerprints when summary changes")
+	}
+}
