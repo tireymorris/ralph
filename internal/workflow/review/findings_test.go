@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+func TestParseFindingsEmptyTranscript(t *testing.T) {
+	got, err := ParseFindings("")
+	if err != nil {
+		t.Fatalf("ParseFindings() err = %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ParseFindings() = %v, want no findings", got)
+	}
+}
+
 func TestFingerprintEmptyFindings(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -8,8 +8,20 @@ import (
 	"sort"
 )
 
+const (
+	findingsBlockStart = "===ralph-findings==="
+	findingsBlockEnd   = "===/ralph-findings==="
+)
+
 type fingerprintPayload struct {
 	Findings []Finding `json:"Findings"`
+}
+
+func ParseFindings(transcript string) ([]Finding, error) {
+	if transcript == "" {
+		return nil, nil
+	}
+	return nil, nil
 }
 
 func Fingerprint(findings []Finding) string {
