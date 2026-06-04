@@ -129,13 +129,10 @@ func TestLoadFromWorkDir(t *testing.T) {
 	}
 }
 
-func TestRegistryClearEmpty(t *testing.T) {
+func TestRegistryClear(t *testing.T) {
 	reg := NewRegistry()
 	reg.Clear()
-}
 
-func TestRegistryClearList(t *testing.T) {
-	reg := NewRegistry()
 	workDir := t.TempDir()
 	ts := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 
@@ -156,27 +153,8 @@ func TestRegistryClearList(t *testing.T) {
 	if len(reg.List()) != 0 {
 		t.Fatalf("len(List()) = %d, want 0 after Clear", len(reg.List()))
 	}
-}
-
-func TestRegistryClearGet(t *testing.T) {
-	reg := NewRegistry()
-	workDir := t.TempDir()
-	ts := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-
-	run := &Run{
-		ID:        "run-gone",
-		WorkDir:   workDir,
-		CreatedAt: ts,
-		UpdatedAt: ts,
-	}
-	if err := reg.Register(run); err != nil {
-		t.Fatalf("Register() error = %v", err)
-	}
-
-	reg.Clear()
-
-	if _, ok := reg.Get("run-gone"); ok {
-		t.Fatal("Get() ok = true after Clear, want false")
+	if _, ok := reg.Get("run-a"); ok {
+		t.Fatal("Get(run-a) ok = true after Clear, want false")
 	}
 }
 
