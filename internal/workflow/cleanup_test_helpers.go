@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 )
 
@@ -61,92 +60,41 @@ func countCleanupEvents(evts []Event) cleanupEventCounts {
 	return counts
 }
 
-func assertCleanupPassSequence(t *testing.T, evts []Event, wantPasses int) {
-	t.Helper()
-	var startedPasses, completedPasses []int
-	firstStartedIdx, firstCompletedIdx := -1, -1
-	for i, e := range evts {
-		switch ev := e.(type) {
-		case EventCleanupStarted:
-			startedPasses = append(startedPasses, ev.Pass)
-			if ev.Total != constants.CleanupPassCount {
-				t.Errorf("EventCleanupStarted Total=%d, want %d", ev.Total, constants.CleanupPassCount)
-			}
-			if firstStartedIdx < 0 {
-				firstStartedIdx = i
-			}
-		case EventCleanupCompleted:
-			completedPasses = append(completedPasses, ev.Pass)
-			if ev.Total != constants.CleanupPassCount {
-				t.Errorf("EventCleanupCompleted Total=%d, want %d", ev.Total, constants.CleanupPassCount)
-			}
-			if firstCompletedIdx < 0 {
-				firstCompletedIdx = i
-			}
-		}
-	}
-	if len(startedPasses) != wantPasses {
-		t.Errorf("expected %d EventCleanupStarted events, got %d", wantPasses, len(startedPasses))
-	}
-	if len(completedPasses) != wantPasses {
-		t.Errorf("expected %d EventCleanupCompleted events, got %d", wantPasses, len(completedPasses))
-	}
-	for i, pass := range startedPasses {
-		if pass != i+1 {
-			t.Errorf("EventCleanupStarted pass %d: Pass=%d, want %d", i, pass, i+1)
-		}
-	}
-	for i, pass := range completedPasses {
-		if pass != i+1 {
-			t.Errorf("EventCleanupCompleted pass %d: Pass=%d, want %d", i, pass, i+1)
-		}
-	}
-	if wantPasses > 0 && firstStartedIdx >= firstCompletedIdx {
-		t.Error("first EventCleanupStarted should come before first EventCleanupCompleted")
-	}
-}
-
-func cleanupEventIndices(evts []Event) (startedIdxs, completedIdxs []int, completedIdx int) {
-	completedIdx = -1
+func cleanupEventIndices(evts []Event) (startedIdx, completedIdx, workflowCompletedIdx int) {
+	startedIdx, completedIdx, workflowCompletedIdx = -1, -1, -1
 	for i, e := range evts {
 		switch e.(type) {
 		case EventCleanupStarted:
-			startedIdxs = append(startedIdxs, i)
+			startedIdx = i
 		case EventCleanupCompleted:
-			completedIdxs = append(completedIdxs, i)
-		case EventCompleted:
 			completedIdx = i
+		case EventCompleted:
+			workflowCompletedIdx = i
 		}
 	}
-	return startedIdxs, completedIdxs, completedIdx
+	return startedIdx, completedIdx, workflowCompletedIdx
 }
 
 func assertCleanupBeforeCompleted(t *testing.T, evts []Event) {
 	t.Helper()
-	startedIdxs, completedIdxs, completedIdx := cleanupEventIndices(evts)
-	if len(startedIdxs) != constants.CleanupPassCount {
-		t.Fatalf("expected %d EventCleanupStarted events, got %d", constants.CleanupPassCount, len(startedIdxs))
+	startedIdx, completedIdx, workflowCompletedIdx := cleanupEventIndices(evts)
+	if startedIdx < 0 {
+		t.Fatal("expected EventCleanupStarted to be emitted")
 	}
-	if len(completedIdxs) != constants.CleanupPassCount {
-		t.Fatalf("expected %d EventCleanupCompleted events, got %d", constants.CleanupPassCount, len(completedIdxs))
+	if completedIdx < 0 {
+		t.Fatal("expected EventCleanupCompleted to be emitted")
 	}
-	if completedIdx == -1 {
+	if workflowCompletedIdx < 0 {
 		t.Fatal("expected EventCompleted to be emitted")
 	}
-	for _, idx := range startedIdxs {
-		if idx >= completedIdx {
-			t.Error("each EventCleanupStarted must come before EventCompleted")
-		}
+	if startedIdx >= workflowCompletedIdx {
+		t.Error("EventCleanupStarted must come before EventCompleted")
 	}
-	for _, idx := range completedIdxs {
-		if idx >= completedIdx {
-			t.Error("each EventCleanupCompleted must come before EventCompleted")
-		}
+	if completedIdx >= workflowCompletedIdx {
+		t.Error("EventCleanupCompleted must come before EventCompleted")
 	}
-	for i := 0; i < constants.CleanupPassCount; i++ {
-		if startedIdxs[i] >= completedIdxs[i] {
-			t.Errorf("cleanup pass %d: EventCleanupStarted must come before EventCleanupCompleted", i+1)
-		}
+	if startedIdx >= completedIdx {
+		t.Error("EventCleanupStarted must come before EventCleanupCompleted")
 	}
 }
 

@@ -10,28 +10,14 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-func TestMarshalEventEnvelope_CleanupPassEvents(t *testing.T) {
+func TestMarshalEventEnvelope_CleanupEvents(t *testing.T) {
 	cases := []struct {
-		name      string
-		ev        events.Event
-		wantType  string
-		wantPass  int
-		wantTotal int
+		name     string
+		ev       events.Event
+		wantType string
 	}{
-		{
-			name:      "started",
-			ev:        events.EventCleanupStarted{CleanupPassProgress: events.CleanupPassProgress{Pass: 1, Total: 3}},
-			wantType:  "EventCleanupStarted",
-			wantPass:  1,
-			wantTotal: 3,
-		},
-		{
-			name:      "completed",
-			ev:        events.EventCleanupCompleted{CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3}},
-			wantType:  "EventCleanupCompleted",
-			wantPass:  2,
-			wantTotal: 3,
-		},
+		{name: "started", ev: events.EventCleanupStarted{}, wantType: "EventCleanupStarted"},
+		{name: "completed", ev: events.EventCleanupCompleted{}, wantType: "EventCleanupCompleted"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -45,20 +31,6 @@ func TestMarshalEventEnvelope_CleanupPassEvents(t *testing.T) {
 			}
 			if env.Type != tc.wantType {
 				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
-			}
-			payload, err := json.Marshal(env.Payload)
-			if err != nil {
-				t.Fatalf("Marshal payload: %v", err)
-			}
-			var got struct {
-				Pass  int `json:"Pass"`
-				Total int `json:"Total"`
-			}
-			if err := json.Unmarshal(payload, &got); err != nil {
-				t.Fatalf("Unmarshal payload: %v", err)
-			}
-			if got.Pass != tc.wantPass || got.Total != tc.wantTotal {
-				t.Errorf("payload Pass=%d Total=%d, want Pass=%d Total=%d", got.Pass, got.Total, tc.wantPass, tc.wantTotal)
 			}
 		})
 	}

@@ -100,11 +100,11 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventCleanupStarted:
 		m.phase = PhaseCleanup
-		m.logger.AddLog(fmt.Sprintf("Running post-implementation cleanup (pass %d/%d)...", e.Pass, e.Total))
+		m.logger.AddLog("Running post-implementation cleanup...")
 		m.markMainScrollJump()
 
 	case events.EventCleanupCompleted:
-		m.logger.AddLog(fmt.Sprintf("Cleanup pass %d/%d complete", e.Pass, e.Total))
+		m.logger.AddLog("Cleanup complete!")
 		m.markMainScrollJump()
 
 	case events.EventOutput:

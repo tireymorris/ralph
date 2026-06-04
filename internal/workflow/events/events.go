@@ -80,19 +80,10 @@ type EventPRDRevising struct{}
 
 func (EventPRDRevising) isEvent() {}
 
-type CleanupPassProgress struct {
-	Pass  int `json:"Pass"`
-	Total int `json:"Total"`
-}
-
-type EventCleanupStarted struct {
-	CleanupPassProgress
-}
+type EventCleanupStarted struct{}
 
 func (EventCleanupStarted) isEvent() {}
 
-type EventCleanupCompleted struct {
-	CleanupPassProgress
-}
+type EventCleanupCompleted struct{}
 
 func (EventCleanupCompleted) isEvent() {}

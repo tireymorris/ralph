@@ -155,12 +155,10 @@ Only modify the files listed above. Do not touch unrelated code.
 `, strings.Join(changedFiles, "\n"))
 }
 
-func Cleanup(codebaseContext, prdFile string, changedFiles []string, pass, total int) string {
+func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
 	return fmt.Sprintf(`You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
-
-Cleanup pass %d of %d.
 %s%s
-If the changed files already follow project conventions with no duplication or refactor worth doing, stop without modifying files and without committing — no cleanup is needed on this pass.
+If the changed files already follow project conventions with no duplication or refactor worth doing, stop without modifying files and without committing — no cleanup is needed.
 
 Otherwise, review the codebase and apply the following improvements:
 
@@ -172,7 +170,7 @@ Otherwise, review the codebase and apply the following improvements:
 
 Before any commit, run the full test suite. Only commit if all tests are green.
 
-PRD file: %s`, pass, total, codebaseContextSection(codebaseContext), changedFilesSection(changedFiles), prdFile)
+PRD file: %s`, codebaseContextSection(codebaseContext), changedFilesSection(changedFiles), prdFile)
 }
 
 func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {

@@ -7,9 +7,7 @@ import (
 	"strings"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
-	"ralph/internal/workflow/events"
 )
 
 func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
@@ -19,36 +17,17 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	default:
 	}
 
-	total := constants.CleanupPassCount
+	e.emit(EventCleanupStarted{})
 
-	for pass := 1; pass <= total; pass++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	changedFiles := branchChangedFiles(e.cfg.WorkDir)
+	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
 
-		changedFiles := branchChangedFiles(e.cfg.WorkDir)
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		progress := events.CleanupPassProgress{Pass: pass, Total: total}
-		e.emit(EventCleanupStarted{CleanupPassProgress: progress})
-
-		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles, pass, total)
-
-		if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
-			e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
-			return runErr
-		}
-
-		e.emit(EventCleanupCompleted{CleanupPassProgress: progress})
+	if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
+		e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
+		return runErr
 	}
 
+	e.emit(EventCleanupCompleted{})
 	return nil
 }
 

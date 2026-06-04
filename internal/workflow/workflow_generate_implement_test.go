@@ -589,8 +589,8 @@ func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
 
 	assertCleanupBeforeCompleted(t, drainEvents(ch))
 
-	if mock.CallCount() < 4 {
-		t.Errorf("runner should be called at least 4 times (1 story + 3 cleanup), got %d", mock.CallCount())
+	if mock.CallCount() < 2 {
+		t.Errorf("runner should be called at least twice (1 story + 1 cleanup), got %d", mock.CallCount())
 	}
 }
 
@@ -629,12 +629,6 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 			}
 		case EventCleanupStarted:
 			cleanupStarted++
-			if ev.Pass != 1 {
-				t.Errorf("EventCleanupStarted Pass=%d, want 1 on first cleanup failure", ev.Pass)
-			}
-			if ev.Total != 3 {
-				t.Errorf("EventCleanupStarted Total=%d, want 3", ev.Total)
-			}
 		case EventCleanupCompleted:
 			cleanupCompleted++
 		}

@@ -137,9 +137,7 @@ func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
 	m.phase = PhaseImplementation
 	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{
-		CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3},
-	})
+	cmd := m.handleWorkflowEvent(events.EventCleanupStarted{})
 	if cmd != nil {
 		t.Error("EventCleanupStarted should return nil cmd")
 	}
@@ -147,8 +145,8 @@ func TestHandleWorkflowEventCleanupStarted(t *testing.T) {
 		t.Errorf("phase = %v, want PhaseCleanup", m.phase)
 	}
 	logView := m.logger.GetView().View()
-	if !strings.Contains(logView, "pass 2/3") {
-		t.Errorf("log view should contain pass 2/3, got %q", logView)
+	if !strings.Contains(logView, "Running post-implementation cleanup") {
+		t.Errorf("log view should mention cleanup start, got %q", logView)
 	}
 }
 
@@ -158,9 +156,7 @@ func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
 	m.phase = PhaseCleanup
 	m.logger.SetSize(80, 10)
 
-	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{
-		CleanupPassProgress: events.CleanupPassProgress{Pass: 2, Total: 3},
-	})
+	cmd := m.handleWorkflowEvent(events.EventCleanupCompleted{})
 	if cmd != nil {
 		t.Error("EventCleanupCompleted should return nil cmd")
 	}
@@ -168,8 +164,8 @@ func TestHandleWorkflowEventCleanupCompleted(t *testing.T) {
 		t.Errorf("phase = %v, want PhaseCleanup (EventCompleted handles the transition)", m.phase)
 	}
 	logView := m.logger.GetView().View()
-	if !strings.Contains(logView, "pass 2/3") {
-		t.Errorf("log view should contain pass 2/3, got %q", logView)
+	if !strings.Contains(logView, "Cleanup complete") {
+		t.Errorf("log view should mention cleanup complete, got %q", logView)
 	}
 }
 

@@ -69,12 +69,15 @@ func TestRunCleanupSuccess(t *testing.T) {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
-	if mock.CallCount() != 3 {
-		t.Fatalf("runner call count = %d, want 3", mock.CallCount())
+	if mock.CallCount() != 1 {
+		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
 	}
 
 	evts := drainEvents(ch)
-	assertCleanupPassSequence(t, evts, 3)
+	counts := countCleanupEvents(evts)
+	if counts.started != 1 || counts.completed != 1 {
+		t.Errorf("expected 1 cleanup started and 1 completed, got started=%d completed=%d", counts.started, counts.completed)
+	}
 
 	foundOutput := false
 	for _, e := range evts {
@@ -106,12 +109,12 @@ func TestRunCleanupRunnerError(t *testing.T) {
 	}
 
 	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1 on first-pass failure", mock.CallCount())
+		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
 	}
 
 	foundError := false
 	foundCompleted := false
-	var startedPass, startedTotal int
+	foundStarted := false
 	for len(ch) > 0 {
 		e := <-ch
 		switch ev := e.(type) {
@@ -120,18 +123,14 @@ func TestRunCleanupRunnerError(t *testing.T) {
 				foundError = true
 			}
 		case EventCleanupStarted:
-			startedPass = ev.Pass
-			startedTotal = ev.Total
+			foundStarted = true
 		case EventCleanupCompleted:
 			foundCompleted = true
 		}
 	}
 
-	if startedPass != 1 {
-		t.Errorf("EventCleanupStarted Pass=%d, want 1 on first-pass failure", startedPass)
-	}
-	if startedTotal != 3 {
-		t.Errorf("EventCleanupStarted Total=%d, want 3", startedTotal)
+	if !foundStarted {
+		t.Error("expected EventCleanupStarted before failure")
 	}
 
 	if !foundError {
