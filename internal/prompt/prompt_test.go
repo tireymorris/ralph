@@ -339,6 +339,21 @@ func TestCleanup_instructs_running_tests_before_committing(t *testing.T) {
 	}
 }
 
+func TestCleanup_instructs_targeted_tests_not_full_suite(t *testing.T) {
+	result := Cleanup("", "prd.json", nil)
+	if strings.Contains(result, "full test suite") {
+		t.Errorf("Cleanup() should not instruct running the full test suite, got:\n%s", result)
+	}
+	for _, want := range []string{"modified files", "feature area", "regressions"} {
+		if !strings.Contains(result, want) {
+			t.Errorf("Cleanup() missing targeted-test guidance %q", want)
+		}
+	}
+	if !strings.Contains(result, "Do not run the entire project test suite") {
+		t.Error("Cleanup() should explicitly discourage running the entire project test suite")
+	}
+}
+
 func TestCleanup_omits_context_section_when_empty(t *testing.T) {
 	result := Cleanup("", "prd.json", nil)
 	if strings.Contains(result, "CODEBASE CONTEXT") {

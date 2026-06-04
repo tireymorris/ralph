@@ -168,7 +168,7 @@ Otherwise, review the codebase and apply the following improvements:
 4. Where possible, consolidate related specs and tests that cover overlapping scenarios
 5. Extract better abstractions where concrete implementations can be generalized
 
-Before any commit, run the full test suite. Only commit if all tests are green.
+Before any commit, run only the tests needed to validate your changes: specs for modified files, specs covering the feature area touched by this branch, and any regressions you introduce or reasonably suspect. Do not run the entire project test suite unless the repo is small or project conventions explicitly require it. Only commit if those tests are green.
 
 PRD file: %s`, codebaseContextSection(codebaseContext), changedFilesSection(changedFiles), prdFile)
 }
