@@ -7,9 +7,29 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/shared/runner"
 )
+
+func TestReviewDiffRespectsContextCancellation(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	runner := &recordingRunner{t: t}
+	_, err := ReviewDiff(ctx, Params{
+		WorkDir:   workDir,
+		RunID:     "run-cancel",
+		Iteration: 0,
+		PRDFile:   "prd.json",
+		Context:   "ctx",
+		Runner:    runner,
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("ReviewDiff() err = %v, want context.Canceled", err)
+	}
+}
 
 func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
 	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
@@ -138,4 +158,55 @@ func (r *recordingRunner) RunnerName() string  { return "recording" }
 func (r *recordingRunner) CommandName() string { return "recording" }
 func (r *recordingRunner) IsInternalLog(string) bool {
 	return false
+}
+
+type blockingRunner struct {
+	started chan struct{}
+}
+
+func (b *blockingRunner) Run(ctx context.Context, _ string, _ chan<- runner.OutputLine) error {
+	close(b.started)
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func (b *blockingRunner) RunnerName() string  { return "blocking" }
+func (b *blockingRunner) CommandName() string { return "blocking" }
+func (b *blockingRunner) IsInternalLog(string) bool {
+	return false
+}
+
+func TestReviewDiffCancelsDuringRunner(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	br := &blockingRunner{started: make(chan struct{})}
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := ReviewDiff(ctx, Params{
+			WorkDir:   workDir,
+			RunID:     "run-block",
+			Iteration: 1,
+			PRDFile:   "prd.json",
+			Context:   "ctx",
+			Runner:    br,
+		})
+		errCh <- err
+	}()
+
+	select {
+	case <-br.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("runner did not start")
+	}
+	cancel()
+
+	select {
+	case err := <-errCh:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("ReviewDiff() err = %v, want context.Canceled", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("ReviewDiff did not return after cancel")
+	}
 }
