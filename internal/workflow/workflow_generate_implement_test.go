@@ -608,38 +608,47 @@ func TestRunImplementationCallsCleanupBeforeCompleted(t *testing.T) {
 		evts = append(evts, <-ch)
 	}
 
-	cleanupStartedIdx := -1
-	cleanupCompletedIdx := -1
+	var cleanupStartedIdxs []int
+	var cleanupCompletedIdxs []int
 	completedIdx := -1
 	for i, e := range evts {
 		switch e.(type) {
 		case EventCleanupStarted:
-			cleanupStartedIdx = i
+			cleanupStartedIdxs = append(cleanupStartedIdxs, i)
 		case EventCleanupCompleted:
-			cleanupCompletedIdx = i
+			cleanupCompletedIdxs = append(cleanupCompletedIdxs, i)
 		case EventCompleted:
 			completedIdx = i
 		}
 	}
 
-	if cleanupStartedIdx == -1 {
-		t.Fatal("expected EventCleanupStarted to be emitted")
+	if len(cleanupStartedIdxs) != 3 {
+		t.Fatalf("expected 3 EventCleanupStarted events, got %d", len(cleanupStartedIdxs))
 	}
-	if cleanupCompletedIdx == -1 {
-		t.Fatal("expected EventCleanupCompleted to be emitted")
+	if len(cleanupCompletedIdxs) != 3 {
+		t.Fatalf("expected 3 EventCleanupCompleted events, got %d", len(cleanupCompletedIdxs))
 	}
 	if completedIdx == -1 {
 		t.Fatal("expected EventCompleted to be emitted")
 	}
-	if cleanupStartedIdx >= completedIdx {
-		t.Error("EventCleanupStarted must come before EventCompleted")
+	for _, idx := range cleanupStartedIdxs {
+		if idx >= completedIdx {
+			t.Error("each EventCleanupStarted must come before EventCompleted")
+		}
 	}
-	if cleanupCompletedIdx >= completedIdx {
-		t.Error("EventCleanupCompleted must come before EventCompleted")
+	for _, idx := range cleanupCompletedIdxs {
+		if idx >= completedIdx {
+			t.Error("each EventCleanupCompleted must come before EventCompleted")
+		}
+	}
+	for i := 0; i < 3; i++ {
+		if cleanupStartedIdxs[i] >= cleanupCompletedIdxs[i] {
+			t.Errorf("cleanup pass %d: EventCleanupStarted must come before EventCleanupCompleted", i+1)
+		}
 	}
 
-	if mock.CallCount() < 2 {
-		t.Errorf("runner should be called at least twice (story + cleanup), got %d", mock.CallCount())
+	if mock.CallCount() < 4 {
+		t.Errorf("runner should be called at least 4 times (1 story + 3 cleanup), got %d", mock.CallCount())
 	}
 }
 
