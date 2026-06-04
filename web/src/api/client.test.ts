@@ -6,6 +6,7 @@ import {
   listRuns,
   openEventStream,
   postClean,
+  postResume,
 } from "./client";
 
 afterEach(() => {
@@ -134,6 +135,21 @@ describe("postClean", () => {
       status: 500,
     });
     await expect(postClean()).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe("postResume", () => {
+  it("POSTs empty JSON to /api/runs/{id}/resume", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postResume("run-abc");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/runs/run-abc/resume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
   });
 });
 

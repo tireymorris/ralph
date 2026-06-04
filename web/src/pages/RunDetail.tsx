@@ -5,6 +5,7 @@ import {
   createRun,
   getRun,
   openEventStream,
+  postResume,
   submitClarify,
   submitFollowUp,
 } from "../api/client";
@@ -22,7 +23,9 @@ import { makeSystemEntry, type TimelineEntry } from "../lib/timeline";
 import { usePRDLoader } from "../hooks/usePRDLoader";
 import { useRunEventStream } from "../hooks/useRunEventStream";
 import { useRunPolling } from "../hooks/useRunPolling";
+import { useRunStall } from "../hooks/useRunStall";
 import { useTimelineScroll } from "../hooks/useTimelineScroll";
+import { FORCE_RESUME_CONFIRM_MESSAGE } from "../lib/stall";
 import ClarifyForm from "../components/ClarifyForm";
 import FollowUpComposer from "../components/FollowUpComposer";
 import GroupedTimeline from "../components/GroupedTimeline";
@@ -45,6 +48,7 @@ export default function RunDetail() {
   const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
   const [retrySubmitting, setRetrySubmitting] = useState(false);
+  const [resumeSubmitting, setResumeSubmitting] = useState(false);
   const [streamGeneration, setStreamGeneration] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -145,6 +149,37 @@ export default function RunDetail() {
 
   const progress = run?.story_progress;
   const isTerminal = run ? isTerminalRunStatus(run.status) : false;
+  const lastTimelineId = entries.at(-1)?.id ?? "";
+  const activityKey = `${run?.updated_at ?? ""}:${entries.length}:${lastTimelineId}`;
+  const stalled = useRunStall(
+    run?.status,
+    clarifyQuestions.length,
+    activityKey,
+    !isLocalPRD,
+  );
+
+  async function handleForceResume() {
+    if (!id || resumeSubmitting || !run) return;
+    if (!window.confirm(FORCE_RESUME_CONFIRM_MESSAGE)) {
+      return;
+    }
+    setResumeSubmitting(true);
+    setLoadError(null);
+    try {
+      await postResume(id);
+      setEntries((prev) => [...prev, makeSystemEntry("Force resume requested")]);
+      setStreamGeneration((n) => n + 1);
+      try {
+        setRun(await getRun(id));
+      } catch {
+        // polling will refresh
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "force resume failed");
+    } finally {
+      setResumeSubmitting(false);
+    }
+  }
 
   const showStoryProgress =
     prd &&
@@ -169,6 +204,17 @@ export default function RunDetail() {
               <span className="run-detail-progress-label">
                 {progress.completed}/{progress.total}
               </span>
+            )}
+            {!isTerminal && !isLocalPRD && stalled && (
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm run-detail-force-resume"
+                onClick={() => void handleForceResume()}
+                disabled={resumeSubmitting}
+                title="Stop the stuck step and continue from saved progress"
+              >
+                {resumeSubmitting ? "Resuming…" : "Force resume"}
+              </button>
             )}
             {!isTerminal && !isLocalPRD && (
               <button

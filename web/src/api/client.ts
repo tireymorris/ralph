@@ -111,6 +111,10 @@ export async function cancelRun(id: string): Promise<void> {
   await apiPost(`/api/runs/${id}/cancel`, {});
 }
 
+export async function postResume(id: string): Promise<void> {
+  await apiPost(`/api/runs/${id}/resume`, {});
+}
+
 export async function postClean(): Promise<void> {
   await apiPost("/api/clean", {});
 }
