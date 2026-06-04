@@ -5,24 +5,66 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/gofrs/flock"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 func ArchivePriorState(cfg *config.Config) (backupDir string, err error) {
-	prdPath := cfg.PRDPath()
-	if _, err := os.Stat(prdPath); os.IsNotExist(err) {
-		return "", nil
-	} else if err != nil {
+	has, err := hasStateArtifacts(cfg)
+	if err != nil || !has {
 		return "", err
 	}
+	releasePRDLock(cfg)
 	backupDir, err = newBackupDir(cfg)
 	if err != nil {
 		return "", err
 	}
-	if err := moveIntoBackup(backupDir, prdPath, "prd.json"); err != nil {
-		return "", err
+	for _, path := range stateFilePaths(cfg) {
+		if err := archiveFileIfExists(backupDir, path); err != nil {
+			return "", err
+		}
 	}
 	return backupDir, nil
+}
+
+func hasStateArtifacts(cfg *config.Config) (bool, error) {
+	for _, path := range stateFilePaths(cfg) {
+		if _, err := os.Stat(path); err == nil {
+			return true, nil
+		} else if !os.IsNotExist(err) {
+			return false, err
+		}
+	}
+	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
+	if err != nil {
+		return false, err
+	}
+	if len(matches) > 0 {
+		return true, nil
+	}
+	runsDir := filepath.Join(cfg.WorkDir, ralphDataDir, "runs")
+	if _, err := os.Stat(runsDir); err == nil {
+		return true, nil
+	} else if !os.IsNotExist(err) {
+		return false, err
+	}
+	return false, nil
+}
+
+func releasePRDLock(cfg *config.Config) {
+	lockPath := prd.LockPath(cfg.PRDPath())
+	fileLock := flock.New(lockPath)
+	_ = fileLock.Unlock()
+}
+
+func archiveFileIfExists(backupDir, src string) error {
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return moveIntoBackup(backupDir, src, filepath.Base(src))
 }
 
 func newBackupDir(cfg *config.Config) (string, error) {
