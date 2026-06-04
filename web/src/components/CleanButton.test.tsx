@@ -1,12 +1,16 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { postClean } from "../api/client";
+import { ApiError, postClean } from "../api/client";
 import CleanButton from "./CleanButton";
 
-vi.mock("../api/client", () => ({
-  postClean: vi.fn(),
-}));
+vi.mock("../api/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api/client")>();
+  return {
+    ...actual,
+    postClean: vi.fn(),
+  };
+});
 
 describe("CleanButton", () => {
   beforeEach(() => {
@@ -59,6 +63,22 @@ describe("CleanButton", () => {
       expect(screen.getByRole("status")).toHaveTextContent(
         "Ralph state removed.",
       );
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it("shows alert with ApiError message when postClean fails", async () => {
+    vi.mocked(postClean).mockRejectedValue(
+      new ApiError(500, "server blew up"),
+    );
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    const user = userEvent.setup();
+    render(<CleanButton />);
+
+    await user.click(screen.getByRole("button", { name: "Clean" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("server blew up");
     });
     vi.unstubAllGlobals();
   });
