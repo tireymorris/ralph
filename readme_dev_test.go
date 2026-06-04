@@ -72,6 +72,27 @@ func TestReadmeDocumentsBackupOnNewRun(t *testing.T) {
 	}
 }
 
+func TestReadmeResumeDoesNotArchive(t *testing.T) {
+	section := readmeStateFilesSection(t)
+	if !strings.Contains(section, "--resume") {
+		t.Fatal("README State files section must mention --resume")
+	}
+	lower := strings.ToLower(section)
+	if !strings.Contains(lower, "do not archive") && !strings.Contains(lower, "does not archive") {
+		t.Fatal("README State files section must state that --resume does not archive prior state")
+	}
+}
+
+func TestReadmeCleanDeletesStateInPlace(t *testing.T) {
+	section := readmeStateFilesSection(t)
+	if !strings.Contains(section, "ralph clean") {
+		t.Fatal("README State files section must document ralph clean")
+	}
+	if !strings.Contains(strings.ToLower(section), "delete") {
+		t.Fatal("README State files section must describe ralph clean as deleting state")
+	}
+}
+
 func TestReadmeDocumentsReleaseBuild(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {
