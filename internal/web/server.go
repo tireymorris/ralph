@@ -34,6 +34,7 @@ func NewHandler(cfg *config.Config) (http.Handler, error) {
 	mux.HandleFunc("POST /api/runs/{id}/followup", api.FollowUpRun)
 	mux.HandleFunc("GET /api/version", api.GetVersion)
 	mux.HandleFunc("POST /api/update", api.PostUpdate)
+	mux.HandleFunc("POST /api/clean", api.CleanState)
 
 	return mux, nil
 }
