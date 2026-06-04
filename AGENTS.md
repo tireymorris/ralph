@@ -83,6 +83,7 @@ Ralph writes these files in the working directory (all covered by `.gitignore`):
 - `.ralph/runs/<id>/meta.json` — per-run metadata (status, checkpoint, review loop); TUI uses `prd-local`
 - `.ralph/runs/<id>/events.ndjson` — per-run event log for SSE replay (web UI)
 - `.ralph/runs/<id>/review-*.txt` — implementation review transcripts
+- `.ralph/backups/<timestamp>/` — prior state moved aside before a new TUI prompt or `POST /api/runs` (not used by `--resume`; `ralph clean` deletes in place)
 
 ## Web API (selected)
 - `POST /api/runs/{id}/review` — approve/revise PRD (`waiting_review`)
