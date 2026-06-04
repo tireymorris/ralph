@@ -77,6 +77,8 @@ Implementation requires a **git repository** in the working directory (used for 
 
 Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`. Run `ralph clean` to delete these artifacts idempotently (safe to run when none exist).
 
+Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs`) automatically moves any prior `prd.json`, its lock, `.ralph_questions.json`, orphan `.prd.tmp.*` files, and `.ralph/runs/` data into `.ralph/backups/<timestamp>/` under the workdir. Older backup folders are kept. `--resume` and checkpoint resume do not archive existing state.
+
 | Path | Created by | Purpose |
 |------|-----------|---------|
 | `prd.json` | TUI + web | The generated PRD |
@@ -86,6 +88,7 @@ Ralph writes the following files in the working directory. All are covered by th
 | `.ralph/runs/<id>/meta.json` | TUI + web | Per-run metadata (status, checkpoint, review loop) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
 | `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |
+| `.ralph/backups/<timestamp>/` | TUI + web | Prior state moved aside before a new run (not touched by `--resume`) |
 
 ## Runner
 

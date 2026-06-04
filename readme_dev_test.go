@@ -65,6 +65,13 @@ func TestReadmeDocumentsClean(t *testing.T) {
 	}
 }
 
+func TestReadmeDocumentsBackupOnNewRun(t *testing.T) {
+	section := readmeStateFilesSection(t)
+	if !strings.Contains(section, ".ralph/backups/") {
+		t.Fatal("README State files section must document .ralph/backups/")
+	}
+}
+
 func TestReadmeDocumentsReleaseBuild(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {
