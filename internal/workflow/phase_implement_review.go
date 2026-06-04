@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"ralph/internal/shared/prd"
-	"ralph/internal/workflow/events"
 	"ralph/internal/workflow/review"
 )
 
@@ -37,29 +36,20 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 	}
 
 	fingerprint := review.Fingerprint(result.Findings)
+	baseUpdate := e.implReviewLoopUpdate(iteration, fingerprint, elapsedMs)
 	if prevFingerprint != "" && fingerprint != "" && fingerprint == prevFingerprint {
-		_ = e.applyReviewLoop(ReviewLoopUpdate{
-			Checkpoint:        CheckpointImplReview,
-			ReviewIteration:   iteration,
-			ReviewFingerprint: fingerprint,
-			ReviewElapsedMs:   elapsedMs,
-			StopReason:        StopReasonDuplicateFindings,
-		})
+		baseUpdate.StopReason = StopReasonDuplicateFindings
+		_ = e.applyReviewLoop(baseUpdate)
 		stopErr := fmt.Errorf("implementation review: %s", StopReasonDuplicateFindings)
 		e.emit(EventError{Err: stopErr})
 		return false, stopErr
 	}
 
-	_ = e.applyReviewLoop(ReviewLoopUpdate{
-		Checkpoint:               CheckpointImplReview,
-		ReviewIteration:          iteration,
-		ReviewFingerprint:        fingerprint,
-		ReviewElapsedMs:        elapsedMs,
-		LastReviewTranscriptPath: result.LastReviewTranscriptPath,
-	})
+	baseUpdate.LastReviewTranscriptPath = result.LastReviewTranscriptPath
+	_ = e.applyReviewLoop(baseUpdate)
 
 	if len(result.Findings) > 0 {
-		e.emit(EventImplementationReview{Findings: toImplementationFindings(result.Findings)})
+		e.emit(EventImplementationReview{Findings: result.Findings})
 		return true, nil
 	}
 
@@ -84,16 +74,11 @@ func (e *Executor) applyReviewLoop(u ReviewLoopUpdate) error {
 	return e.reviewLoop.Apply(u)
 }
 
-func toImplementationFindings(in []review.Finding) []events.ImplementationFinding {
-	out := make([]events.ImplementationFinding, len(in))
-	for i, f := range in {
-		out[i] = events.ImplementationFinding{
-			ID:       f.ID,
-			Category: f.Category,
-			Path:     f.Path,
-			Line:     f.Line,
-			Summary:  f.Summary,
-		}
+func (e *Executor) implReviewLoopUpdate(iteration int, fingerprint string, elapsedMs int64) ReviewLoopUpdate {
+	return ReviewLoopUpdate{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   iteration,
+		ReviewFingerprint: fingerprint,
+		ReviewElapsedMs:   elapsedMs,
 	}
-	return out
 }

@@ -27,14 +27,6 @@ type Result struct {
 	LastReviewTranscriptPath string
 }
 
-type Finding struct {
-	ID       string
-	Category string
-	Path     string
-	Line     int
-	Summary  string
-}
-
 type GitError struct {
 	WorkDir string
 	Command string

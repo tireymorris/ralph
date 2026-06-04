@@ -8,7 +8,11 @@ import (
 	"slices"
 	"sort"
 	"strings"
+
+	"ralph/internal/workflow/events"
 )
+
+type Finding = events.ImplementationFinding
 
 const (
 	findingsBlockStart = "===ralph-findings==="

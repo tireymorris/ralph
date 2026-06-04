@@ -12,7 +12,7 @@ import (
 )
 
 func TestRunImplementationReviewEventsAfterStoryCompleted(t *testing.T) {
-	cfg, testPRD := saveSingleStoryPRDInGitRepo(t, false)
+	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -127,7 +127,7 @@ func assertReviewBetweenStories(evts []Event) error {
 }
 
 func TestRunImplementationReviewBeforeCleanup(t *testing.T) {
-	cfg, testPRD := saveSingleStoryPRDInGitRepo(t, false)
+	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -174,7 +174,7 @@ func assertReviewBeforeCleanup(evts []Event) error {
 }
 
 func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
-	cfg, testPRD := saveSingleStoryPRDInGitRepo(t, true)
+	cfg, testPRD := saveSingleStoryPRD(t, true)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()

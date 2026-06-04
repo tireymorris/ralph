@@ -25,11 +25,6 @@ func saveSingleStoryPRD(t *testing.T, skipCleanup bool) (*config.Config, *prd.PR
 	return saveSingleStoryPRDInDir(t, tmpDir, skipCleanup)
 }
 
-func saveSingleStoryPRDInGitRepo(t *testing.T, skipCleanup bool) (*config.Config, *prd.PRD) {
-	t.Helper()
-	return saveSingleStoryPRD(t, skipCleanup)
-}
-
 func saveSingleStoryPRDInDir(t *testing.T, workDir string, skipCleanup bool) (*config.Config, *prd.PRD) {
 	t.Helper()
 	cfg := config.DefaultConfig()
@@ -185,4 +180,15 @@ func setupCleanupBranchWithUpstreamDiff(t *testing.T) string {
 	runGit(workDir, "commit", "-m", "existing change")
 
 	return workDir
+}
+
+func setupGitRepoWithWorkingTreeDiff(t *testing.T) (workDir, changedFile string) {
+	t.Helper()
+	workDir = t.TempDir()
+	initGitRepoInDir(t, workDir)
+	changedFile = "delta.txt"
+	if err := os.WriteFile(filepath.Join(workDir, changedFile), []byte("changed\n"), 0644); err != nil {
+		t.Fatalf("write %s: %v", changedFile, err)
+	}
+	return workDir, changedFile
 }
