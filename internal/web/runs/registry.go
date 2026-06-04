@@ -127,6 +127,12 @@ func (r *Registry) Get(id string) (*Run, bool) {
 	return &copy, true
 }
 
+func (r *Registry) Clear() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.runs = make(map[string]*Run)
+}
+
 func (r *Registry) List() []*Run {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

@@ -129,6 +129,11 @@ func TestLoadFromWorkDir(t *testing.T) {
 	}
 }
 
+func TestRegistryClearEmpty(t *testing.T) {
+	reg := NewRegistry()
+	reg.Clear()
+}
+
 func TestConcurrentRegisterList(t *testing.T) {
 	reg := NewRegistry()
 	workDir := t.TempDir()
