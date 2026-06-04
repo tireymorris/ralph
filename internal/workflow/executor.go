@@ -16,6 +16,12 @@ type Executor struct {
 	eventsCh chan Event
 	runner   runner.RunnerInterface
 	store    PRDStore
+
+	runID             string
+	reviewLoop        ReviewLoopUpdater
+	reviewIteration   int
+	reviewFingerprint string
+	reviewElapsedMs   int64
 }
 
 func NewExecutor(cfg *config.Config, eventsCh chan Event) *Executor {

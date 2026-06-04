@@ -21,8 +21,19 @@ func drainEvents(ch chan Event) []Event {
 func saveSingleStoryPRD(t *testing.T, skipCleanup bool) (*config.Config, *prd.PRD) {
 	t.Helper()
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
+	return saveSingleStoryPRDInDir(t, tmpDir, skipCleanup)
+}
+
+func saveSingleStoryPRDInGitRepo(t *testing.T, skipCleanup bool) (*config.Config, *prd.PRD) {
+	t.Helper()
+	return saveSingleStoryPRD(t, skipCleanup)
+}
+
+func saveSingleStoryPRDInDir(t *testing.T, workDir string, skipCleanup bool) (*config.Config, *prd.PRD) {
+	t.Helper()
 	cfg := config.DefaultConfig()
-	cfg.WorkDir = tmpDir
+	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 	cfg.SkipCleanup = skipCleanup
 	testPRD := &prd.PRD{
@@ -39,7 +50,45 @@ func saveSingleStoryPRD(t *testing.T, skipCleanup bool) (*config.Config, *prd.PR
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, workDir, cfg.PRDFile)
 	return cfg, testPRD
+}
+
+func commitPRDFile(t *testing.T, dir, prdFile string) {
+	t.Helper()
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v failed: %v\n%s", args, err, out)
+		}
+	}
+	runGit("add", prdFile)
+	runGit("commit", "-m", "add prd")
+}
+
+func initGitRepoInDir(t *testing.T, dir string) {
+	t.Helper()
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v failed: %v\n%s", args, err, out)
+		}
+	}
+	runGit("init")
+	runGit("checkout", "-b", "main")
+	runGit("config", "user.name", "Test User")
+	runGit("config", "user.email", "test@example.com")
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("ok\n"), 0644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-m", "initial")
 }
 
 type cleanupEventCounts struct {

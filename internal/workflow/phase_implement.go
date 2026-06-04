@@ -103,5 +103,13 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		logger.Debug("story completed", "story_id", story.ID)
 		e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
+
+		blocked, reviewErr := e.runImplementationReview(ctx, updatedPRD)
+		if reviewErr != nil {
+			return reviewErr
+		}
+		if blocked {
+			return nil
+		}
 	}
 }

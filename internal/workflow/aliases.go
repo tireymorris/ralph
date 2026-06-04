@@ -18,4 +18,8 @@ type (
 	EventPRDRevising         = events.EventPRDRevising
 	EventCleanupStarted      = events.EventCleanupStarted
 	EventCleanupCompleted    = events.EventCleanupCompleted
+	EventImplementationReviewStarted   = events.EventImplementationReviewStarted
+	EventImplementationReviewCompleted = events.EventImplementationReviewCompleted
+	EventImplementationReview          = events.EventImplementationReview
+	ImplementationFinding              = events.ImplementationFinding
 )

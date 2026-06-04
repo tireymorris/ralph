@@ -87,3 +87,30 @@ func (EventCleanupStarted) isEvent() {}
 type EventCleanupCompleted struct{}
 
 func (EventCleanupCompleted) isEvent() {}
+
+type ImplementationFinding struct {
+	ID       string
+	Category string
+	Path     string
+	Line     int
+	Summary  string
+}
+
+type EventImplementationReviewStarted struct {
+	Iteration int
+}
+
+func (EventImplementationReviewStarted) isEvent() {}
+
+type EventImplementationReviewCompleted struct {
+	Iteration int
+	Clean     bool
+}
+
+func (EventImplementationReviewCompleted) isEvent() {}
+
+type EventImplementationReview struct {
+	Findings []ImplementationFinding
+}
+
+func (EventImplementationReview) isEvent() {}

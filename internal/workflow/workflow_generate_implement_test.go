@@ -129,6 +129,7 @@ func TestRunGenerateRunnerError(t *testing.T) {
 
 func TestRunImplementationStorySuccess(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -140,6 +141,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -176,6 +178,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 
 func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -187,6 +190,7 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -222,6 +226,7 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 
 func TestRunImplementationMultipleStories(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -236,6 +241,7 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -261,6 +267,7 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 
 func TestRunImplementationPRDReloadError(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -272,6 +279,7 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -290,6 +298,7 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 
 func TestRunImplementationVersionConflict(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -303,6 +312,7 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -529,6 +539,7 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 
 func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -540,6 +551,7 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -599,13 +611,11 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	call := 0
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		call++
-		if call == 1 {
-			return nil
+		if strings.Contains(p, "cleanup") {
+			return errors.New("cleanup exploded")
 		}
-		return errors.New("cleanup exploded")
+		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
@@ -647,8 +657,15 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 	if !foundCleanupError {
 		t.Error("expected EventError with message containing 'cleanup'")
 	}
-	if mock.CallCount() != 2 {
-		t.Errorf("runner should be called twice (1 story + 1 cleanup pass), got %d", mock.CallCount())
+	storyCalls, reviewCalls, cleanupCalls := countRunnerPromptKinds(mock)
+	if storyCalls != 1 {
+		t.Errorf("story runner calls = %d, want 1", storyCalls)
+	}
+	if reviewCalls != 1 {
+		t.Errorf("review runner calls = %d, want 1", reviewCalls)
+	}
+	if cleanupCalls != 1 {
+		t.Errorf("cleanup runner calls = %d, want 1", cleanupCalls)
 	}
 }
 
@@ -678,9 +695,32 @@ func TestRunImplementationSkipsCleanupWhenConfigured(t *testing.T) {
 		t.Error("EventCompleted should still be emitted when SkipCleanup is true")
 	}
 
-	if mock.CallCount() != 1 {
-		t.Errorf("runner should be called once (story only), got %d", mock.CallCount())
+	storyCalls, reviewCalls, cleanupCalls := countRunnerPromptKinds(mock)
+	if storyCalls != 1 {
+		t.Errorf("story runner calls = %d, want 1", storyCalls)
 	}
+	if reviewCalls != 1 {
+		t.Errorf("review runner calls = %d, want 1", reviewCalls)
+	}
+	if cleanupCalls != 0 {
+		t.Errorf("cleanup runner calls = %d, want 0", cleanupCalls)
+	}
+}
+
+func countRunnerPromptKinds(mock *mockRunner) (story, review, cleanup int) {
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	for _, p := range mock.calls {
+		switch {
+		case strings.Contains(p, "critical diff review"):
+			review++
+		case strings.Contains(p, "cleanup"):
+			cleanup++
+		default:
+			story++
+		}
+	}
+	return story, review, cleanup
 }
 
 func TestRunGenerateNoPRDFile(t *testing.T) {
