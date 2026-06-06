@@ -233,6 +233,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.phase = Phase(msg)
 		needsMainRebuild = true
 
+	case resumeStartMsg:
+		m.phase = msg.phase
+		if msg.prd != nil {
+			m.prd = msg.prd
+		}
+		needsMainRebuild = true
+
 	case operationErrorMsg:
 		m.err = msg.err
 		m.phase = PhaseFailed

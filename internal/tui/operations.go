@@ -29,13 +29,40 @@ func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) t
 	return func() tea.Msg {
 		if resume {
 			om.StartCheckpointResume(context.Background())
-		} else {
-			if _, err := clean.ArchivePriorState(om.cfg); err != nil {
-				return operationErrorMsg{err: fmt.Errorf("archive prior state: %w", err)}
-			}
-			om.StartNew(context.Background(), userPrompt)
+			return om.resumeStartMsg()
 		}
+		if _, err := clean.ArchivePriorState(om.cfg); err != nil {
+			return operationErrorMsg{err: fmt.Errorf("archive prior state: %w", err)}
+		}
+		om.StartNew(context.Background(), userPrompt)
 		return phaseChangeMsg(PhasePRDGeneration)
+	}
+}
+
+func (om *OperationManager) resumeStartMsg() tea.Msg {
+	p, err := prd.Load(om.cfg)
+	if err != nil {
+		return phaseChangeMsg(PhasePRDGeneration)
+	}
+	checkpoint := workflow.NewFileReviewLoop(om.cfg.WorkDir, runstate.LocalRunID).Checkpoint()
+	return resumeStartMsg{phase: resumePhase(checkpoint, p), prd: p}
+}
+
+func resumePhase(checkpoint string, p *prd.PRD) Phase {
+	switch checkpoint {
+	case runstate.CheckpointPRDReview:
+		return PhasePRDReview
+	case runstate.CheckpointImplReview:
+		return PhaseImplementationReview
+	case runstate.CheckpointFollowup:
+		return PhaseImplementation
+	case runstate.CheckpointComplete:
+		return PhaseCompleted
+	default:
+		if !p.AllCompleted() {
+			return PhaseImplementation
+		}
+		return PhasePRDReview
 	}
 }
 

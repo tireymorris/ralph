@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/prompt"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/workflow/events"
 )
@@ -88,7 +89,14 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventStoryStarted:
 		m.currentStory = e.Story
+		m.phase = PhaseImplementation
+		if m.prd == nil {
+			if p, err := prd.Load(m.cfg); err == nil {
+				m.prd = p
+			}
+		}
 		m.logger.AddLog(fmt.Sprintf("Starting: %s", e.Story.Title))
+		m.markMainScrollJump()
 
 	case events.EventStoryCompleted:
 		m.logger.AddLog(fmt.Sprintf("Completed: %s", e.Story.Title))

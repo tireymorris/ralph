@@ -1,12 +1,17 @@
 package tui
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/events"
 )
 
@@ -175,6 +180,60 @@ func TestInitResumeEmptyPromptStartsWorkflow(t *testing.T) {
 
 	if m.phase != PhasePRDGeneration {
 		t.Errorf("phase = %v, want PhasePRDGeneration", m.phase)
+	}
+}
+
+func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	p := &prd.PRD{
+		ProjectName: "Resume Test",
+		Stories: []*prd.Story{
+			{ID: "1", Title: "Done", Passes: true, Priority: 1},
+			{ID: "2", Title: "Next", Passes: false, Priority: 2},
+		},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0755); err != nil {
+		t.Fatalf("mkdir meta: %v", err)
+	}
+	meta, _ := json.Marshal(map[string]string{"checkpoint": runstate.CheckpointFollowup})
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0644); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	m := NewModel(cfg, "", false, true, false)
+	_ = m.Init()
+
+	msg := m.operationManager.StartFullOperation(true, "")()
+	newModel, _ := m.Update(msg)
+	m = newModel.(*Model)
+
+	if m.phase != PhaseImplementation {
+		t.Fatalf("phase = %v, want PhaseImplementation", m.phase)
+	}
+	if m.prd == nil || m.prd.ProjectName != "Resume Test" {
+		t.Fatalf("prd = %v, want Resume Test", m.prd)
+	}
+
+	m.width, m.height = 80, 45
+	prepMainView(m)
+	view := m.View()
+
+	if strings.Contains(view, "Generating PRD") {
+		t.Errorf("resume main pane should not show PRD generation, got %q", view)
+	}
+	if !strings.Contains(view, "1/2 stories") {
+		t.Errorf("resume main pane should show story progress, got %q", view)
+	}
+	if !strings.Contains(view, "Phase 2: Implementation") {
+		t.Errorf("resume main pane should show implementation phase, got %q", view)
 	}
 }
 

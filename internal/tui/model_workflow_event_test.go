@@ -56,6 +56,9 @@ func TestHandleWorkflowEventStoryStarted(t *testing.T) {
 	if m.currentStory != story {
 		t.Error("currentStory should be set")
 	}
+	if m.phase != PhaseImplementation {
+		t.Errorf("phase = %v, want PhaseImplementation", m.phase)
+	}
 }
 
 func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {

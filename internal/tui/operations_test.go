@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 
 	"ralph/internal/clean"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 )
 
 func TestStartFullOperationNonResumeArchivesPriorPRD(t *testing.T) {
@@ -71,6 +74,49 @@ func TestStartFullOperationResumeSkipsArchive(t *testing.T) {
 	}
 	if len(backups) != 0 {
 		t.Fatalf("resume should not create backups, got %v", backups)
+	}
+}
+
+func TestResumeStartMsgImplementationPhase(t *testing.T) {
+	t.Parallel()
+
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	p := &prd.PRD{
+		ProjectName: "Resume Test",
+		Stories: []*prd.Story{
+			{ID: "1", Title: "Done", Passes: true, Priority: 1},
+			{ID: "2", Title: "Next", Passes: false, Priority: 2},
+		},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0755); err != nil {
+		t.Fatalf("mkdir meta: %v", err)
+	}
+	meta, _ := json.Marshal(map[string]string{"checkpoint": runstate.CheckpointFollowup})
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0644); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	om := NewOperationManager(cfg)
+	defer om.Cancel()
+
+	msg := om.resumeStartMsg()
+	rsm, ok := msg.(resumeStartMsg)
+	if !ok {
+		t.Fatalf("resumeStartMsg() = %T, want resumeStartMsg", msg)
+	}
+	if rsm.phase != PhaseImplementation {
+		t.Errorf("phase = %v, want PhaseImplementation", rsm.phase)
+	}
+	if rsm.prd == nil || rsm.prd.ProjectName != "Resume Test" {
+		t.Errorf("prd = %v, want Resume Test project", rsm.prd)
 	}
 }
 
