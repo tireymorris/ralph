@@ -50,19 +50,16 @@ func (om *OperationManager) resumeStartMsg() tea.Msg {
 }
 
 func resumePhase(checkpoint string, p *prd.PRD) Phase {
-	switch checkpoint {
-	case runstate.CheckpointPRDReview:
+	switch runstate.CheckpointPhase(checkpoint, p) {
+	case runstate.PhaseReview:
 		return PhasePRDReview
-	case runstate.CheckpointImplReview:
+	case runstate.PhaseImplementationReview:
 		return PhaseImplementationReview
-	case runstate.CheckpointFollowup:
+	case runstate.PhaseFollowup, runstate.PhaseImplement:
 		return PhaseImplementation
-	case runstate.CheckpointComplete:
+	case runstate.PhaseCompleted:
 		return PhaseCompleted
 	default:
-		if !p.AllCompleted() {
-			return PhaseImplementation
-		}
 		return PhasePRDReview
 	}
 }
