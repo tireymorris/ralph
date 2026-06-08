@@ -92,13 +92,7 @@ func loadLocalPRDMeta(workDir string) localPRDMeta {
 }
 
 func localPRDStatus(p *prd.PRD, checkpoint string) (status, phase string) {
-	if checkpoint == runstate.CheckpointImplReview {
-		return runstate.StatusWaitingImplReview, "implement"
-	}
-	if len(p.Stories) == 0 {
-		return "running", "generate"
-	}
-	return "implementing", "implement"
+	return runstate.LocalPRDStatusPhase(p, checkpoint)
 }
 
 func localPRDPrompt(p *prd.PRD) string {
