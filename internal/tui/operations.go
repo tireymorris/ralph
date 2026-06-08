@@ -81,6 +81,15 @@ func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	}
 }
 
+func (om *OperationManager) ContinueImplementationReview() tea.Cmd {
+	return func() tea.Msg {
+		if err := om.Session.ContinueImplementationReview(context.Background(), om.cfg); err != nil {
+			return operationErrorMsg{err: err}
+		}
+		return nil
+	}
+}
+
 func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) tea.Cmd {
 	return func() tea.Msg {
 		if err := om.ReviseReview(context.Background(), userPrompt, critique); err != nil {

@@ -136,6 +136,23 @@ func TestImplementationReviewEnterAttemptsMissingPRD(t *testing.T) {
 	}
 }
 
+func TestContinueImplementationReviewReportsMissingPRD(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	om := NewOperationManager(cfg)
+	defer om.Cancel()
+
+	msg := om.ContinueImplementationReview()()
+	errMsg, ok := msg.(operationErrorMsg)
+	if !ok {
+		t.Fatalf("ContinueImplementationReview() msg = %T, want operationErrorMsg", msg)
+	}
+	if errMsg.err == nil || !strings.Contains(errMsg.err.Error(), "load PRD for implementation") {
+		t.Fatalf("error = %v, want load PRD for implementation", errMsg.err)
+	}
+}
+
 func TestStartImplementationReportsMissingPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
