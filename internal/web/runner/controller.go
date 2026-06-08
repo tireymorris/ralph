@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,8 +18,6 @@ import (
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
-
-var errNoPRDForImplement = errors.New("no PRD available for implementation")
 
 type RunController struct {
 	*session.Session
@@ -150,7 +147,7 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 		return
 	}
 
-	c.Driver.StartImplementation(ctx, p)
+	c.StartImplementationFromPRD(ctx, p)
 }
 
 func (c *RunController) processEvents() {
