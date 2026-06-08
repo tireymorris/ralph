@@ -58,7 +58,7 @@ func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	if err := c.Session.SubmitClarify(qas); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (c *RunController) ContinueImplementationReview(ctx context.Context) error 
 	if err := c.Session.ContinueImplementationReview(ctx, c.runConfig()); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, "implementing", "implement")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusImplementing, runstate.PhaseImplement)
 	return nil
 }
 
@@ -84,12 +84,12 @@ func (c *RunController) ReviseReview(ctx context.Context, critique string) error
 	if err := c.Session.ReviseReview(ctx, userPrompt, critique); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
 	return nil
 }
 
 func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *config.Config) {
-	_ = c.registry.UpdateStatus(c.runID, "running", "followup")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseFollowup)
 	_ = c.registry.UpdateCheckpoint(c.runID, runs.CheckpointFollowup)
 	fail := func(err error) {
 		c.EmitEvent(events.EventError{Err: err})
@@ -185,7 +185,7 @@ func (c *RunController) handleEvent(ev events.Event) {
 	c.fanOut(ev)
 	status, phase := mapEventToStatusPhase(ev)
 	if status != "" || phase != "" {
-		if run, ok := c.registry.Get(c.runID); ok && run.Status == "cancelled" {
+		if run, ok := c.registry.Get(c.runID); ok && run.Status == runstate.StatusCancelled {
 			status, phase = "", ""
 		}
 	}

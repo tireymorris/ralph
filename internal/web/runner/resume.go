@@ -46,7 +46,7 @@ func (c *RunController) ForceResume(ctx context.Context) {
 		case runs.CheckpointComplete:
 			return
 		}
-		if !p.AllCompleted() && run.Status != "waiting_review" && run.Status != runstate.StatusWaitingImplReview {
+		if !p.AllCompleted() && run.Status != runstate.StatusWaitingReview && run.Status != runstate.StatusWaitingImplReview {
 			c.StartImplementationFromPRD(ctx, p)
 			return
 		}

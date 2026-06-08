@@ -15,7 +15,14 @@ const (
 )
 
 const (
+	StatusRunning           = "running"
+	StatusWaitingClarify    = "waiting_clarify"
+	StatusWaitingReview     = "waiting_review"
 	StatusWaitingImplReview = "waiting_implementation_review"
+	StatusImplementing      = "implementing"
+	StatusCompleted         = "completed"
+	StatusFailed            = "failed"
+	StatusCancelled         = "cancelled"
 )
 
 const StopReasonDuplicateFindings = "duplicate_findings"
@@ -33,26 +40,26 @@ const (
 	PhaseCancelled            = "cancelled"
 )
 
-const CheckpointCancelled = "cancelled"
+const CheckpointCancelled = StatusCancelled
 
 func EventStatusPhase(ev events.Event) (status, phase string) {
 	switch ev.(type) {
 	case events.EventClarifyingQuestions:
-		return "waiting_clarify", PhaseClarify
+		return StatusWaitingClarify, PhaseClarify
 	case events.EventPRDGenerating, events.EventPRDRevising:
-		return "running", PhaseGenerate
+		return StatusRunning, PhaseGenerate
 	case events.EventPRDGenerated, events.EventPRDLoaded, events.EventPRDReview:
-		return "waiting_review", PhaseReview
+		return StatusWaitingReview, PhaseReview
 	case events.EventStoryStarted, events.EventStoryCompleted:
-		return "implementing", PhaseImplement
+		return StatusImplementing, PhaseImplement
 	case events.EventImplementationReview:
 		return StatusWaitingImplReview, PhaseImplementationReview
 	case events.EventCleanupStarted, events.EventCleanupCompleted:
-		return "implementing", PhaseCleanup
+		return StatusImplementing, PhaseCleanup
 	case events.EventCompleted:
-		return "completed", PhaseCompleted
+		return StatusCompleted, PhaseCompleted
 	case events.EventError:
-		return "failed", PhaseFailed
+		return StatusFailed, PhaseFailed
 	default:
 		return "", ""
 	}
@@ -96,7 +103,7 @@ func LocalPRDStatusPhase(p *prd.PRD, checkpoint string) (status, phase string) {
 		return StatusWaitingImplReview, PhaseImplementationReview
 	}
 	if p == nil || len(p.Stories) == 0 {
-		return "running", PhaseGenerate
+		return StatusRunning, PhaseGenerate
 	}
-	return "implementing", PhaseImplement
+	return StatusImplementing, PhaseImplement
 }
