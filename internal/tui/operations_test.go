@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -14,7 +16,17 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/runner"
+	"ralph/internal/shared/session"
+	"ralph/internal/workflow/events"
 )
+
+type noopRunner struct{}
+
+func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
+func (noopRunner) RunnerName() string                                          { return "noop" }
+func (noopRunner) CommandName() string                                         { return "noop" }
+func (noopRunner) IsInternalLog(string) bool                                   { return false }
 
 func TestStartFullOperationNonResumeArchivesPriorPRD(t *testing.T) {
 	t.Parallel()
@@ -150,6 +162,51 @@ func TestContinueImplementationReviewReportsMissingPRD(t *testing.T) {
 	}
 	if errMsg.err == nil || !strings.Contains(errMsg.err.Error(), "load PRD for implementation") {
 		t.Fatalf("error = %v, want load PRD for implementation", errMsg.err)
+	}
+}
+
+func TestStartImplementationFromPRDUsesSuppliedPRD(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.SkipCleanup = true
+
+	supplied := &prd.PRD{
+		ProjectName: "Supplied",
+		Stories: []*prd.Story{
+			{ID: "supplied", Title: "Use supplied story", Description: "implement supplied story", Priority: 1},
+		},
+	}
+	if err := prd.Save(cfg, supplied); err != nil {
+		t.Fatalf("Save supplied PRD: %v", err)
+	}
+
+	current := &prd.PRD{
+		ProjectName: "Current",
+		Stories: []*prd.Story{
+			{ID: "current", Title: "Current story", Description: "do not use", Priority: 1},
+		},
+	}
+
+	om := &OperationManager{Session: session.NewWithRunner(cfg, noopRunner{}), cfg: cfg}
+	defer om.Cancel()
+	om.TrackEventState(events.EventPRDGenerated{PRD: current})
+
+	msg := om.StartImplementation(supplied)()
+	if msg != nil {
+		t.Fatalf("StartImplementation(supplied) msg = %T, want nil", msg)
+	}
+
+	select {
+	case ev := <-om.EventsCh():
+		started, ok := ev.(events.EventStoryStarted)
+		if !ok {
+			t.Fatalf("first event = %T, want EventStoryStarted", ev)
+		}
+		if started.Story.ID != "supplied" {
+			t.Fatalf("started story ID = %q, want supplied", started.Story.ID)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for implementation to start")
 	}
 }
 
