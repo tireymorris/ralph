@@ -129,32 +129,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.rebuildMainScrollContent()
 					return m, nil
 				case "enter":
-					if m.prd != nil {
-						critique := strings.TrimSpace(m.critiqueInput.Value())
-						m.critiqueActive = false
-						m.critiqueInput.SetValue("")
-						m.scrollPane = focusMain
-						if critique != "" {
-							m.revisingPRD = true
-							m.phase = PhasePRDGeneration
-							if m.width > 0 && m.height > 0 {
-								m.applyLayout(m.width, m.height)
-							}
-							m.rebuildMainScrollContent()
-							m.mainPane.GotoTop()
-							return m, tea.Batch(
-								m.operationManager.StartCritiqueRevision(m.prompt, critique),
-								m.operationManager.ListenForEvents(),
-							)
-						}
-						m.phase = PhaseImplementation
+					critique := strings.TrimSpace(m.critiqueInput.Value())
+					m.critiqueActive = false
+					m.critiqueInput.SetValue("")
+					m.scrollPane = focusMain
+					if critique != "" {
+						m.revisingPRD = true
+						m.phase = PhasePRDGeneration
 						if m.width > 0 && m.height > 0 {
 							m.applyLayout(m.width, m.height)
 						}
 						m.rebuildMainScrollContent()
 						m.mainPane.GotoTop()
-						return m, m.operationManager.StartImplementation(m.prd)
+						return m, tea.Batch(
+							m.operationManager.StartCritiqueRevision(m.prompt, critique),
+							m.operationManager.ListenForEvents(),
+						)
 					}
+					m.phase = PhaseImplementation
+					if m.width > 0 && m.height > 0 {
+						m.applyLayout(m.width, m.height)
+					}
+					m.rebuildMainScrollContent()
+					m.mainPane.GotoTop()
+					return m, tea.Batch(
+						m.operationManager.ApproveReview(),
+						m.operationManager.ListenForEvents(),
+					)
 				default:
 					var cmd tea.Cmd
 					m.critiqueInput, cmd = m.critiqueInput.Update(msg)
@@ -172,16 +173,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 			}
 			if msg.String() == "enter" {
-				if m.prd != nil {
-					m.phase = PhaseImplementation
-					m.scrollPane = focusMain
-					if m.width > 0 && m.height > 0 {
-						m.applyLayout(m.width, m.height)
-					}
-					m.rebuildMainScrollContent()
-					m.mainPane.GotoTop()
-					return m, m.operationManager.StartImplementation(m.prd)
+				m.phase = PhaseImplementation
+				m.scrollPane = focusMain
+				if m.width > 0 && m.height > 0 {
+					m.applyLayout(m.width, m.height)
 				}
+				m.rebuildMainScrollContent()
+				m.mainPane.GotoTop()
+				return m, tea.Batch(
+					m.operationManager.ApproveReview(),
+					m.operationManager.ListenForEvents(),
+				)
 			}
 		}
 

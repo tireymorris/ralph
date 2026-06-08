@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/workflow/events"
 )
@@ -91,7 +90,9 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.currentStory = e.Story
 		m.phase = PhaseImplementation
 		if m.prd == nil {
-			if p, err := prd.Load(m.cfg); err == nil {
+			if p, err := m.operationManager.PRDForImplementation(m.cfg); err != nil {
+				m.logger.AddLog(fmt.Sprintf("Failed to load PRD: %v", err))
+			} else {
 				m.prd = p
 			}
 		}
