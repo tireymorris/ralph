@@ -10,7 +10,6 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
-	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/session"
@@ -130,20 +129,9 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 	close(outputCh)
 	<-done
 
-	p, err := prd.Load(&runCfg)
+	p, err := c.ResetPRDForImplementation(&runCfg)
 	if err != nil {
-		fail(fmt.Errorf("load PRD: %w", err))
-		return
-	}
-	p.UnmarkAllStories()
-	if err := prd.Save(&runCfg, p); err != nil {
-		fail(fmt.Errorf("save PRD: %w", err))
-		return
-	}
-
-	p, err = prd.Load(&runCfg)
-	if err != nil {
-		fail(fmt.Errorf("reload PRD: %w", err))
+		fail(err)
 		return
 	}
 

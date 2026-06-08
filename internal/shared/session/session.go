@@ -42,6 +42,22 @@ func (s *Session) StartImplementationFromPRD(ctx context.Context, p *prd.PRD) {
 	s.StartImplementation(ctx, p)
 }
 
+func (s *Session) ResetPRDForImplementation(cfg *config.Config) (*prd.PRD, error) {
+	p, err := prd.Load(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("load PRD for implementation: %w", err)
+	}
+	p.UnmarkAllStories()
+	if err := prd.Save(cfg, p); err != nil {
+		return nil, fmt.Errorf("save PRD for implementation: %w", err)
+	}
+	p, err = prd.Load(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("load PRD for implementation: %w", err)
+	}
+	return p, nil
+}
+
 func (s *Session) ReviseReview(ctx context.Context, userPrompt, critique string) error {
 	s.StartCritiqueRevision(ctx, userPrompt, critique)
 	return nil
