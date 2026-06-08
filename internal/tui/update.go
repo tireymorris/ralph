@@ -113,7 +113,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.rebuildMainScrollContent()
 				m.mainPane.GotoTop()
 				return m, tea.Batch(
-					m.operationManager.StartImplementation(m.prd),
+					m.operationManager.ContinueImplementationReview(),
 					m.operationManager.ListenForEvents(),
 				)
 			}
