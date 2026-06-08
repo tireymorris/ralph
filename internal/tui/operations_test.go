@@ -5,7 +5,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/clean"
 	"ralph/internal/shared/config"
@@ -117,6 +120,36 @@ func TestResumeStartMsgImplementationPhase(t *testing.T) {
 	}
 	if rsm.prd == nil || rsm.prd.ProjectName != "Resume Test" {
 		t.Errorf("prd = %v, want Resume Test project", rsm.prd)
+	}
+}
+
+func TestImplementationReviewEnterAttemptsMissingPRD(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	m := NewModel(cfg, "goal", false, false, false)
+	m.phase = PhaseImplementationReview
+	m.prd = nil
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected command to report missing PRD")
+	}
+}
+
+func TestStartImplementationReportsMissingPRD(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	om := NewOperationManager(cfg)
+	defer om.Cancel()
+
+	msg := om.StartImplementation(nil)()
+	errMsg, ok := msg.(operationErrorMsg)
+	if !ok {
+		t.Fatalf("StartImplementation(nil) msg = %T, want operationErrorMsg", msg)
+	}
+	if errMsg.err == nil || !strings.Contains(errMsg.err.Error(), "load PRD for implementation") {
+		t.Fatalf("error = %v, want load PRD for implementation", errMsg.err)
 	}
 }
 
