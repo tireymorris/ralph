@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
@@ -293,6 +294,64 @@ func TestForceResumeRestartsFromPromptWithoutPRD(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatal("run did not restart clarify phase after ForceResume without PRD")
+}
+
+func TestForceResumeIgnoresCachedPRDWhenDiskPRDIsMissing(t *testing.T) {
+	workDir := t.TempDir()
+	reg := runs.NewRegistry()
+	run := &runs.Run{
+		ID:        "run-stale-cache",
+		WorkDir:   workDir,
+		Prompt:    "",
+		Status:    "running",
+		Phase:     "implement",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		PRDPath:   "prd.json",
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+
+	ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
+	t.Cleanup(ctrl.Cancel)
+	ctrl.TrackEventState(events.EventPRDGenerated{PRD: testPRD("cached")})
+
+	ch, unsub := ctrl.Subscribe()
+	defer unsub()
+
+	ctrl.ForceResume(context.Background())
+
+	select {
+	case ev := <-ch:
+		errEv, ok := ev.(events.EventError)
+		if !ok {
+			t.Fatalf("event = %T, want EventError", ev)
+		}
+		if errEv.Err == nil || !strings.Contains(errEv.Err.Error(), "cannot resume") {
+			t.Fatalf("error = %v, want cannot resume", errEv.Err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for EventError")
+	}
+}
+
+func testPRD(name string) *prd.PRD {
+	return &prd.PRD{
+		Version:     1,
+		ProjectName: name,
+		Stories: []*prd.Story{{
+			ID:                 "s1",
+			Title:              "Story",
+			Description:        "Do it",
+			AcceptanceCriteria: []string{"AC"},
+			Priority:           1,
+		}},
+	}
 }
 
 func TestForceResumeEmitsErrorWithoutPRDOrPrompt(t *testing.T) {

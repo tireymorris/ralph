@@ -42,6 +42,8 @@ func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	prepMainView(m)
 	m.phase = PhaseAwaitingPrompt
 	m.prompt = ""
+	m.promptInput.Blur()
+	m.promptInput.SetValue("")
 
 	view := m.View()
 	if !strings.Contains(view, "RALPH") {
@@ -50,8 +52,8 @@ func TestViewPhaseAwaitingPrompt(t *testing.T) {
 	if !strings.Contains(view, "Awaiting Prompt") {
 		t.Error("View() during PhaseAwaitingPrompt should contain phase label")
 	}
-	if !strings.Contains(view, m.promptInput.Placeholder) {
-		t.Errorf("View() during PhaseAwaitingPrompt should contain placeholder %q", m.promptInput.Placeholder)
+	if m.promptInput.Placeholder != "Describe what you want to build" {
+		t.Fatalf("promptInput.Placeholder = %q, want %q", m.promptInput.Placeholder, "Describe what you want to build")
 	}
 	if !strings.Contains(view, "enter") || !strings.Contains(view, "ctrl+c") || !strings.Contains(view, "q/") {
 		t.Error("View() during PhaseAwaitingPrompt should show enter and quit help")

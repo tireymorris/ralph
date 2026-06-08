@@ -34,24 +34,24 @@ func (c *RunController) ForceResume(ctx context.Context) {
 	p, err := prd.Load(runCfg)
 	if err == nil {
 		if run.Status == runstate.StatusWaitingImplReview {
-			c.Driver.StartImplementation(ctx, p)
+			c.StartImplementationFromPRD(ctx, p)
 			return
 		}
 		switch run.Checkpoint {
 		case runs.CheckpointPRDReview:
-			c.Driver.StartCheckpointResume(ctx)
+			c.StartCheckpointResume(ctx)
 			return
 		case runs.CheckpointImplReview, runs.CheckpointFollowup:
-			c.Driver.StartImplementation(ctx, p)
+			c.StartImplementationFromPRD(ctx, p)
 			return
 		case runs.CheckpointComplete:
 			return
 		}
-		if !p.AllCompleted() && run.Status != "waiting_review" && run.Status != runstate.StatusWaitingImplReview {
-			c.Driver.StartImplementation(ctx, p)
+		if !p.AllCompleted() && run.Status != runstate.StatusWaitingReview && run.Status != runstate.StatusWaitingImplReview {
+			c.StartImplementationFromPRD(ctx, p)
 			return
 		}
-		c.Driver.StartCheckpointResume(ctx)
+		c.StartCheckpointResume(ctx)
 		return
 	}
 	if run.Prompt != "" {

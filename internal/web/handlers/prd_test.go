@@ -55,7 +55,9 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
 	}
 	var body struct {
 		Stories []struct {
-			ID string `json:"id"`
+			ID                 string   `json:"id"`
+			AcceptanceCriteria []string `json:"acceptance_criteria"`
+			Priority           int      `json:"priority"`
 		} `json:"stories"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
@@ -66,5 +68,11 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
 	}
 	if body.Stories[0].ID != "s1" {
 		t.Fatalf("story id = %q, want s1", body.Stories[0].ID)
+	}
+	if len(body.Stories[0].AcceptanceCriteria) != 1 || body.Stories[0].AcceptanceCriteria[0] != "c" {
+		t.Fatalf("acceptance_criteria = %#v, want [c]", body.Stories[0].AcceptanceCriteria)
+	}
+	if body.Stories[0].Priority != 1 {
+		t.Fatalf("priority = %d, want 1", body.Stories[0].Priority)
 	}
 }

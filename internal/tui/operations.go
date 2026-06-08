@@ -10,19 +10,20 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/session"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
 type OperationManager struct {
-	*workflow.Driver
+	*session.Session
 	cfg *config.Config
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
-	d := workflow.NewDriver(cfg)
-	d.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
-	return &OperationManager{Driver: d, cfg: cfg}
+	s := session.New(cfg)
+	s.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+	return &OperationManager{Session: s, cfg: cfg}
 }
 
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
@@ -49,33 +50,57 @@ func (om *OperationManager) resumeStartMsg() tea.Msg {
 }
 
 func resumePhase(checkpoint string, p *prd.PRD) Phase {
-	switch checkpoint {
-	case runstate.CheckpointPRDReview:
+	switch runstate.CheckpointPhase(checkpoint, p) {
+	case runstate.PhaseReview:
 		return PhasePRDReview
-	case runstate.CheckpointImplReview:
+	case runstate.PhaseImplementationReview:
 		return PhaseImplementationReview
-	case runstate.CheckpointFollowup:
+	case runstate.PhaseFollowup, runstate.PhaseImplement:
 		return PhaseImplementation
-	case runstate.CheckpointComplete:
+	case runstate.PhaseCompleted:
 		return PhaseCompleted
 	default:
-		if !p.AllCompleted() {
-			return PhaseImplementation
-		}
 		return PhasePRDReview
 	}
 }
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {
 	return func() tea.Msg {
-		om.Driver.StartImplementation(context.Background(), p)
+		if p == nil {
+			var err error
+			p, err = om.PRDForImplementation(om.cfg)
+			if err != nil {
+				return operationErrorMsg{err: err}
+			}
+		}
+		om.StartImplementationFromPRD(context.Background(), p)
+		return nil
+	}
+}
+
+func (om *OperationManager) ApproveReview() tea.Cmd {
+	return func() tea.Msg {
+		if err := om.Session.ApproveReview(context.Background(), om.cfg); err != nil {
+			return operationErrorMsg{err: err}
+		}
+		return nil
+	}
+}
+
+func (om *OperationManager) ContinueImplementationReview() tea.Cmd {
+	return func() tea.Msg {
+		if err := om.Session.ContinueImplementationReview(context.Background(), om.cfg); err != nil {
+			return operationErrorMsg{err: err}
+		}
 		return nil
 	}
 }
 
 func (om *OperationManager) StartCritiqueRevision(userPrompt, critique string) tea.Cmd {
 	return func() tea.Msg {
-		om.Driver.StartCritiqueRevision(context.Background(), userPrompt, critique)
+		if err := om.ReviseReview(context.Background(), userPrompt, critique); err != nil {
+			return operationErrorMsg{err: err}
+		}
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }

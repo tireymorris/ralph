@@ -73,11 +73,18 @@ export interface PRDStory {
   id: string;
   title: string;
   description: string;
+  acceptance_criteria: string[];
+  priority: number;
+  depends_on?: string[];
   passes: boolean;
 }
 
 export interface PRDDocument {
   version: number;
   project_name: string;
+  branch_name?: string;
+  context?: string;
+  test_spec?: string;
+  test_command?: string;
   stories: PRDStory[];
 }

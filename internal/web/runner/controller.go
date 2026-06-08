@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,18 +10,16 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
-	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/session"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
-var errNoPRDForImplement = errors.New("no PRD available for implementation")
-
 type RunController struct {
-	*workflow.Driver
+	*session.Session
 	cfg      *config.Config
 	registry *runs.Registry
 	runID    string
@@ -39,59 +36,42 @@ func (c *RunController) SetOnTerminal(fn func()) {
 }
 
 func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID string, r runner.RunnerInterface) *RunController {
-	d := workflow.NewDriverWithRunner(cfg, r)
+	s := session.NewWithRunner(cfg, r)
 
 	c := &RunController{
-		Driver:      d,
+		Session:     s,
 		cfg:         cfg,
 		registry:    registry,
 		runID:       runID,
 		subscribers: make(map[chan events.Event]struct{}),
 	}
-	d.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
+	s.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
 	go c.processEvents()
 	return c
 }
 
 func (c *RunController) StartNew(ctx context.Context, userPrompt string) {
-	c.Driver.StartNew(ctx, userPrompt)
+	c.Session.StartNew(ctx, userPrompt)
 }
 
 func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
-	if err := c.Driver.SubmitClarify(qas); err != nil {
+	if err := c.Session.SubmitClarify(qas); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
 	return nil
 }
 
 func (c *RunController) ContinueImplementationReview(ctx context.Context) error {
-	p := c.CurrentPRD()
-	if p == nil {
-		runCfg := c.runConfig()
-		loaded, err := prd.Load(runCfg)
-		if err != nil {
-			return fmt.Errorf("load PRD for implementation: %w", err)
-		}
-		p = loaded
+	if err := c.Session.ContinueImplementationReview(ctx, c.runConfig()); err != nil {
+		return err
 	}
-	c.Driver.StartImplementation(ctx, p)
-	_ = c.registry.UpdateStatus(c.runID, "implementing", "implement")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusImplementing, runstate.PhaseImplement)
 	return nil
 }
 
 func (c *RunController) ApproveReview(ctx context.Context) error {
-	p := c.CurrentPRD()
-	if p == nil {
-		runCfg := c.runConfig()
-		loaded, err := prd.Load(runCfg)
-		if err != nil {
-			return fmt.Errorf("load PRD for implementation: %w", err)
-		}
-		p = loaded
-	}
-	c.Driver.StartImplementation(ctx, p)
-	return nil
+	return c.Session.ApproveReview(ctx, c.runConfig())
 }
 
 func (c *RunController) ReviseReview(ctx context.Context, critique string) error {
@@ -101,13 +81,15 @@ func (c *RunController) ReviseReview(ctx context.Context, critique string) error
 			userPrompt = run.Prompt
 		}
 	}
-	c.Driver.StartCritiqueRevision(ctx, userPrompt, critique)
-	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
+	if err := c.Session.ReviseReview(ctx, userPrompt, critique); err != nil {
+		return err
+	}
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
 	return nil
 }
 
 func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *config.Config) {
-	_ = c.registry.UpdateStatus(c.runID, "running", "followup")
+	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseFollowup)
 	_ = c.registry.UpdateCheckpoint(c.runID, runs.CheckpointFollowup)
 	fail := func(err error) {
 		c.EmitEvent(events.EventError{Err: err})
@@ -147,24 +129,13 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 	close(outputCh)
 	<-done
 
-	p, err := prd.Load(&runCfg)
+	p, err := c.ResetPRDForImplementation(&runCfg)
 	if err != nil {
-		fail(fmt.Errorf("load PRD: %w", err))
-		return
-	}
-	p.UnmarkAllStories()
-	if err := prd.Save(&runCfg, p); err != nil {
-		fail(fmt.Errorf("save PRD: %w", err))
+		fail(err)
 		return
 	}
 
-	p, err = prd.Load(&runCfg)
-	if err != nil {
-		fail(fmt.Errorf("reload PRD: %w", err))
-		return
-	}
-
-	c.Driver.StartImplementation(ctx, p)
+	c.StartImplementationFromPRD(ctx, p)
 }
 
 func (c *RunController) processEvents() {
@@ -212,16 +183,16 @@ func (c *RunController) fanOut(ev events.Event) {
 func (c *RunController) handleEvent(ev events.Event) {
 	c.TrackEventState(ev)
 	c.fanOut(ev)
-	status, phase := mapEventToStatusPhase(ev)
+	status, phase := workflow.EventStatusPhase(ev)
 	if status != "" || phase != "" {
-		if run, ok := c.registry.Get(c.runID); ok && run.Status == "cancelled" {
+		if run, ok := c.registry.Get(c.runID); ok && run.Status == runstate.StatusCancelled {
 			status, phase = "", ""
 		}
 	}
 	if status != "" || phase != "" {
 		_ = c.registry.UpdateStatus(c.runID, status, phase)
 	}
-	if checkpoint := mapEventToCheckpoint(ev); checkpoint != "" {
+	if checkpoint := workflow.EventCheckpoint(ev); checkpoint != "" {
 		_ = c.registry.UpdateCheckpoint(c.runID, checkpoint)
 	}
 	_ = appendRunEvent(c.cfg.WorkDir, c.runID, ev)
@@ -232,42 +203,6 @@ func (c *RunController) handleEvent(ev events.Event) {
 		if fn != nil {
 			fn()
 		}
-	}
-}
-
-func mapEventToCheckpoint(ev events.Event) string {
-	switch ev.(type) {
-	case events.EventPRDReview:
-		return runs.CheckpointPRDReview
-	case events.EventImplementationReviewStarted, events.EventImplementationReview, events.EventImplementationReviewCompleted:
-		return runs.CheckpointImplReview
-	case events.EventCompleted:
-		return runs.CheckpointComplete
-	default:
-		return ""
-	}
-}
-
-func mapEventToStatusPhase(ev events.Event) (status, phase string) {
-	switch ev.(type) {
-	case events.EventClarifyingQuestions:
-		return "waiting_clarify", "clarify"
-	case events.EventPRDGenerating, events.EventPRDRevising:
-		return "running", "generate"
-	case events.EventPRDGenerated, events.EventPRDLoaded, events.EventPRDReview:
-		return "waiting_review", "review"
-	case events.EventStoryStarted, events.EventStoryCompleted:
-		return "implementing", "implement"
-	case events.EventImplementationReview:
-		return runstate.StatusWaitingImplReview, "implement"
-	case events.EventCleanupStarted, events.EventCleanupCompleted:
-		return "implementing", "cleanup"
-	case events.EventCompleted:
-		return "completed", "complete"
-	case events.EventError:
-		return "failed", "failed"
-	default:
-		return "", ""
 	}
 }
 

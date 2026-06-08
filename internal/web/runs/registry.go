@@ -175,7 +175,7 @@ func (r *Registry) List() []*Run {
 
 func IsTerminalStatus(status string) bool {
 	switch status {
-	case "completed", "failed", "cancelled":
+	case runstate.StatusCompleted, runstate.StatusFailed, runstate.StatusCancelled:
 		return true
 	default:
 		return false
@@ -183,11 +183,11 @@ func IsTerminalStatus(status string) bool {
 }
 
 var activeRunStatuses = map[string]bool{
-	"running":                        true,
-	"waiting_clarify":                true,
-	"waiting_review":                 true,
+	runstate.StatusRunning:           true,
+	runstate.StatusWaitingClarify:    true,
+	runstate.StatusWaitingReview:     true,
 	runstate.StatusWaitingImplReview: true,
-	"implementing":                   true,
+	runstate.StatusImplementing:      true,
 }
 
 func (r *Registry) ActiveForWorkDir(workDir string) (*Run, bool) {

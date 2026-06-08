@@ -7,6 +7,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/web/runs"
+	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
@@ -73,7 +74,7 @@ func TestMapEventToStatusPhase_CleanupEvents(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			status, phase := mapEventToStatusPhase(tc.ev)
+			status, phase := workflow.EventStatusPhase(tc.ev)
 			if status != "implementing" || phase != "cleanup" {
 				t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
 			}
