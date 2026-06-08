@@ -1,9 +1,6 @@
 package runstate
 
-import (
-	"ralph/internal/shared/prd"
-	"ralph/internal/workflow/events"
-)
+import "ralph/internal/shared/prd"
 
 const LocalRunID = "prd-local"
 
@@ -35,48 +32,12 @@ const (
 	PhaseImplementationReview = "implementation_review"
 	PhaseFollowup             = "followup"
 	PhaseCleanup              = "cleanup"
-	PhaseCompleted            = "completed"
+	PhaseCompleted            = "complete"
 	PhaseFailed               = "failed"
 	PhaseCancelled            = "cancelled"
 )
 
 const CheckpointCancelled = StatusCancelled
-
-func EventStatusPhase(ev events.Event) (status, phase string) {
-	switch ev.(type) {
-	case events.EventClarifyingQuestions:
-		return StatusWaitingClarify, PhaseClarify
-	case events.EventPRDGenerating, events.EventPRDRevising:
-		return StatusRunning, PhaseGenerate
-	case events.EventPRDGenerated, events.EventPRDLoaded, events.EventPRDReview:
-		return StatusWaitingReview, PhaseReview
-	case events.EventStoryStarted, events.EventStoryCompleted:
-		return StatusImplementing, PhaseImplement
-	case events.EventImplementationReview:
-		return StatusWaitingImplReview, PhaseImplementationReview
-	case events.EventCleanupStarted, events.EventCleanupCompleted:
-		return StatusImplementing, PhaseCleanup
-	case events.EventCompleted:
-		return StatusCompleted, PhaseCompleted
-	case events.EventError:
-		return StatusFailed, PhaseFailed
-	default:
-		return "", ""
-	}
-}
-
-func EventCheckpoint(ev events.Event) string {
-	switch ev.(type) {
-	case events.EventPRDReview:
-		return CheckpointPRDReview
-	case events.EventImplementationReviewStarted, events.EventImplementationReview, events.EventImplementationReviewCompleted:
-		return CheckpointImplReview
-	case events.EventCompleted:
-		return CheckpointComplete
-	default:
-		return ""
-	}
-}
 
 func CheckpointPhase(checkpoint string, p *prd.PRD) string {
 	switch checkpoint {
@@ -100,7 +61,7 @@ func CheckpointPhase(checkpoint string, p *prd.PRD) string {
 
 func LocalPRDStatusPhase(p *prd.PRD, checkpoint string) (status, phase string) {
 	if checkpoint == CheckpointImplReview {
-		return StatusWaitingImplReview, PhaseImplementationReview
+		return StatusWaitingImplReview, PhaseImplement
 	}
 	if p == nil || len(p.Stories) == 0 {
 		return StatusRunning, PhaseGenerate

@@ -183,7 +183,7 @@ func (c *RunController) fanOut(ev events.Event) {
 func (c *RunController) handleEvent(ev events.Event) {
 	c.TrackEventState(ev)
 	c.fanOut(ev)
-	status, phase := runstate.EventStatusPhase(ev)
+	status, phase := workflow.EventStatusPhase(ev)
 	if status != "" || phase != "" {
 		if run, ok := c.registry.Get(c.runID); ok && run.Status == runstate.StatusCancelled {
 			status, phase = "", ""
@@ -192,7 +192,7 @@ func (c *RunController) handleEvent(ev events.Event) {
 	if status != "" || phase != "" {
 		_ = c.registry.UpdateStatus(c.runID, status, phase)
 	}
-	if checkpoint := runstate.EventCheckpoint(ev); checkpoint != "" {
+	if checkpoint := workflow.EventCheckpoint(ev); checkpoint != "" {
 		_ = c.registry.UpdateCheckpoint(c.runID, checkpoint)
 	}
 	_ = appendRunEvent(c.cfg.WorkDir, c.runID, ev)

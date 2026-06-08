@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
@@ -30,7 +31,7 @@ func (c *RunController) ForceResume(ctx context.Context) {
 	}
 
 	runCfg := c.runConfig()
-	p, err := c.PRDForImplementation(runCfg)
+	p, err := prd.Load(runCfg)
 	if err == nil {
 		if run.Status == runstate.StatusWaitingImplReview {
 			c.StartImplementationFromPRD(ctx, p)

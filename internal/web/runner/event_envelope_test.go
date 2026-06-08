@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
-	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
+	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
@@ -74,7 +74,7 @@ func TestMapEventToStatusPhase_CleanupEvents(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			status, phase := runstate.EventStatusPhase(tc.ev)
+			status, phase := workflow.EventStatusPhase(tc.ev)
 			if status != "implementing" || phase != "cleanup" {
 				t.Errorf("got (%q, %q), want (%q, %q)", status, phase, "implementing", "cleanup")
 			}
@@ -114,11 +114,11 @@ func TestControllerHandlesCleanupEventsWithoutPanic(t *testing.T) {
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
 		got, ok := reg.Get(run.ID)
-		if ok && got.Status == "completed" && got.Phase == "completed" {
+		if ok && got.Status == "completed" && got.Phase == "complete" {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 	got, _ := reg.Get(run.ID)
-	t.Fatalf("expected status=completed phase=completed, got status=%q phase=%q", got.Status, got.Phase)
+	t.Fatalf("expected status=completed phase=complete, got status=%q phase=%q", got.Status, got.Phase)
 }
