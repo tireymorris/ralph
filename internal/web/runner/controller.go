@@ -14,6 +14,7 @@ import (
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/session"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
@@ -22,7 +23,7 @@ import (
 var errNoPRDForImplement = errors.New("no PRD available for implementation")
 
 type RunController struct {
-	*workflow.Driver
+	*session.Session
 	cfg      *config.Config
 	registry *runs.Registry
 	runID    string
@@ -39,26 +40,26 @@ func (c *RunController) SetOnTerminal(fn func()) {
 }
 
 func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID string, r runner.RunnerInterface) *RunController {
-	d := workflow.NewDriverWithRunner(cfg, r)
+	s := session.NewWithRunner(cfg, r)
 
 	c := &RunController{
-		Driver:      d,
+		Session:     s,
 		cfg:         cfg,
 		registry:    registry,
 		runID:       runID,
 		subscribers: make(map[chan events.Event]struct{}),
 	}
-	d.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
+	s.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
 	go c.processEvents()
 	return c
 }
 
 func (c *RunController) StartNew(ctx context.Context, userPrompt string) {
-	c.Driver.StartNew(ctx, userPrompt)
+	c.Session.StartNew(ctx, userPrompt)
 }
 
 func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
-	if err := c.Driver.SubmitClarify(qas); err != nil {
+	if err := c.Session.SubmitClarify(qas); err != nil {
 		return err
 	}
 	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
@@ -66,32 +67,15 @@ func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
 }
 
 func (c *RunController) ContinueImplementationReview(ctx context.Context) error {
-	p := c.CurrentPRD()
-	if p == nil {
-		runCfg := c.runConfig()
-		loaded, err := prd.Load(runCfg)
-		if err != nil {
-			return fmt.Errorf("load PRD for implementation: %w", err)
-		}
-		p = loaded
+	if err := c.Session.ContinueImplementationReview(ctx, c.runConfig()); err != nil {
+		return err
 	}
-	c.Driver.StartImplementation(ctx, p)
 	_ = c.registry.UpdateStatus(c.runID, "implementing", "implement")
 	return nil
 }
 
 func (c *RunController) ApproveReview(ctx context.Context) error {
-	p := c.CurrentPRD()
-	if p == nil {
-		runCfg := c.runConfig()
-		loaded, err := prd.Load(runCfg)
-		if err != nil {
-			return fmt.Errorf("load PRD for implementation: %w", err)
-		}
-		p = loaded
-	}
-	c.Driver.StartImplementation(ctx, p)
-	return nil
+	return c.Session.ApproveReview(ctx, c.runConfig())
 }
 
 func (c *RunController) ReviseReview(ctx context.Context, critique string) error {
@@ -101,7 +85,9 @@ func (c *RunController) ReviseReview(ctx context.Context, critique string) error
 			userPrompt = run.Prompt
 		}
 	}
-	c.Driver.StartCritiqueRevision(ctx, userPrompt, critique)
+	if err := c.Session.ReviseReview(ctx, userPrompt, critique); err != nil {
+		return err
+	}
 	_ = c.registry.UpdateStatus(c.runID, "running", "generate")
 	return nil
 }
