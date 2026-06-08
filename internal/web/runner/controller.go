@@ -219,39 +219,11 @@ func (c *RunController) handleEvent(ev events.Event) {
 }
 
 func mapEventToCheckpoint(ev events.Event) string {
-	switch ev.(type) {
-	case events.EventPRDReview:
-		return runs.CheckpointPRDReview
-	case events.EventImplementationReviewStarted, events.EventImplementationReview, events.EventImplementationReviewCompleted:
-		return runs.CheckpointImplReview
-	case events.EventCompleted:
-		return runs.CheckpointComplete
-	default:
-		return ""
-	}
+	return runstate.EventCheckpoint(ev)
 }
 
 func mapEventToStatusPhase(ev events.Event) (status, phase string) {
-	switch ev.(type) {
-	case events.EventClarifyingQuestions:
-		return "waiting_clarify", "clarify"
-	case events.EventPRDGenerating, events.EventPRDRevising:
-		return "running", "generate"
-	case events.EventPRDGenerated, events.EventPRDLoaded, events.EventPRDReview:
-		return "waiting_review", "review"
-	case events.EventStoryStarted, events.EventStoryCompleted:
-		return "implementing", "implement"
-	case events.EventImplementationReview:
-		return runstate.StatusWaitingImplReview, "implement"
-	case events.EventCleanupStarted, events.EventCleanupCompleted:
-		return "implementing", "cleanup"
-	case events.EventCompleted:
-		return "completed", "complete"
-	case events.EventError:
-		return "failed", "failed"
-	default:
-		return "", ""
-	}
+	return runstate.EventStatusPhase(ev)
 }
 
 func appendRunEvent(workDir, runID string, ev events.Event) error {

@@ -113,11 +113,11 @@ func TestControllerHandlesCleanupEventsWithoutPanic(t *testing.T) {
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
 		got, ok := reg.Get(run.ID)
-		if ok && got.Status == "completed" && got.Phase == "complete" {
+		if ok && got.Status == "completed" && got.Phase == "completed" {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 	got, _ := reg.Get(run.ID)
-	t.Fatalf("expected status=completed phase=complete, got status=%q phase=%q", got.Status, got.Phase)
+	t.Fatalf("expected status=completed phase=completed, got status=%q phase=%q", got.Status, got.Phase)
 }
