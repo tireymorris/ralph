@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"ralph/internal/prompt"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
@@ -17,6 +19,46 @@ func (e *Executor) SetReviewLoop(runID string, updater ReviewLoopUpdater) {
 }
 
 func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
+	for {
+		blocked, err = e.runImplementationReviewOnce(ctx, p)
+		if err == nil && !blocked {
+			e.recoveryAttempts = 0
+			return false, nil
+		}
+
+		reason := prompt.RecoveryReasonReviewFindings
+		errMsg := ""
+		var findings []ImplementationFinding
+		if err != nil && isDuplicateFindingsError(err) {
+			reason = prompt.RecoveryReasonDuplicateFindings
+			errMsg = err.Error()
+			findings, _ = e.loadPendingFindings()
+		} else if blocked {
+			findings = e.pendingReviewFindings
+		} else if err != nil {
+			return false, err
+		}
+
+		recovered, recErr := e.recoverFromReviewFailure(ctx, p, reason, errMsg, findings)
+		if recErr != nil {
+			return blocked, recErr
+		}
+		if !recovered {
+			if e.recoveryAttemptsSnapshot() >= constants.MaxRecoveryAttempts {
+				if err != nil {
+					baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
+					baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
+					_ = e.applyReviewLoop(baseUpdate)
+					return false, fmt.Errorf("implementation review: %s", runstate.StopReasonRecoveryExhausted)
+				}
+				return blocked, nil
+			}
+			continue
+		}
+	}
+}
+
+func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
 	iteration, prevFingerprint, elapsedMs, prevFilesHash := e.reviewLoopSnapshot()
 	iteration++
 
@@ -30,12 +72,8 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 	e.emit(EventImplementationReviewStarted{Iteration: iteration})
 
 	if len(changed) > 0 && prevFilesHash != "" && filesHash == prevFilesHash && prevFingerprint != "" {
-		baseUpdate := e.implReviewLoopUpdate(iteration, prevFingerprint, elapsedMs, filesHash)
-		baseUpdate.StopReason = StopReasonDuplicateFindings
-		_ = e.applyReviewLoop(baseUpdate)
-		stopErr := fmt.Errorf("implementation review: %s", StopReasonDuplicateFindings)
-		e.emit(EventError{Err: stopErr})
-		return false, stopErr
+		_ = e.applyReviewLoop(e.implReviewLoopUpdate(iteration, prevFingerprint, elapsedMs, filesHash))
+		return false, duplicateFindingsError()
 	}
 
 	start := time.Now()
@@ -56,21 +94,21 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 	fingerprint := review.Fingerprint(result.Findings)
 	baseUpdate := e.implReviewLoopUpdate(iteration, fingerprint, elapsedMs, filesHash)
 	if prevFingerprint != "" && fingerprint != "" && fingerprint == prevFingerprint {
-		baseUpdate.StopReason = StopReasonDuplicateFindings
 		_ = e.applyReviewLoop(baseUpdate)
-		stopErr := fmt.Errorf("implementation review: %s", StopReasonDuplicateFindings)
-		e.emit(EventError{Err: stopErr})
-		return false, stopErr
+		return false, duplicateFindingsError()
 	}
 
 	baseUpdate.LastReviewTranscriptPath = result.LastReviewTranscriptPath
 	_ = e.applyReviewLoop(baseUpdate)
+	e.lastReviewTranscriptPath = result.LastReviewTranscriptPath
 
 	if len(result.Findings) > 0 {
+		e.pendingReviewFindings = result.Findings
 		e.emit(EventImplementationReview{Findings: result.Findings})
 		return true, nil
 	}
 
+	e.pendingReviewFindings = nil
 	e.emit(EventImplementationReviewCompleted{Iteration: iteration, Clean: true})
 	return false, nil
 }
@@ -83,10 +121,18 @@ func (e *Executor) reviewLoopSnapshot() (iteration int, fingerprint string, elap
 }
 
 func (e *Executor) applyReviewLoop(u ReviewLoopUpdate) error {
-	e.reviewIteration = u.ReviewIteration
-	e.reviewFingerprint = u.ReviewFingerprint
-	e.reviewElapsedMs = u.ReviewElapsedMs
-	e.reviewChangedFilesHash = u.LastReviewChangedFilesHash
+	if u.Checkpoint != "" {
+		e.reviewIteration = u.ReviewIteration
+		e.reviewFingerprint = u.ReviewFingerprint
+		e.reviewElapsedMs = u.ReviewElapsedMs
+		e.reviewChangedFilesHash = u.LastReviewChangedFilesHash
+	}
+	if u.LastReviewTranscriptPath != "" {
+		e.lastReviewTranscriptPath = u.LastReviewTranscriptPath
+	}
+	if u.RecoveryAttempts > 0 {
+		e.recoveryAttempts = u.RecoveryAttempts
+	}
 	if e.reviewLoop == nil {
 		return nil
 	}
@@ -100,5 +146,6 @@ func (e *Executor) implReviewLoopUpdate(iteration int, fingerprint string, elaps
 		ReviewFingerprint:          fingerprint,
 		ReviewElapsedMs:            elapsedMs,
 		LastReviewChangedFilesHash: filesHash,
+		RecoveryAttempts:           e.recoveryAttempts,
 	}
 }

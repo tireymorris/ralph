@@ -21,5 +21,7 @@ type (
 	EventImplementationReviewStarted   = events.EventImplementationReviewStarted
 	EventImplementationReviewCompleted = events.EventImplementationReviewCompleted
 	EventImplementationReview          = events.EventImplementationReview
+	EventRecoveryStarted               = events.EventRecoveryStarted
+	EventRecoveryCompleted             = events.EventRecoveryCompleted
 	ImplementationFinding              = events.ImplementationFinding
 )

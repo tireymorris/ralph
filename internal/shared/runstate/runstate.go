@@ -22,7 +22,10 @@ const (
 	StatusCancelled         = "cancelled"
 )
 
-const StopReasonDuplicateFindings = "duplicate_findings"
+const (
+	StopReasonDuplicateFindings = "duplicate_findings"
+	StopReasonRecoveryExhausted = "recovery_exhausted"
+)
 
 const (
 	PhaseGenerate             = "generate"

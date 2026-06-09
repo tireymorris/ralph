@@ -60,6 +60,7 @@ func OngoingLocalPRD(cfg *config.Config, registry *Registry) (*Run, bool) {
 		StopReason:                 meta.StopReason,
 		LastReviewTranscriptPath:   meta.LastReviewTranscriptPath,
 		LastReviewChangedFilesHash: meta.LastReviewChangedFilesHash,
+		RecoveryAttempts:           meta.RecoveryAttempts,
 	}
 	if !meta.UpdatedAt.IsZero() {
 		run.UpdatedAt = meta.UpdatedAt
@@ -75,6 +76,7 @@ type localPRDMeta struct {
 	StopReason                 string    `json:"stop_reason,omitempty"`
 	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
 	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
+	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
 	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
 }
 

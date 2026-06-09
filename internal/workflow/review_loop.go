@@ -12,6 +12,7 @@ type ReviewLoopUpdate struct {
 	StopReason                 string
 	LastReviewTranscriptPath   string
 	LastReviewChangedFilesHash string
+	RecoveryAttempts           int
 }
 
 type ReviewLoopUpdater interface {

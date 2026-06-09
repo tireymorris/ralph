@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -96,4 +98,36 @@ func EnsureGitRepo(workDir string) error {
 		return fmt.Errorf("%w", err)
 	}
 	return nil
+}
+
+func IsUntracked(workDir, relPath string) (bool, error) {
+	if err := ensureGitRepo(workDir); err != nil {
+		return false, err
+	}
+	cmd := exec.Command("git", "ls-files", "--others", "--exclude-standard", "--", relPath)
+	cmd.Dir = workDir
+	out, err := cmd.Output()
+	if err != nil {
+		return false, &GitError{
+			WorkDir: workDir,
+			Command: "git ls-files --others --exclude-standard",
+			Output:  strings.TrimSpace(string(out)),
+		}
+	}
+	return strings.TrimSpace(string(out)) == relPath, nil
+}
+
+func RemoveUntracked(workDir, relPath string) (bool, error) {
+	untracked, err := IsUntracked(workDir, relPath)
+	if err != nil {
+		return false, err
+	}
+	if !untracked {
+		return false, nil
+	}
+	path := filepath.Join(workDir, relPath)
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	return true, nil
 }

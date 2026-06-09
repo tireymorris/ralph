@@ -164,7 +164,7 @@ func (m *Model) renderImplementationReview() string {
 	var b strings.Builder
 	b.WriteString(inProgressStyle.Render("Implementation review found issues."))
 	b.WriteString("\n")
-	b.WriteString(mutedStyle.Render("Address findings in the log, then press Enter to continue implementation."))
+	b.WriteString(mutedStyle.Render("Ralph will attempt automatic recovery first. Press Enter to continue implementation after recovery."))
 	return b.String()
 }
 

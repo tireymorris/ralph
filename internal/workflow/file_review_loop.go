@@ -16,6 +16,7 @@ type fileRunMeta struct {
 	StopReason                 string    `json:"stop_reason,omitempty"`
 	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
 	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
+	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
 	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
 }
 
@@ -74,9 +75,14 @@ func (f *FileReviewLoop) Apply(u ReviewLoopUpdate) error {
 	m.ReviewIteration = u.ReviewIteration
 	m.ReviewFingerprint = u.ReviewFingerprint
 	m.ReviewElapsedMs = u.ReviewElapsedMs
-	m.StopReason = u.StopReason
+	if u.StopReason != "" {
+		m.StopReason = u.StopReason
+	}
 	m.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 	m.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
+	if u.RecoveryAttempts > 0 {
+		m.RecoveryAttempts = u.RecoveryAttempts
+	}
 	m.UpdatedAt = time.Now()
 
 	dir := filepath.Dir(f.metaPath())
@@ -112,6 +118,22 @@ func (f *FileReviewLoop) EnsureCheckpoint(cp string) error {
 		return err
 	}
 	return os.WriteFile(f.metaPath(), data, 0o600)
+}
+
+func (f *FileReviewLoop) RecoveryAttempts() int {
+	m, err := f.load()
+	if err != nil {
+		return 0
+	}
+	return m.RecoveryAttempts
+}
+
+func (f *FileReviewLoop) LastReviewTranscriptPath() string {
+	m, err := f.load()
+	if err != nil {
+		return ""
+	}
+	return m.LastReviewTranscriptPath
 }
 
 var _ ReviewLoopUpdater = (*FileReviewLoop)(nil)

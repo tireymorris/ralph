@@ -74,9 +74,20 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		)
 
 		if runErr := e.runWithForwardedOutput(ctx, storyPrompt); runErr != nil {
-			logger.Error("implementation runner failed", "error", runErr, "story_id", story.ID)
-			e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
-			return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)
+			recovered, recErr := e.runRecovery(ctx, p, prompt.RecoveryReasonStoryFailure, runErr.Error(), nil)
+			if recErr != nil {
+				logger.Error("implementation recovery failed", "error", recErr, "story_id", story.ID)
+				e.emit(EventError{Err: fmt.Errorf("implementation recovery failed for story %s: %w", story.ID, recErr)})
+				return fmt.Errorf("implementation recovery failed for story %s: %w", story.ID, recErr)
+			}
+			if recovered {
+				runErr = e.runWithForwardedOutput(ctx, storyPrompt)
+			}
+			if runErr != nil {
+				logger.Error("implementation runner failed", "error", runErr, "story_id", story.ID)
+				e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
+				return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)
+			}
 		}
 
 		updatedPRD, loadErr := e.store.Load(e.cfg)

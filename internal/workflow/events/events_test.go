@@ -26,6 +26,8 @@ func TestEventTypes(t *testing.T) {
 		EventImplementationReviewStarted{Iteration: 1},
 		EventImplementationReviewCompleted{Iteration: 1, Clean: true},
 		EventImplementationReview{Findings: []ImplementationFinding{{ID: "x", Summary: "s"}}},
+		EventRecoveryStarted{Reason: "review_findings", Attempt: 1, Max: 2},
+		EventRecoveryCompleted{Reason: "review_findings", Attempt: 1, Success: true},
 	}
 
 	for _, e := range evs {
@@ -49,6 +51,8 @@ func TestAllEventIsEventMethods(t *testing.T) {
 	EventImplementationReviewStarted{}.isEvent()
 	EventImplementationReviewCompleted{}.isEvent()
 	EventImplementationReview{}.isEvent()
+	EventRecoveryStarted{}.isEvent()
+	EventRecoveryCompleted{}.isEvent()
 }
 
 func TestAllEventIsEventMethodsIncludesClarifying(t *testing.T) {

@@ -39,6 +39,7 @@ type Run struct {
 	StopReason                 string    `json:"stop_reason,omitempty"`
 	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
 	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
+	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
 }
 
 type ReviewLoopUpdate struct {
@@ -49,6 +50,7 @@ type ReviewLoopUpdate struct {
 	StopReason                 string
 	LastReviewTranscriptPath   string
 	LastReviewChangedFilesHash string
+	RecoveryAttempts           int
 }
 
 type Registry struct {
@@ -247,9 +249,14 @@ func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
 	run.ReviewIteration = u.ReviewIteration
 	run.ReviewFingerprint = u.ReviewFingerprint
 	run.ReviewElapsedMs = u.ReviewElapsedMs
-	run.StopReason = u.StopReason
+	if u.StopReason != "" {
+		run.StopReason = u.StopReason
+	}
 	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 	run.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
+	if u.RecoveryAttempts > 0 {
+		run.RecoveryAttempts = u.RecoveryAttempts
+	}
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)

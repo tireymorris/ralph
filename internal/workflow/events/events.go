@@ -114,3 +114,19 @@ type EventImplementationReview struct {
 }
 
 func (EventImplementationReview) isEvent() {}
+
+type EventRecoveryStarted struct {
+	Reason  string
+	Attempt int
+	Max     int
+}
+
+func (EventRecoveryStarted) isEvent() {}
+
+type EventRecoveryCompleted struct {
+	Reason  string
+	Attempt int
+	Success bool
+}
+
+func (EventRecoveryCompleted) isEvent() {}

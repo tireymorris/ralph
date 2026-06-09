@@ -9,6 +9,7 @@ import (
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/review"
 )
 
@@ -238,13 +239,17 @@ func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.
 	exec.reviewFingerprint = reviewFingerprintFromTranscript(t, findingsTranscript)
 	exec.reviewChangedFilesHash = gitdiff.HashFiles(changed)
 
-	if _, err := exec.runImplementationReview(context.Background(), testPRD); err == nil {
-		t.Fatal("second review with duplicate fingerprint should return error")
+	_, err = exec.runImplementationReview(context.Background(), testPRD)
+	if err == nil {
+		t.Fatal("duplicate fingerprint should return error after recovery is exhausted")
+	}
+	if !strings.Contains(err.Error(), runstate.StopReasonRecoveryExhausted) {
+		t.Fatalf("error = %v, want %s", err, runstate.StopReasonRecoveryExhausted)
 	}
 
 	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
-	if storyCalls != 0 {
-		t.Errorf("story runner calls = %d, want 0", storyCalls)
+	if storyCalls < 2 {
+		t.Errorf("recovery runner calls = %d, want at least 2", storyCalls)
 	}
 	if reviewCalls != 0 {
 		t.Errorf("review runner calls = %d, want 0 when duplicate diff and fingerprint", reviewCalls)
@@ -261,54 +266,30 @@ func reviewFingerprintFromTranscript(t *testing.T, transcript string) string {
 }
 
 type recordingReviewLoop struct {
-	iteration   int
-	fingerprint string
-	elapsedMs   int64
-	stopReason  string
-	updates     []ReviewLoopUpdate
+	iteration        int
+	fingerprint      string
+	elapsedMs        int64
+	changedFilesHash string
+	stopReason       string
+	updates          []ReviewLoopUpdate
 }
 
 func (r *recordingReviewLoop) Snapshot() (int, string, int64, string) {
-	return r.iteration, r.fingerprint, r.elapsedMs, ""
+	return r.iteration, r.fingerprint, r.elapsedMs, r.changedFilesHash
 }
 
 func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
 	r.iteration = u.ReviewIteration
 	r.fingerprint = u.ReviewFingerprint
 	r.elapsedMs = u.ReviewElapsedMs
-	r.stopReason = u.StopReason
+	if u.LastReviewChangedFilesHash != "" {
+		r.changedFilesHash = u.LastReviewChangedFilesHash
+	}
+	if u.StopReason != "" {
+		r.stopReason = u.StopReason
+	}
 	r.updates = append(r.updates, u)
 	return nil
-}
-
-func TestRunImplementationDuplicateFingerprintUpdatesStopReason(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = workDir
-	cfg.PRDFile = "prd.json"
-
-	findingsTranscript := `===ralph-findings===
-[{"category":"bug","path":"delta.txt","summary":"missing test"}]
-===/ralph-findings===`
-
-	ch := make(chan Event, 100)
-	mock := newMockRunner()
-	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
-			outputCh <- runner.OutputLine{Text: findingsTranscript}
-		}
-		return nil
-	}
-
-	updater := &recordingReviewLoop{fingerprint: reviewFingerprintFromTranscript(t, findingsTranscript)}
-	exec := NewExecutorWithRunner(cfg, ch, mock)
-	exec.SetReviewLoop("run-stop", updater)
-
-	_, _ = exec.runImplementationReview(context.Background(), &prd.PRD{Context: "ctx"})
-
-	if updater.stopReason != StopReasonDuplicateFindings {
-		t.Fatalf("stop_reason = %q, want %q", updater.stopReason, StopReasonDuplicateFindings)
-	}
 }
 
 func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
@@ -366,10 +347,10 @@ func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
 		t.Fatal("story-2 should not start after review findings")
 	}
 	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
-	if storyCalls != 1 {
-		t.Errorf("story runner calls = %d, want 1", storyCalls)
+	if storyCalls < 2 {
+		t.Errorf("recovery runner calls = %d, want at least 2", storyCalls)
 	}
-	if reviewCalls != 1 {
-		t.Errorf("review runner calls = %d, want 1", reviewCalls)
+	if reviewCalls < 1 {
+		t.Errorf("review runner calls = %d, want at least 1", reviewCalls)
 	}
 }

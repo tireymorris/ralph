@@ -720,6 +720,8 @@ func countRunnerPromptKinds(mock *mockRunner) (story, review, cleanup int) {
 			review++
 		case strings.Contains(p, "cleanup"):
 			cleanup++
+		case strings.Contains(p, "recovery agent"):
+			story++
 		default:
 			story++
 		}

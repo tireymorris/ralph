@@ -128,6 +128,18 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.logger.AddLog(fmt.Sprintf("Implementation review completed (iteration %d, %s)", e.Iteration, outcome))
 		m.markMainScrollJump()
 
+	case events.EventRecoveryStarted:
+		m.logger.AddLog(fmt.Sprintf("Recovery started (%s, attempt %d/%d)", e.Reason, e.Attempt, e.Max))
+		m.markMainScrollJump()
+
+	case events.EventRecoveryCompleted:
+		outcome := "failed"
+		if e.Success {
+			outcome = "succeeded"
+		}
+		m.logger.AddLog(fmt.Sprintf("Recovery %s (%s, attempt %d)", outcome, e.Reason, e.Attempt))
+		m.markMainScrollJump()
+
 	case events.EventCleanupStarted:
 		m.phase = PhaseCleanup
 		m.logger.AddLog("Running post-implementation cleanup...")

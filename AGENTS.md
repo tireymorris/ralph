@@ -87,7 +87,7 @@ Ralph writes these files in the working directory (all covered by `.gitignore`):
 
 ## Web API (selected)
 - `POST /api/runs/{id}/review` — approve/revise PRD (`waiting_review`)
-- `POST /api/runs/{id}/implementation-review` — continue after diff-review findings (`waiting_implementation_review`)
+- `POST /api/runs/{id}/implementation-review` — run recovery from review findings, then continue implementation (`waiting_implementation_review`)
 - `POST /api/runs/{id}/resume` — force resume from checkpoint
 
 ## Testing notes

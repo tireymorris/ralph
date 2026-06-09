@@ -35,11 +35,20 @@ func (s *Session) ApproveReview(ctx context.Context, cfg *config.Config) error {
 }
 
 func (s *Session) ContinueImplementationReview(ctx context.Context, cfg *config.Config) error {
-	return s.ApproveReview(ctx, cfg)
+	p, err := s.PRDForImplementation(cfg)
+	if err != nil {
+		return err
+	}
+	s.ContinueImplementationReviewFromPRD(ctx, p)
+	return nil
 }
 
 func (s *Session) StartImplementationFromPRD(ctx context.Context, p *prd.PRD) {
 	s.StartImplementation(ctx, p)
+}
+
+func (s *Session) ContinueImplementationReviewFromPRD(ctx context.Context, p *prd.PRD) {
+	s.ContinueImplementationReviewFromPRD(ctx, p)
 }
 
 func (s *Session) ResetPRDForImplementation(cfg *config.Config) (*prd.PRD, error) {

@@ -31,5 +31,6 @@ func (r *registryReviewLoop) Apply(u workflow.ReviewLoopUpdate) error {
 		StopReason:                 u.StopReason,
 		LastReviewTranscriptPath:   u.LastReviewTranscriptPath,
 		LastReviewChangedFilesHash: u.LastReviewChangedFilesHash,
+		RecoveryAttempts:           u.RecoveryAttempts,
 	})
 }
