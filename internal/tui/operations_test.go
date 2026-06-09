@@ -204,12 +204,12 @@ func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
 	}
 
-	om := m.operationManager
-	t.Cleanup(func() { waitSessionDone(t, om) })
-
-	msg := om.ApproveReview()()
-	if msg != nil {
-		t.Fatalf("ApproveReview() msg = %T, want nil", msg)
+	loaded, err := m.operationManager.PRDForImplementation(cfg)
+	if err != nil {
+		t.Fatalf("PRDForImplementation() error = %v", err)
+	}
+	if loaded.ProjectName != "On disk" {
+		t.Fatalf("ProjectName = %q, want %q", loaded.ProjectName, "On disk")
 	}
 }
 
