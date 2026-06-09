@@ -30,21 +30,29 @@ func (noopRunner) IsInternalLog(string) bool                                   {
 
 func waitSessionDone(t *testing.T, om *OperationManager) {
 	t.Helper()
-	om.Cancel()
+	deadline := time.After(3 * time.Second)
+	for {
+		select {
+		case ev, ok := <-om.EventsCh():
+			if !ok {
+				om.Cancel()
+				break
+			}
+			switch ev.(type) {
+			case events.EventCompleted, events.EventError:
+				om.Cancel()
+				goto waitCtxDone
+			}
+		case <-deadline:
+			om.Cancel()
+			goto waitCtxDone
+		}
+	}
+waitCtxDone:
 	select {
 	case <-om.Ctx().Done():
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for session cancellation")
-	}
-	for {
-		select {
-		case _, ok := <-om.EventsCh():
-			if !ok {
-				return
-			}
-		default:
-			return
-		}
 	}
 }
 
@@ -204,12 +212,15 @@ func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
 	}
 
-	loaded, err := m.operationManager.PRDForImplementation(cfg)
-	if err != nil {
-		t.Fatalf("PRDForImplementation() error = %v", err)
-	}
-	if loaded.ProjectName != "On disk" {
-		t.Fatalf("ProjectName = %q, want %q", loaded.ProjectName, "On disk")
+	om := m.operationManager
+	t.Cleanup(func() { waitSessionDone(t, om) })
+
+	msg := om.ApproveReview()()
+	if msg != nil {
+		if errMsg, ok := msg.(operationErrorMsg); ok {
+			t.Fatalf("ApproveReview() error = %v", errMsg.err)
+		}
+		t.Fatalf("ApproveReview() msg = %T, want nil", msg)
 	}
 }
 

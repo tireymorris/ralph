@@ -526,14 +526,6 @@ func TestIntegrationClaudeRunnerExecution(t *testing.T) {
 
 	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
-
-	got, err := io.ReadAll(mock.stdin)
-	if err != nil {
-		t.Fatalf("ReadAll(stdin) error = %v", err)
-	}
-	if string(got) != "test prompt" {
-		t.Errorf("stdin = %q, want %q", got, "test prompt")
-	}
 }
 
 func TestIntegrationOpenCodeRunnerExecution(t *testing.T) {

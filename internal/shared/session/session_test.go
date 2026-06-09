@@ -9,6 +9,31 @@ import (
 	"ralph/internal/shared/prd"
 )
 
+func TestPRDForImplementationLoadsFromDiskWhenNotInMemory(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	onDisk := &prd.PRD{
+		ProjectName: "On disk",
+		Stories: []*prd.Story{
+			{ID: "disk", Title: "Disk story", Priority: 1},
+		},
+	}
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	s := New(cfg)
+
+	loaded, err := s.PRDForImplementation(cfg)
+	if err != nil {
+		t.Fatalf("PRDForImplementation() error = %v", err)
+	}
+	if loaded.ProjectName != "On disk" {
+		t.Fatalf("ProjectName = %q, want %q", loaded.ProjectName, "On disk")
+	}
+}
+
 func TestPRDForImplementationLoadsMissingPRDWithImplementationError(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
