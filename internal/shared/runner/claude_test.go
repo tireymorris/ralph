@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -41,9 +42,41 @@ func TestClaudeRunArgs(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "test prompt"}
+	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 	assertNoModelSelectionArgs(t, capturedArgs)
+}
+
+func TestClaudeRunPromptViaStdin(t *testing.T) {
+	cfg := &config.Config{Runner: "claude"}
+	r := NewClaude(cfg)
+
+	prompt := strings.Repeat("implement feature ", 40000)
+	mock := &mockCmd{stdout: "output line", stderr: ""}
+	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		for _, arg := range args {
+			if arg == prompt {
+				t.Fatal("prompt must not be passed as a CLI argument")
+			}
+		}
+		return mock
+	}
+
+	err := r.Run(context.Background(), prompt, nil)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	if mock.stdin == nil {
+		t.Fatal("expected prompt to be passed via stdin")
+	}
+	got, err := io.ReadAll(mock.stdin)
+	if err != nil {
+		t.Fatalf("ReadAll(stdin) error = %v", err)
+	}
+	if string(got) != prompt {
+		t.Fatalf("stdin = %d bytes, want %d bytes", len(got), len(prompt))
+	}
 }
 
 func TestClaudeRunWithOutputChannel(t *testing.T) {

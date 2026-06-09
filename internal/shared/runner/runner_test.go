@@ -48,6 +48,11 @@ type mockCmd struct {
 	waitErr   error
 	stdout    string
 	stderr    string
+	stdin     io.Reader
+}
+
+func (m *mockCmd) setStdin(r io.Reader) {
+	m.stdin = r
 }
 
 func (m *mockCmd) StdoutPipe() (io.ReadCloser, error) {
@@ -519,8 +524,16 @@ func TestIntegrationClaudeRunnerExecution(t *testing.T) {
 		t.Errorf("Expected command 'claude', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions", "test prompt"}
+	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
+
+	got, err := io.ReadAll(mock.stdin)
+	if err != nil {
+		t.Fatalf("ReadAll(stdin) error = %v", err)
+	}
+	if string(got) != "test prompt" {
+		t.Errorf("stdin = %q, want %q", got, "test prompt")
+	}
 }
 
 func TestIntegrationOpenCodeRunnerExecution(t *testing.T) {

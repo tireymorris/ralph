@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
@@ -43,7 +44,6 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	}
-	args = append(args, prompt)
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
@@ -56,7 +56,7 @@ func (r *ClaudeRunner) Run(ctx context.Context, prompt string, outputCh chan<- O
 		outputCh <- newStartingOutputLine(r.RunnerName())
 	}
 
-	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
+	err := runWithPipedCommandAndStdin(ctx, r.CommandName(), r.CmdFunc, strings.NewReader(prompt), args, outputCh,
 		parseClaudeStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}

@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"time"
 )
@@ -20,6 +21,20 @@ func runWithPipedCommand(
 	stdoutTransform, stderrTransform LineTransformer,
 ) error {
 	cmd := cmdFactory(ctx, cmdName, args...)
+	return runPipedCommand(cmdName, cmd, outputCh, stdoutTransform, stderrTransform)
+}
+
+func runWithPipedCommandAndStdin(
+	ctx context.Context,
+	cmdName string,
+	cmdFactory func(context.Context, string, ...string) CmdInterface,
+	stdin io.Reader,
+	args []string,
+	outputCh chan<- OutputLine,
+	stdoutTransform, stderrTransform LineTransformer,
+) error {
+	cmd := cmdFactory(ctx, cmdName, args...)
+	setCmdStdin(cmd, stdin)
 	return runPipedCommand(cmdName, cmd, outputCh, stdoutTransform, stderrTransform)
 }
 

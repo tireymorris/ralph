@@ -11,6 +11,20 @@ import (
 	"ralph/internal/shared/constants"
 )
 
+type stdinSetter interface {
+	setStdin(io.Reader)
+}
+
+func setCmdStdin(cmd CmdInterface, stdin io.Reader) {
+	if rc, ok := cmd.(*realCmd); ok {
+		rc.Cmd.Stdin = io.NopCloser(stdin)
+		return
+	}
+	if sc, ok := cmd.(stdinSetter); ok {
+		sc.setStdin(stdin)
+	}
+}
+
 type CmdInterface interface {
 	StdoutPipe() (io.ReadCloser, error)
 	StderrPipe() (io.ReadCloser, error)
