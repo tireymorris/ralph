@@ -77,7 +77,7 @@ func (r *Runner) IsInternalLog(line string) bool {
 }
 
 func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	args := []string{"run", "--print-logs", prompt}
+	args := []string{"run", "--print-logs"}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
@@ -90,8 +90,7 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 		outputCh <- OutputLine{Text: fmt.Sprintf("Starting %s...", r.RunnerName()), Time: time.Now()}
 	}
 
-	cmd := r.CmdFunc(ctx, r.CommandName(), args...)
-	err := runPipedCommand(r.CommandName(), cmd, outputCh,
+	err := runWithPipedCommandAndStdin(ctx, r.CommandName(), r.CmdFunc, strings.NewReader(prompt), args, outputCh,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: false, Time: time.Now(), Verbose: r.IsInternalLog(line)}}
 		},

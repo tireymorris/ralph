@@ -161,7 +161,7 @@ func TestOpenCodeDoesNotPassModelSelectionArgs(t *testing.T) {
 	r := newTestRunner(t, cfg)
 
 	var capturedArgs []string
-	mock := &mockCmd{}
+	mock := &mockCmd{stdout: "ok", stderr: ""}
 	r.CmdFunc = stubCmdFunc(mock, nil, &capturedArgs)
 
 	if err := r.Run(context.Background(), "test", nil); err != nil {
@@ -169,6 +169,45 @@ func TestOpenCodeDoesNotPassModelSelectionArgs(t *testing.T) {
 	}
 
 	assertNoModelSelectionArgs(t, capturedArgs)
+}
+
+func TestOpenCodeRunArgs(t *testing.T) {
+	cfg := &config.Config{Runner: "opencode"}
+	r := newTestRunner(t, cfg)
+
+	var capturedArgs []string
+	mock := &mockCmd{stdout: "ok", stderr: ""}
+	r.CmdFunc = stubCmdFunc(mock, nil, &capturedArgs)
+
+	if err := r.Run(context.Background(), "test prompt", nil); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	expectedArgs := []string{"run", "--print-logs"}
+	assertArgsEqual(t, capturedArgs, expectedArgs)
+	assertPromptDeliveredViaStdin(t, mock, "test prompt")
+}
+
+func TestOpenCodeSupportsLargePrompts(t *testing.T) {
+	cfg := &config.Config{Runner: "opencode"}
+	r := newTestRunner(t, cfg)
+
+	prompt := strings.Repeat("implement feature ", 40000)
+	mock := &mockCmd{stdout: "ok", stderr: ""}
+	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		for _, arg := range args {
+			if strings.Contains(arg, "implement feature") {
+				t.Fatal("prompt must not be passed as a CLI argument")
+			}
+		}
+		return mock
+	}
+
+	if err := r.Run(context.Background(), prompt, nil); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	assertPromptDeliveredViaStdin(t, mock, prompt)
 }
 
 func TestDefaultCmdFunc(t *testing.T) {
@@ -550,7 +589,7 @@ func TestIntegrationOpenCodeRunnerExecution(t *testing.T) {
 		t.Errorf("Expected command 'opencode', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"run", "--print-logs", "test prompt"}
+	expectedArgs := []string{"run", "--print-logs"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 }
 
