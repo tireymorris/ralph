@@ -124,7 +124,30 @@ func TestCursorAgentRunArgs(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	expectedArgs := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo", "do something"}
+	expectedArgs := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 	assertNoModelSelectionArgs(t, capturedArgs)
+	assertPromptDeliveredViaStdin(t, mock, "do something")
+}
+
+func TestCursorAgentSupportsLargePrompts(t *testing.T) {
+	cfg := &config.Config{Runner: "cursor"}
+	r := NewCursorAgent(cfg)
+
+	prompt := strings.Repeat("implement feature ", 40000)
+	mock := &mockCmd{stdout: "", stderr: ""}
+	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		for _, arg := range args {
+			if strings.Contains(arg, "implement feature") {
+				t.Fatal("prompt must not be passed as a CLI argument")
+			}
+		}
+		return mock
+	}
+
+	if err := r.Run(context.Background(), prompt, nil); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	assertPromptDeliveredViaStdin(t, mock, prompt)
 }

@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"ralph/internal/shared/config"
@@ -51,5 +52,19 @@ func assertNoModelSelectionArgs(t *testing.T, args []string) {
 		if arg == "--model" || arg == "--runner" || arg == "--provider" {
 			t.Fatalf("unexpected model selection arg %q in %v", arg, args)
 		}
+	}
+}
+
+func assertPromptDeliveredViaStdin(t *testing.T, mock *mockCmd, want string) {
+	t.Helper()
+	if mock.stdin == nil {
+		t.Fatal("prompt must be delivered via stdin")
+	}
+	got, err := io.ReadAll(mock.stdin)
+	if err != nil {
+		t.Fatalf("ReadAll(stdin) error = %v", err)
+	}
+	if string(got) != want {
+		t.Fatalf("stdin prompt = %d bytes, want %d bytes", len(got), len(want))
 	}
 }

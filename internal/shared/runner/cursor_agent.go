@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
@@ -37,7 +38,7 @@ func (r *CursorAgentRunner) IsInternalLog(line string) bool {
 }
 
 func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	args := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo", prompt}
+	args := []string{"--print", "--output-format", "stream-json", "--trust", "--yolo"}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
@@ -50,7 +51,7 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		outputCh <- newStartingOutputLine(r.RunnerName())
 	}
 
-	err := runWithPipedCommand(ctx, r.CommandName(), r.CmdFunc, args, outputCh,
+	err := runWithPipedCommandAndStdin(ctx, r.CommandName(), r.CmdFunc, strings.NewReader(prompt), args, outputCh,
 		parseCursorStreamJSON,
 		func(line string) []OutputLine {
 			return []OutputLine{{Text: line, IsErr: true, Time: time.Now(), Verbose: r.IsInternalLog(line)}}

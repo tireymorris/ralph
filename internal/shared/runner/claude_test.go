@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"errors"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -45,7 +44,7 @@ func TestClaudeRunArgs(t *testing.T) {
 	expectedArgs := []string{"--print", "--verbose", "--output-format", "stream-json", "--dangerously-skip-permissions"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 	assertNoModelSelectionArgs(t, capturedArgs)
-	assertClaudePromptDeliveredViaStdin(t, mock, "test prompt")
+	assertPromptDeliveredViaStdin(t, mock, "test prompt")
 }
 
 func TestClaudeRunSupportsLargePrompts(t *testing.T) {
@@ -67,21 +66,7 @@ func TestClaudeRunSupportsLargePrompts(t *testing.T) {
 		t.Fatalf("Run() error = %v", err)
 	}
 
-	assertClaudePromptDeliveredViaStdin(t, mock, prompt)
-}
-
-func assertClaudePromptDeliveredViaStdin(t *testing.T, mock *mockCmd, want string) {
-	t.Helper()
-	if mock.stdin == nil {
-		t.Fatal("prompt must be delivered via stdin")
-	}
-	got, err := io.ReadAll(mock.stdin)
-	if err != nil {
-		t.Fatalf("ReadAll(stdin) error = %v", err)
-	}
-	if string(got) != want {
-		t.Fatalf("stdin prompt = %d bytes, want %d bytes", len(got), len(want))
-	}
+	assertPromptDeliveredViaStdin(t, mock, prompt)
 }
 
 func TestClaudeRunWithOutputChannel(t *testing.T) {

@@ -576,7 +576,7 @@ func TestIntegrationPiRunnerExecution(t *testing.T) {
 		t.Errorf("Expected command 'pi', got %q", capturedName)
 	}
 
-	expectedArgs := []string{"--print", "--mode", "json", "--no-session", "test prompt"}
+	expectedArgs := []string{"--print", "--mode", "json", "--no-session"}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 }
 
