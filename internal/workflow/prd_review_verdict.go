@@ -19,11 +19,15 @@ type PRDReviewVerdictReader struct {
 	WorkDir string
 }
 
+func (r PRDReviewVerdictReader) Path() string {
+	return filepath.Join(r.WorkDir, prompt.PRDSelfReviewVerdictFile)
+}
+
 // ReadRemove reads the verdict file and deletes it. Unlike QuestionsFileReader,
 // a missing file is not an error: it yields a zero-value verdict so a
 // non-cooperating runner cannot fail the run.
 func (r PRDReviewVerdictReader) ReadRemove() (PRDReviewVerdict, error) {
-	path := filepath.Join(r.WorkDir, prompt.PRDSelfReviewVerdictFile)
+	path := r.Path()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
