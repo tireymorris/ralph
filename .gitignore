@@ -30,6 +30,7 @@ prd.json.lock
 
 .ralph/
 .ralph_questions.json
+.ralph_prd_review.json
 
 web/node_modules/
 
