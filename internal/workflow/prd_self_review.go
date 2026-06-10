@@ -3,9 +3,12 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
+	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 )
 
@@ -28,6 +31,12 @@ func (e *Executor) runPRDSelfReview(ctx context.Context, userPrompt string) (*pr
 			return nil, fmt.Errorf("loading PRD after self-review round %d: %w", round, err)
 		}
 		p = reloaded
+
+		verdictPath := filepath.Join(e.cfg.WorkDir, prompt.PRDSelfReviewVerdictFile)
+		if _, statErr := os.Stat(verdictPath); os.IsNotExist(statErr) {
+			logger.Warn("PRD self-review verdict file missing, treating as approved", "round", round, "file", verdictPath)
+			break
+		}
 
 		verdict, err := PRDReviewVerdictReader{WorkDir: e.cfg.WorkDir}.ReadRemove()
 		if err != nil {
