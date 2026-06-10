@@ -3,6 +3,9 @@ package workflow
 import (
 	"context"
 	"errors"
+	"io"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -131,6 +134,57 @@ func TestRunCleanupSuccess(t *testing.T) {
 	}
 	if !foundOutput {
 		t.Error("expected runner output to be forwarded as EventOutput")
+	}
+}
+
+func TestRunCleanupRunsAndLogsWhenChangedFilesCannotBeListed(t *testing.T) {
+	if os.Getenv("RALPH_CLEANUP_LOG_HELPER") == "1" {
+		runCleanupChangedFilesErrorLogHelper(t)
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestRunCleanupRunsAndLogsWhenChangedFilesCannotBeListed")
+	cmd.Env = append(os.Environ(), "RALPH_CLEANUP_LOG_HELPER=1")
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatalf("stderr pipe: %v", err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start helper test: %v", err)
+	}
+	captured, readErr := io.ReadAll(stderr)
+	if readErr != nil {
+		t.Fatalf("read helper stderr: %v", readErr)
+	}
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("helper test failed: %v\nstderr:\n%s", err, captured)
+	}
+	if !strings.Contains(string(captured), "failed to list changed files before cleanup") {
+		t.Fatalf("stderr = %q, want changed-files warning", captured)
+	}
+}
+
+func runCleanupChangedFilesErrorLogHelper(t *testing.T) {
+	t.Helper()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+
+	if err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
+		t.Fatalf("RunCleanup() error = %v", err)
+	}
+	if mock.CallCount() != 1 {
+		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	}
+
+	evts := drainEvents(ch)
+	counts := countCleanupEvents(evts)
+	if counts.started != 1 || counts.completed != 1 {
+		t.Fatalf("cleanup events = started %d completed %d, want 1 each", counts.started, counts.completed)
 	}
 }
 
