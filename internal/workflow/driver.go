@@ -81,7 +81,7 @@ func (d *Driver) StartNew(ctx context.Context, userPrompt string) {
 			return
 		}
 		p, err := d.executor.RunGenerateWithAnswers(runCtx, userPrompt, qas)
-		if err != nil || p == nil || !d.cfg.AutoApprove {
+		if err != nil || p == nil || !d.cfg.AutoApprove || d.cfg.DryRun {
 			return
 		}
 		d.executor.RunImplementation(runCtx, p)
@@ -91,7 +91,7 @@ func (d *Driver) StartNew(ctx context.Context, userPrompt string) {
 func (d *Driver) StartResume(ctx context.Context) {
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
 		p, err := d.executor.RunLoad(runCtx)
-		if err != nil || p == nil || !d.cfg.AutoApprove {
+		if err != nil || p == nil || !d.cfg.AutoApprove || d.cfg.DryRun {
 			return
 		}
 		d.executor.RunImplementation(runCtx, p)

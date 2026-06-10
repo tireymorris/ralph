@@ -1,4 +1,5 @@
 import { ApiError, createRun, postClean } from "../api/client";
+import type { CreateRunRequestOptions } from "../api/types";
 import { errorMessage } from "./errors";
 
 export const CLEAN_STATE_ARTIFACTS = "prd.json and .ralph/ run data";
@@ -34,6 +35,7 @@ export function isRunConflict(err: unknown): err is ApiError {
 export async function retryRunAfterClean(
   prompt: string,
   conflictMessage: string,
+  options: CreateRunRequestOptions = {},
 ): Promise<RunConflictRetryResult> {
   if (!globalThis.confirm(CONFLICT_CLEAN_CONFIRM_MESSAGE)) {
     return { ok: false, error: conflictMessage };
@@ -41,7 +43,7 @@ export async function retryRunAfterClean(
   try {
     await postClean();
     notifyCleanCompleted();
-    const { id } = await createRun(prompt);
+    const { id } = await createRun(prompt, options);
     return { ok: true, id };
   } catch (err) {
     return { ok: false, error: errorMessage(err, "Failed to start run") };

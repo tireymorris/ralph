@@ -83,6 +83,17 @@ func TestApplyRuntimeOptionsSetsAutoApprove(t *testing.T) {
 	}
 }
 
+func TestApplyRuntimeOptionsSetsDryRun(t *testing.T) {
+	cfg := config.DefaultConfig()
+	opts := &args.Options{DryRun: true}
+
+	applyRuntimeOptions(cfg, opts)
+
+	if !cfg.DryRun {
+		t.Error("DryRun should be copied from parsed options")
+	}
+}
+
 func TestRunBareNoTTY(t *testing.T) {
 	r, w, err := os.Pipe()
 	if err != nil {

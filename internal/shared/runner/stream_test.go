@@ -3,6 +3,8 @@ package runner
 import (
 	"strings"
 	"testing"
+
+	"ralph/internal/shared/constants"
 )
 
 func passthroughTransform(line string) []OutputLine {
@@ -48,5 +50,17 @@ func TestReadPipeLinesEmitsFinalLineWithoutNewline(t *testing.T) {
 
 	if len(lines) != 2 || lines[1] != "last" {
 		t.Fatalf("got %q, want final line %q", lines, "last")
+	}
+}
+
+func TestReadPipeLinesRejectsOversizedLine(t *testing.T) {
+	oversized := strings.Repeat("x", constants.MaxPipeLineSize+1) + "\n"
+	outputCh := make(chan OutputLine, 1)
+	err := readPipeLines(strings.NewReader(oversized), outputCh, passthroughTransform)
+	if err == nil {
+		t.Fatal("readPipeLines() error = nil, want line size error")
+	}
+	if !strings.Contains(err.Error(), "line exceeds") {
+		t.Fatalf("readPipeLines() error = %v, want line exceeds message", err)
 	}
 }
