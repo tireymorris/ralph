@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"ralph/internal/args"
+	"ralph/internal/shared/config"
 	"ralph/internal/version"
 )
 
@@ -68,6 +70,17 @@ func TestRunClean(t *testing.T) {
 			t.Fatalf("Run(clean --resume) = %d, want 0 (ValidateResume must not run)", code)
 		}
 	})
+}
+
+func TestApplyRuntimeOptionsSetsAutoApprove(t *testing.T) {
+	cfg := config.DefaultConfig()
+	opts := &args.Options{AutoApprove: true}
+
+	applyRuntimeOptions(cfg, opts)
+
+	if !cfg.AutoApprove {
+		t.Error("AutoApprove should be copied from parsed options")
+	}
 }
 
 func TestRunBareNoTTY(t *testing.T) {

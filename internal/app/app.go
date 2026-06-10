@@ -64,7 +64,7 @@ func Run(argv []string) int {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
-	cfg.SkipCleanup = opts.SkipCleanup
+	applyRuntimeOptions(cfg, opts)
 
 	if opts.Status {
 		return RunStatus(cfg)
@@ -83,6 +83,11 @@ func Run(argv []string) int {
 		}
 	}
 	return RunTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
+}
+
+func applyRuntimeOptions(cfg *config.Config, opts *args.Options) {
+	cfg.SkipCleanup = opts.SkipCleanup
+	cfg.AutoApprove = opts.AutoApprove || cfg.AutoApprove
 }
 
 func RunTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int {
