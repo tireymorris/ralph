@@ -106,6 +106,18 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
+	if o.AutoApprove {
+		switch {
+		case o.Status:
+			return fmt.Errorf("--yolo cannot be used with status")
+		case o.Clean:
+			return fmt.Errorf("--yolo cannot be used with clean")
+		case o.Version:
+			return fmt.Errorf("--yolo cannot be used with version")
+		case o.Update:
+			return fmt.Errorf("--yolo cannot be used with update")
+		}
+	}
 	if o.Help || o.Status || o.Clean || o.Version || o.Update || o.Web {
 		return nil
 	}
