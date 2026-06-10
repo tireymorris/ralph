@@ -23,8 +23,11 @@ func TestRunGenerateEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		if !strings.Contains(prompt, "no existing source code") {
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return nil
+		}
+		if !strings.Contains(p, "no existing source code") {
 			t.Error("expected PRD prompt for empty workdir to mention no existing source code")
 		}
 		prdPath := filepath.Join(tmpDir, "prd.json")
@@ -48,11 +51,14 @@ func TestRunGenerateWithSourceWorkdirUsesExistingCodebasePrompt(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
-	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(prompt, "no existing source code") {
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return nil
+		}
+		if strings.Contains(p, "no existing source code") {
 			t.Error("expected PRD prompt for workdir with source to not mention no existing source code")
 		}
-		if !strings.Contains(prompt, "ACTUALLY observe in the codebase") {
+		if !strings.Contains(p, "ACTUALLY observe in the codebase") {
 			t.Error("expected PRD prompt for existing codebase to reference observed patterns")
 		}
 		prdPath := filepath.Join(tmpDir, "prd.json")
