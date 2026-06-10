@@ -75,18 +75,30 @@ func (d *Driver) StartNew(ctx context.Context, userPrompt string) {
 	d.userPrompt = userPrompt
 	d.mu.Unlock()
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
-		qas, err := d.executor.RunClarify(runCtx, userPrompt)
-		if err != nil {
-			d.EmitError(fmt.Errorf("clarification phase: %w", err))
+		var qas []prompt.QuestionAnswer
+		if !d.cfg.AutoApprove {
+			var err error
+			qas, err = d.executor.RunClarify(runCtx, userPrompt)
+			if err != nil {
+				d.EmitError(fmt.Errorf("clarification phase: %w", err))
+				return
+			}
+		}
+		p, err := d.executor.RunGenerateWithAnswers(runCtx, userPrompt, qas)
+		if err != nil || p == nil || !d.cfg.AutoApprove {
 			return
 		}
-		d.executor.RunGenerateWithAnswers(runCtx, userPrompt, qas)
+		d.executor.RunImplementation(runCtx, p)
 	})
 }
 
 func (d *Driver) StartResume(ctx context.Context) {
 	go d.runWithCtx(ctx, func(runCtx context.Context) {
-		d.executor.RunLoad(runCtx)
+		p, err := d.executor.RunLoad(runCtx)
+		if err != nil || p == nil || !d.cfg.AutoApprove {
+			return
+		}
+		d.executor.RunImplementation(runCtx, p)
 	})
 }
 
