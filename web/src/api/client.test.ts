@@ -94,6 +94,22 @@ describe("createRun", () => {
       body: JSON.stringify({ prompt: "build feature" }),
     });
   });
+
+  it("includes auto_approve when requested", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "new-run" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createRun("build feature", { autoApprove: true });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: "build feature", auto_approve: true }),
+    });
+  });
 });
 
 describe("postClean", () => {

@@ -1,4 +1,5 @@
 import type {
+  CreateRunRequestOptions,
   CreateRunResponse,
   PRDDocument,
   QuestionAnswer,
@@ -69,11 +70,16 @@ export async function getRunPRD(id: string): Promise<PRDDocument> {
 
 export async function createRun(
   prompt: string,
+  options: CreateRunRequestOptions = {},
 ): Promise<CreateRunResponse> {
+  const body: { prompt: string; auto_approve?: boolean } = { prompt };
+  if (options.autoApprove !== undefined) {
+    body.auto_approve = options.autoApprove;
+  }
   return apiFetch<CreateRunResponse>("/api/runs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(body),
   });
 }
 
