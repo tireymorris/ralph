@@ -30,4 +30,7 @@ const (
 
 	// TempFileRandomRange provides entropy for temporary file names.
 	TempFileRandomRange = 100000
+
+	// MaxPRDSelfReviewRounds caps agent self-review rounds after PRD generation.
+	MaxPRDSelfReviewRounds = 3
 )
