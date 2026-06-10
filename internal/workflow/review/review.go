@@ -35,6 +35,7 @@ func ReviewDiff(ctx context.Context, p Params) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	changed = gitdiff.ExcludeReviewArtifacts(changed)
 	return ReviewDiffWithChanged(ctx, p, changed)
 }
 

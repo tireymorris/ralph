@@ -118,12 +118,12 @@ func TestCommitTrackedChangesDoesNotRetrackUntrackedFile(t *testing.T) {
 	}
 	runGit("rm", "--cached", "hello.txt")
 
-	committed, err = CommitTrackedChanges(workDir, "ralph: recovery fixes")
+	committed, err = CommitRecoveryChanges(workDir, "ralph: recovery fixes")
 	if err != nil {
-		t.Fatalf("CommitTrackedChanges() err = %v", err)
+		t.Fatalf("CommitRecoveryChanges() err = %v", err)
 	}
 	if !committed {
-		t.Fatal("CommitTrackedChanges() committed = false, want true")
+		t.Fatal("CommitRecoveryChanges() committed = false, want true")
 	}
 
 	untracked, err := IsUntracked(workDir, "hello.txt")
@@ -132,6 +132,31 @@ func TestCommitTrackedChangesDoesNotRetrackUntrackedFile(t *testing.T) {
 	}
 	if !untracked {
 		t.Fatal("hello.txt should remain untracked after recovery commit")
+	}
+}
+
+func TestCommitRecoveryChangesStagesNewUntrackedDeliverables(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoForCommit(t, workDir)
+
+	if err := os.WriteFile(filepath.Join(workDir, "delta.txt"), []byte("new\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	committed, err := CommitRecoveryChanges(workDir, "ralph: recovery fixes")
+	if err != nil {
+		t.Fatalf("CommitRecoveryChanges() err = %v", err)
+	}
+	if !committed {
+		t.Fatal("CommitRecoveryChanges() committed = false, want true")
+	}
+
+	untracked, err := IsUntracked(workDir, "delta.txt")
+	if err != nil {
+		t.Fatalf("IsUntracked() err = %v", err)
+	}
+	if untracked {
+		t.Fatal("delta.txt should be committed by CommitRecoveryChanges")
 	}
 }
 

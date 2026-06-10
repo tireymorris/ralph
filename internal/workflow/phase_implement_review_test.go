@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -514,6 +516,9 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 			}
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 		case prompt.IsRecoveryPrompt(p):
+			if err := os.WriteFile(filepath.Join(workDir, "delta.txt"), []byte("fixed\n"), 0o644); err != nil {
+				return err
+			}
 			return nil
 		}
 		return nil

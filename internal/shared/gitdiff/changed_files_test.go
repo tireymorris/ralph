@@ -64,3 +64,23 @@ func TestChangedFilesIncludesWorktreeFile(t *testing.T) {
 	}
 	t.Fatalf("ChangedFiles() = %v, want %q", got, created)
 }
+
+func TestExcludeReviewArtifactsOmitsRalphRuntimeFiles(t *testing.T) {
+	files := []string{
+		"hello.txt",
+		"prd.json",
+		"prd.json.lock",
+		".ralph/runs/x/meta.json",
+		"tmp/scratch.txt",
+	}
+	got := ExcludeReviewArtifacts(files)
+	want := []string{"hello.txt", "prd.json", "tmp/scratch.txt"}
+	if len(got) != len(want) {
+		t.Fatalf("ExcludeReviewArtifacts() = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("ExcludeReviewArtifacts() = %v, want %v", got, want)
+		}
+	}
+}

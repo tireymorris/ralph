@@ -70,6 +70,7 @@ func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) 
 		e.emit(EventError{Err: fmt.Errorf("implementation review: %w", err)})
 		return false, err
 	}
+	changed = gitdiff.ExcludeReviewArtifacts(changed)
 	filesHash := gitdiff.HashFiles(changed)
 
 	e.emit(EventImplementationReviewStarted{Iteration: iteration})

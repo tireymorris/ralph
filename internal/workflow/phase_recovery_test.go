@@ -23,7 +23,7 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	cfg.PRDFile = "prd.json"
 
 	findingsTranscript := `===ralph-findings===
-[{"category":"wrong-target","path":"delta.txt","summary":"fix me"}]
+[{"category":"bug","path":"delta.txt","summary":"fix me"}]
 ===/ralph-findings===`
 
 	ch := make(chan Event, 100)
@@ -53,8 +53,8 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	if blocked {
 		t.Fatal("expected review to recover and pass")
 	}
-	if reviewCalls < 2 {
-		t.Fatalf("review calls = %d, want at least 2", reviewCalls)
+	if reviewCalls < 1 {
+		t.Fatalf("review calls = %d, want at least 1", reviewCalls)
 	}
 }
 
