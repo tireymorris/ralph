@@ -68,12 +68,14 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 		return nil
 	}
 
-	if d := os.Getenv("RALPH_MOCK_IMPL_DELAY_MS"); d != "" {
-		if ms, err := strconv.Atoi(d); err == nil && ms > 0 {
-			select {
-			case <-time.After(time.Duration(ms) * time.Millisecond):
-			case <-ctx.Done():
-				return ctx.Err()
+	if strings.Contains(prompt, "Implement story:") {
+		if d := os.Getenv("RALPH_MOCK_IMPL_DELAY_MS"); d != "" {
+			if ms, err := strconv.Atoi(d); err == nil && ms > 0 {
+				select {
+				case <-time.After(time.Duration(ms) * time.Millisecond):
+				case <-ctx.Done():
+					return ctx.Err()
+				}
 			}
 		}
 	}
