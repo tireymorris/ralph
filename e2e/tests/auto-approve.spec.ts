@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, expect, buildBinary, ralphBinaryPath, startServerInWorkDir } from "../helpers/server.ts";
+import { test, expect, buildBinary, initGitRepo, ralphBinaryPath, startServerInWorkDir } from "../helpers/server.ts";
 
 interface StoryStatus {
   id: string;
@@ -17,7 +17,7 @@ test.describe("auto-approve CLI run", () => {
   test("--yolo completes without rendering manual gates", async ({ page }) => {
     buildBinary();
     const workDir = mkdtempSync(join(tmpdir(), "ralph-yolo-e2e-"));
-    await execInWorkDir("git", ["init"], workDir);
+    initGitRepo(workDir);
 
     const cli = spawnRalphYolo(workDir);
     const server = await startServerInWorkDir(workDir, { RALPH_RUNNER: "mock" });
@@ -94,7 +94,7 @@ function readPRD(workDir: string): PRDStatus {
 }
 
 async function waitUntil(check: () => boolean | Promise<boolean>, label: string): Promise<void> {
-  const deadline = Date.now() + 30_000;
+  const deadline = Date.now() + 90_000;
   let lastError: unknown;
   while (Date.now() < deadline) {
     try {

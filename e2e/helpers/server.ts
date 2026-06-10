@@ -33,9 +33,15 @@ export async function startServer(
   env: Record<string, string> = {},
 ): Promise<ServerHandle> {
   const workDir = mkdtempSync(join(tmpdir(), "ralph-e2e-"));
-  execSync("git init", { cwd: workDir, stdio: "pipe" });
+  initGitRepo(workDir);
 
   return startServerInWorkDir(workDir, env);
+}
+
+export function initGitRepo(workDir: string) {
+  execSync("git init", { cwd: workDir, stdio: "pipe" });
+  execSync('git config user.email "ralph-e2e@example.com"', { cwd: workDir, stdio: "pipe" });
+  execSync('git config user.name "Ralph E2E"', { cwd: workDir, stdio: "pipe" });
 }
 
 export async function startServerInWorkDir(

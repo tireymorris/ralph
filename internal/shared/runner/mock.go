@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	promptpkg "ralph/internal/prompt"
 	"ralph/internal/shared/config"
 )
 
@@ -50,6 +51,12 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 		}
 		path := filepath.Join(workDir, mockQuestionsFile)
 		return os.WriteFile(path, []byte(questions), 0o644)
+	}
+
+	if strings.Contains(prompt, promptpkg.PRDSelfReviewVerdictFile) || strings.Contains(prompt, "PRD self-review round") {
+		verdict := `{"approved":true,"summary":"mock self-review approved"}`
+		path := filepath.Join(workDir, promptpkg.PRDSelfReviewVerdictFile)
+		return os.WriteFile(path, []byte(verdict), 0o644)
 	}
 
 	if strings.Contains(prompt, "Write the PRD file") || strings.Contains(prompt, "Write the updated PRD file") {
