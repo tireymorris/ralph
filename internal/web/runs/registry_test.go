@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"ralph/internal/workflow"
 )
 
 func TestRegisterGet(t *testing.T) {
@@ -139,6 +141,48 @@ func TestUpdateCheckpoint(t *testing.T) {
 	}
 	if got.Checkpoint != CheckpointImplReview {
 		t.Errorf("reloaded Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	}
+}
+
+func TestFileReviewLoopMetaRoundTripsThroughWebRegistry(t *testing.T) {
+	workDir := t.TempDir()
+	runID := "prd-local"
+
+	want := workflow.ReviewLoopUpdate{
+		Checkpoint:                 CheckpointImplReview,
+		ReviewIteration:            2,
+		ReviewFingerprint:          "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
+		ReviewElapsedMs:            1500,
+		StopReason:                 "duplicate_findings",
+		LastReviewTranscriptPath:   "review-2.txt",
+		LastReviewChangedFilesHash: "hash-2",
+		RecoveryAttempts:           3,
+	}
+	loop := workflow.NewFileReviewLoop(workDir, runID)
+	if err := loop.Apply(want); err != nil {
+		t.Fatalf("Apply() error = %v", err)
+	}
+
+	reloaded := NewRegistry()
+	if err := reloaded.LoadFromWorkDir(workDir); err != nil {
+		t.Fatalf("LoadFromWorkDir() error = %v", err)
+	}
+
+	got, ok := reloaded.Get(runID)
+	if !ok {
+		t.Fatal("Get() ok = false after reload")
+	}
+	if got.ReviewFingerprint != want.ReviewFingerprint {
+		t.Errorf("ReviewFingerprint = %q, want %q", got.ReviewFingerprint, want.ReviewFingerprint)
+	}
+	if got.LastReviewChangedFilesHash != want.LastReviewChangedFilesHash {
+		t.Errorf("LastReviewChangedFilesHash = %q, want %q", got.LastReviewChangedFilesHash, want.LastReviewChangedFilesHash)
+	}
+	if got.RecoveryAttempts != want.RecoveryAttempts {
+		t.Errorf("RecoveryAttempts = %d, want %d", got.RecoveryAttempts, want.RecoveryAttempts)
+	}
+	if got.StopReason != want.StopReason {
+		t.Errorf("StopReason = %q, want %q", got.StopReason, want.StopReason)
 	}
 }
 
