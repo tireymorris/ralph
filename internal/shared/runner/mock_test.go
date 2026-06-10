@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/shared/config"
 )
@@ -24,6 +25,24 @@ func TestMockRunnerWritesPRD(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(workDir, "prd.json")); err != nil {
 		t.Fatalf("prd.json not written: %v", err)
+	}
+}
+
+func TestMockRunnerImplDelayDoesNotSlowSelfReview(t *testing.T) {
+	t.Setenv("RALPH_MOCK_IMPL_DELAY_MS", "500")
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.Runner = "mock"
+
+	r := NewMock(cfg)
+	ch := make(chan OutputLine, 4)
+	start := time.Now()
+	if err := r.Run(context.Background(), "Review prd and write .ralph_prd_review.json", ch); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 100*time.Millisecond {
+		t.Fatalf("self-review took %s with implementation delay configured", elapsed)
 	}
 }
 
