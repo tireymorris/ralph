@@ -2,9 +2,11 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -39,7 +41,15 @@ func runWithPipedCommandAndStdin(
 }
 
 func wrapRunnerError(runnerName string, err error) error {
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var detailErr *ExitDetailError
+	if errors.As(err, &detailErr) {
+		if len(detailErr.Detail) > 0 {
+			return fmt.Errorf("%s exited with code %d: %s", runnerName, detailErr.ExitCode(), strings.Join(detailErr.Detail, " | "))
+		}
+		return fmt.Errorf("%s exited with code %d", runnerName, detailErr.ExitCode())
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		return fmt.Errorf("%s exited with code %d", runnerName, exitErr.ExitCode())
 	}
 	return fmt.Errorf("%s failed: %w", runnerName, err)

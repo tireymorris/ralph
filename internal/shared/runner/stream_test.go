@@ -1,7 +1,9 @@
 package runner
 
 import (
+	"errors"
 	"io"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -99,4 +101,108 @@ func (repeatByteReader) Read(p []byte) (int, error) {
 		p[i] = 'x'
 	}
 	return len(p), nil
+}
+
+func realExitError(t *testing.T) *exec.ExitError {
+	t.Helper()
+	err := exec.Command("false").Run()
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("expected *exec.ExitError from false, got %T", err)
+	}
+	return exitErr
+}
+
+func errTransform(verbose bool) LineTransformer {
+	return func(line string) []OutputLine {
+		return []OutputLine{{Text: line, IsErr: true, Verbose: verbose}}
+	}
+}
+
+func TestRunPipedCommandExitErrorIncludesStderrTail(t *testing.T) {
+	mock := &mockCmd{
+		stderr:  "--dangerously-skip-permissions must be accepted in an interactive session first.\n",
+		waitErr: realExitError(t),
+	}
+
+	err := runPipedCommand("claude", mock, nil, passthroughTransform, errTransform(true))
+	if err == nil {
+		t.Fatal("runPipedCommand() error = nil, want exit error")
+	}
+	if !strings.Contains(err.Error(), "--dangerously-skip-permissions must be accepted") {
+		t.Fatalf("runPipedCommand() error = %v, want stderr detail included", err)
+	}
+
+	var detailErr *ExitDetailError
+	if !errors.As(err, &detailErr) {
+		t.Fatalf("runPipedCommand() error = %T, want *ExitDetailError", err)
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatal("ExitDetailError should unwrap to *exec.ExitError")
+	}
+}
+
+func TestRunPipedCommandExitErrorPrefersNonVerboseLines(t *testing.T) {
+	mock := &mockCmd{
+		stderr:  "node warning: deprecated API\nInvalid API key. Please run /login\n",
+		waitErr: realExitError(t),
+	}
+
+	stderrTransform := func(line string) []OutputLine {
+		return []OutputLine{{Text: line, IsErr: true, Verbose: !strings.Contains(line, "Invalid")}}
+	}
+	err := runPipedCommand("claude", mock, nil, passthroughTransform, stderrTransform)
+
+	var detailErr *ExitDetailError
+	if !errors.As(err, &detailErr) {
+		t.Fatalf("runPipedCommand() error = %T, want *ExitDetailError", err)
+	}
+	if len(detailErr.Detail) != 1 || detailErr.Detail[0] != "Invalid API key. Please run /login" {
+		t.Fatalf("Detail = %v, want only the non-verbose error line", detailErr.Detail)
+	}
+}
+
+func TestRunPipedCommandExitErrorCapsTailLength(t *testing.T) {
+	mock := &mockCmd{
+		stderr:  "e1\ne2\ne3\ne4\ne5\n",
+		waitErr: realExitError(t),
+	}
+
+	err := runPipedCommand("claude", mock, nil, passthroughTransform, errTransform(false))
+
+	var detailErr *ExitDetailError
+	if !errors.As(err, &detailErr) {
+		t.Fatalf("runPipedCommand() error = %T, want *ExitDetailError", err)
+	}
+	want := []string{"e3", "e4", "e5"}
+	if len(detailErr.Detail) != len(want) {
+		t.Fatalf("Detail = %v, want last %d lines %v", detailErr.Detail, errorTailLimit, want)
+	}
+	for i, line := range want {
+		if detailErr.Detail[i] != line {
+			t.Fatalf("Detail = %v, want %v", detailErr.Detail, want)
+		}
+	}
+}
+
+func TestWrapRunnerErrorIncludesDetail(t *testing.T) {
+	detailed := &ExitDetailError{
+		exitErr: realExitError(t),
+		Detail:  []string{"Invalid API key. Please run /login"},
+	}
+
+	err := wrapRunnerError("Claude Code", detailed)
+	want := "Claude Code exited with code 1: Invalid API key. Please run /login"
+	if err.Error() != want {
+		t.Fatalf("wrapRunnerError() = %q, want %q", err.Error(), want)
+	}
+}
+
+func TestWrapRunnerErrorWithoutDetailKeepsBareExitMessage(t *testing.T) {
+	err := wrapRunnerError("Claude Code", &ExitDetailError{exitErr: realExitError(t)})
+	want := "Claude Code exited with code 1"
+	if err.Error() != want {
+		t.Fatalf("wrapRunnerError() = %q, want %q", err.Error(), want)
+	}
 }

@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -65,6 +66,74 @@ func defaultCmdFuncNoStdin(workDir string) func(ctx context.Context, name string
 
 type LineTransformer func(line string) []OutputLine
 
+const errorTailLimit = 3
+
+// errorTail keeps the last few error lines a runner emitted so exit errors can
+// explain why the process died; CLIs often print the reason only to stderr,
+// where the default filter hides it as verbose.
+type errorTail struct {
+	mu       sync.Mutex
+	primary  []string
+	fallback []string
+}
+
+func (t *errorTail) record(out OutputLine) {
+	if !out.IsErr {
+		return
+	}
+	text := strings.TrimSpace(out.Text)
+	if text == "" {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	dest := &t.fallback
+	if !out.Verbose {
+		dest = &t.primary
+	}
+	*dest = append(*dest, text)
+	if len(*dest) > errorTailLimit {
+		*dest = (*dest)[1:]
+	}
+}
+
+func (t *errorTail) snapshot() []string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	lines := t.primary
+	if len(lines) == 0 {
+		lines = t.fallback
+	}
+	return append([]string(nil), lines...)
+}
+
+func (t *errorTail) recording(transform LineTransformer) LineTransformer {
+	return func(line string) []OutputLine {
+		outs := transform(line)
+		for _, out := range outs {
+			t.record(out)
+		}
+		return outs
+	}
+}
+
+// ExitDetailError pairs a process exit error with the error lines that explain it.
+type ExitDetailError struct {
+	exitErr *exec.ExitError
+	Detail  []string
+}
+
+func (e *ExitDetailError) Error() string {
+	if len(e.Detail) == 0 {
+		return e.exitErr.Error()
+	}
+	return fmt.Sprintf("%s: %s", e.exitErr.Error(), strings.Join(e.Detail, " | "))
+}
+
+func (e *ExitDetailError) Unwrap() error { return e.exitErr }
+
+func (e *ExitDetailError) ExitCode() int { return e.exitErr.ExitCode() }
+
 // runPipedCommand streams stdout/stderr through transformers before waiting on cmd.
 func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- OutputLine, stdoutTransform, stderrTransform LineTransformer) error {
 	stdout, err := cmd.StdoutPipe()
@@ -79,16 +148,17 @@ func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- Outpu
 		return fmt.Errorf("failed to start %s: %w", commandName, err)
 	}
 
+	tail := &errorTail{}
 	var wg sync.WaitGroup
 	errCh := make(chan error, constants.PipeReaderCount)
 	wg.Add(constants.PipeReaderCount)
 	go func() {
 		defer wg.Done()
-		errCh <- readPipeLines(stdout, outputCh, stdoutTransform)
+		errCh <- readPipeLines(stdout, outputCh, tail.recording(stdoutTransform))
 	}()
 	go func() {
 		defer wg.Done()
-		errCh <- readPipeLines(stderr, outputCh, stderrTransform)
+		errCh <- readPipeLines(stderr, outputCh, tail.recording(stderrTransform))
 	}()
 	wg.Wait()
 	close(errCh)
@@ -97,7 +167,14 @@ func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- Outpu
 			return readErr
 		}
 	}
-	return cmd.Wait()
+	if waitErr := cmd.Wait(); waitErr != nil {
+		var exitErr *exec.ExitError
+		if errors.As(waitErr, &exitErr) {
+			return &ExitDetailError{exitErr: exitErr, Detail: tail.snapshot()}
+		}
+		return waitErr
+	}
+	return nil
 }
 
 // readPipeLines reads lines longer than any fixed bufio.Scanner buffer (AI
@@ -116,11 +193,13 @@ func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTra
 		if err == bufio.ErrBufferFull {
 			continue
 		}
-		if len(pending) > 0 && outputCh != nil {
+		if len(pending) > 0 {
 			line := strings.TrimSuffix(string(pending), "\n")
 			line = strings.TrimSuffix(line, "\r")
 			for _, out := range transform(line) {
-				outputCh <- out
+				if outputCh != nil {
+					outputCh <- out
+				}
 			}
 		}
 		pending = pending[:0]

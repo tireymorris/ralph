@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -100,15 +99,11 @@ func (r *Runner) Run(ctx context.Context, prompt string, outputCh chan<- OutputL
 	)
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			logger.Debug("AI runner exited with code",
-				"runner", r.RunnerName(),
-				"command", r.CommandName(),
-				"exit_code", exitErr.ExitCode(),
-				"runner", r.cfg.Runner)
-			return fmt.Errorf("%s exited with code %d", r.RunnerName(), exitErr.ExitCode())
-		}
-		return fmt.Errorf("%s failed: %w", r.RunnerName(), err)
+		logger.Debug("AI runner failed",
+			"runner", r.RunnerName(),
+			"command", r.CommandName(),
+			"error", err)
+		return wrapRunnerError(r.RunnerName(), err)
 	}
 
 	logger.Debug("AI runner completed successfully",
