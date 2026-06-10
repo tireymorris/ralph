@@ -2,10 +2,11 @@
 
 Turn a natural-language goal into a `prd.json`, then implement it story-by-story via an AI coding CLI (clarify → PRD → review → implement → critical diff review).
 
-## Quick start
+## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
+ralph "describe the change you want"
 ```
 
 Pin a branch or tag: `curl -fsSL .../install.sh | bash -s -- main`
@@ -71,6 +72,8 @@ Implementation requires a **git repository** in the working directory (used for 
 | `--ref REF` | Branch or tag for `ralph update` (default `main`) |
 | `--check` | With `ralph update`: report whether a newer commit exists on the remote |
 | `RALPH_REPO` | Git URL for `ralph update` (default `https://github.com/tireymorris/ralph.git`) |
+| `RALPH_RUNNER` | Runner binary: `claude`, `opencode`, `pi`, or `cursor` |
+| `RALPH_RUNNER_TIMEOUT` | Per-runner-session timeout as a Go duration, e.g. `30m` (default disabled) |
 | `-v`, `--verbose` | Debug logging |
 | `-h`, `--help` | Help |
 
@@ -90,12 +93,6 @@ Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
 | `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |
 | `.ralph/backups/<timestamp>/` | TUI + web | Prior state moved aside before a new run (not touched by `--resume`) |
-
-## Runner
-
-Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (Cursor Agent). Ralph does not pick a model itself—that stays in your runner's config.
-
-Set `RALPH_RUNNER_TIMEOUT` to a Go duration string (for example, `30m`) to apply a per-session timeout to each runner invocation. The default is disabled (`0`).
 
 Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
