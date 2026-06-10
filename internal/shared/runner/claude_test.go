@@ -262,6 +262,13 @@ func TestParseClaudeStreamJSON(t *testing.T) {
 			wantErr:  true,
 		},
 		{
+			name:     "result error with detail",
+			input:    `{"type":"result","subtype":"error","result":"Invalid API key. Please run /login"}`,
+			wantLen:  1,
+			wantText: "Task failed: Invalid API key. Please run /login",
+			wantErr:  true,
+		},
+		{
 			name:        "invalid JSON returns raw line",
 			input:       `not valid json`,
 			wantLen:     1,

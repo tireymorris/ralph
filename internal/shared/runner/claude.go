@@ -125,7 +125,11 @@ func parseClaudeStreamJSON(line string) []OutputLine {
 		if event.Subtype == "success" {
 			outputs = append(outputs, OutputLine{Text: "Task completed successfully", Time: now, Verbose: true})
 		} else if event.Subtype == "error" {
-			outputs = append(outputs, OutputLine{Text: "Task failed", Time: now, IsErr: true})
+			text := "Task failed"
+			if event.Result != "" {
+				text = "Task failed: " + event.Result
+			}
+			outputs = append(outputs, OutputLine{Text: text, Time: now, IsErr: true})
 		}
 	}
 
