@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const DefaultRunner = "claude"
@@ -44,9 +45,10 @@ type Config struct {
 	Runner      string `json:"runner"`
 	PRDFile     string `json:"prd_file"`
 	WorkDir     string `json:"-"`
-	TestCommand string `json:"test_command"`
-	SkipCleanup bool   `json:"-"`
-	AutoApprove bool   `json:"-"`
+	TestCommand   string        `json:"test_command"`
+	RunnerTimeout time.Duration `json:"-"`
+	SkipCleanup   bool          `json:"-"`
+	AutoApprove   bool          `json:"-"`
 }
 
 func DefaultConfig() *Config {

@@ -3,7 +3,9 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -82,6 +84,45 @@ func TestLoadEnvRunner(t *testing.T) {
 
 	if cfg.Runner != "opencode" {
 		t.Errorf("Runner = %q, want %q", cfg.Runner, "opencode")
+	}
+}
+
+func TestLoadEnvRunnerTimeout(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+	os.Setenv("RALPH_RUNNER_TIMEOUT", "30m")
+	defer os.Unsetenv("RALPH_RUNNER_TIMEOUT")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if cfg.RunnerTimeout != 30*time.Minute {
+		t.Errorf("RunnerTimeout = %v, want %v", cfg.RunnerTimeout, 30*time.Minute)
+	}
+}
+
+func TestLoadEnvRunnerTimeoutRejectsInvalidDuration(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+	os.Setenv("RALPH_RUNNER_TIMEOUT", "eventually")
+	defer os.Unsetenv("RALPH_RUNNER_TIMEOUT")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "RALPH_RUNNER_TIMEOUT") {
+		t.Errorf("Load() error = %v, want mention RALPH_RUNNER_TIMEOUT", err)
 	}
 }
 
