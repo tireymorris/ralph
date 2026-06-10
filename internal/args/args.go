@@ -146,6 +146,7 @@ Options:
   --dry-run        Generate PRD only, don't implement
   --resume         Resume implementation from existing prd.json
   --skip-cleanup   Skip post-implementation cleanup phase
+  --yolo           Skip manual clarify and PRD approval gates
   --verbose, -v    Enable debug logging
   --help, -h       Show this help message
   --port PORT      Web server port (with ralph web; default 8080)
@@ -154,6 +155,7 @@ Options:
 
 Environment:
   RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)
+  RALPH_YOLO     Set to 1 to skip manual clarify and PRD approval gates
   RALPH_REPO     Git URL for ralph update (default: https://github.com/tireymorris/ralph.git)
 `
 }

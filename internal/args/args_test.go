@@ -130,7 +130,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup", "--yolo"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}
