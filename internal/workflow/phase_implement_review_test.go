@@ -2,6 +2,8 @@ package workflow
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/gitdiff"
+	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
@@ -324,6 +327,88 @@ func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
 	}
 	r.updates = append(r.updates, u)
 	return nil
+}
+
+func TestRunImplementationReviewLogsApplyReviewLoopFailure(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+
+	applyErr := errors.New("persist failed")
+	loop := &failingReviewLoop{err: applyErr}
+	capture := &capturingSlogHandler{}
+	restore := logger.SetForTest(slog.New(capture))
+	t.Cleanup(restore)
+
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, make(chan Event, 10), mock)
+	exec.SetReviewLoop("run-apply-fails", loop)
+
+	blocked, err := exec.runImplementationReviewOnce(context.Background(), &prd.PRD{ProjectName: "Test"})
+	if err != nil {
+		t.Fatalf("runImplementationReviewOnce() error = %v, want nil", err)
+	}
+	if blocked {
+		t.Fatal("runImplementationReviewOnce() blocked = true, want false")
+	}
+	if !capture.containsWarn("persist failed") {
+		t.Fatalf("expected warning containing apply error, records = %#v", capture.records)
+	}
+}
+
+type failingReviewLoop struct {
+	err error
+}
+
+func (f *failingReviewLoop) Snapshot() (int, string, int64, string) { return 0, "", 0, "" }
+func (f *failingReviewLoop) Apply(ReviewLoopUpdate) error            { return f.err }
+
+type capturedSlogRecord struct {
+	level   slog.Level
+	message string
+	attrs   []slog.Attr
+}
+
+type capturingSlogHandler struct {
+	records []capturedSlogRecord
+}
+
+func (h *capturingSlogHandler) Enabled(context.Context, slog.Level) bool { return true }
+func (h *capturingSlogHandler) WithAttrs([]slog.Attr) slog.Handler       { return h }
+func (h *capturingSlogHandler) WithGroup(string) slog.Handler            { return h }
+func (h *capturingSlogHandler) Handle(_ context.Context, r slog.Record) error {
+	rec := capturedSlogRecord{level: r.Level, message: r.Message}
+	r.Attrs(func(a slog.Attr) bool {
+		rec.attrs = append(rec.attrs, a)
+		return true
+	})
+	h.records = append(h.records, rec)
+	return nil
+}
+
+func (h *capturingSlogHandler) containsWarn(substr string) bool {
+	for _, r := range h.records {
+		if r.level != slog.LevelWarn {
+			continue
+		}
+		if strings.Contains(r.message, substr) {
+			return true
+		}
+		for _, a := range r.attrs {
+			if strings.Contains(a.Value.String(), substr) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {

@@ -41,8 +41,6 @@ func (e *Executor) recoveryAttemptsSnapshot() int {
 	if e.reviewLoop == nil {
 		return e.recoveryAttempts
 	}
-	iteration, _, _, _ := e.reviewLoop.Snapshot()
-	_ = iteration
 	if ext, ok := e.reviewLoop.(recoveryAttemptsReader); ok {
 		return ext.RecoveryAttempts()
 	}
@@ -66,7 +64,7 @@ func (e *Executor) applyMechanicalCleanup(findings []ImplementationFinding) {
 
 func (e *Executor) clearReviewFingerprint() {
 	iteration, _, elapsed, filesHash := e.reviewLoopSnapshot()
-	_ = e.applyReviewLoop(ReviewLoopUpdate{
+	e.applyReviewLoopBestEffort(ReviewLoopUpdate{
 		Checkpoint:                 runstate.CheckpointImplReview,
 		ReviewIteration:            iteration,
 		ReviewFingerprint:          "",
@@ -156,7 +154,7 @@ func (e *Executor) runRecovery(
 		u.ReviewElapsedMs = elapsed
 		u.LastReviewChangedFilesHash = filesHash
 	}
-	_ = e.applyReviewLoop(u)
+	e.applyReviewLoopBestEffort(u)
 
 	if !success {
 		return false, runErr

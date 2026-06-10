@@ -8,6 +8,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/gitdiff"
+	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/review"
@@ -23,7 +24,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 		if round >= constants.MaxImplementationReviewRounds {
 			baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
 			baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
-			_ = e.applyReviewLoop(baseUpdate)
+			e.applyReviewLoopBestEffort(baseUpdate)
 			return false, fmt.Errorf("implementation review: exceeded %d review rounds", constants.MaxImplementationReviewRounds)
 		}
 
@@ -43,7 +44,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 		} else if blocked {
 			findings = e.pendingReviewFindings
 			e.recoveryAttempts = 0
-			_ = e.applyReviewLoop(e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash))
+			e.applyReviewLoopBestEffort(e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash))
 		} else if err != nil {
 			return false, err
 		}
@@ -56,7 +57,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 			if err != nil && e.recoveryAttemptsSnapshot() >= constants.MaxRecoveryAttempts {
 				baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
 				baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
-				_ = e.applyReviewLoop(baseUpdate)
+				e.applyReviewLoopBestEffort(baseUpdate)
 				return false, fmt.Errorf("implementation review: %s", runstate.StopReasonRecoveryExhausted)
 			}
 			continue
@@ -78,7 +79,7 @@ func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) 
 	e.emit(EventImplementationReviewStarted{Iteration: iteration})
 
 	if len(changed) > 0 && prevFilesHash != "" && filesHash == prevFilesHash && prevFingerprint != "" {
-		_ = e.applyReviewLoop(e.implReviewLoopUpdate(iteration, prevFingerprint, elapsedMs, filesHash))
+		e.applyReviewLoopBestEffort(e.implReviewLoopUpdate(iteration, prevFingerprint, elapsedMs, filesHash))
 		return false, duplicateFindingsError()
 	}
 
@@ -110,12 +111,12 @@ func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) 
 	fingerprint := review.Fingerprint(result.Findings)
 	baseUpdate := e.implReviewLoopUpdate(iteration, fingerprint, elapsedMs, filesHash)
 	if prevFingerprint != "" && fingerprint != "" && fingerprint == prevFingerprint {
-		_ = e.applyReviewLoop(baseUpdate)
+		e.applyReviewLoopBestEffort(baseUpdate)
 		return false, duplicateFindingsError()
 	}
 
 	baseUpdate.LastReviewTranscriptPath = result.LastReviewTranscriptPath
-	_ = e.applyReviewLoop(baseUpdate)
+	e.applyReviewLoopBestEffort(baseUpdate)
 	e.lastReviewTranscriptPath = result.LastReviewTranscriptPath
 
 	if len(result.Findings) > 0 {
@@ -134,6 +135,12 @@ func (e *Executor) reviewLoopSnapshot() (iteration int, fingerprint string, elap
 		return e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash
 	}
 	return e.reviewLoop.Snapshot()
+}
+
+func (e *Executor) applyReviewLoopBestEffort(u ReviewLoopUpdate) {
+	if err := e.applyReviewLoop(u); err != nil {
+		logger.Warn("failed to persist review loop state", "error", err, "checkpoint", u.Checkpoint, "run_id", e.runID)
+	}
 }
 
 func (e *Executor) applyReviewLoop(u ReviewLoopUpdate) error {

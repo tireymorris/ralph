@@ -51,3 +51,9 @@ func Warn(msg string, args ...any) {
 func Error(msg string, args ...any) {
 	get().Error(msg, args...)
 }
+
+func SetForTest(l *slog.Logger) func() {
+	prev := defaultLogger
+	defaultLogger = l
+	return func() { defaultLogger = prev }
+}
