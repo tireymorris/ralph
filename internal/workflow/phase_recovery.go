@@ -191,7 +191,7 @@ func (e *Executor) recoverFromReviewFailure(
 	agentProgress := afterHash != beforeHash
 
 	if agentProgress {
-		committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, "ralph: recovery fixes")
+		committed, commitErr := gitdiff.CommitTrackedChanges(e.cfg.WorkDir, "ralph: recovery fixes")
 		if commitErr != nil {
 			return false, commitErr
 		}
@@ -206,7 +206,7 @@ func (e *Executor) recoverFromReviewFailure(
 		return false, nil
 	}
 
-	committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, "ralph: recovery fixes")
+	committed, commitErr := gitdiff.CommitTrackedChanges(e.cfg.WorkDir, "ralph: recovery fixes")
 	if commitErr != nil {
 		return false, commitErr
 	}

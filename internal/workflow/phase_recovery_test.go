@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -151,6 +152,60 @@ func (p panicSnapshotRecoveryLoop) Snapshot() (int, string, int64, string) {
 
 func (p panicSnapshotRecoveryLoop) Apply(ReviewLoopUpdate) error { return nil }
 func (p panicSnapshotRecoveryLoop) RecoveryAttempts() int        { return p.attempts }
+
+func TestRecoverFromReviewFailureDoesNotRetrackUntrackedFile(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
+	helloPath := filepath.Join(workDir, "hello.txt")
+	if err := os.WriteFile(helloPath, []byte("hello world"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	committed, err := gitdiff.CommitChangedFiles(workDir, "ralph: story-1")
+	if err != nil {
+		t.Fatalf("CommitChangedFiles() err = %v", err)
+	}
+	if !committed {
+		t.Fatal("CommitChangedFiles() committed = false, want true")
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	ch := make(chan Event, 100)
+	executor := NewExecutorWithRunner(cfg, ch, newMockRunner())
+
+	rmCmd := exec.Command("git", "rm", "--cached", "hello.txt")
+	rmCmd.Dir = workDir
+	if out, err := rmCmd.CombinedOutput(); err != nil {
+		t.Fatalf("git rm --cached hello.txt: %v\n%s", err, out)
+	}
+
+	recovered, err := executor.recoverFromReviewFailure(
+		context.Background(),
+		&prd.PRD{Context: "ctx"},
+		prompt.RecoveryReasonReviewFindings,
+		"",
+		[]ImplementationFinding{{
+			Category: "acceptance_criteria",
+			Path:     "hello.txt",
+			Summary:  "file must remain untracked",
+		}},
+	)
+	if err != nil {
+		t.Fatalf("recoverFromReviewFailure() err = %v", err)
+	}
+	if !recovered {
+		t.Fatal("recoverFromReviewFailure() recovered = false, want true")
+	}
+
+	untracked, err := gitdiff.IsUntracked(workDir, "hello.txt")
+	if err != nil {
+		t.Fatalf("IsUntracked() err = %v", err)
+	}
+	if !untracked {
+		t.Fatal("hello.txt should remain untracked after Ralph recovery commit")
+	}
+}
 
 func TestApplyMechanicalCleanupRemovesUntrackedArtifact(t *testing.T) {
 	workDir := t.TempDir()
