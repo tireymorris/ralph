@@ -82,8 +82,15 @@ func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) 
 		return false, duplicateFindingsError()
 	}
 
+	reviewCtx := ctx
+	if e.cfg.RunnerTimeout > 0 {
+		var cancel context.CancelFunc
+		reviewCtx, cancel = context.WithTimeout(ctx, e.cfg.RunnerTimeout)
+		defer cancel()
+	}
+
 	start := time.Now()
-	result, err := review.ReviewDiffWithChanged(ctx, review.Params{
+	result, err := review.ReviewDiffWithChanged(reviewCtx, review.Params{
 		WorkDir:   e.cfg.WorkDir,
 		RunID:     e.runID,
 		Iteration: iteration,
@@ -93,6 +100,9 @@ func (e *Executor) runImplementationReviewOnce(ctx context.Context, p *prd.PRD) 
 	}, changed)
 	elapsedMs += time.Since(start).Milliseconds()
 	if err != nil {
+		if reviewCtx.Err() == context.DeadlineExceeded {
+			err = fmt.Errorf("runner invocation timed out after %s: %w", e.cfg.RunnerTimeout, reviewCtx.Err())
+		}
 		e.emit(EventError{Err: fmt.Errorf("implementation review: %w", err)})
 		return false, err
 	}
