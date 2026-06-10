@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
@@ -208,6 +209,38 @@ func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
 	}
 	close(ch)
 	<-eventsDone
+}
+
+func TestRunImplementationReviewOnceTimesOutReviewRunner(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.RunnerTimeout = 50 * time.Millisecond
+
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
+		if strings.Contains(p, "critical diff review") {
+			<-ctx.Done()
+			return ctx.Err()
+		}
+		return nil
+	}
+	exec := NewExecutorWithRunner(cfg, make(chan Event, 10), mock)
+
+	start := time.Now()
+	_, err := exec.runImplementationReviewOnce(context.Background(), &prd.PRD{ProjectName: "Test"})
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("runImplementationReviewOnce() error = nil, want timeout error")
+	}
+	if !strings.Contains(err.Error(), "50ms") {
+		t.Errorf("runImplementationReviewOnce() error = %v, want mention 50ms", err)
+	}
+	if elapsed > time.Second {
+		t.Errorf("runImplementationReviewOnce() elapsed = %v, want under 1s", elapsed)
+	}
 }
 
 func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.T) {
