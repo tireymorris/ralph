@@ -177,3 +177,26 @@ func TestRunPRDSelfReviewMissingVerdictCountsAsApproved(t *testing.T) {
 		t.Errorf("runner calls = %d, want 1 (missing verdict counts as approved)", mock.CallCount())
 	}
 }
+
+func TestRunPRDSelfReviewInvalidPRDReturnsValidationError(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		invalid := `{"project_name":"Broken","stories":[{"id":"","title":"No ID"}]}`
+		if err := os.WriteFile(filepath.Join(cfg.WorkDir, "prd.json"), []byte(invalid), 0644); err != nil {
+			return err
+		}
+		return writeVerdictFile(t, cfg.WorkDir, true, "approved a broken prd")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.runPRDSelfReview(context.Background(), "build feature")
+	if err == nil {
+		t.Fatal("runPRDSelfReview() should return error when revised PRD fails validation")
+	}
+	if p != nil {
+		t.Errorf("runPRDSelfReview() PRD = %+v, want nil on validation error", p)
+	}
+}
