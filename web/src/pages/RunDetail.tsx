@@ -202,6 +202,11 @@ export default function RunDetail() {
             <span className={`run-status-badge ${statusBadgeClass(run.status)}`}>
               {formatStatus(run.status)}
             </span>
+            {run.auto_approve && (
+              <span className="run-status-badge run-status-badge--default">
+                Auto-approve
+              </span>
+            )}
             {progress && progress.total > 0 && (
               <span className="run-detail-progress-label">
                 {progress.completed}/{progress.total}

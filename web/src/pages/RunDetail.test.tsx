@@ -113,6 +113,19 @@ describe("RunDetail", () => {
     });
   });
 
+  it("renders an auto-approve badge when enabled", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      auto_approve: true,
+    });
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText("Auto-approve")).toBeInTheDocument();
+    });
+  });
+
   it("renders 3 timeline entries from 3 SSE JSON payloads", async () => {
     vi.mocked(getRun).mockResolvedValue(baseRun);
 

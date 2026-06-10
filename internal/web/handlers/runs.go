@@ -42,6 +42,7 @@ type runResponse struct {
 	ReviewFingerprint string         `json:"review_fingerprint,omitempty"`
 	ReviewElapsedMs   int64          `json:"review_elapsed_ms,omitempty"`
 	StopReason        string         `json:"stop_reason,omitempty"`
+	AutoApprove       bool           `json:"auto_approve,omitempty"`
 }
 
 func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
@@ -85,8 +86,9 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 		Status:    "running",
 		Phase:     "clarify",
 		CreatedAt: now,
-		UpdatedAt: now,
-		PRDPath:   a.cfg.PRDFile,
+		UpdatedAt:    now,
+		PRDPath:      a.cfg.PRDFile,
+		AutoApprove: req.AutoApprove,
 	}
 	if err := a.registry.Register(run); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "register run")
@@ -169,6 +171,7 @@ func (a *API) runResponse(run *runs.Run) runResponse {
 		ReviewFingerprint: run.ReviewFingerprint,
 		ReviewElapsedMs:   run.ReviewElapsedMs,
 		StopReason:        run.StopReason,
+		AutoApprove:       run.AutoApprove,
 	}
 	if run.ID == runs.LocalPRDRunID {
 		resp.Source = "local_prd"
