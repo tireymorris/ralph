@@ -84,7 +84,9 @@ func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 }
 
 func TestRunCleanupSuccess(t *testing.T) {
+	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 
 	ch := make(chan Event, 100)
@@ -95,6 +97,9 @@ func TestRunCleanupSuccess(t *testing.T) {
 		}
 		if !strings.Contains(prompt, "my project context") {
 			t.Error("cleanup prompt should contain the PRD context")
+		}
+		if !strings.Contains(prompt, changedFile) {
+			t.Errorf("cleanup prompt should contain changed file %q", changedFile)
 		}
 		outputCh <- runner.OutputLine{Text: "refactoring..."}
 		return nil
@@ -130,7 +135,9 @@ func TestRunCleanupSuccess(t *testing.T) {
 }
 
 func TestRunCleanupRunnerError(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 
 	ch := make(chan Event, 100)
