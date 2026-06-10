@@ -15,6 +15,14 @@ import (
 	"ralph/internal/workflow/events"
 )
 
+func cleanupController(t *testing.T, ctrl *RunController) {
+	t.Helper()
+	t.Cleanup(func() {
+		ctrl.Cancel()
+		time.Sleep(100 * time.Millisecond)
+	})
+}
+
 func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -78,7 +86,7 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 			cfg.SkipCleanup = true
 
 			ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
-			t.Cleanup(ctrl.Cancel)
+			cleanupController(t, ctrl)
 			ch, unsub := ctrl.Subscribe()
 			defer unsub()
 
@@ -446,7 +454,7 @@ func TestForceResumeIgnoresCachedPRDWhenDiskPRDIsMissing(t *testing.T) {
 	cfg.PRDFile = "prd.json"
 
 	ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
-	t.Cleanup(ctrl.Cancel)
+	cleanupController(t, ctrl)
 	ctrl.TrackEventState(events.EventPRDGenerated{PRD: testPRD("cached")})
 
 	ch, unsub := ctrl.Subscribe()
@@ -504,7 +512,7 @@ func TestForceResumeEmitsErrorWithoutPRDOrPrompt(t *testing.T) {
 	cfg.PRDFile = "prd.json"
 
 	ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
-	t.Cleanup(ctrl.Cancel)
+	cleanupController(t, ctrl)
 
 	ch, unsub := ctrl.Subscribe()
 	defer unsub()
