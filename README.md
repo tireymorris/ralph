@@ -95,6 +95,8 @@ Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs
 
 Set `RALPH_RUNNER` to `claude`, `opencode`, `pi`, or `cursor` (Cursor Agent). Ralph does not pick a model itself—that stays in your runner's config.
 
+Set `RALPH_RUNNER_TIMEOUT` to a Go duration string (for example, `30m`) to apply a per-session timeout to each runner invocation. The default is disabled (`0`).
+
 Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
 
 ## Development
