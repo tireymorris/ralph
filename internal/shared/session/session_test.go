@@ -2,12 +2,74 @@ package session
 
 import (
 	"context"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runner"
+	"ralph/internal/workflow/events"
 )
+
+type noopRunner struct{}
+
+func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
+func (noopRunner) RunnerName() string                                          { return "noop" }
+func (noopRunner) CommandName() string                                         { return "noop" }
+func (noopRunner) IsInternalLog(string) bool                                   { return false }
+
+func initGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.email", "t@example.com"},
+		{"config", "user.name", "t"},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+}
+
+func TestContinueImplementationReviewFromPRDDelegatesToDriver(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+	initGitRepo(t, cfg.WorkDir)
+
+	p := &prd.PRD{
+		ProjectName: "Done",
+		Stories: []*prd.Story{
+			{ID: "1", Title: "Only", Priority: 1, Passes: true},
+		},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	s := NewWithRunner(cfg, noopRunner{})
+	s.ContinueImplementationReviewFromPRD(context.Background(), p)
+
+	deadline := time.After(2 * time.Second)
+	for {
+		select {
+		case evt, ok := <-s.EventsCh():
+			if !ok {
+				return
+			}
+			if _, done := evt.(events.EventCompleted); done {
+				return
+			}
+		case <-deadline:
+			t.Fatal("timed out waiting for implementation review continue to finish")
+		}
+	}
+}
 
 func TestPRDForImplementationLoadsFromDiskWhenNotInMemory(t *testing.T) {
 	cfg := config.DefaultConfig()
