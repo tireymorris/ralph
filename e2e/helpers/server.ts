@@ -7,6 +7,10 @@ import { test as base, type Page } from "@playwright/test";
 const ROOT = join(import.meta.dirname, "..", "..");
 const BIN_PATH = join(ROOT, ".ralph-e2e-bin");
 
+export function ralphBinaryPath() {
+  return BIN_PATH;
+}
+
 let built = false;
 
 export function buildBinary() {
@@ -31,6 +35,13 @@ export async function startServer(
   const workDir = mkdtempSync(join(tmpdir(), "ralph-e2e-"));
   execSync("git init", { cwd: workDir, stdio: "pipe" });
 
+  return startServerInWorkDir(workDir, env);
+}
+
+export async function startServerInWorkDir(
+  workDir: string,
+  env: Record<string, string> = {},
+): Promise<ServerHandle> {
   const child: ChildProcess = spawn(BIN_PATH, ["web", "--port", "0"], {
     cwd: workDir,
     env: { ...process.env, RALPH_RUNNER: "mock", ...env },
