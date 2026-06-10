@@ -2,6 +2,8 @@ package workflow
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -71,5 +73,34 @@ func TestRunCritiqueRevisionRunsSelfReviewBeforePRDReview(t *testing.T) {
 	}
 	if reviewEvents != 1 {
 		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
+func TestRunCritiqueRevisionSelfReviewErrorSkipsPRDReview(t *testing.T) {
+	cfg := newCritiqueConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return nil
+		}
+		invalid := `{"project_name":"Broken","stories":[{"id":"","title":"No ID"}]}`
+		if err := os.WriteFile(filepath.Join(cfg.WorkDir, "prd.json"), []byte(invalid), 0644); err != nil {
+			return err
+		}
+		return writeVerdictFile(t, cfg.WorkDir, true, "approved a broken prd")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	err := exec.RunCritiqueRevision(context.Background(), "build feature", "needs more tests")
+	if err == nil {
+		t.Fatal("RunCritiqueRevision() should return error when self-review fails")
+	}
+
+	for len(ch) > 0 {
+		if _, ok := (<-ch).(EventPRDReview); ok {
+			t.Fatal("EventPRDReview should not be emitted when self-review fails")
+		}
 	}
 }
