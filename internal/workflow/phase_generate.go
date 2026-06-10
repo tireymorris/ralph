@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {
@@ -27,12 +25,8 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 
 	e.emit(EventOutput{Output: Output{Text: "Analyzing codebase and generating PRD..."}})
 
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	go e.forwardOutput(outputCh)
-
 	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, "feature", !hasSource, qas)
-	err := e.runner.Run(ctx, prdPrompt, outputCh)
-	close(outputCh)
+	err := e.runWithForwardedOutput(ctx, prdPrompt)
 
 	if err != nil {
 		logger.Error("PRD generation failed", "error", err)

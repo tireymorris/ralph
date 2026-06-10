@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
-	"ralph/internal/shared/runner"
 )
 
 // RunCritiqueRevision applies user critique to the PRD, re-runs clarification, then returns to review.
@@ -43,12 +41,8 @@ func (e *Executor) applyCritique(ctx context.Context, userPrompt, critique strin
 	logger.Debug("applying critique to PRD", "critique_length", len(critique))
 	e.emit(EventOutput{Output: Output{Text: "Researching and applying critique to PRD..."}})
 
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	go e.forwardOutput(outputCh)
-
 	revisionPrompt := prompt.PRDCritiqueRevision(userPrompt, e.cfg.PRDFile, critique)
-	err := e.runner.Run(ctx, revisionPrompt, outputCh)
-	close(outputCh)
+	err := e.runWithForwardedOutput(ctx, revisionPrompt)
 
 	if err != nil {
 		logger.Error("PRD critique revision failed", "error", err)
@@ -63,12 +57,8 @@ func (e *Executor) applyClarifications(ctx context.Context, userPrompt string, q
 	logger.Debug("applying post-critique clarifications to PRD", "answers", len(qas))
 	e.emit(EventOutput{Output: Output{Text: "Applying clarifications to revised PRD..."}})
 
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	go e.forwardOutput(outputCh)
-
 	revisionPrompt := prompt.PRDClarificationRevision(userPrompt, e.cfg.PRDFile, qas)
-	err := e.runner.Run(ctx, revisionPrompt, outputCh)
-	close(outputCh)
+	err := e.runWithForwardedOutput(ctx, revisionPrompt)
 
 	if err != nil {
 		logger.Error("PRD clarification revision failed", "error", err)

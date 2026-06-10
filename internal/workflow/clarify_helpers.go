@@ -6,19 +6,12 @@ import (
 	"fmt"
 
 	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
-	"ralph/internal/shared/runner"
 )
 
 func (e *Executor) runClarifyRunner(ctx context.Context, userPrompt string, isEmpty bool) error {
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	go e.forwardOutput(outputCh)
-
 	clarifyPrompt := prompt.ClarifyingQuestions(userPrompt, ClarifyingQuestionsFile, isEmpty)
-	err := e.runner.Run(ctx, clarifyPrompt, outputCh)
-	close(outputCh)
-	return err
+	return e.runWithForwardedOutput(ctx, clarifyPrompt)
 }
 
 func parseClarifyingQuestions(data []byte) ([]string, error) {
