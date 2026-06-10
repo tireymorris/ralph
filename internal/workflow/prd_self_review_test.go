@@ -94,3 +94,41 @@ func TestRunPRDSelfReviewApprovedFirstRound(t *testing.T) {
 		t.Error("expected verdict file to be removed after read")
 	}
 }
+
+func TestRunPRDSelfReviewLoopsUntilApproved(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	call := 0
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		call++
+		if call == 1 {
+			return writeVerdictFile(t, cfg.WorkDir, false, "needs work")
+		}
+		return writeVerdictFile(t, cfg.WorkDir, true, "fixed")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.runPRDSelfReview(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("runPRDSelfReview() error = %v", err)
+	}
+	if p == nil {
+		t.Fatal("runPRDSelfReview() returned nil PRD")
+	}
+	if mock.CallCount() != 2 {
+		t.Errorf("runner calls = %d, want 2", mock.CallCount())
+	}
+
+	texts := drainOutputTexts(ch)
+	foundRound2 := false
+	for _, text := range texts {
+		if strings.Contains(text, "PRD self-review round 2 of") {
+			foundRound2 = true
+		}
+	}
+	if !foundRound2 {
+		t.Errorf("expected round 2 announcement in outputs %v", texts)
+	}
+}
