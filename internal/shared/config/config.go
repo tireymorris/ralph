@@ -49,6 +49,7 @@ type Config struct {
 	RunnerTimeout time.Duration `json:"-"`
 	SkipCleanup   bool          `json:"-"`
 	AutoApprove   bool          `json:"-"`
+	DryRun        bool          `json:"-"`
 }
 
 func DefaultConfig() *Config {

@@ -8,6 +8,7 @@ import { errorMessage } from "../lib/errors";
 export default function NewRunPage() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
+  const [autoApprove, setAutoApprove] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,12 +20,13 @@ export default function NewRunPage() {
     }
     setSubmitting(true);
     setError(null);
+    const runOptions = { autoApprove };
     try {
-      const { id } = await createRun(trimmed);
+      const { id } = await createRun(trimmed, runOptions);
       navigate(`/runs/${id}`);
     } catch (err) {
       if (isRunConflict(err)) {
-        const result = await retryRunAfterClean(trimmed, err.message);
+        const result = await retryRunAfterClean(trimmed, err.message, runOptions);
         if (result.ok) {
           navigate(`/runs/${result.id}`);
           return;
@@ -66,6 +68,15 @@ export default function NewRunPage() {
             disabled={submitting}
             placeholder="What do you want to build?"
           />
+          <label className="new-run-auto-approve">
+            <input
+              type="checkbox"
+              checked={autoApprove}
+              onChange={(e) => setAutoApprove(e.target.checked)}
+              disabled={submitting}
+            />
+            Auto-approve (skip clarify and PRD review gates)
+          </label>
           {error ? (
             <p className="form-error" role="alert">
               {error}

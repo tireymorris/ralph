@@ -47,9 +47,6 @@ func Parse(args []string) *Options {
 			case "--check":
 				opts.UpdateCheck = true
 				continue
-			case "--yolo":
-				opts.AutoApprove = true
-				continue
 			default:
 				if strings.HasPrefix(arg, "-") {
 					opts.UnknownFlags = append(opts.UnknownFlags, arg)
@@ -111,6 +108,10 @@ func Parse(args []string) *Options {
 func (o *Options) Validate() error {
 	if o.AutoApprove {
 		switch {
+		case o.DryRun:
+			return fmt.Errorf("--yolo cannot be used with --dry-run")
+		case o.Web:
+			return fmt.Errorf("--yolo cannot be used with web")
 		case o.Status:
 			return fmt.Errorf("--yolo cannot be used with status")
 		case o.Clean:
@@ -147,9 +148,9 @@ Usage:
 
 Options:
   --dry-run        Generate PRD only, don't implement
-  --resume         Resume implementation from existing prd.json
+  --resume         Resume implementation from existing prd.json (--yolo auto-continues without gates)
   --skip-cleanup   Skip post-implementation cleanup phase
-  --yolo           Skip manual clarify and PRD approval gates
+  --yolo           Skip manual clarify and PRD approval gates (not with --dry-run or web)
   --verbose, -v    Enable debug logging
   --help, -h       Show this help message
   --port PORT      Web server port (with ralph web; default 8080)

@@ -3,7 +3,6 @@ package workflow
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
@@ -17,6 +16,7 @@ func (e *Executor) runPRDSelfReview(ctx context.Context, userPrompt string) (*pr
 	maxRounds := constants.MaxPRDSelfReviewRounds
 
 	var p *prd.PRD
+	approved := false
 	for round := 1; round <= maxRounds; round++ {
 		e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("PRD self-review round %d of %d", round, maxRounds)}})
 
@@ -32,21 +32,30 @@ func (e *Executor) runPRDSelfReview(ctx context.Context, userPrompt string) (*pr
 		p = reloaded
 
 		verdictReader := PRDReviewVerdictReader{WorkDir: e.cfg.WorkDir}
-		if _, statErr := os.Stat(verdictReader.Path()); os.IsNotExist(statErr) {
-			logger.Warn("PRD self-review verdict file missing, treating as approved", "round", round, "file", verdictReader.Path())
-			break
-		}
-
-		verdict, err := verdictReader.ReadRemove()
+		verdict, status, err := verdictReader.readAndRemove()
 		if err != nil {
 			return nil, err
+		}
+		switch status {
+		case verdictMissing:
+			logger.Warn("PRD self-review verdict file missing, counting round as not approved", "round", round, "file", verdictReader.Path())
+			e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("Self-review round %d: verdict file missing, retrying", round)}})
+			continue
+		case verdictMalformed:
+			logger.Warn("PRD self-review verdict malformed, counting round as not approved", "round", round, "file", verdictReader.Path())
+			e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("Self-review round %d: malformed verdict, retrying", round)}})
+			continue
 		}
 		if verdict.Summary != "" {
 			e.emit(EventOutput{Output: Output{Text: "Self-review verdict: " + verdict.Summary}})
 		}
 		if verdict.Approved {
+			approved = true
 			break
 		}
+	}
+	if !approved {
+		e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("PRD self-review did not approve within %d rounds; proceeding with last PRD revision", maxRounds)}})
 	}
 	return p, nil
 }

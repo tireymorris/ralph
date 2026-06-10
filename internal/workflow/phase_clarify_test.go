@@ -58,8 +58,8 @@ func TestRunClarifyAutoApproveSkipsRunner(t *testing.T) {
 		if !ok {
 			t.Fatalf("event = %T, want EventOutput", event)
 		}
-		if !strings.Contains(output.Output.Text, "skipping clarification") {
-			t.Fatalf("EventOutput text = %q, want it to contain skipping clarification", output.Output.Text)
+		if !strings.Contains(output.Output.Text, "--yolo: skipping clarification") {
+			t.Fatalf("EventOutput text = %q, want it to contain --yolo: skipping clarification", output.Output.Text)
 		}
 	default:
 		t.Fatal("expected EventOutput for skipped clarification")

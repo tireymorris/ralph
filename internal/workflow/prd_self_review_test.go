@@ -156,7 +156,7 @@ func TestRunPRDSelfReviewStopsAtMaxRounds(t *testing.T) {
 	}
 }
 
-func TestRunPRDSelfReviewMissingVerdictCountsAsApproved(t *testing.T) {
+func TestRunPRDSelfReviewMissingVerdictRetriesUntilMaxRounds(t *testing.T) {
 	cfg := newSelfReviewConfig(t)
 
 	ch := make(chan Event, 100)
@@ -173,8 +173,19 @@ func TestRunPRDSelfReviewMissingVerdictCountsAsApproved(t *testing.T) {
 	if p == nil || p.ProjectName != "Test" {
 		t.Fatalf("runPRDSelfReview() PRD = %+v, want reloaded PRD", p)
 	}
-	if mock.CallCount() != 1 {
-		t.Errorf("runner calls = %d, want 1 (missing verdict counts as approved)", mock.CallCount())
+	if mock.CallCount() != constants.MaxPRDSelfReviewRounds {
+		t.Errorf("runner calls = %d, want %d (missing verdict retries until cap)", mock.CallCount(), constants.MaxPRDSelfReviewRounds)
+	}
+
+	texts := drainOutputTexts(ch)
+	foundExhausted := false
+	for _, text := range texts {
+		if strings.Contains(text, "did not approve within") {
+			foundExhausted = true
+		}
+	}
+	if !foundExhausted {
+		t.Errorf("expected exhausted-rounds message in outputs %v", texts)
 	}
 }
 
@@ -304,18 +315,27 @@ func TestRunGenerateSelfReviewMissingVerdictProceedsToPRDReview(t *testing.T) {
 	if _, err := exec.RunGenerate(context.Background(), "build feature"); err != nil {
 		t.Fatalf("RunGenerate() error = %v", err)
 	}
-	if mock.CallCount() != 2 {
-		t.Errorf("runner calls = %d, want 2 (1 generation + 1 review round)", mock.CallCount())
+	if mock.CallCount() != 1+constants.MaxPRDSelfReviewRounds {
+		t.Errorf("runner calls = %d, want %d", mock.CallCount(), 1+constants.MaxPRDSelfReviewRounds)
 	}
 
 	reviewEvents := 0
+	foundExhausted := false
 	for len(ch) > 0 {
-		if _, ok := (<-ch).(EventPRDReview); ok {
+		switch e := (<-ch).(type) {
+		case EventPRDReview:
 			reviewEvents++
+		case EventOutput:
+			if strings.Contains(e.Text, "did not approve within") {
+				foundExhausted = true
+			}
 		}
 	}
 	if reviewEvents != 1 {
 		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+	if !foundExhausted {
+		t.Error("expected exhausted-rounds output before PRD review")
 	}
 }
 

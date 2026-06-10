@@ -87,6 +87,7 @@ func Run(argv []string) int {
 
 func applyRuntimeOptions(cfg *config.Config, opts *args.Options) {
 	cfg.SkipCleanup = opts.SkipCleanup
+	cfg.DryRun = opts.DryRun
 	cfg.AutoApprove = opts.AutoApprove || cfg.AutoApprove
 }
 

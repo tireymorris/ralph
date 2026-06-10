@@ -123,6 +123,62 @@ func TestDriverStartNewAutoApproveSkipsClarifyAndStartsImplementation(t *testing
 	}
 }
 
+func TestDriverStartNewAutoApproveDryRunSkipsImplementation(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
+	cfg.DryRun = true
+
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return os.WriteFile(filepath.Join(workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0644)
+		}
+		prdPath := filepath.Join(workDir, "prd.json")
+		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		return os.WriteFile(prdPath, []byte(data), 0644)
+	}
+
+	d := NewDriverWithRunner(cfg, mock)
+	t.Cleanup(d.Cancel)
+	d.StartNew(context.Background(), "build something")
+
+	deadline := time.Now().Add(3 * time.Second)
+	seenReview := false
+	for time.Now().Before(deadline) {
+		select {
+		case ev := <-d.EventsCh():
+			d.TrackEventState(ev)
+			switch e := ev.(type) {
+			case events.EventPRDReview:
+				seenReview = true
+			case events.EventStoryStarted:
+				t.Fatal("dry-run auto-approve should not start implementation")
+			case events.EventOutput:
+				if strings.Contains(e.Output.Text, "Implement story:") {
+					t.Fatal("dry-run auto-approve should not invoke story implementation")
+				}
+			}
+		default:
+		}
+		if seenReview {
+			time.Sleep(100 * time.Millisecond)
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !seenReview {
+		t.Fatal("expected EventPRDReview before confirming implementation was skipped")
+	}
+	for _, call := range mock.calls {
+		if strings.Contains(call, "Implement story:") {
+			t.Fatalf("dry-run auto-approve invoked implementation prompt %q", call)
+		}
+	}
+}
+
 func TestDriverStartResumeEmitsLoadedEvent(t *testing.T) {
 	workDir := t.TempDir()
 	cfg := config.DefaultConfig()

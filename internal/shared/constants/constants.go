@@ -10,6 +10,9 @@ const (
 	// PipeReaderBufferSize avoids immediate resizing for typical lines.
 	PipeReaderBufferSize = 64 * 1024
 
+	// MaxPipeLineSize caps a single runner output line to avoid unbounded memory use.
+	MaxPipeLineSize = 10 * 1024 * 1024
+
 	// VerbosePatternMinLength is the minimum length needed before checking verbose prefixes.
 	VerbosePatternMinLength = 4
 

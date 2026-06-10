@@ -177,14 +177,25 @@ func runCleanupChangedFilesErrorLogHelper(t *testing.T) {
 	if err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	if mock.CallCount() != 0 {
+		t.Fatalf("runner call count = %d, want 0", mock.CallCount())
 	}
 
 	evts := drainEvents(ch)
 	counts := countCleanupEvents(evts)
-	if counts.started != 1 || counts.completed != 1 {
-		t.Fatalf("cleanup events = started %d completed %d, want 1 each", counts.started, counts.completed)
+	if counts.started != 0 || counts.completed != 0 {
+		t.Fatalf("cleanup events = started %d completed %d, want 0 each", counts.started, counts.completed)
+	}
+
+	foundSkipOutput := false
+	for _, e := range evts {
+		out, ok := e.(EventOutput)
+		if ok && out.Text == "Skipping cleanup: could not list changed files" {
+			foundSkipOutput = true
+		}
+	}
+	if !foundSkipOutput {
+		t.Fatalf("events = %#v, want skip output when changed files cannot be listed", evts)
 	}
 }
 

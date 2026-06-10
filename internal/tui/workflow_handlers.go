@@ -57,6 +57,8 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		if m.dryRun {
 			m.phase = PhaseCompleted
 			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
+		} else if m.cfg.AutoApprove {
+			m.phase = PhasePRDGeneration
 		} else {
 			m.phase = PhasePRDReview
 		}
@@ -68,6 +70,8 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 			e.PRD.ProjectName, e.PRD.CompletedCount(), len(e.PRD.Stories)))
 		if m.dryRun {
 			m.phase = PhaseCompleted
+		} else if m.cfg.AutoApprove {
+			m.phase = PhasePRDGeneration
 		} else {
 			m.phase = PhasePRDReview
 		}
@@ -80,10 +84,14 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.markMainScrollJump()
 
 	case events.EventPRDReview:
-		m.phase = PhasePRDReview
 		m.revisingPRD = false
 		m.prd = e.PRD
-		m.logger.AddLog("PRD ready for review")
+		if m.cfg.AutoApprove {
+			m.logger.AddLog("PRD auto-approved, continuing to implementation")
+		} else {
+			m.phase = PhasePRDReview
+			m.logger.AddLog("PRD ready for review")
+		}
 		m.markMainScrollJump()
 
 	case events.EventStoryStarted:

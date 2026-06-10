@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -499,7 +500,11 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 	call := 0
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
-			return nil
+			data, err := json.Marshal(PRDReviewVerdict{Approved: true, Summary: "ok"})
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(filepath.Join(tmpDir, prompt.PRDSelfReviewVerdictFile), data, 0644)
 		}
 		call++
 		switch call {

@@ -71,7 +71,7 @@ describe("NewRunPage", () => {
     await waitFor(() => {
       expect(createRun).toHaveBeenCalledTimes(1);
     });
-    expect(createRun).toHaveBeenCalledWith("build the web ui");
+    expect(createRun).toHaveBeenCalledWith("build the web ui", { autoApprove: false });
     await waitFor(() => {
       expect(screen.getByTestId("run-detail")).toBeInTheDocument();
     });
@@ -95,8 +95,8 @@ describe("NewRunPage", () => {
       expect(postClean).toHaveBeenCalledTimes(1);
     });
     expect(createRun).toHaveBeenCalledTimes(2);
-    expect(createRun).toHaveBeenNthCalledWith(1, "my goal");
-    expect(createRun).toHaveBeenNthCalledWith(2, "my goal");
+    expect(createRun).toHaveBeenNthCalledWith(1, "my goal", { autoApprove: false });
+    expect(createRun).toHaveBeenNthCalledWith(2, "my goal", { autoApprove: false });
     await waitFor(() => {
       expect(screen.getByTestId("run-detail")).toBeInTheDocument();
     });
@@ -143,6 +143,20 @@ describe("NewRunPage", () => {
       'active run "abc" in progress',
     );
     vi.unstubAllGlobals();
+  });
+
+  it("sends auto_approve when the checkbox is checked", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listRuns).mockResolvedValue([]);
+    vi.mocked(createRun).mockResolvedValue({ id: "run-yolo" });
+
+    renderComposer();
+    await user.click(screen.getByRole("checkbox", { name: /auto-approve/i }));
+    await submitGoal(user, "ship fast");
+
+    await waitFor(() => {
+      expect(createRun).toHaveBeenCalledWith("ship fast", { autoApprove: true });
+    });
   });
 
   it("submit button uses btn and btn--primary classes", () => {

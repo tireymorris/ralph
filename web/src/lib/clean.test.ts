@@ -62,7 +62,7 @@ describe("retryRunAfterClean", () => {
       CONFLICT_CLEAN_CONFIRM_MESSAGE,
     );
     expect(postClean).toHaveBeenCalledTimes(1);
-    expect(createRun).toHaveBeenCalledWith("goal");
+    expect(createRun).toHaveBeenCalledWith("goal", {});
     vi.unstubAllGlobals();
   });
 

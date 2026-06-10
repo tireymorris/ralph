@@ -106,6 +106,9 @@ func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTra
 	reader := bufio.NewReaderSize(pipe, constants.PipeReaderBufferSize)
 	for {
 		line, err := reader.ReadString('\n')
+		if len(line) > constants.MaxPipeLineSize {
+			return fmt.Errorf("scan pipe output: line exceeds %d bytes", constants.MaxPipeLineSize)
+		}
 		if len(line) > 0 && outputCh != nil {
 			line = strings.TrimSuffix(line, "\n")
 			line = strings.TrimSuffix(line, "\r")

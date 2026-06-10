@@ -10,7 +10,7 @@ import (
 // RunClarify emits questions and waits for consumer answers; skipped questions return nil.
 func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.QuestionAnswer, error) {
 	if e.cfg.AutoApprove {
-		e.emit(EventOutput{Output: Output{Text: "AutoApprove: skipping clarification"}})
+		e.emit(EventOutput{Output: Output{Text: "--yolo: skipping clarification"}})
 		return nil, nil
 	}
 
