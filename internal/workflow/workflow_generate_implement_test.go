@@ -550,8 +550,8 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatalf("RunCritiqueRevision() error = %v", err)
 	}
-	if mock.CallCount() != 4 {
-		t.Fatalf("runner call count = %d, want 4 (critique, clarify, clarification revision, self-review)", mock.CallCount())
+	if mock.CallCount() != 3 {
+		t.Fatalf("runner call count = %d, want 3 (critique, clarify, clarification revision; self-review only runs with auto-approve)", mock.CallCount())
 	}
 }
 
