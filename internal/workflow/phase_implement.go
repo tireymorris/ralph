@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/gitdiff"
@@ -10,6 +11,21 @@ import (
 	"ralph/internal/shared/prd"
 	"ralph/internal/workflow/events"
 )
+
+func describeBlockedStories(p *prd.PRD, blocked []*prd.Story) string {
+	descriptions := make([]string, 0, len(blocked))
+	for _, story := range blocked {
+		var unsatisfied []string
+		for _, depID := range story.DependsOn {
+			dep := p.GetStory(depID)
+			if dep == nil || !dep.Passes {
+				unsatisfied = append(unsatisfied, depID)
+			}
+		}
+		descriptions = append(descriptions, fmt.Sprintf("%s (depends on: %s)", story.ID, strings.Join(unsatisfied, ", ")))
+	}
+	return strings.Join(descriptions, "; ")
+}
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 	logger.Debug("starting implementation",
@@ -50,7 +66,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			blocked := p.BlockedStories()
 			if len(blocked) > 0 {
 				logger.Error("no ready stories, all incomplete stories are dependency-blocked", "blocked_count", len(blocked))
-				return fmt.Errorf("all incomplete stories are dependency-blocked")
+				return fmt.Errorf("all incomplete stories are dependency-blocked: %s", describeBlockedStories(p, blocked))
 			}
 			continue
 		}
