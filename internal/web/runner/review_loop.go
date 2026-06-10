@@ -14,6 +14,14 @@ func newRegistryReviewLoop(registry *runs.Registry, runID string) workflow.Revie
 	return &registryReviewLoop{registry: registry, runID: runID}
 }
 
+func (r *registryReviewLoop) Checkpoint() string {
+	run, ok := r.registry.Get(r.runID)
+	if !ok {
+		return ""
+	}
+	return run.Checkpoint
+}
+
 func (r *registryReviewLoop) Snapshot() (iteration int, fingerprint string, elapsedMs int64, changedFilesHash string) {
 	run, ok := r.registry.Get(r.runID)
 	if !ok {

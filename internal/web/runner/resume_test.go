@@ -15,6 +15,134 @@ import (
 	"ralph/internal/workflow/events"
 )
 
+func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkpoint  string
+		wantEvents  []string
+		wantNoEvent bool
+	}{
+		{
+			name:       "prd review reloads PRD for review",
+			checkpoint: runs.CheckpointPRDReview,
+			wantEvents: []string{"EventPRDLoaded", "EventPRDReview"},
+		},
+		{
+			name:       "implementation review resumes implementation",
+			checkpoint: runs.CheckpointImplReview,
+			wantEvents: []string{"EventStoryStarted"},
+		},
+		{
+			name:       "followup resumes implementation",
+			checkpoint: runs.CheckpointFollowup,
+			wantEvents: []string{"EventStoryStarted"},
+		},
+		{
+			name:        "complete starts no phase",
+			checkpoint:  runs.CheckpointComplete,
+			wantNoEvent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workDir := t.TempDir()
+			reg := runs.NewRegistry()
+			run := &runs.Run{
+				ID:         "run-" + strings.ReplaceAll(tt.checkpoint, "_", "-"),
+				WorkDir:    workDir,
+				Prompt:     "build feature",
+				Status:     "running",
+				Phase:      "resume",
+				Checkpoint: tt.checkpoint,
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+				PRDPath:    "prd.json",
+			}
+			if err := reg.Register(run); err != nil {
+				t.Fatalf("Register() error = %v", err)
+			}
+			writeForceResumePRD(t, workDir)
+
+			got, ok := reg.Get(run.ID)
+			if !ok {
+				t.Fatal("registered run missing")
+			}
+			if got.Checkpoint != tt.checkpoint {
+				t.Fatalf("checkpoint = %q, want %q", got.Checkpoint, tt.checkpoint)
+			}
+
+			cfg := config.DefaultConfig()
+			cfg.WorkDir = workDir
+			cfg.PRDFile = "prd.json"
+			cfg.SkipCleanup = true
+
+			ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
+			t.Cleanup(ctrl.Cancel)
+			ch, unsub := ctrl.Subscribe()
+			defer unsub()
+
+			ctrl.ForceResume(context.Background())
+
+			if tt.wantNoEvent {
+				assertNoForceResumeEvent(t, ch)
+				return
+			}
+			for _, want := range tt.wantEvents {
+				ev := nextForceResumeEvent(t, ch)
+				if forceResumeEventName(ev) != want {
+					t.Fatalf("event = %s, want %s", forceResumeEventName(ev), want)
+				}
+			}
+		})
+	}
+}
+
+func writeForceResumePRD(t *testing.T, workDir string) {
+	t.Helper()
+	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(data), 0o644); err != nil {
+		t.Fatalf("WriteFile prd: %v", err)
+	}
+}
+
+func nextForceResumeEvent(t *testing.T, ch <-chan events.Event) events.Event {
+	t.Helper()
+	select {
+	case ev := <-ch:
+		return ev
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for ForceResume event")
+	}
+	return nil
+}
+
+func assertNoForceResumeEvent(t *testing.T, ch <-chan events.Event) {
+	t.Helper()
+	select {
+	case ev := <-ch:
+		t.Fatalf("unexpected event after complete checkpoint resume: %s", forceResumeEventName(ev))
+	case <-time.After(300 * time.Millisecond):
+	}
+}
+
+func forceResumeEventName(ev events.Event) string {
+	switch ev.(type) {
+	case events.EventPRDLoaded:
+		return "EventPRDLoaded"
+	case events.EventPRDReview:
+		return "EventPRDReview"
+	case events.EventStoryStarted:
+		return "EventStoryStarted"
+	case events.EventCompleted:
+		return "EventCompleted"
+	case events.EventError:
+		return "EventError"
+	default:
+		return "unknown"
+	}
+}
+
 func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.T) {
 	workDir := t.TempDir()
 	reg := runs.NewRegistry()
