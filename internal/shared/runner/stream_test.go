@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -63,4 +64,39 @@ func TestReadPipeLinesRejectsOversizedLine(t *testing.T) {
 	if !strings.Contains(err.Error(), "line exceeds") {
 		t.Fatalf("readPipeLines() error = %v, want line exceeds message", err)
 	}
+}
+
+type countingReader struct {
+	inner io.Reader
+	read  int
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.inner.Read(p)
+	c.read += n
+	return n, err
+}
+
+func TestReadPipeLinesStopsReadingOnceLineCapExceeded(t *testing.T) {
+	endless := &countingReader{inner: repeatByteReader{}}
+	outputCh := make(chan OutputLine, 1)
+
+	err := readPipeLines(endless, outputCh, passthroughTransform)
+	if err == nil {
+		t.Fatal("readPipeLines() error = nil, want line size error")
+	}
+
+	maxExpected := constants.MaxPipeLineSize + 2*constants.PipeReaderBufferSize
+	if endless.read > maxExpected {
+		t.Fatalf("read %d bytes before erroring, want at most %d (cap must apply before buffering the whole line)", endless.read, maxExpected)
+	}
+}
+
+type repeatByteReader struct{}
+
+func (repeatByteReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 'x'
+	}
+	return len(p), nil
 }

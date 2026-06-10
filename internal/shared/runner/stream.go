@@ -100,22 +100,30 @@ func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- Outpu
 	return cmd.Wait()
 }
 
-// readPipeLines reads lines of any length: AI runners emit NDJSON events that
-// can exceed any fixed bufio.Scanner buffer (e.g. tool calls embedding diffs).
+// readPipeLines reads lines longer than any fixed bufio.Scanner buffer (AI
+// runners emit NDJSON events embedding diffs), accumulating buffer-sized
+// fragments so the MaxPipeLineSize cap is enforced before a pathological
+// line is fully buffered.
 func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) error {
 	reader := bufio.NewReaderSize(pipe, constants.PipeReaderBufferSize)
+	var pending []byte
 	for {
-		line, err := reader.ReadString('\n')
-		if len(line) > constants.MaxPipeLineSize {
+		chunk, err := reader.ReadSlice('\n')
+		pending = append(pending, chunk...)
+		if len(pending) > constants.MaxPipeLineSize {
 			return fmt.Errorf("scan pipe output: line exceeds %d bytes", constants.MaxPipeLineSize)
 		}
-		if len(line) > 0 && outputCh != nil {
-			line = strings.TrimSuffix(line, "\n")
+		if err == bufio.ErrBufferFull {
+			continue
+		}
+		if len(pending) > 0 && outputCh != nil {
+			line := strings.TrimSuffix(string(pending), "\n")
 			line = strings.TrimSuffix(line, "\r")
 			for _, out := range transform(line) {
 				outputCh <- out
 			}
 		}
+		pending = pending[:0]
 		if err == io.EOF {
 			return nil
 		}
