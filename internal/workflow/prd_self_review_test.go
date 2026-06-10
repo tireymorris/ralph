@@ -200,3 +200,80 @@ func TestRunPRDSelfReviewInvalidPRDReturnsValidationError(t *testing.T) {
 		t.Errorf("runPRDSelfReview() PRD = %+v, want nil on validation error", p)
 	}
 }
+
+func TestRunGenerateRunsSelfReviewBeforePRDReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	reviewCalls := 0
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
+		}
+		reviewCalls++
+		if reviewCalls == 1 {
+			return writeVerdictFile(t, tmpDir, false, "needs work")
+		}
+		return writeVerdictFile(t, tmpDir, true, "fixed")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.RunGenerate(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+	if p == nil {
+		t.Fatal("RunGenerate() returned nil PRD")
+	}
+	if mock.CallCount() != 3 {
+		t.Errorf("runner calls = %d, want 3 (1 generation + 2 review rounds)", mock.CallCount())
+	}
+
+	reviewEvents := 0
+	for len(ch) > 0 {
+		if _, ok := (<-ch).(EventPRDReview); ok {
+			reviewEvents++
+		}
+	}
+	if reviewEvents != 1 {
+		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
+func TestRunGenerateSelfReviewErrorSkipsPRDReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
+		}
+		invalid := `{"project_name":"Broken","stories":[{"id":"","title":"No ID"}]}`
+		if err := os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(invalid), 0644); err != nil {
+			return err
+		}
+		return writeVerdictFile(t, tmpDir, true, "approved a broken prd")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	_, err := exec.RunGenerate(context.Background(), "build feature")
+	if err == nil {
+		t.Fatal("RunGenerate() should return error when self-review leaves PRD invalid")
+	}
+
+	for len(ch) > 0 {
+		if _, ok := (<-ch).(EventPRDReview); ok {
+			t.Fatal("EventPRDReview should not be emitted when self-review fails")
+		}
+	}
+}
