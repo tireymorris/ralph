@@ -2,7 +2,9 @@ package workflow
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
@@ -120,6 +122,50 @@ func TestEventOutputEmbedding(t *testing.T) {
 	}
 	if !e.IsErr {
 		t.Error("IsErr = false, want true")
+	}
+}
+
+func TestRunWithForwardedOutputReturnsTimeoutError(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.RunnerTimeout = 50 * time.Millisecond
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, _ string, _ chan<- runner.OutputLine) error {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	exec := NewExecutorWithRunner(cfg, make(chan Event, 10), mock)
+
+	start := time.Now()
+	err := exec.runWithForwardedOutput(context.Background(), "prompt")
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatal("runWithForwardedOutput() error = nil, want timeout error")
+	}
+	if !strings.Contains(err.Error(), "50ms") {
+		t.Errorf("runWithForwardedOutput() error = %v, want mention 50ms", err)
+	}
+	if elapsed > time.Second {
+		t.Errorf("runWithForwardedOutput() elapsed = %v, want under 1s", elapsed)
+	}
+}
+
+func TestRunWithForwardedOutputDoesNotTimeoutWhenDisabled(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.RunnerTimeout = 0
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, _ string, _ chan<- runner.OutputLine) error {
+		select {
+		case <-time.After(200 * time.Millisecond):
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	exec := NewExecutorWithRunner(cfg, make(chan Event, 10), mock)
+
+	if err := exec.runWithForwardedOutput(context.Background(), "prompt"); err != nil {
+		t.Fatalf("runWithForwardedOutput() error = %v, want nil", err)
 	}
 }
 
