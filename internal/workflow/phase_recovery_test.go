@@ -132,6 +132,26 @@ func TestRunImplementationDuplicateFingerprintPersistsStopReason(t *testing.T) {
 	}
 }
 
+func TestRecoveryAttemptsSnapshotDoesNotReadLoopSnapshot(t *testing.T) {
+	exec := NewExecutorWithRunner(config.DefaultConfig(), nil, newMockRunner())
+	exec.SetReviewLoop("run-recovery", panicSnapshotRecoveryLoop{attempts: 2})
+
+	if got := exec.recoveryAttemptsSnapshot(); got != 2 {
+		t.Fatalf("recoveryAttemptsSnapshot() = %d, want 2", got)
+	}
+}
+
+type panicSnapshotRecoveryLoop struct {
+	attempts int
+}
+
+func (p panicSnapshotRecoveryLoop) Snapshot() (int, string, int64, string) {
+	panic("Snapshot should not be called")
+}
+
+func (p panicSnapshotRecoveryLoop) Apply(ReviewLoopUpdate) error { return nil }
+func (p panicSnapshotRecoveryLoop) RecoveryAttempts() int        { return p.attempts }
+
 func TestApplyMechanicalCleanupRemovesUntrackedArtifact(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
