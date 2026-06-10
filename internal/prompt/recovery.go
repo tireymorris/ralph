@@ -64,10 +64,11 @@ RECOVERY REASON: %s (attempt %d of %d)
 
 Fix the problems above so Ralph can continue implementation review and testing.
 - Address every review finding and failure cause directly in the repo.
+- Commit every fix before stopping (git add the changed paths, then git commit). Uncommitted work does not count as recovery.
 - Delete stray generated files that are not part of the project's normal build pipeline.
 - Do not mark PRD stories complete; Ralph handles story state.
 - Run only the tests needed to validate your fixes.
-- Stop when fixes are in place and tests are green.
+- Stop when fixes are committed and tests are green.
 
 PRD file: %s`,
 		RecoveryAgentMarker,

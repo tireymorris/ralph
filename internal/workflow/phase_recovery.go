@@ -171,7 +171,12 @@ func (e *Executor) recoverFromReviewFailure(
 	errMsg string,
 	findings []ImplementationFinding,
 ) (bool, error) {
-	beforeHash := e.reviewChangedFilesHash
+	beforeChanged, err := gitdiff.ChangedFiles(e.cfg.WorkDir)
+	if err != nil {
+		return false, err
+	}
+	beforeHash := gitdiff.HashFiles(beforeChanged)
+
 	recovered, err := e.runRecovery(ctx, p, reason, errMsg, findings)
 	if err != nil {
 		return false, err
@@ -180,17 +185,38 @@ func (e *Executor) recoverFromReviewFailure(
 		return false, nil
 	}
 
-	changed, chErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
+	afterChanged, chErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
 	if chErr != nil {
 		return false, chErr
 	}
-	if reason == prompt.RecoveryReasonDuplicateFindings {
-		newHash := gitdiff.HashFiles(changed)
-		if beforeHash == "" || newHash == beforeHash {
-			return false, nil
+	afterHash := gitdiff.HashFiles(afterChanged)
+	agentProgress := afterHash != beforeHash
+
+	if agentProgress {
+		committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, "ralph: recovery fixes")
+		if commitErr != nil {
+			return false, commitErr
 		}
+		if committed {
+			e.emit(EventOutput{Output: events.Output{Text: "Committed recovery fixes before re-review."}})
+		}
+		e.clearReviewFingerprint()
+		return true, nil
 	}
 
+	if reason == prompt.RecoveryReasonDuplicateFindings {
+		return false, nil
+	}
+
+	committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, "ralph: recovery fixes")
+	if commitErr != nil {
+		return false, commitErr
+	}
+	if !committed {
+		return false, nil
+	}
+
+	e.emit(EventOutput{Output: events.Output{Text: "Committed recovery fixes before re-review."}})
 	e.clearReviewFingerprint()
 	return true, nil
 }

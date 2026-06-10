@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"ralph/internal/prompt"
+	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
+	"ralph/internal/workflow/events"
 )
 
 func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
@@ -73,7 +75,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			story.DependsOn,
 		)
 
-		if runErr := e.runWithForwardedOutput(ctx, storyPrompt); runErr != nil {
+		runErr := e.runWithForwardedOutput(ctx, storyPrompt)
+		if runErr != nil {
 			recovered, recErr := e.runRecovery(ctx, p, prompt.RecoveryReasonStoryFailure, runErr.Error(), nil)
 			if recErr != nil {
 				logger.Error("implementation recovery failed", "error", recErr, "story_id", story.ID)
@@ -88,6 +91,16 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
 				return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)
 			}
+		}
+
+		committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, fmt.Sprintf("ralph: %s", story.ID))
+		if commitErr != nil {
+			logger.Error("failed to commit story changes", "error", commitErr, "story_id", story.ID)
+			e.emit(EventError{Err: fmt.Errorf("commit story %s changes: %w", story.ID, commitErr)})
+			return fmt.Errorf("commit story %s changes: %w", story.ID, commitErr)
+		}
+		if committed {
+			e.emit(EventOutput{Output: events.Output{Text: fmt.Sprintf("Committed story %s changes before review.", story.ID)}})
 		}
 
 		updatedPRD, loadErr := e.store.Load(e.cfg)

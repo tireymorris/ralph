@@ -19,7 +19,14 @@ func (e *Executor) SetReviewLoop(runID string, updater ReviewLoopUpdater) {
 }
 
 func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
-	for {
+	for round := 0; ; round++ {
+		if round >= constants.MaxImplementationReviewRounds {
+			baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
+			baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
+			_ = e.applyReviewLoop(baseUpdate)
+			return false, fmt.Errorf("implementation review: exceeded %d review rounds", constants.MaxImplementationReviewRounds)
+		}
+
 		blocked, err = e.runImplementationReviewOnce(ctx, p)
 		if err == nil && !blocked {
 			e.recoveryAttempts = 0
