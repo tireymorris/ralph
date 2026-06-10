@@ -30,6 +30,7 @@ func TestParse(t *testing.T) {
 		{name: "update command", args: []string{"update"}, expected: Options{Update: true, UpdateRef: "main"}},
 		{name: "update with ref", args: []string{"update", "--ref", "v1.0"}, expected: Options{Update: true, UpdateRef: "v1.0"}},
 		{name: "update check", args: []string{"update", "--check"}, expected: Options{Update: true, UpdateRef: "main", UpdateCheck: true}},
+		{name: "update with yolo", args: []string{"update", "--yolo"}, expected: Options{Update: true, UpdateRef: "main", AutoApprove: true}},
 		{name: "web command", args: []string{"web"}, expected: Options{Web: true, WebPort: 8080}},
 		{name: "web with port", args: []string{"web", "--port", "3000"}, expected: Options{Web: true, WebPort: 3000}},
 		{name: "skip cleanup flag", args: []string{"--skip-cleanup", "do thing"}, expected: Options{Prompt: "do thing", SkipCleanup: true}},

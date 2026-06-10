@@ -47,6 +47,9 @@ func Parse(args []string) *Options {
 			case "--check":
 				opts.UpdateCheck = true
 				continue
+			case "--yolo":
+				opts.AutoApprove = true
+				continue
 			default:
 				if strings.HasPrefix(arg, "-") {
 					opts.UnknownFlags = append(opts.UnknownFlags, arg)
