@@ -117,6 +117,49 @@ func TestCreateRunPropagatesAutoApprove(t *testing.T) {
 	}
 }
 
+func TestGetRunIncludesAutoApprove(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	api := handlers.NewAPI(cfg, runs.NewRegistry())
+	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
+		return &noopRunner{}, nil
+	})
+	t.Cleanup(api.ReleaseAllControllers)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"build a feature","auto_approve":true}`))
+	createReq.Header.Set("Content-Type", "application/json")
+	createRec := httptest.NewRecorder()
+	api.CreateRun(createRec, createReq)
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d, body = %s", createRec.Code, http.StatusCreated, createRec.Body.String())
+	}
+	var created map[string]string
+	if err := json.Unmarshal(createRec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("json.Unmarshal create: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/"+created["id"], nil)
+	req.SetPathValue("id", created["id"])
+	rec := httptest.NewRecorder()
+	api.GetRun(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("get status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	var body struct {
+		AutoApprove bool `json:"auto_approve"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal get: %v", err)
+	}
+	if !body.AutoApprove {
+		t.Fatalf("auto_approve = false, want true; body = %s", rec.Body.String())
+	}
+}
+
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)

@@ -32,6 +32,7 @@ type Run struct {
 	CreatedAt                  time.Time `json:"created_at"`
 	UpdatedAt                  time.Time `json:"updated_at"`
 	PRDPath                    string    `json:"prd_path"`
+	AutoApprove                bool      `json:"auto_approve,omitempty"`
 	Checkpoint                 string    `json:"checkpoint,omitempty"`
 	ReviewIteration            int       `json:"review_iteration,omitempty"`
 	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`

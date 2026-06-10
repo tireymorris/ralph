@@ -71,6 +71,7 @@ export interface Run {
   review_fingerprint?: string;
   review_elapsed_ms?: number;
   stop_reason?: string;
+  auto_approve?: boolean;
 }
 
 export interface PRDStory {
