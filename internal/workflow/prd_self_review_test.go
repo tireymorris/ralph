@@ -10,6 +10,7 @@ import (
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 )
@@ -130,5 +131,27 @@ func TestRunPRDSelfReviewLoopsUntilApproved(t *testing.T) {
 	}
 	if !foundRound2 {
 		t.Errorf("expected round 2 announcement in outputs %v", texts)
+	}
+}
+
+func TestRunPRDSelfReviewStopsAtMaxRounds(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return writeVerdictFile(t, cfg.WorkDir, false, "still not good enough")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.runPRDSelfReview(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("runPRDSelfReview() error = %v", err)
+	}
+	if p == nil || p.ProjectName != "Test" {
+		t.Fatalf("runPRDSelfReview() PRD = %+v, want last valid PRD", p)
+	}
+	if mock.CallCount() != constants.MaxPRDSelfReviewRounds {
+		t.Errorf("runner calls = %d, want %d", mock.CallCount(), constants.MaxPRDSelfReviewRounds)
 	}
 }
