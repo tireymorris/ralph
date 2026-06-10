@@ -21,6 +21,7 @@ type Options struct {
 	Web          bool
 	WebPort      int
 	SkipCleanup  bool
+	AutoApprove  bool
 	UnknownFlags []string
 }
 
@@ -64,6 +65,8 @@ func Parse(args []string) *Options {
 			opts.Verbose = true
 		case "--skip-cleanup":
 			opts.SkipCleanup = true
+		case "--yolo":
+			opts.AutoApprove = true
 		case "status":
 			opts.Status = true
 		case "clean":
