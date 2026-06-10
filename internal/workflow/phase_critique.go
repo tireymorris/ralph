@@ -29,12 +29,10 @@ func (e *Executor) RunCritiqueRevision(ctx context.Context, userPrompt, critique
 		}
 	}
 
-	p, err := e.store.Load(e.cfg)
+	p, err := e.runPRDSelfReview(ctx, userPrompt)
 	if err != nil {
-		logger.Error("failed to load PRD after critique revision", "error", err)
-		wrappedErr := fmt.Errorf("failed to load PRD %s after critique revision: %w", e.cfg.PRDFile, err)
-		e.emit(EventError{Err: wrappedErr})
-		return wrappedErr
+		logger.Error("PRD self-review failed after critique revision", "error", err)
+		return err
 	}
 
 	e.emit(EventPRDReview{PRD: p})

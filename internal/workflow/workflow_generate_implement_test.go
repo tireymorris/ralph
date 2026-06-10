@@ -497,7 +497,10 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	call := 0
-	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return nil
+		}
 		call++
 		switch call {
 		case 1:
@@ -507,8 +510,8 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 			data := `["Which database?"]`
 			return os.WriteFile(filepath.Join(tmpDir, ClarifyingQuestionsFile), []byte(data), 0644)
 		case 3:
-			if !strings.Contains(prompt, "Which database?") || !strings.Contains(prompt, "Postgres") {
-				t.Fatalf("clarification revision prompt missing answers:\n%s", prompt)
+			if !strings.Contains(p, "Which database?") || !strings.Contains(p, "Postgres") {
+				t.Fatalf("clarification revision prompt missing answers:\n%s", p)
 			}
 			final := &prd.PRD{ProjectName: "Final", Stories: testPRD.Stories}
 			return prd.Save(cfg, final)
@@ -542,8 +545,8 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatalf("RunCritiqueRevision() error = %v", err)
 	}
-	if mock.CallCount() != 3 {
-		t.Fatalf("runner call count = %d, want 3", mock.CallCount())
+	if mock.CallCount() != 4 {
+		t.Fatalf("runner call count = %d, want 4 (critique, clarify, clarification revision, self-review)", mock.CallCount())
 	}
 }
 
