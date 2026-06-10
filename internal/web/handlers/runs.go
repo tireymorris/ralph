@@ -19,7 +19,8 @@ import (
 )
 
 type createRunRequest struct {
-	Prompt string `json:"prompt"`
+	Prompt      string `json:"prompt"`
+	AutoApprove bool   `json:"auto_approve"`
 }
 
 type storyProgress struct {
@@ -92,14 +93,16 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	runner, err := a.runnerFactory(a.cfg)
+	runCfg := *a.cfg
+	runCfg.AutoApprove = req.AutoApprove
+	runner, err := a.runnerFactory(&runCfg)
 	if err != nil {
 		_ = a.registry.UpdateStatus(id, "failed", "failed")
 		writeJSONError(w, http.StatusInternalServerError, "runner unavailable")
 		return
 	}
 
-	ctrl := a.controllerFactory(a.cfg, a.registry, id, runner)
+	ctrl := a.controllerFactory(&runCfg, a.registry, id, runner)
 	a.registerController(id, ctrl)
 
 	go ctrl.StartNew(context.Background(), prompt)

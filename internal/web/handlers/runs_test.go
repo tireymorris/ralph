@@ -85,6 +85,38 @@ func TestCreateRunTable(t *testing.T) {
 	}
 }
 
+func TestCreateRunPropagatesAutoApprove(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.AutoApprove = false
+
+	api := handlers.NewAPI(cfg, runs.NewRegistry())
+	var runnerCfgAutoApprove bool
+	api.SetRunnerFactory(func(c *config.Config) (runner.RunnerInterface, error) {
+		runnerCfgAutoApprove = c.AutoApprove
+		return &noopRunner{}, nil
+	})
+	t.Cleanup(api.ReleaseAllControllers)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"build a feature","auto_approve":true}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	api.CreateRun(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if !runnerCfgAutoApprove {
+		t.Fatal("runner factory config AutoApprove = false, want true")
+	}
+	if cfg.AutoApprove {
+		t.Fatal("base API config AutoApprove was mutated")
+	}
+}
+
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
