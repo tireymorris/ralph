@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"ralph/internal/shared/constants"
@@ -99,19 +100,24 @@ func runPipedCommand(commandName string, cmd CmdInterface, outputCh chan<- Outpu
 	return cmd.Wait()
 }
 
+// readPipeLines reads lines of any length: AI runners emit NDJSON events that
+// can exceed any fixed bufio.Scanner buffer (e.g. tool calls embedding diffs).
 func readPipeLines(pipe io.Reader, outputCh chan<- OutputLine, transform LineTransformer) error {
-	scanner := bufio.NewScanner(pipe)
-	buf := make([]byte, 0, constants.InitialScannerBufferCapacity)
-	scanner.Buffer(buf, constants.ScannerBufferSize)
-	for scanner.Scan() {
-		if outputCh != nil {
-			for _, out := range transform(scanner.Text()) {
+	reader := bufio.NewReaderSize(pipe, constants.PipeReaderBufferSize)
+	for {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 && outputCh != nil {
+			line = strings.TrimSuffix(line, "\n")
+			line = strings.TrimSuffix(line, "\r")
+			for _, out := range transform(line) {
 				outputCh <- out
 			}
 		}
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("scan pipe output: %w", err)
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("scan pipe output: %w", err)
-	}
-	return nil
 }

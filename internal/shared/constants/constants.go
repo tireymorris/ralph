@@ -4,14 +4,11 @@ const (
 	// EventChannelBuffer is sized for burst output from AI runners.
 	EventChannelBuffer = 10000
 
-	// ScannerBufferSize allows reading long AI output lines.
-	ScannerBufferSize = 1024 * 1024
-
 	// PipeReaderCount covers subprocess stdout and stderr.
 	PipeReaderCount = 2
 
-	// InitialScannerBufferCapacity avoids immediate resizing for typical lines.
-	InitialScannerBufferCapacity = 64 * 1024
+	// PipeReaderBufferSize avoids immediate resizing for typical lines.
+	PipeReaderBufferSize = 64 * 1024
 
 	// VerbosePatternMinLength is the minimum length needed before checking verbose prefixes.
 	VerbosePatternMinLength = 4
