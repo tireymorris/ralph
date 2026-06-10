@@ -49,7 +49,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		if len(ready) == 0 {
 			blocked := p.BlockedStories()
 			if len(blocked) > 0 {
-				logger.Warn("no ready stories, waiting for dependencies", "blocked_count", len(blocked))
+				logger.Error("no ready stories, all incomplete stories are dependency-blocked", "blocked_count", len(blocked))
+				return fmt.Errorf("all incomplete stories are dependency-blocked")
 			}
 			continue
 		}
