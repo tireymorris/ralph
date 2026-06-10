@@ -66,6 +66,7 @@ Implementation requires a **git repository** in the working directory (used for 
 | `--dry-run` | Generate PRD only |
 | `--resume` | Resume from existing `prd.json` (and checkpoint if present) |
 | `--skip-cleanup` | Skip post-implementation cleanup |
+| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval gates |
 | `--port PORT` | Web server port (with `ralph web`; default 8080) |
 | `--ref REF` | Branch or tag for `ralph update` (default `main`) |
 | `--check` | With `ralph update`: report whether a newer commit exists on the remote |
