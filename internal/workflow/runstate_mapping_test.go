@@ -17,7 +17,7 @@ func TestEventStatusPhase(t *testing.T) {
 	}{
 		{name: "clarify", event: events.EventClarifyingQuestions{}, wantStatus: runstate.StatusWaitingClarify, wantPhase: runstate.PhaseClarify},
 		{name: "PRD review", event: events.EventPRDReview{}, wantStatus: runstate.StatusWaitingReview, wantPhase: runstate.PhaseReview},
-		{name: "implementation review", event: events.EventImplementationReview{}, wantStatus: runstate.StatusWaitingImplReview, wantPhase: runstate.PhaseImplement},
+		{name: "implementation review", event: events.EventImplementationReview{}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseImplement},
 		{name: "followup", event: events.EventStoryStarted{}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseImplement},
 		{name: "cleanup", event: events.EventCleanupStarted{}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseCleanup},
 		{name: "complete", event: events.EventCompleted{}, wantStatus: runstate.StatusCompleted, wantPhase: runstate.PhaseCompleted},

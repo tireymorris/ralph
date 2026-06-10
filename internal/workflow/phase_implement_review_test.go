@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
@@ -292,7 +293,7 @@ func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
 	return nil
 }
 
-func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
+func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -325,8 +326,12 @@ func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
-		t.Fatalf("RunImplementation() error = %v", err)
+	err := exec.RunImplementation(context.Background(), testPRD)
+	if err == nil {
+		t.Fatal("RunImplementation() error = nil, want recovery exhausted")
+	}
+	if !strings.Contains(err.Error(), runstate.StopReasonRecoveryExhausted) {
+		t.Fatalf("RunImplementation() error = %v, want %s", err, runstate.StopReasonRecoveryExhausted)
 	}
 
 	evts := drainEvents(ch)
@@ -348,9 +353,67 @@ func TestRunImplementationFindingsEmitReviewAndStop(t *testing.T) {
 	}
 	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
 	if storyCalls < 2 {
-		t.Errorf("recovery runner calls = %d, want at least 2", storyCalls)
+		t.Errorf("story+recovery runner calls = %d, want at least 2", storyCalls)
 	}
 	if reviewCalls < 1 {
 		t.Errorf("review runner calls = %d, want at least 1", reviewCalls)
+	}
+}
+
+func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{
+			{ID: "story-1", Title: "One", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 2, Passes: false},
+		},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("save PRD: %v", err)
+	}
+	commitPRDFile(t, workDir, cfg.PRDFile)
+
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"issue"}]
+===/ralph-findings===`
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	reviewCalls := 0
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		switch {
+		case strings.Contains(p, "critical diff review"):
+			reviewCalls++
+			if reviewCalls == 1 {
+				outputCh <- runner.OutputLine{Text: findingsTranscript}
+				return nil
+			}
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+		case prompt.IsRecoveryPrompt(p):
+			return nil
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	evts := drainEvents(ch)
+	var foundSecondStory bool
+	for _, e := range evts {
+		if ev, ok := e.(EventStoryStarted); ok && ev.Story.ID == "story-2" {
+			foundSecondStory = true
+		}
+	}
+	if !foundSecondStory {
+		t.Fatal("expected story-2 to start after automatic recovery cleared review findings")
 	}
 }

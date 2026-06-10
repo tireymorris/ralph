@@ -47,7 +47,7 @@ func CheckpointPhase(checkpoint string, p *prd.PRD) string {
 	case CheckpointPRDReview:
 		return PhaseReview
 	case CheckpointImplReview:
-		return PhaseImplementationReview
+		return PhaseImplement
 	case CheckpointFollowup:
 		return PhaseFollowup
 	case CheckpointComplete:
@@ -64,7 +64,7 @@ func CheckpointPhase(checkpoint string, p *prd.PRD) string {
 
 func LocalPRDStatusPhase(p *prd.PRD, checkpoint string) (status, phase string) {
 	if checkpoint == CheckpointImplReview {
-		return StatusWaitingImplReview, PhaseImplement
+		return StatusImplementing, PhaseImplement
 	}
 	if p == nil || len(p.Stories) == 0 {
 		return StatusRunning, PhaseGenerate

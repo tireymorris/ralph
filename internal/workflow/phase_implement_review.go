@@ -42,23 +42,22 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 			findings, _ = e.loadPendingFindings()
 		} else if blocked {
 			findings = e.pendingReviewFindings
+			e.recoveryAttempts = 0
+			_ = e.applyReviewLoop(e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash))
 		} else if err != nil {
 			return false, err
 		}
 
 		recovered, recErr := e.recoverFromReviewFailure(ctx, p, reason, errMsg, findings)
 		if recErr != nil {
-			return blocked, recErr
+			return false, recErr
 		}
 		if !recovered {
-			if e.recoveryAttemptsSnapshot() >= constants.MaxRecoveryAttempts {
-				if err != nil {
-					baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
-					baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
-					_ = e.applyReviewLoop(baseUpdate)
-					return false, fmt.Errorf("implementation review: %s", runstate.StopReasonRecoveryExhausted)
-				}
-				return blocked, nil
+			if err != nil && e.recoveryAttemptsSnapshot() >= constants.MaxRecoveryAttempts {
+				baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
+				baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
+				_ = e.applyReviewLoop(baseUpdate)
+				return false, fmt.Errorf("implementation review: %s", runstate.StopReasonRecoveryExhausted)
 			}
 			continue
 		}
@@ -137,7 +136,7 @@ func (e *Executor) applyReviewLoop(u ReviewLoopUpdate) error {
 	if u.LastReviewTranscriptPath != "" {
 		e.lastReviewTranscriptPath = u.LastReviewTranscriptPath
 	}
-	if u.RecoveryAttempts > 0 {
+	if u.Checkpoint != "" {
 		e.recoveryAttempts = u.RecoveryAttempts
 	}
 	if e.reviewLoop == nil {

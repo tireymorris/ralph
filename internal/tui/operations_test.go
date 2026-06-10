@@ -157,32 +157,6 @@ func TestResumeStartMsgImplementationPhase(t *testing.T) {
 	}
 }
 
-func TestImplementationReviewEnterReportsMissingPRD(t *testing.T) {
-	cfg := config.DefaultConfig()
-	cfg.WorkDir = t.TempDir()
-	m := NewModel(cfg, "goal", false, false, false)
-	m.phase = PhaseImplementationReview
-	m.prd = nil
-
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	if cmd == nil {
-		t.Fatal("expected command to report missing PRD")
-	}
-	model := updated.(*Model)
-	if model.phase != PhaseImplementation {
-		t.Fatalf("phase = %v, want PhaseImplementation", model.phase)
-	}
-
-	msg := m.operationManager.ContinueImplementationReview()()
-	errMsg, ok := msg.(operationErrorMsg)
-	if !ok {
-		t.Fatalf("ContinueImplementationReview() msg = %T, want operationErrorMsg", msg)
-	}
-	if errMsg.err == nil || !strings.Contains(errMsg.err.Error(), "load PRD for implementation") {
-		t.Fatalf("error = %v, want load PRD for implementation", errMsg.err)
-	}
-}
-
 func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
