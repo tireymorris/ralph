@@ -46,6 +46,7 @@ type Config struct {
 	WorkDir     string `json:"-"`
 	TestCommand string `json:"test_command"`
 	SkipCleanup bool   `json:"-"`
+	AutoApprove bool   `json:"-"`
 }
 
 func DefaultConfig() *Config {

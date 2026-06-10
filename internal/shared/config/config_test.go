@@ -85,6 +85,26 @@ func TestLoadEnvRunner(t *testing.T) {
 	}
 }
 
+func TestLoadEnvYoloEnablesAutoApprove(t *testing.T) {
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(origDir)
+
+	os.Clearenv()
+	os.Setenv("RALPH_YOLO", "1")
+	defer os.Unsetenv("RALPH_YOLO")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	if !cfg.AutoApprove {
+		t.Error("AutoApprove should be true when RALPH_YOLO=1")
+	}
+}
+
 func TestLoadSetsWorkDir(t *testing.T) {
 	origDir, _ := os.Getwd()
 	tmpDir := t.TempDir()
