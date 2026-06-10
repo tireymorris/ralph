@@ -22,9 +22,7 @@ func (e *Executor) SetReviewLoop(runID string, updater ReviewLoopUpdater) {
 func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
 	for round := 0; ; round++ {
 		if round >= constants.MaxImplementationReviewRounds {
-			baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
-			baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
-			e.applyReviewLoopBestEffort(baseUpdate)
+			e.stopImplementationReview(runstate.StopReasonRecoveryExhausted)
 			return false, fmt.Errorf("implementation review: exceeded %d review rounds", constants.MaxImplementationReviewRounds)
 		}
 
@@ -55,9 +53,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 		}
 		if !recovered {
 			if err != nil && e.recoveryAttemptsSnapshot() >= constants.MaxRecoveryAttempts {
-				baseUpdate := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
-				baseUpdate.StopReason = runstate.StopReasonRecoveryExhausted
-				e.applyReviewLoopBestEffort(baseUpdate)
+				e.stopImplementationReview(runstate.StopReasonRecoveryExhausted)
 				return false, fmt.Errorf("implementation review: %s", runstate.StopReasonRecoveryExhausted)
 			}
 			continue
@@ -160,6 +156,12 @@ func (e *Executor) applyReviewLoop(u ReviewLoopUpdate) error {
 		return nil
 	}
 	return e.reviewLoop.Apply(u)
+}
+
+func (e *Executor) stopImplementationReview(reason string) {
+	update := e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash)
+	update.StopReason = reason
+	e.applyReviewLoopBestEffort(update)
 }
 
 func (e *Executor) implReviewLoopUpdate(iteration int, fingerprint string, elapsedMs int64, filesHash string) ReviewLoopUpdate {
