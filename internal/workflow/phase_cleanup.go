@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/gitdiff"
+	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 )
 
@@ -16,9 +17,16 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	default:
 	}
 
+	changedFiles, changedFilesErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
+	if changedFilesErr != nil {
+		logger.Warn("failed to list changed files before cleanup, proceeding with cleanup", "error", changedFilesErr)
+	} else if len(changedFiles) == 0 {
+		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: no changed files"}})
+		return nil
+	}
+
 	e.emit(EventCleanupStarted{})
 
-	changedFiles, _ := gitdiff.ChangedFiles(e.cfg.WorkDir)
 	cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
 
 	if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
