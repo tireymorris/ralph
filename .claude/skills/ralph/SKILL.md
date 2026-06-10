@@ -36,7 +36,7 @@ Use `RALPH_RUNNER_TIMEOUT=30m` (Go duration) to cap each runner session.
 
 ## How it works
 
-1. Clarify — runner may write `.ralph_questions.json`; Ralph reads and removes it
+1. Clarify — runner may write `.ralph/questions.json`; Ralph reads and removes it
 2. Generate/load PRD — runner writes `prd.json`
 3. Review PRD — via TUI or `ralph web` (approve or revise)
 4. Implement — one runner session per ready story; Ralph marks `passes: true` when the runner exits 0
@@ -51,9 +51,7 @@ Gitignore these in the target repo:
 
 - `prd.json`
 - `prd.json.lock`
-- `.ralph_questions.json`
-- `.ralph/` (run metadata, events, review transcripts; TUI uses `runs/prd-local/`)
-- `.prd.tmp.*`
+- `.ralph/` (questions, self-review verdict, `prd.tmp.*`, run metadata, events, review transcripts; TUI uses `runs/prd-local/`)
 
 ## Caveats
 

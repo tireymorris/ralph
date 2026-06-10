@@ -47,13 +47,13 @@ ralph web                           # local web UI (default http://127.0.0.1:808
 ralph web --port 3000               # web UI on another port
 ```
 
-`ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, `.ralph_questions.json`, orphaned `.prd.tmp.*` files, and `.ralph/` run data.
+`ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, and the `.ralph/` directory (questions, self-review verdict, `.ralph/prd.tmp.*` orphans, run data). Legacy root-level `.ralph_questions.json`, `.ralph_prd_review.json`, and `.prd.tmp.*` files from older versions are removed too.
 
 Implementation requires a **git repository** in the working directory (used for diff-based review between stories).
 
 ## Workflow
 
-1. **Clarify** — optional questions via `.ralph_questions.json`
+1. **Clarify** — optional questions via `.ralph/questions.json`
 2. **Generate PRD** — runner writes `prd.json`
 3. **Review PRD** — approve to implement, or revise with critique
 4. **Implement** — one runner session per story; Ralph marks `passes: true` after each
@@ -81,15 +81,15 @@ Implementation requires a **git repository** in the working directory (used for 
 
 Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`. Run `ralph clean` to delete these artifacts idempotently (safe to run when none exist).
 
-Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs`) automatically moves any prior `prd.json`, its lock, `.ralph_questions.json`, orphan `.prd.tmp.*` files, and `.ralph/runs/` data into `.ralph/backups/<timestamp>/` under the workdir. Older backup folders are kept. `--resume` and checkpoint resume do not archive existing state.
+Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs`) automatically moves any prior `prd.json`, its lock, transient state files, `.ralph/prd.tmp.*` orphans, and `.ralph/runs/` data into `.ralph/backups/<timestamp>/` under the workdir. Older backup folders are kept. `--resume` and checkpoint resume do not archive existing state.
 
 | Path | Created by | Purpose |
 |------|-----------|---------|
 | `prd.json` | TUI + web | The generated PRD |
 | `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
-| `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
-| `.ralph_prd_review.json` | Runner | PRD self-review verdict in `--yolo` runs (deleted after read) |
-| `.prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
+| `.ralph/questions.json` | Runner | Temporary clarification questions (deleted after read) |
+| `.ralph/prd_review.json` | Runner | PRD self-review verdict in `--yolo` runs (deleted after read) |
+| `.ralph/prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
 | `.ralph/runs/<id>/meta.json` | TUI + web | Per-run metadata (status, checkpoint, review loop) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
 | `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |

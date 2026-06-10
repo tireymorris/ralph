@@ -44,13 +44,15 @@ func archiveRunsTree(cfg *config.Config, backupDir string) error {
 }
 
 func archiveOrphanedPRDTemps(cfg *config.Config, backupDir string) error {
-	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
-	if err != nil {
-		return err
-	}
-	for _, path := range matches {
-		if err := moveIntoBackup(backupDir, path, filepath.Base(path)); err != nil {
+	for _, pattern := range prdTempGlobPatterns(cfg) {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
 			return err
+		}
+		for _, path := range matches {
+			if err := moveIntoBackup(backupDir, path, filepath.Base(path)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -63,12 +65,14 @@ func hasStateArtifacts(cfg *config.Config) (bool, error) {
 			return exists, err
 		}
 	}
-	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
-	if err != nil {
-		return false, err
-	}
-	if len(matches) > 0 {
-		return true, nil
+	for _, pattern := range prdTempGlobPatterns(cfg) {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return false, err
+		}
+		if len(matches) > 0 {
+			return true, nil
+		}
 	}
 	return pathExists(runsDir(cfg))
 }

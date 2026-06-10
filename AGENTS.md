@@ -80,8 +80,9 @@ TUI and web share the same `workflow.Driver` → `Executor` engine. Web adds `Ru
 ## State files
 Ralph writes these files in the working directory (all covered by `.gitignore`):
 - `prd.json` / `prd.json.lock` — PRD and its file lock
-- `.ralph_questions.json` — temporary clarification questions (deleted after read)
-- `.ralph_prd_review.json` — temporary PRD self-review verdict (auto-approve runs; deleted after read, stale copies cleared before round 1)
+- `.ralph/questions.json` — temporary clarification questions (deleted after read)
+- `.ralph/prd_review.json` — temporary PRD self-review verdict (auto-approve runs; deleted after read, stale copies cleared before round 1)
+- `.ralph/prd.tmp.*` — atomic-save temp files (orphans removed by `ralph clean`; legacy root-level `.prd.tmp.*` and `.ralph_*.json` files are cleaned too)
 - `.ralph/runs/<id>/meta.json` — per-run metadata (status, checkpoint, review loop); TUI uses `prd-local`
 - `.ralph/runs/<id>/events.ndjson` — per-run event log for SSE replay (web UI)
 - `.ralph/runs/<id>/review-*.txt` — implementation review transcripts

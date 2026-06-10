@@ -12,7 +12,7 @@ func TestPRDSelfReview(t *testing.T) {
 		"Add user authentication",
 		"prd.json",
 		"round 2 of 3",
-		".ralph_prd_review.json",
+		".ralph/prd_review.json",
 		`"approved"`,
 		`"summary"`,
 		"objectively verifiable",

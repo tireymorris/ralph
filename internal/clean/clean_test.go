@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/workflow"
@@ -34,12 +35,17 @@ func assertNotExist(t *testing.T, path string) {
 
 func assertNoPRDTempFiles(t *testing.T, dir string) {
 	t.Helper()
-	matches, err := filepath.Glob(filepath.Join(dir, ".prd.tmp.*"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(matches) != 0 {
-		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
+	for _, pattern := range []string{
+		filepath.Join(dir, ralphDataDir, "prd.tmp.*"),
+		filepath.Join(dir, ".prd.tmp.*"),
+	} {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(matches) != 0 {
+			t.Fatalf("expected no PRD temp files, got %v", matches)
+		}
 	}
 }
 
@@ -67,10 +73,41 @@ func stateArtifactCases() []stateArtifactCase {
 			seed: func(cfg *config.Config) string {
 				return cfg.ConfigPath(workflow.ClarifyingQuestionsFile)
 			},
+			backupRel: "questions.json",
+		},
+		{
+			name: "self-review verdict",
+			seed: func(cfg *config.Config) string {
+				return cfg.ConfigPath(prompt.PRDSelfReviewVerdictFile)
+			},
+			backupRel: "prd_review.json",
+		},
+		{
+			name: "legacy clarifying questions",
+			seed: func(cfg *config.Config) string {
+				return cfg.ConfigPath(".ralph_questions.json")
+			},
 			backupRel: ".ralph_questions.json",
 		},
 		{
+			name: "legacy self-review verdict",
+			seed: func(cfg *config.Config) string {
+				return cfg.ConfigPath(".ralph_prd_review.json")
+			},
+			backupRel: ".ralph_prd_review.json",
+		},
+		{
 			name: "orphaned PRD temps",
+			seed: func(cfg *config.Config) string {
+				return filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.100.7")
+			},
+			backupRel: "prd.tmp.100.7",
+			removeAssert: func(t *testing.T, dir string, _ *config.Config, _ string) {
+				assertNoPRDTempFiles(t, dir)
+			},
+		},
+		{
+			name: "legacy orphaned PRD temps",
 			seed: func(cfg *config.Config) string {
 				return filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.100.7")
 			},

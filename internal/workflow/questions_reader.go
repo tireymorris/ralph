@@ -7,7 +7,12 @@ import (
 )
 
 // ClarifyingQuestionsFile is the temporary JSON file the AI writes questions to.
-const ClarifyingQuestionsFile = ".ralph_questions.json"
+const ClarifyingQuestionsFile = ".ralph/questions.json"
+
+// ensureStateDir creates .ralph/ before an agent is asked to write files into it.
+func ensureStateDir(workDir string) error {
+	return os.MkdirAll(filepath.Join(workDir, ".ralph"), 0755)
+}
 
 type QuestionsFileReader struct {
 	WorkDir string

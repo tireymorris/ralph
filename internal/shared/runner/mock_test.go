@@ -38,7 +38,7 @@ func TestMockRunnerImplDelayDoesNotSlowSelfReview(t *testing.T) {
 	r := NewMock(cfg)
 	ch := make(chan OutputLine, 4)
 	start := time.Now()
-	if err := r.Run(context.Background(), "Review prd and write .ralph_prd_review.json", ch); err != nil {
+	if err := r.Run(context.Background(), "Review prd and write .ralph/prd_review.json", ch); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 	if elapsed := time.Since(start); elapsed > 100*time.Millisecond {

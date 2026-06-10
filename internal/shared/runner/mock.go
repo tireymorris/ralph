@@ -12,7 +12,7 @@ import (
 	"ralph/internal/shared/config"
 )
 
-const mockQuestionsFile = ".ralph_questions.json"
+const mockQuestionsFile = ".ralph/questions.json"
 
 // Mock is a deterministic runner for integration tests (RALPH_RUNNER=mock).
 type Mock struct {
@@ -49,14 +49,12 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 		if env := os.Getenv("RALPH_MOCK_QUESTIONS"); env != "" {
 			questions = env
 		}
-		path := filepath.Join(workDir, mockQuestionsFile)
-		return os.WriteFile(path, []byte(questions), 0o644)
+		return writeStateFile(filepath.Join(workDir, mockQuestionsFile), questions)
 	}
 
 	if strings.Contains(prompt, promptpkg.PRDSelfReviewVerdictFile) || strings.Contains(prompt, "PRD self-review round") {
 		verdict := `{"approved":true,"summary":"mock self-review approved"}`
-		path := filepath.Join(workDir, promptpkg.PRDSelfReviewVerdictFile)
-		return os.WriteFile(path, []byte(verdict), 0o644)
+		return writeStateFile(filepath.Join(workDir, promptpkg.PRDSelfReviewVerdictFile), verdict)
 	}
 
 	if strings.Contains(prompt, "Write the PRD file") || strings.Contains(prompt, "Write the updated PRD file") {
@@ -88,4 +86,12 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 	}
 
 	return nil
+}
+
+// writeStateFile mimics a real agent creating parent directories before writing.
+func writeStateFile(path, contents string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, []byte(contents), 0o644)
 }

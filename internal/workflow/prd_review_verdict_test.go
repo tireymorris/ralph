@@ -38,6 +38,9 @@ func TestPRDReviewVerdictReaderReadRemove(t *testing.T) {
 	t.Run("reads verdict and deletes file", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, prompt.PRDSelfReviewVerdictFile)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(path, []byte(`{"approved": true, "summary": "ok"}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -67,6 +70,9 @@ func TestPRDReviewVerdictReaderReadRemove(t *testing.T) {
 	t.Run("malformed file returns zero-value verdict and no error", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, prompt.PRDSelfReviewVerdictFile)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(path, []byte(`not json`), 0o644); err != nil {
 			t.Fatal(err)
 		}

@@ -26,9 +26,10 @@ Thumbs.db
 
 prd.json
 prd.json.lock
-.prd.tmp.*
-
 .ralph/
+
+# legacy state paths from older ralph versions
+.prd.tmp.*
 .ralph_questions.json
 .ralph_prd_review.json
 

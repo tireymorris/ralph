@@ -82,12 +82,17 @@ func assertPathsNotExist(t *testing.T, paths ...string) {
 
 func assertNoPRDTempFiles(t *testing.T, dir string) {
 	t.Helper()
-	matches, err := filepath.Glob(filepath.Join(dir, ".prd.tmp.*"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(matches) != 0 {
-		t.Fatalf("expected no .prd.tmp.* files, got %v", matches)
+	for _, pattern := range []string{
+		filepath.Join(dir, ".ralph", "prd.tmp.*"),
+		filepath.Join(dir, ".prd.tmp.*"),
+	} {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(matches) != 0 {
+			t.Fatalf("expected no PRD temp files, got %v", matches)
+		}
 	}
 }
 

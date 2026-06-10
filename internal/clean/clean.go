@@ -21,13 +21,15 @@ func RemoveState(cfg *config.Config) error {
 }
 
 func removeOrphanedPRDTemps(cfg *config.Config) error {
-	matches, err := filepath.Glob(prdTempGlobPattern(cfg))
-	if err != nil {
-		return err
-	}
-	for _, path := range matches {
-		if err := removeIfExists(path); err != nil {
+	for _, pattern := range prdTempGlobPatterns(cfg) {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
 			return err
+		}
+		for _, path := range matches {
+			if err := removeIfExists(path); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

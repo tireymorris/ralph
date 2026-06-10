@@ -16,6 +16,9 @@ import (
 // Round failures degrade to the current on-disk PRD rather than failing the run.
 func (e *Executor) runPRDSelfReview(ctx context.Context, userPrompt string) (*prd.PRD, error) {
 	maxRounds := constants.MaxPRDSelfReviewRounds
+	if err := ensureStateDir(e.cfg.WorkDir); err != nil {
+		return nil, fmt.Errorf("creating state dir for self-review verdict: %w", err)
+	}
 	verdictReader := PRDReviewVerdictReader{WorkDir: e.cfg.WorkDir}
 	if err := os.Remove(verdictReader.Path()); err != nil && !os.IsNotExist(err) {
 		logger.Warn("failed to remove stale PRD self-review verdict", "error", err, "file", verdictReader.Path())

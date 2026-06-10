@@ -12,7 +12,7 @@ func TestGitignoreIgnoresRalphStatePaths(t *testing.T) {
 		t.Fatalf("read .gitignore: %v", err)
 	}
 	content := string(data)
-	for _, entry := range []string{"prd.json", ".ralph/", ".ralph_questions.json", ".prd.tmp.*"} {
+	for _, entry := range []string{"prd.json", "prd.json.lock", ".ralph/"} {
 		if !strings.Contains(content, entry) {
 			t.Fatalf(".gitignore must include Ralph state entry %q", entry)
 		}

@@ -10,6 +10,9 @@ import (
 )
 
 func (e *Executor) runClarifyRunner(ctx context.Context, userPrompt string, isEmpty bool) error {
+	if err := ensureStateDir(e.cfg.WorkDir); err != nil {
+		return fmt.Errorf("creating state dir for clarifying questions: %w", err)
+	}
 	clarifyPrompt := prompt.ClarifyingQuestions(userPrompt, ClarifyingQuestionsFile, isEmpty)
 	return e.runWithForwardedOutput(ctx, clarifyPrompt)
 }

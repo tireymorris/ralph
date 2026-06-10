@@ -17,11 +17,11 @@ func TestClarifyingQuestions(t *testing.T) {
 		{
 			name:            "existing codebase",
 			userPrompt:      "Add user authentication",
-			questionsFile:   ".ralph_questions.json",
+			questionsFile:   ".ralph/questions.json",
 			isEmptyCodebase: false,
 			mustInclude: []string{
 				"Add user authentication",
-				".ralph_questions.json",
+				".ralph/questions.json",
 				"existing codebase",
 				"0-5",
 				"JSON file",
@@ -31,12 +31,12 @@ func TestClarifyingQuestions(t *testing.T) {
 		{
 			name:            "new project",
 			userPrompt:      "Build a REST API",
-			questionsFile:   ".ralph_questions.json",
+			questionsFile:   ".ralph/questions.json",
 			isEmptyCodebase: true,
 			mustInclude: []string{
 				"Build a REST API",
 				"new project",
-				".ralph_questions.json",
+				".ralph/questions.json",
 			},
 			mustNotInclude: []string{"existing codebase"},
 		},

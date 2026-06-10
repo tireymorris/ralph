@@ -60,9 +60,12 @@ func Save(cfg *config.Config, p *PRD) error {
 		return fmt.Errorf("failed to marshal PRD %q (version %d): %w", prdPath, p.Version, err)
 	}
 
-	dir := filepath.Dir(prdPath)
+	tmpDir := cfg.ConfigPath(".ralph")
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return fmt.Errorf("failed to create state dir %q: %w", tmpDir, err)
+	}
 
-	tmpPath := filepath.Join(dir, fmt.Sprintf(".prd.tmp.%d.%d", time.Now().Unix(), rand.Intn(constants.TempFileRandomRange)))
+	tmpPath := filepath.Join(tmpDir, fmt.Sprintf("prd.tmp.%d.%d", time.Now().Unix(), rand.Intn(constants.TempFileRandomRange)))
 
 	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write temporary PRD file %q: %w", tmpPath, err)
