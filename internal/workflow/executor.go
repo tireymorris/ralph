@@ -73,6 +73,12 @@ func (e *Executor) RunPrompt(ctx context.Context, prompt string, outputCh chan<-
 }
 
 func (e *Executor) runWithForwardedOutput(ctx context.Context, prompt string) error {
+	if e.cfg.RunnerTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, e.cfg.RunnerTimeout)
+		defer cancel()
+	}
+
 	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
 	done := make(chan struct{})
 	go func() {
@@ -82,5 +88,8 @@ func (e *Executor) runWithForwardedOutput(ctx context.Context, prompt string) er
 	runErr := e.runner.Run(ctx, prompt, outputCh)
 	close(outputCh)
 	<-done
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("runner invocation timed out after %s: %w", e.cfg.RunnerTimeout, ctx.Err())
+	}
 	return runErr
 }
