@@ -83,14 +83,19 @@ func TestDriverStartNewAutoApproveSkipsClarifyAndStartsImplementation(t *testing
 
 	deadline := time.Now().Add(3 * time.Second)
 	seenReview := false
+	seenSkipOutput := false
 	seenStoryStartedAfterReview := false
 	for time.Now().Before(deadline) {
 		select {
 		case ev := <-d.EventsCh():
 			d.TrackEventState(ev)
-			switch ev.(type) {
+			switch e := ev.(type) {
 			case events.EventClarifyingQuestions:
 				t.Fatal("auto-approve run should not ask clarification questions")
+			case events.EventOutput:
+				if strings.Contains(e.Output.Text, "skipping clarification") {
+					seenSkipOutput = true
+				}
 			case events.EventPRDReview:
 				seenReview = true
 			case events.EventStoryStarted:
@@ -100,10 +105,13 @@ func TestDriverStartNewAutoApproveSkipsClarifyAndStartsImplementation(t *testing
 			}
 		default:
 		}
-		if seenStoryStartedAfterReview {
+		if seenSkipOutput && seenStoryStartedAfterReview {
 			break
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+	if !seenSkipOutput {
+		t.Fatal("expected auto-approve run to emit skipping clarification output")
 	}
 	if !seenStoryStartedAfterReview {
 		t.Fatal("expected EventStoryStarted after EventPRDReview without ApproveReview")
