@@ -44,6 +44,45 @@ func TestRunCleanupContextCancelled(t *testing.T) {
 	}
 }
 
+func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	testPRD := &prd.PRD{Context: "clean project context"}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+
+	err := exec.RunCleanup(context.Background(), testPRD)
+	if err != nil {
+		t.Fatalf("RunCleanup() error = %v", err)
+	}
+
+	if mock.CallCount() != 0 {
+		t.Fatalf("runner call count = %d, want 0", mock.CallCount())
+	}
+
+	evts := drainEvents(ch)
+	counts := countCleanupEvents(evts)
+	if counts.started != 0 {
+		t.Errorf("EventCleanupStarted count = %d, want 0", counts.started)
+	}
+
+	foundSkipOutput := false
+	for _, e := range evts {
+		out, ok := e.(EventOutput)
+		if ok && out.Text == "Skipping cleanup: no changed files" {
+			foundSkipOutput = true
+		}
+	}
+	if !foundSkipOutput {
+		t.Fatalf("events = %#v, want EventOutput with cleanup skip message", evts)
+	}
+}
+
 func TestRunCleanupSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.PRDFile = "prd.json"
