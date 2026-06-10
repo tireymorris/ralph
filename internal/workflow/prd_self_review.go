@@ -13,26 +13,32 @@ import (
 // rubric in prompt.PRDSelfReview, looping until it approves or rounds run out.
 func (e *Executor) runPRDSelfReview(ctx context.Context, userPrompt string) (*prd.PRD, error) {
 	maxRounds := constants.MaxPRDSelfReviewRounds
-	round := 1
 
-	e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("PRD self-review round %d of %d", round, maxRounds)}})
+	var p *prd.PRD
+	for round := 1; round <= maxRounds; round++ {
+		e.emit(EventOutput{Output: Output{Text: fmt.Sprintf("PRD self-review round %d of %d", round, maxRounds)}})
 
-	reviewPrompt := prompt.PRDSelfReview(userPrompt, e.cfg.PRDFile, round, maxRounds)
-	if err := e.runWithForwardedOutput(ctx, reviewPrompt); err != nil {
-		return nil, fmt.Errorf("PRD self-review round %d failed with runner %s: %w", round, e.cfg.Runner, err)
-	}
+		reviewPrompt := prompt.PRDSelfReview(userPrompt, e.cfg.PRDFile, round, maxRounds)
+		if err := e.runWithForwardedOutput(ctx, reviewPrompt); err != nil {
+			return nil, fmt.Errorf("PRD self-review round %d failed with runner %s: %w", round, e.cfg.Runner, err)
+		}
 
-	p, err := e.store.Load(e.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("loading PRD after self-review round %d: %w", round, err)
-	}
+		reloaded, err := e.store.Load(e.cfg)
+		if err != nil {
+			return nil, fmt.Errorf("loading PRD after self-review round %d: %w", round, err)
+		}
+		p = reloaded
 
-	verdict, err := PRDReviewVerdictReader{WorkDir: e.cfg.WorkDir}.ReadRemove()
-	if err != nil {
-		return nil, err
-	}
-	if verdict.Summary != "" {
-		e.emit(EventOutput{Output: Output{Text: "Self-review verdict: " + verdict.Summary}})
+		verdict, err := PRDReviewVerdictReader{WorkDir: e.cfg.WorkDir}.ReadRemove()
+		if err != nil {
+			return nil, err
+		}
+		if verdict.Summary != "" {
+			e.emit(EventOutput{Output: Output{Text: "Self-review verdict: " + verdict.Summary}})
+		}
+		if verdict.Approved {
+			break
+		}
 	}
 	return p, nil
 }
