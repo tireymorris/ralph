@@ -66,7 +66,9 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			blocked := p.BlockedStories()
 			if len(blocked) > 0 {
 				logger.Error("no ready stories, all incomplete stories are dependency-blocked", "blocked_count", len(blocked))
-				return fmt.Errorf("all incomplete stories are dependency-blocked: %s", describeBlockedStories(p, blocked))
+				blockedErr := fmt.Errorf("all incomplete stories are dependency-blocked: %s", describeBlockedStories(p, blocked))
+				e.emit(EventError{Err: blockedErr})
+				return blockedErr
 			}
 			continue
 		}

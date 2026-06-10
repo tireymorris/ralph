@@ -76,3 +76,27 @@ func TestRunImplementationBlockedErrorNamesStoriesAndDependencies(t *testing.T) 
 		}
 	}
 }
+
+func TestRunImplementationBlockedEmitsEventError(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	blocked := newAllBlockedPRD()
+	ch := make(chan Event, 100)
+	exec := NewExecutorWithRunnerAndStore(cfg, ch, newMockRunner(), blockedPRDStore{p: blocked})
+
+	if err := exec.RunImplementation(context.Background(), blocked); err == nil {
+		t.Fatal("RunImplementation() should return error when all incomplete stories are blocked")
+	}
+
+	foundError := false
+	for len(ch) > 0 {
+		e := <-ch
+		if ev, ok := e.(EventError); ok && strings.Contains(ev.Err.Error(), "story-a") {
+			foundError = true
+		}
+	}
+	if !foundError {
+		t.Error("expected EventError naming the blocked story before return")
+	}
+}
