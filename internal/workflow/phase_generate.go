@@ -54,11 +54,13 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 		return nil, fmt.Errorf("failed to load generated PRD %s: %w", e.cfg.PRDFile, err)
 	}
 
-	p, err = e.runPRDSelfReview(ctx, userPrompt)
-	if err != nil {
-		logger.Error("PRD self-review failed", "error", err)
-		e.emit(EventError{Err: fmt.Errorf("PRD self-review failed: %w", err)})
-		return nil, fmt.Errorf("PRD self-review failed: %w", err)
+	if e.cfg.AutoApprove {
+		p, err = e.runPRDSelfReview(ctx, userPrompt)
+		if err != nil {
+			logger.Error("PRD self-review failed", "error", err)
+			e.emit(EventError{Err: fmt.Errorf("PRD self-review failed: %w", err)})
+			return nil, fmt.Errorf("PRD self-review failed: %w", err)
+		}
 	}
 
 	logger.Debug("PRD generated", "project", p.ProjectName, "stories", len(p.Stories))

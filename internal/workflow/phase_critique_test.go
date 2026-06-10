@@ -31,6 +31,7 @@ func newCritiqueConfig(t *testing.T) *config.Config {
 
 func TestRunCritiqueRevisionRunsSelfReviewBeforePRDReview(t *testing.T) {
 	cfg := newCritiqueConfig(t)
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -76,8 +77,48 @@ func TestRunCritiqueRevisionRunsSelfReviewBeforePRDReview(t *testing.T) {
 	}
 }
 
+func TestRunCritiqueRevisionWithoutAutoApproveSkipsSelfReview(t *testing.T) {
+	cfg := newCritiqueConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			t.Errorf("self-review should not run without auto-approve, got prompt:\n%s", p)
+			return nil
+		}
+		if strings.Contains(p, "needs more tests") {
+			revised := &prd.PRD{
+				ProjectName: "Revised",
+				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}},
+			}
+			return prd.Save(cfg, revised)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunCritiqueRevision(context.Background(), "build feature", "needs more tests"); err != nil {
+		t.Fatalf("RunCritiqueRevision() error = %v", err)
+	}
+
+	reviewEvents := 0
+	for len(ch) > 0 {
+		if re, ok := (<-ch).(EventPRDReview); ok {
+			reviewEvents++
+			if re.PRD.ProjectName != "Revised" {
+				t.Errorf("EventPRDReview project = %q, want Revised", re.PRD.ProjectName)
+			}
+		}
+	}
+	if reviewEvents != 1 {
+		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
 func TestRunCritiqueRevisionSelfReviewErrorSkipsPRDReview(t *testing.T) {
 	cfg := newCritiqueConfig(t)
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()

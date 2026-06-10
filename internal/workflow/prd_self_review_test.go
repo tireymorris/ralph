@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -212,11 +213,128 @@ func TestRunPRDSelfReviewInvalidPRDReturnsValidationError(t *testing.T) {
 	}
 }
 
+func TestRunPRDSelfReviewRunnerErrorDegradesToCurrentPRD(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return errors.New("runner exploded")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.runPRDSelfReview(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("runPRDSelfReview() error = %v, want graceful degradation", err)
+	}
+	if p == nil || p.ProjectName != "Test" {
+		t.Fatalf("runPRDSelfReview() PRD = %+v, want on-disk PRD", p)
+	}
+	if mock.CallCount() != 1 {
+		t.Errorf("runner calls = %d, want 1 (no retries after runner error)", mock.CallCount())
+	}
+
+	texts := drainOutputTexts(ch)
+	foundDegraded := false
+	for _, text := range texts {
+		if strings.Contains(text, "failed, proceeding with current PRD") {
+			foundDegraded = true
+		}
+	}
+	if !foundDegraded {
+		t.Errorf("expected degradation message in outputs %v", texts)
+	}
+}
+
+func TestRunPRDSelfReviewCanceledContextReturnsError(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return ctx.Err()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if _, err := exec.runPRDSelfReview(ctx, "build feature"); err == nil {
+		t.Fatal("runPRDSelfReview() error = nil, want context cancellation error")
+	}
+}
+
+func TestRunPRDSelfReviewRemovesStaleVerdict(t *testing.T) {
+	cfg := newSelfReviewConfig(t)
+	if err := writeVerdictFile(t, cfg.WorkDir, true, "stale approval from a previous run"); err != nil {
+		t.Fatalf("failed to seed stale verdict: %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.runPRDSelfReview(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("runPRDSelfReview() error = %v", err)
+	}
+	if p == nil {
+		t.Fatal("runPRDSelfReview() returned nil PRD")
+	}
+	if mock.CallCount() != constants.MaxPRDSelfReviewRounds {
+		t.Errorf("runner calls = %d, want %d (stale verdict must not count as round-1 approval)", mock.CallCount(), constants.MaxPRDSelfReviewRounds)
+	}
+}
+
+func TestRunGenerateWithoutAutoApproveSkipsSelfReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			t.Errorf("self-review should not run without auto-approve, got prompt:\n%s", p)
+			return nil
+		}
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.RunGenerate(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+	if p == nil {
+		t.Fatal("RunGenerate() returned nil PRD")
+	}
+	if mock.CallCount() != 1 {
+		t.Errorf("runner calls = %d, want 1 (generation only)", mock.CallCount())
+	}
+
+	reviewEvents := 0
+	for len(ch) > 0 {
+		if _, ok := (<-ch).(EventPRDReview); ok {
+			reviewEvents++
+		}
+	}
+	if reviewEvents != 1 {
+		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
 func TestRunGenerateRunsSelfReviewBeforePRDReview(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -261,6 +379,7 @@ func TestRunGenerateSelfReviewNeverApprovedStillEmitsPRDReview(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -300,6 +419,7 @@ func TestRunGenerateSelfReviewMissingVerdictProceedsToPRDReview(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -344,6 +464,7 @@ func TestRunGenerateSelfReviewErrorSkipsPRDReview(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()

@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 )
 
 // RunCritiqueRevision applies user critique to the PRD, re-runs clarification, then returns to review.
@@ -27,10 +28,21 @@ func (e *Executor) RunCritiqueRevision(ctx context.Context, userPrompt, critique
 		}
 	}
 
-	p, err := e.runPRDSelfReview(ctx, userPrompt)
-	if err != nil {
-		logger.Error("PRD self-review failed after critique revision", "error", err)
-		return err
+	var p *prd.PRD
+	if e.cfg.AutoApprove {
+		p, err = e.runPRDSelfReview(ctx, userPrompt)
+		if err != nil {
+			logger.Error("PRD self-review failed after critique revision", "error", err)
+			return err
+		}
+	} else {
+		p, err = e.store.Load(e.cfg)
+		if err != nil {
+			logger.Error("failed to load PRD after critique revision", "error", err)
+			wrappedErr := fmt.Errorf("failed to load PRD %s after critique revision: %w", e.cfg.PRDFile, err)
+			e.emit(EventError{Err: wrappedErr})
+			return wrappedErr
+		}
 	}
 
 	e.emit(EventPRDReview{PRD: p})
