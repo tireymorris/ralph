@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -55,6 +56,62 @@ func TestDriverStartNewEmitsClarifyThenGenerate(t *testing.T) {
 	}
 	if d.Prompt() != "build something" {
 		t.Fatalf("Prompt() = %q, want %q", d.Prompt(), "build something")
+	}
+}
+
+func TestDriverStartNewAutoApproveSkipsClarifyAndStartsImplementation(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
+	cfg.SkipCleanup = true
+
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
+		if strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			return os.WriteFile(filepath.Join(workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0644)
+		}
+		prdPath := filepath.Join(workDir, "prd.json")
+		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		return os.WriteFile(prdPath, []byte(data), 0644)
+	}
+
+	d := NewDriverWithRunner(cfg, mock)
+	t.Cleanup(d.Cancel)
+	d.StartNew(context.Background(), "build something")
+
+	deadline := time.Now().Add(3 * time.Second)
+	seenReview := false
+	seenStoryStartedAfterReview := false
+	for time.Now().Before(deadline) {
+		select {
+		case ev := <-d.EventsCh():
+			d.TrackEventState(ev)
+			switch ev.(type) {
+			case events.EventClarifyingQuestions:
+				t.Fatal("auto-approve run should not ask clarification questions")
+			case events.EventPRDReview:
+				seenReview = true
+			case events.EventStoryStarted:
+				if seenReview {
+					seenStoryStartedAfterReview = true
+				}
+			}
+		default:
+		}
+		if seenStoryStartedAfterReview {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !seenStoryStartedAfterReview {
+		t.Fatal("expected EventStoryStarted after EventPRDReview without ApproveReview")
+	}
+	for _, call := range mock.calls {
+		if strings.Contains(call, ClarifyingQuestionsFile) {
+			t.Fatalf("auto-approve run invoked clarify runner with prompt %q", call)
+		}
 	}
 }
 
