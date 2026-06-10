@@ -3,6 +3,10 @@ export interface StoryProgress {
   total: number;
 }
 
+export interface CreateRunRequestOptions {
+  autoApprove?: boolean;
+}
+
 export interface CreateRunResponse {
   id: string;
 }
