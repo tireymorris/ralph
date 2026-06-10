@@ -24,12 +24,15 @@ Run from the target repo root (must be a **git** repo for implementation):
 ralph                 # TUI
 ralph "..."          # TUI flow
 ralph "..." --dry-run # PRD only
+ralph "..." --yolo   # non-interactive run; skip clarify and PRD approval
 ralph --resume        # continue from prd.json (+ checkpoint if saved)
 ralph status          # current PRD status
 ralph web             # local UI
 ```
 
 Set `RALPH_RUNNER` to `claude`, `cursor`, `opencode`, or `pi`.
+Use `RALPH_YOLO=1` for non-interactive auto-approve runs.
+Use `RALPH_RUNNER_TIMEOUT=30m` (Go duration) to cap each runner session.
 
 ## How it works
 
