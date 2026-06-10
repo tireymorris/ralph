@@ -245,6 +245,80 @@ func TestRunGenerateRunsSelfReviewBeforePRDReview(t *testing.T) {
 	}
 }
 
+func TestRunGenerateSelfReviewNeverApprovedStillEmitsPRDReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
+		}
+		return writeVerdictFile(t, tmpDir, false, "never satisfied")
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	p, err := exec.RunGenerate(context.Background(), "build feature")
+	if err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+	if mock.CallCount() != 1+constants.MaxPRDSelfReviewRounds {
+		t.Errorf("runner calls = %d, want %d", mock.CallCount(), 1+constants.MaxPRDSelfReviewRounds)
+	}
+
+	reviewEvents := 0
+	for len(ch) > 0 {
+		if re, ok := (<-ch).(EventPRDReview); ok {
+			reviewEvents++
+			if re.PRD.ProjectName != p.ProjectName {
+				t.Errorf("EventPRDReview PRD = %q, want %q", re.PRD.ProjectName, p.ProjectName)
+			}
+		}
+	}
+	if reviewEvents != 1 {
+		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
+func TestRunGenerateSelfReviewMissingVerdictProceedsToPRDReview(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if _, err := exec.RunGenerate(context.Background(), "build feature"); err != nil {
+		t.Fatalf("RunGenerate() error = %v", err)
+	}
+	if mock.CallCount() != 2 {
+		t.Errorf("runner calls = %d, want 2 (1 generation + 1 review round)", mock.CallCount())
+	}
+
+	reviewEvents := 0
+	for len(ch) > 0 {
+		if _, ok := (<-ch).(EventPRDReview); ok {
+			reviewEvents++
+		}
+	}
+	if reviewEvents != 1 {
+		t.Errorf("EventPRDReview emitted %d times, want 1", reviewEvents)
+	}
+}
+
 func TestRunGenerateSelfReviewErrorSkipsPRDReview(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
