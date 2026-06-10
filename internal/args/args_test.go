@@ -15,6 +15,7 @@ func TestParse(t *testing.T) {
 		{name: "help flag short", args: []string{"-h"}, expected: Options{Help: true}},
 		{name: "help flag long", args: []string{"--help"}, expected: Options{Help: true}},
 		{name: "dry run flag", args: []string{"--dry-run"}, expected: Options{DryRun: true}},
+		{name: "yolo flag", args: []string{"--yolo"}, expected: Options{AutoApprove: true}},
 		{name: "resume flag", args: []string{"--resume"}, expected: Options{Resume: true}},
 		{name: "verbose flag short", args: []string{"-v"}, expected: Options{Verbose: true}},
 		{name: "verbose flag long", args: []string{"--verbose"}, expected: Options{Verbose: true}},
@@ -78,6 +79,9 @@ func TestParse(t *testing.T) {
 			}
 			if got.SkipCleanup != tt.expected.SkipCleanup {
 				t.Errorf("SkipCleanup = %v, want %v", got.SkipCleanup, tt.expected.SkipCleanup)
+			}
+			if got.AutoApprove != tt.expected.AutoApprove {
+				t.Errorf("AutoApprove = %v, want %v", got.AutoApprove, tt.expected.AutoApprove)
 			}
 			if len(got.UnknownFlags) != len(tt.expected.UnknownFlags) {
 				t.Errorf("UnknownFlags length = %d, want %d", len(got.UnknownFlags), len(tt.expected.UnknownFlags))
