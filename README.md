@@ -67,7 +67,7 @@ Implementation requires a **git repository** in the working directory (used for 
 | `--dry-run` | Generate PRD only |
 | `--resume` | Resume from existing `prd.json` (and checkpoint if present) |
 | `--skip-cleanup` | Skip post-implementation cleanup |
-| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval gates |
+| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval gates; the agent self-reviews the PRD instead |
 | `--port PORT` | Web server port (with `ralph web`; default 8080) |
 | `--ref REF` | Branch or tag for `ralph update` (default `main`) |
 | `--check` | With `ralph update`: report whether a newer commit exists on the remote |
@@ -88,6 +88,7 @@ Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs
 | `prd.json` | TUI + web | The generated PRD |
 | `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
 | `.ralph_questions.json` | Runner | Temporary clarification questions (deleted after read) |
+| `.ralph_prd_review.json` | Runner | PRD self-review verdict in `--yolo` runs (deleted after read) |
 | `.prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
 | `.ralph/runs/<id>/meta.json` | TUI + web | Per-run metadata (status, checkpoint, review loop) |
 | `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |

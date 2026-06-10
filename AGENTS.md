@@ -17,7 +17,7 @@ Supported backends:
 5. Workflow phases:
    - clarify
    - generate/load PRD
-   - PRD self-review rounds before user review
+   - PRD self-review rounds (auto-approve/`--yolo` runs only; round failures degrade to the last PRD revision)
    - review PRD (user approves or revises)
    - implement stories (one runner session per ready story)
    - **implementation review** — critical diff review after each story; may block on findings
@@ -81,7 +81,7 @@ TUI and web share the same `workflow.Driver` → `Executor` engine. Web adds `Ru
 Ralph writes these files in the working directory (all covered by `.gitignore`):
 - `prd.json` / `prd.json.lock` — PRD and its file lock
 - `.ralph_questions.json` — temporary clarification questions (deleted after read)
-- `.ralph_prd_review.json` — temporary PRD self-review verdict (deleted after read)
+- `.ralph_prd_review.json` — temporary PRD self-review verdict (auto-approve runs; deleted after read, stale copies cleared before round 1)
 - `.ralph/runs/<id>/meta.json` — per-run metadata (status, checkpoint, review loop); TUI uses `prd-local`
 - `.ralph/runs/<id>/events.ndjson` — per-run event log for SSE replay (web UI)
 - `.ralph/runs/<id>/review-*.txt` — implementation review transcripts

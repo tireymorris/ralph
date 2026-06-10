@@ -24,7 +24,7 @@ Run from the target repo root (must be a **git** repo for implementation):
 ralph                 # TUI
 ralph "..."          # TUI flow
 ralph "..." --dry-run # PRD only
-ralph "..." --yolo   # non-interactive run; skip clarify and PRD approval
+ralph "..." --yolo   # non-interactive run; skip clarify, agent self-reviews the PRD instead of manual approval
 ralph --resume        # continue from prd.json (+ checkpoint if saved)
 ralph status          # current PRD status
 ralph web             # local UI
