@@ -88,3 +88,4 @@ func (s *Session) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	return s.Driver.SubmitClarify(qas)
 }
 func (s *Session) EventsCh() <-chan events.Event { return s.Driver.EventsCh() }
+func (s *Session) Wait()                         { s.Driver.Wait() }

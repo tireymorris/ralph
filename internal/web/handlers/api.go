@@ -59,6 +59,7 @@ func (a *API) releaseController(id string) {
 	a.mu.Unlock()
 	if ctrl != nil {
 		ctrl.Cancel()
+		ctrl.Wait()
 	}
 }
 

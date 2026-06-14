@@ -27,12 +27,18 @@ type RunController struct {
 	mu          sync.Mutex
 	subscribers map[chan events.Event]struct{}
 	onTerminal  func()
+	wg          sync.WaitGroup
 }
 
 func (c *RunController) SetOnTerminal(fn func()) {
 	c.mu.Lock()
 	c.onTerminal = fn
 	c.mu.Unlock()
+}
+
+func (c *RunController) Wait() {
+	c.Session.Wait()
+	c.wg.Wait()
 }
 
 func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID string, r runner.RunnerInterface) *RunController {
@@ -46,6 +52,7 @@ func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID 
 		subscribers: make(map[chan events.Event]struct{}),
 	}
 	s.SetReviewLoop(runID, newRegistryReviewLoop(registry, runID))
+	c.wg.Add(1)
 	go c.processEvents()
 	return c
 }
@@ -139,6 +146,7 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 }
 
 func (c *RunController) processEvents() {
+	defer c.wg.Done()
 	for {
 		select {
 		case <-c.Ctx().Done():
