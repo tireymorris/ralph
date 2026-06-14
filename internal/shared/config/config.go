@@ -93,7 +93,7 @@ func (c *Config) ValidateRunner() error {
 		return errors.New("runner cannot be empty")
 	}
 	if DetectRunner(c.Runner) == RunnerUnknown {
-		return fmt.Errorf("unknown runner %q (supported runners: claude, cursor, pi, opencode, mock)", c.Runner)
+		return fmt.Errorf("unknown runner %q (supported runners: claude, cursor, pi, opencode, copilot, mock)", c.Runner)
 	}
 	return nil
 }
