@@ -81,6 +81,7 @@ func parseCopilotJSONL(line string) []OutputLine {
 			ToolName     string `json:"toolName"`
 			Message      string `json:"message"`
 			ErrorMessage string `json:"errorMessage"`
+			ExitCode     int    `json:"exitCode"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
@@ -114,6 +115,8 @@ func parseCopilotJSONL(line string) []OutputLine {
 			text = fmt.Sprintf("%s: %s", event.Type, event.Data.ToolName)
 		}
 		return []OutputLine{{Text: text, Time: now, Verbose: true}}
+	case "result":
+		return []OutputLine{{Text: fmt.Sprintf("exit code: %d", event.Data.ExitCode), Time: now, Verbose: true}}
 	}
 
 	if strings.HasPrefix(event.Type, "session.") {

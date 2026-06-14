@@ -194,3 +194,17 @@ func TestParseCopilotJSONL_ToolExecutionComplete(t *testing.T) {
 		t.Error("Verbose should be true")
 	}
 }
+
+func TestParseCopilotJSONL_Result(t *testing.T) {
+	line := `{"type":"result","data":{"exitCode":0}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("Verbose should be true")
+	}
+	if !strings.Contains(lines[0].Text, "0") {
+		t.Errorf("Text = %q, want substring %q", lines[0].Text, "0")
+	}
+}
