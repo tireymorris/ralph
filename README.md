@@ -6,7 +6,6 @@ Turn a goal into `prd.json`, then implement it story-by-story via an AI coding C
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
-ralph "describe the change you want"
 ```
 
 **Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot`.
