@@ -158,3 +158,17 @@ func TestParseCopilotJSONL_MalformedJSON(t *testing.T) {
 		t.Error("malformed JSON line should have Verbose=true")
 	}
 }
+
+func TestParseCopilotJSONL_SessionMCPServersLoaded(t *testing.T) {
+	line := `{"type":"session.mcp_servers_loaded","data":{}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("Verbose should be true")
+	}
+	if lines[0].IsErr {
+		t.Error("IsErr should be false")
+	}
+}

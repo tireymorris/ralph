@@ -108,5 +108,9 @@ func parseCopilotJSONL(line string) []OutputLine {
 		}
 	}
 
+	if strings.HasPrefix(event.Type, "session.") {
+		return []OutputLine{{Text: event.Type, Time: now, Verbose: true}}
+	}
+
 	return nil
 }
