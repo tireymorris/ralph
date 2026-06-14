@@ -158,7 +158,7 @@ Options:
   --check          With ralph update: compare local commit to remote; exit 2 if update available
 
 Environment:
-  RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode)
+  RALPH_RUNNER   Select the AI runner binary (default: claude; pi, cursor, claude, opencode, copilot)
   RALPH_YOLO     Set to 1 to skip manual clarify and PRD approval gates
   RALPH_REPO     Git URL for ralph update (default: https://github.com/tireymorris/ralph.git)
 `
