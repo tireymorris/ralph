@@ -18,6 +18,7 @@ const (
 	RunnerCursor   RunnerKind = "cursor"
 	RunnerPi       RunnerKind = "pi"
 	RunnerOpenCode RunnerKind = "opencode"
+	RunnerCopilot  RunnerKind = "copilot"
 	RunnerMock     RunnerKind = "mock"
 	RunnerUnknown  RunnerKind = "unknown"
 )
@@ -32,6 +33,8 @@ func DetectRunner(runner string) RunnerKind {
 		return RunnerPi
 	case string(RunnerOpenCode):
 		return RunnerOpenCode
+	case string(RunnerCopilot):
+		return RunnerCopilot
 	case string(RunnerMock):
 		return RunnerMock
 	default:
