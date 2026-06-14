@@ -106,6 +106,8 @@ func parseCopilotJSONL(line string) []OutputLine {
 		if event.Data.ErrorMessage != "" {
 			return []OutputLine{{Text: event.Data.ErrorMessage, Time: now, IsErr: true}}
 		}
+	case "assistant.turn_start", "assistant.turn_end", "assistant.message_start":
+		return []OutputLine{{Text: event.Type, Time: now, Verbose: true}}
 	}
 
 	if strings.HasPrefix(event.Type, "session.") {

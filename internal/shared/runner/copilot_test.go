@@ -172,3 +172,14 @@ func TestParseCopilotJSONL_SessionMCPServersLoaded(t *testing.T) {
 		t.Error("IsErr should be false")
 	}
 }
+
+func TestParseCopilotJSONL_AssistantTurnStart(t *testing.T) {
+	line := `{"type":"assistant.turn_start","data":{}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("Verbose should be true")
+	}
+}
