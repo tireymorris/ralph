@@ -17,3 +17,11 @@ func NewCopilot(cfg *config.Config) *CopilotRunner {
 		CmdFunc: defaultCmdFuncNoStdin(cfg.WorkDir),
 	}
 }
+
+func (r *CopilotRunner) RunnerName() string {
+	return "copilot"
+}
+
+func (r *CopilotRunner) CommandName() string {
+	return "copilot"
+}
