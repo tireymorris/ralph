@@ -60,7 +60,7 @@ func Save(cfg *config.Config, p *PRD) error {
 		return fmt.Errorf("failed to marshal PRD %q (version %d): %w", prdPath, p.Version, err)
 	}
 
-	tmpDir := cfg.ConfigPath(".ralph")
+	tmpDir := filepath.Join(filepath.Dir(prdPath), ".ralph")
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		return fmt.Errorf("failed to create state dir %q: %w", tmpDir, err)
 	}

@@ -215,6 +215,9 @@ func TestAtomicWriteNoTempFiles(t *testing.T) {
 	for _, file := range files {
 		name := file.Name()
 		base := filepath.Base(cfg.PRDFile)
+		if name == ".ralph" {
+			continue
+		}
 		if filepath.Ext(name) == ".tmp" || name != base && name != base+".lock" {
 			t.Errorf("unexpected file in temp dir: %s", name)
 		}
