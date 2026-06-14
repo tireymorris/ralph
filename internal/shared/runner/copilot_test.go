@@ -75,7 +75,14 @@ func TestCopilotRunnerRunArgs(t *testing.T) {
 		t.Errorf("command name = %q, want %q", capturedName, "copilot")
 	}
 
-	expectedArgs := []string{"--allow-all-tools", "--allow-all-paths", "--no-ask-user", "--output-format", "json", "--autopilot"}
+	expectedArgs := []string{
+		"--allow-all-tools",
+		"--allow-all-paths",
+		"--no-ask-user",
+		"--output-format", "json",
+		"--autopilot",
+		"--max-autopilot-continues", "50",
+	}
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 	assertNoModelSelectionArgs(t, capturedArgs)
 	assertPromptDeliveredViaStdin(t, mock, "do something")
@@ -218,7 +225,7 @@ func TestParseCopilotJSONL_ToolExecutionComplete(t *testing.T) {
 }
 
 func TestParseCopilotJSONL_Result(t *testing.T) {
-	line := `{"type":"result","data":{"exitCode":0}}`
+	line := `{"type":"result","exitCode":0,"sessionId":"abc"}`
 	lines := parseCopilotJSONL(line)
 	if len(lines) != 1 {
 		t.Fatalf("expected 1 output, got %d", len(lines))
@@ -226,8 +233,59 @@ func TestParseCopilotJSONL_Result(t *testing.T) {
 	if !lines[0].Verbose {
 		t.Error("Verbose should be true")
 	}
-	if !strings.Contains(lines[0].Text, "0") {
-		t.Errorf("Text = %q, want substring %q", lines[0].Text, "0")
+	if lines[0].Text != "exit code: 0" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "exit code: 0")
+	}
+}
+
+func TestParseCopilotJSONL_ResultFailure(t *testing.T) {
+	line := `{"type":"result","exitCode":1,"sessionId":"abc"}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "exit code: 1" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "exit code: 1")
+	}
+}
+
+func TestParseCopilotJSONL_ResultNestedExitCodeFallback(t *testing.T) {
+	line := `{"type":"result","data":{"exitCode":2}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "exit code: 2" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "exit code: 2")
+	}
+}
+
+func TestParseCopilotJSONL_AssistantMessageVerbose(t *testing.T) {
+	line := `{"type":"assistant.message","data":{"content":"hello from copilot"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("assistant.message should be verbose to avoid duplicating deltas")
+	}
+	if lines[0].Text != "hello from copilot" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "hello from copilot")
+	}
+}
+
+func TestCopilotResultExitCode(t *testing.T) {
+	tests := []struct {
+		top, data, want int
+	}{
+		{0, 0, 0},
+		{1, 0, 1},
+		{0, 2, 2},
+	}
+	for _, tt := range tests {
+		if got := copilotResultExitCode(tt.top, tt.data); got != tt.want {
+			t.Errorf("copilotResultExitCode(%d, %d) = %d, want %d", tt.top, tt.data, got, tt.want)
+		}
 	}
 }
 

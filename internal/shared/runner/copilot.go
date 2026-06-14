@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
 )
 
@@ -38,7 +39,14 @@ func (r *CopilotRunner) IsInternalLog(line string) bool {
 }
 
 func (r *CopilotRunner) Run(ctx context.Context, prompt string, outputCh chan<- OutputLine) error {
-	args := []string{"--allow-all-tools", "--allow-all-paths", "--no-ask-user", "--output-format", "json", "--autopilot"}
+	args := []string{
+		"--allow-all-tools",
+		"--allow-all-paths",
+		"--no-ask-user",
+		"--output-format", "json",
+		"--autopilot",
+		"--max-autopilot-continues", fmt.Sprintf("%d", constants.CopilotMaxAutopilotContinues),
+	}
 
 	logger.Debug("invoking AI runner",
 		"runner", r.RunnerName(),
@@ -75,8 +83,10 @@ func (r *CopilotRunner) Run(ctx context.Context, prompt string, outputCh chan<- 
 
 func parseCopilotJSONL(line string) []OutputLine {
 	var event struct {
-		Type string `json:"type"`
-		Data struct {
+		Type     string `json:"type"`
+		ExitCode int    `json:"exitCode"`
+		Data     struct {
+			Content      string `json:"content"`
 			DeltaContent string `json:"deltaContent"`
 			ToolName     string `json:"toolName"`
 			Message      string `json:"message"`
@@ -107,6 +117,11 @@ func parseCopilotJSONL(line string) []OutputLine {
 		if event.Data.ErrorMessage != "" {
 			return []OutputLine{{Text: event.Data.ErrorMessage, Time: now, IsErr: true}}
 		}
+	case "assistant.message":
+		if event.Data.Content != "" {
+			return []OutputLine{{Text: event.Data.Content, Time: now, Verbose: true}}
+		}
+		return []OutputLine{{Text: event.Type, Time: now, Verbose: true}}
 	case "assistant.turn_start", "assistant.turn_end", "assistant.message_start":
 		return []OutputLine{{Text: event.Type, Time: now, Verbose: true}}
 	case "tool.execution_complete", "tool.execution_partial_result":
@@ -116,7 +131,8 @@ func parseCopilotJSONL(line string) []OutputLine {
 		}
 		return []OutputLine{{Text: text, Time: now, Verbose: true}}
 	case "result":
-		return []OutputLine{{Text: fmt.Sprintf("exit code: %d", event.Data.ExitCode), Time: now, Verbose: true}}
+		exitCode := copilotResultExitCode(event.ExitCode, event.Data.ExitCode)
+		return []OutputLine{{Text: fmt.Sprintf("exit code: %d", exitCode), Time: now, Verbose: true}}
 	}
 
 	if strings.HasPrefix(event.Type, "session.") {
@@ -124,4 +140,12 @@ func parseCopilotJSONL(line string) []OutputLine {
 	}
 
 	return nil
+}
+
+func copilotResultExitCode(topLevel, inData int) int {
+	// Live Copilot JSONL puts exitCode on the event root; older fixtures nest it under data.
+	if topLevel != 0 || inData == 0 {
+		return topLevel
+	}
+	return inData
 }

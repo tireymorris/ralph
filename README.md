@@ -29,9 +29,7 @@ Manual one-liner:
 git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go install . && cd .. && rm -rf .tmp-ralph
 ```
 
-**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot`.
-
-For GitHub Copilot CLI (`copilot`), authenticate with `copilot login` (OAuth) or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`. Ralph does not handle runner auth.
+**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot` (see [Runners](#runners)).
 
 ## Usage
 
@@ -47,6 +45,12 @@ ralph update                        # reinstall from GitHub (default branch main
 ralph update --check                # compare local commit to remote
 ralph web                           # local web UI (default http://127.0.0.1:8080)
 ralph web --port 3000               # web UI on another port
+```
+
+Example with a specific runner:
+
+```bash
+RALPH_RUNNER=copilot ralph "add pagination to the users API"
 ```
 
 `ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, and the `.ralph/` directory (questions, self-review verdict, `.ralph/prd.tmp.*` orphans, run data). Legacy root-level `.ralph_questions.json`, `.ralph_prd_review.json`, and `.prd.tmp.*` files from older versions are removed too.
@@ -79,6 +83,25 @@ Implementation requires a **git repository** in the working directory (used for 
 | `-v`, `--verbose` | Debug logging |
 | `-h`, `--help` | Help |
 
+On the web UI, check **Auto-approve** when creating a run to skip manual clarify and PRD gates (same as `--yolo`). The API equivalent is `"auto_approve": true` on `POST /api/runs`.
+
+## Runners
+
+Set `RALPH_RUNNER` to select which AI coding CLI Ralph invokes. Ralph pipes each prompt on stdin and treats a zero exit code as story success.
+
+| `RALPH_RUNNER` | Binary on `PATH` | Notes |
+|----------------|------------------|-------|
+| `claude` (default) | `claude` | [Claude Code](https://github.com/anthropics/claude-code) |
+| `opencode` | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) |
+| `pi` | `pi` | [pi](https://pi.dev) |
+| `cursor` | `cursor-agent` | [Cursor Agent CLI](https://cursor.com) |
+| `copilot` | `copilot` | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli). Ralph passes `--autopilot` with a higher continuation limit than the CLI default for multi-step stories. |
+
+Ralph does not handle runner authentication. Configure each CLI before running Ralph:
+
+- **Copilot CLI** — `copilot login` (OAuth), or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`
+- **Other runners** — follow that tool's own login or API-key setup
+
 ## State files
 
 Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`. Run `ralph clean` to delete these artifacts idempotently (safe to run when none exist).
@@ -97,8 +120,6 @@ Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs
 | `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |
 | `.ralph/backups/<timestamp>/` | TUI + web | Prior state moved aside before a new run (not touched by `--resume`) |
 
-Backends: [Claude Code](https://github.com/anthropics/claude-code), [OpenCode](https://github.com/opencode-ai/opencode), [pi](https://pi.dev), Cursor Agent.
-
 ## Development
 
 Release-style build with git metadata embedded in the binary:
@@ -111,6 +132,13 @@ scripts/build.sh -o "$(go env GOPATH)/bin/ralph"
 go test ./...                 # Go unit + integration tests
 cd web && npm test            # React/Vitest frontend tests
 cd e2e && npx playwright test # Playwright E2E tests (builds Go + frontend first)
+```
+
+Optional manual runner smoke test (requires real binaries on `PATH`):
+
+```bash
+MANUAL_RUNNER_TEST=1 MANUAL_RUNNER_PROMPT=/path/to/large-prompt.txt \
+  go test -tags manual ./internal/shared/runner/ -run TestManualAllRunnersAvoidArgvOverflow
 ```
 
 When you change the web UI (`web/`), rebuild the embedded assets:

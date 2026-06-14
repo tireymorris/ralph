@@ -33,4 +33,8 @@ const (
 
 	// MaxPRDSelfReviewRounds caps agent self-review rounds after PRD generation.
 	MaxPRDSelfReviewRounds = 3
+
+	// CopilotMaxAutopilotContinues overrides Copilot CLI's default autopilot limit (5) for
+	// multi-step Ralph implementation stories.
+	CopilotMaxAutopilotContinues = 50
 )

@@ -8,7 +8,7 @@ Supported backends:
 - `opencode`
 - `claude`
 - Cursor Agent CLI (`cursor-agent`; set `RALPH_RUNNER=cursor`)
-- GitHub Copilot CLI (`copilot`; set `RALPH_RUNNER=copilot`)
+- GitHub Copilot CLI (`copilot`; set `RALPH_RUNNER=copilot`). Programmatic mode: stdin prompt, `--allow-all-tools --allow-all-paths --no-ask-user --output-format json --autopilot`. Auth via `copilot login` or token env vars; not handled by Ralph.
 
 ## High-level flow
 1. Parse CLI args

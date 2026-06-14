@@ -42,6 +42,7 @@ func TestManualAllRunnersAvoidArgvOverflow(t *testing.T) {
 		{name: "pi", runner: "pi"},
 		{name: "cursor-agent", runner: "cursor"},
 		{name: "opencode", runner: "opencode"},
+		{name: "copilot", runner: "copilot"},
 	}
 
 	for _, tc := range tests {
@@ -93,6 +94,18 @@ func TestManualRunnerCLIsStdinVsArgv(t *testing.T) {
 			name:   "opencode",
 			binary: "opencode",
 			flags:  []string{"run", "--print-logs"},
+		},
+		{
+			name:   "copilot",
+			binary: "copilot",
+			flags: []string{
+				"--allow-all-tools",
+				"--allow-all-paths",
+				"--no-ask-user",
+				"--output-format", "json",
+				"--autopilot",
+				"--max-autopilot-continues", "50",
+			},
 		},
 	}
 
