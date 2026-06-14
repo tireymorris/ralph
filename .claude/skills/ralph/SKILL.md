@@ -30,9 +30,11 @@ ralph status          # current PRD status
 ralph web             # local UI
 ```
 
-Set `RALPH_RUNNER` to `claude`, `cursor`, `opencode`, or `pi`.
+Set `RALPH_RUNNER` to `claude`, `cursor`, `opencode`, `pi`, or `copilot`.
 Use `RALPH_YOLO=1` for non-interactive auto-approve runs.
 Use `RALPH_RUNNER_TIMEOUT=30m` (Go duration) to cap each runner session.
+
+For GitHub Copilot CLI (`copilot`), authenticate with `copilot login` (OAuth) or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`. Ralph does not handle runner auth.
 
 ## How it works
 
