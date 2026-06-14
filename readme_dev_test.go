@@ -93,6 +93,20 @@ func TestReadmeCleanDeletesStateInPlace(t *testing.T) {
 	}
 }
 
+func TestReadmeDocumentsCopilotAuth(t *testing.T) {
+	data, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "copilot login") {
+		t.Fatal("README.md must document copilot login for Copilot CLI auth")
+	}
+	if !strings.Contains(content, "COPILOT_GITHUB_TOKEN") {
+		t.Fatal("README.md must document COPILOT_GITHUB_TOKEN for Copilot CLI auth")
+	}
+}
+
 func TestReadmeRALPHRunnerTableDocumentsCopilot(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {

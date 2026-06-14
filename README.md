@@ -31,6 +31,8 @@ git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go
 
 **Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot`.
 
+For GitHub Copilot CLI (`copilot`), authenticate with `copilot login` (OAuth) or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`. Ralph does not handle runner auth.
+
 ## Usage
 
 ```bash
