@@ -497,6 +497,7 @@ func TestNewWithError(t *testing.T) {
 		{name: "claude", runner: "claude", want: &ClaudeRunner{}},
 		{name: "open code", runner: "opencode", want: &Runner{}},
 		{name: "pi", runner: "pi", want: &PiRunner{}},
+		{name: "copilot", runner: "copilot", want: &CopilotRunner{}},
 		{name: "invalid", runner: "invalid-runner", wantErr: true},
 	}
 
@@ -526,6 +527,8 @@ func TestNewWithError(t *testing.T) {
 				_ = assertRunnerIs[*ClaudeRunner](t, runner)
 			} else if tt.runner == "opencode" {
 				_ = assertRunnerIs[*Runner](t, runner)
+			} else if tt.runner == "copilot" {
+				_ = assertRunnerIs[*CopilotRunner](t, runner)
 			} else {
 				_ = assertRunnerIs[*PiRunner](t, runner)
 			}
