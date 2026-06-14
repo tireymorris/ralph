@@ -89,10 +89,22 @@ Ralph writes these files in the working directory (all covered by `.gitignore`):
 - `.ralph/runs/<id>/review-*.txt` — implementation review transcripts
 - `.ralph/backups/<timestamp>/` — prior state moved aside before a new TUI prompt or `POST /api/runs` (not used by `--resume`; `ralph clean` deletes in place)
 
-## Web API (selected)
+## Web API
+
+`ralph web` serves the embedded React UI and REST/SSE API (default `http://127.0.0.1:8080`).
+
+**Runs**
+- `POST /api/runs` — start run (`auto_approve` = `--yolo`)
+- `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/prd`
+- `GET /api/runs/{id}/events` — SSE replay + live stream
+- `POST /api/runs/{id}/clarify` — clarification answers
 - `POST /api/runs/{id}/review` — approve/revise PRD (`waiting_review`)
-- `POST /api/runs/{id}/implementation-review` — run recovery from review findings, then continue implementation (`waiting_implementation_review`)
-- `POST /api/runs/{id}/resume` — force resume from checkpoint
+- `POST /api/runs/{id}/implementation-review` — continue after review findings (`waiting_implementation_review`)
+- `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume`, `POST /api/runs/{id}/followup`
+
+**Other:** `GET /api/version`, `POST /api/update`, `POST /api/clean`
+
+Run statuses: `running`, `waiting_clarify`, `waiting_review`, `waiting_implementation_review`, `implementing`, `completed`, `failed`, `cancelled`. TUI PRD runs use id `prd-local`.
 
 ## Testing notes
 - Broad test coverage exists across args/config, PRD storage/validation, runner parsing, workflow phases, TUI behavior, and status output

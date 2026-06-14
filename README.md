@@ -49,6 +49,29 @@ Implementation needs a **git repository** in the working directory.
 
 Ralph does not handle runner auth. For Copilot: `copilot login`, or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
 
+## Web API
+
+`ralph web` serves a local UI and REST/SSE API (default `http://127.0.0.1:8080`). Prefer this over the TUI for automation.
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/runs` | Start a run (`{ "prompt": "...", "auto_approve": true }` = `--yolo`) |
+| `GET /api/runs` | List runs |
+| `GET /api/runs/{id}` | Run status |
+| `GET /api/runs/{id}/prd` | PRD JSON |
+| `GET /api/runs/{id}/events` | SSE replay + live stream |
+| `POST /api/runs/{id}/clarify` | Submit clarification answers |
+| `POST /api/runs/{id}/review` | Approve or revise PRD |
+| `POST /api/runs/{id}/implementation-review` | Continue after review findings |
+| `POST /api/runs/{id}/cancel` | Cancel run |
+| `POST /api/runs/{id}/resume` | Force resume from checkpoint |
+| `POST /api/runs/{id}/followup` | Follow-up on a terminal run |
+| `GET /api/version` | Version / update check |
+| `POST /api/update` | Install update |
+| `POST /api/clean` | Remove Ralph state in cwd |
+
+Run statuses: `running`, `waiting_clarify`, `waiting_review`, `waiting_implementation_review`, `implementing`, `completed`, `failed`, `cancelled`. TUI PRD runs appear as `prd-local`.
+
 ## State files
 
 Written in the working directory (gitignored). New runs archive prior state to `.ralph/backups/<timestamp>/`. `--resume` does not archive existing state.
