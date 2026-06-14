@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/runner"
 )
 
 func initGitRepoInDir(t *testing.T, dir string) {
@@ -49,6 +51,13 @@ func TestHealthEndpoint(t *testing.T) {
 	}
 }
 
+type noopRunner struct{}
+
+func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
+func (noopRunner) RunnerName() string                                         { return "mock" }
+func (noopRunner) CommandName() string                                        { return "mock" }
+func (noopRunner) IsInternalLog(string) bool                                  { return false }
+
 func TestCreateRunRouteRegistered(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
@@ -59,10 +68,15 @@ func TestCreateRunRouteRegistered(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
-	h, err := NewHandler(cfg)
+	h, api, err := buildHandler(cfg)
 	if err != nil {
-		t.Fatalf("NewHandler: %v", err)
+		t.Fatalf("buildHandler: %v", err)
 	}
+	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
+		return noopRunner{}, nil
+	})
+	t.Cleanup(api.ReleaseAllControllers)
+
 	h.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusCreated {

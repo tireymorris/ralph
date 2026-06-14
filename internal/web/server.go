@@ -11,6 +11,11 @@ import (
 )
 
 func NewHandler(cfg *config.Config) (http.Handler, error) {
+	h, _, err := buildHandler(cfg)
+	return h, err
+}
+
+func buildHandler(cfg *config.Config) (http.Handler, *handlers.API, error) {
 	if cfg == nil {
 		cfg = config.DefaultConfig()
 	}
@@ -20,7 +25,7 @@ func NewHandler(cfg *config.Config) (http.Handler, error) {
 
 	registry := runs.NewRegistry()
 	if err := registry.LoadFromWorkDir(cfg.WorkDir); err != nil {
-		return nil, fmt.Errorf("load runs registry: %w", err)
+		return nil, nil, fmt.Errorf("load runs registry: %w", err)
 	}
 	api := handlers.NewAPI(cfg, registry)
 	mux.HandleFunc("POST /api/runs", api.CreateRun)
@@ -38,7 +43,7 @@ func NewHandler(cfg *config.Config) (http.Handler, error) {
 	mux.HandleFunc("POST /api/update", api.PostUpdate)
 	mux.HandleFunc("POST /api/clean", api.CleanState)
 
-	return mux, nil
+	return mux, api, nil
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
