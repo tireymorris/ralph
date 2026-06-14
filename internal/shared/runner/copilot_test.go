@@ -208,3 +208,10 @@ func TestParseCopilotJSONL_Result(t *testing.T) {
 		t.Errorf("Text = %q, want substring %q", lines[0].Text, "0")
 	}
 }
+
+func TestParseCopilotJSONL_UnknownEvent(t *testing.T) {
+	lines := parseCopilotJSONL(`{"type":"unknown_event","data":{}}`)
+	if lines != nil {
+		t.Errorf("unknown event type should return nil, got %v", lines)
+	}
+}
