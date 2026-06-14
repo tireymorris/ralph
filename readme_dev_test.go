@@ -93,6 +93,19 @@ func TestReadmeCleanDeletesStateInPlace(t *testing.T) {
 	}
 }
 
+func TestReadmeRALPHRunnerTableDocumentsCopilot(t *testing.T) {
+	data, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatalf("read README.md: %v", err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.Contains(line, "RALPH_RUNNER") && strings.Contains(line, "copilot") {
+			return
+		}
+	}
+	t.Fatal("README.md RALPH_RUNNER table row must document copilot")
+}
+
 func TestReadmeRequiresListsCopilotRunner(t *testing.T) {
 	data, err := os.ReadFile("README.md")
 	if err != nil {

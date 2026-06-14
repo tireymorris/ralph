@@ -72,7 +72,7 @@ Implementation requires a **git repository** in the working directory (used for 
 | `--ref REF` | Branch or tag for `ralph update` (default `main`) |
 | `--check` | With `ralph update`: report whether a newer commit exists on the remote |
 | `RALPH_REPO` | Git URL for `ralph update` (default `https://github.com/tireymorris/ralph.git`) |
-| `RALPH_RUNNER` | Runner binary: `claude`, `opencode`, `pi`, or `cursor` |
+| `RALPH_RUNNER` | Runner binary: `claude`, `opencode`, `pi`, `cursor`, or `copilot` |
 | `RALPH_RUNNER_TIMEOUT` | Per-runner-session timeout as a Go duration, e.g. `30m` (default disabled) |
 | `-v`, `--verbose` | Debug logging |
 | `-h`, `--help` | Help |
