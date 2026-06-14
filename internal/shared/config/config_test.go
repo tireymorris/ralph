@@ -206,6 +206,7 @@ func TestValidateRunner(t *testing.T) {
 		{"claude", false},
 		{"pi", false},
 		{"cursor", false},
+		{"copilot", false},
 		{"pi/", true},
 		{"invalid-runner", true},
 		{"", true},
@@ -219,6 +220,17 @@ func TestValidateRunner(t *testing.T) {
 				t.Errorf("ValidateRunner() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestValidateRunnerInvalidListsCopilot(t *testing.T) {
+	cfg := &Config{Runner: "invalid-runner"}
+	err := cfg.ValidateRunner()
+	if err == nil {
+		t.Fatal("ValidateRunner() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "copilot") {
+		t.Errorf("ValidateRunner() error = %v, want substring copilot", err)
 	}
 }
 
