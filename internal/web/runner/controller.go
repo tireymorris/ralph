@@ -20,9 +20,10 @@ import (
 
 type RunController struct {
 	*session.Session
-	cfg      *config.Config
-	registry *runs.Registry
-	runID    string
+	cfg       *config.Config
+	registry  *runs.Registry
+	lifecycle *runs.Lifecycle
+	runID     string
 
 	mu          sync.Mutex
 	subscribers map[chan events.Event]struct{}
@@ -48,6 +49,7 @@ func NewControllerWithRunner(cfg *config.Config, registry *runs.Registry, runID 
 		Session:     s,
 		cfg:         cfg,
 		registry:    registry,
+		lifecycle:   runs.NewLifecycle(registry),
 		runID:       runID,
 		subscribers: make(map[chan events.Event]struct{}),
 	}
@@ -65,7 +67,7 @@ func (c *RunController) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	if err := c.Session.SubmitClarify(qas); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
+	_ = c.lifecycle.Clarify(c.runID)
 	return nil
 }
 
@@ -73,7 +75,7 @@ func (c *RunController) ContinueImplementationReview(ctx context.Context) error 
 	if err := c.Session.ContinueImplementationReview(ctx, c.runConfig()); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, runstate.StatusImplementing, runstate.PhaseImplement)
+	_ = c.lifecycle.ContinueImplementationReview(c.runID)
 	return nil
 }
 
@@ -91,13 +93,12 @@ func (c *RunController) ReviseReview(ctx context.Context, critique string) error
 	if err := c.Session.ReviseReview(ctx, userPrompt, critique); err != nil {
 		return err
 	}
-	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseGenerate)
+	_ = c.lifecycle.ReviseReview(c.runID)
 	return nil
 }
 
 func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *config.Config) {
-	_ = c.registry.UpdateStatus(c.runID, runstate.StatusRunning, runstate.PhaseFollowup)
-	_ = c.registry.UpdateCheckpoint(c.runID, runs.CheckpointFollowup)
+	_ = c.lifecycle.FollowUp(c.runID)
 	fail := func(err error) {
 		c.EmitEvent(events.EventError{Err: err})
 	}
