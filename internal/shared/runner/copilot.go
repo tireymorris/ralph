@@ -14,6 +14,8 @@ type CopilotRunner struct {
 	CmdFunc func(ctx context.Context, name string, args ...string) CmdInterface
 }
 
+var _ RunnerInterface = (*CopilotRunner)(nil)
+
 func NewCopilot(cfg *config.Config) *CopilotRunner {
 	return &CopilotRunner{
 		cfg:     cfg,

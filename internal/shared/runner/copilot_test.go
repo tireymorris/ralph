@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"ralph/internal/shared/config"
@@ -56,4 +57,26 @@ func TestCopilotRunnerRunArgs(t *testing.T) {
 	assertArgsEqual(t, capturedArgs, expectedArgs)
 	assertNoModelSelectionArgs(t, capturedArgs)
 	assertPromptDeliveredViaStdin(t, mock, "do something")
+}
+
+func TestCopilotRunnerSupportsLargePrompts(t *testing.T) {
+	cfg := &config.Config{Runner: "copilot"}
+	r := NewCopilot(cfg)
+
+	prompt := strings.Repeat("implement feature ", 40000)
+	mock := &mockCmd{stdout: "", stderr: ""}
+	r.CmdFunc = func(ctx context.Context, name string, args ...string) CmdInterface {
+		for _, arg := range args {
+			if strings.Contains(arg, "implement feature") {
+				t.Fatal("prompt must not be passed as a CLI argument")
+			}
+		}
+		return mock
+	}
+
+	if err := r.Run(context.Background(), prompt, nil); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	assertPromptDeliveredViaStdin(t, mock, prompt)
 }
