@@ -187,6 +187,7 @@ func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
 	workDir := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
+	cfg.Runner = "mock"
 
 	p := &prd.PRD{
 		ProjectName: "Resume Test",
@@ -209,7 +210,7 @@ func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
 	}
 
 	m := NewModel(cfg, "", false, true, false)
-	_ = m.Init()
+	t.Cleanup(func() { waitSessionDone(t, m.operationManager) })
 
 	msg := m.operationManager.StartFullOperation(true, "")()
 	newModel, _ := m.Update(msg)
