@@ -114,3 +114,20 @@ func TestParseCopilotJSONL_ToolExecutionStart(t *testing.T) {
 		t.Error("Verbose should be false")
 	}
 }
+
+func TestParseCopilotJSONL_SessionError(t *testing.T) {
+	line := `{"type":"session.error","data":{"message":"auth failed"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "auth failed" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "auth failed")
+	}
+	if !lines[0].IsErr {
+		t.Error("IsErr should be true")
+	}
+	if lines[0].Verbose {
+		t.Error("Verbose should be false")
+	}
+}

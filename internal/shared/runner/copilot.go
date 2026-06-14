@@ -79,6 +79,7 @@ func parseCopilotJSONL(line string) []OutputLine {
 		Data struct {
 			DeltaContent string `json:"deltaContent"`
 			ToolName     string `json:"toolName"`
+			Message      string `json:"message"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
@@ -95,6 +96,10 @@ func parseCopilotJSONL(line string) []OutputLine {
 	case "tool.execution_start":
 		if event.Data.ToolName != "" {
 			return []OutputLine{{Text: fmt.Sprintf("Using tool: %s", event.Data.ToolName), Time: now}}
+		}
+	case "session.error":
+		if event.Data.Message != "" {
+			return []OutputLine{{Text: event.Data.Message, Time: now, IsErr: true}}
 		}
 	}
 
