@@ -1,6 +1,6 @@
 # Ralph
 
-Turn a natural-language goal into a `prd.json`, then implement it story-by-story via an AI coding CLI (clarify → PRD → review → implement → critical diff review).
+Turn a goal into `prd.json`, then implement it story-by-story via an AI coding CLI.
 
 ## Install
 
@@ -9,142 +9,68 @@ curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/inst
 ralph "describe the change you want"
 ```
 
-Pin a branch or tag: `curl -fsSL .../install.sh | bash -s -- main`
+**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot`.
 
-Upgrade an existing install (same flow as `scripts/install.sh`):
-
-```bash
-ralph update
-ralph update --check    # exit 0 if up to date, 2 if a newer commit is on the remote
-ralph update --ref main # install a specific branch or tag
-```
-
-Override the git remote: `RALPH_REPO=https://github.com/you/ralph.git ralph update`
-
-From a clone: `go install .` or `scripts/build.sh -o ralph` (embeds git version metadata)
-
-Manual one-liner:
-
-```bash
-git clone https://github.com/tireymorris/ralph .tmp-ralph && cd .tmp-ralph && go install . && cd .. && rm -rf .tmp-ralph
-```
-
-**Requires:** Go 1.24.0+, Git, and one runner on `PATH`: `claude` (default), `opencode`, `pi`, `cursor-agent` (Cursor), or `copilot` (see [Runners](#runners)).
+Upgrade: `ralph update` (see `ralph update --help`). From a clone: `go install .` or `scripts/build.sh -o ralph`.
 
 ## Usage
 
 ```bash
-ralph                               # TUI (needs a terminal)
-ralph "build a todo app"
-ralph "build a todo app" --dry-run  # PRD only
-ralph --resume                      # continue from prd.json
-ralph status                        # non-interactive progress
-ralph clean                         # remove all Ralph agent state in cwd
-ralph version                       # build version, commit, and ref
-ralph update                        # reinstall from GitHub (default branch main)
-ralph update --check                # compare local commit to remote
-ralph web                           # local web UI (default http://127.0.0.1:8080)
-ralph web --port 3000               # web UI on another port
+ralph "build a feature"          # TUI (needs a terminal)
+ralph "build a feature" --dry-run
+ralph --resume
+ralph status
+ralph clean
+ralph web                        # local UI at http://127.0.0.1:8080
 ```
 
-Example with a specific runner:
+Implementation needs a **git repository** in the working directory.
 
-```bash
-RALPH_RUNNER=copilot ralph "add pagination to the users API"
-```
-
-`ralph clean` removes all Ralph agent state in the current working directory: `prd.json`, its lock, and the `.ralph/` directory (questions, self-review verdict, `.ralph/prd.tmp.*` orphans, run data). Legacy root-level `.ralph_questions.json`, `.ralph_prd_review.json`, and `.prd.tmp.*` files from older versions are removed too.
-
-Implementation requires a **git repository** in the working directory (used for diff-based review between stories).
-
-## Workflow
-
-1. **Clarify** — optional questions via `.ralph/questions.json`
-2. **Generate PRD** — runner writes `prd.json`
-3. **Review PRD** — approve to implement, or revise with critique
-4. **Implement** — one runner session per story; Ralph marks `passes: true` after each
-5. **Implementation review** — after each story, a critical diff review runs on changed files. If findings are reported, Ralph pauses until you continue (TUI: **Enter**; web: **Continue implementation**). The same unchanged diff is not re-reviewed (duplicate fingerprint).
-6. **Cleanup** — optional final pass over the branch diff (skip with `--skip-cleanup`)
-
-`ralph --resume` continues from `prd.json` and any saved checkpoint under `.ralph/runs/prd-local/meta.json` when using the TUI. The web UI can **Force resume** stuck runs.
+`ralph clean` removes Ralph state in cwd: `prd.json`, its lock, `.ralph/` (including `.ralph/prd.tmp.*` orphans and run data). Safe to run when nothing exists.
 
 | Flag / env | Purpose |
 |------------|---------|
-| `--dry-run` | Generate PRD only |
-| `--resume` | Resume from existing `prd.json` (and checkpoint if present) |
+| `--dry-run` | PRD only |
+| `--resume` | Continue from `prd.json` |
 | `--skip-cleanup` | Skip post-implementation cleanup |
-| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval gates; the agent self-reviews the PRD instead |
-| `--port PORT` | Web server port (with `ralph web`; default 8080) |
-| `--ref REF` | Branch or tag for `ralph update` (default `main`) |
-| `--check` | With `ralph update`: report whether a newer commit exists on the remote |
-| `RALPH_REPO` | Git URL for `ralph update` (default `https://github.com/tireymorris/ralph.git`) |
-| `RALPH_RUNNER` | Runner binary: `claude`, `opencode`, `pi`, `cursor`, or `copilot` |
-| `RALPH_RUNNER_TIMEOUT` | Per-runner-session timeout as a Go duration, e.g. `30m` (default disabled) |
+| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval |
+| `RALPH_RUNNER` | `claude`, `opencode`, `pi`, `cursor`, or `copilot` |
+| `RALPH_RUNNER_TIMEOUT` | Per-session timeout, e.g. `30m` |
 | `-v`, `--verbose` | Debug logging |
-| `-h`, `--help` | Help |
-
-On the web UI, check **Auto-approve** when creating a run to skip manual clarify and PRD gates (same as `--yolo`). The API equivalent is `"auto_approve": true` on `POST /api/runs`.
 
 ## Runners
 
-Set `RALPH_RUNNER` to select which AI coding CLI Ralph invokes. Ralph pipes each prompt on stdin and treats a zero exit code as story success.
-
-| `RALPH_RUNNER` | Binary on `PATH` | Notes |
-|----------------|------------------|-------|
+| `RALPH_RUNNER` | Binary | Link |
+|----------------|--------|------|
 | `claude` (default) | `claude` | [Claude Code](https://github.com/anthropics/claude-code) |
 | `opencode` | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) |
 | `pi` | `pi` | [pi](https://pi.dev) |
-| `cursor` | `cursor-agent` | [Cursor Agent CLI](https://cursor.com) |
-| `copilot` | `copilot` | [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli). Ralph passes `--autopilot` with a higher continuation limit than the CLI default for multi-step stories. |
+| `cursor` | `cursor-agent` | [Cursor](https://cursor.com) |
+| `copilot` | `copilot` | [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli) |
 
-Ralph does not handle runner authentication. Configure each CLI before running Ralph:
-
-- **Copilot CLI** — `copilot login` (OAuth), or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`
-- **Other runners** — follow that tool's own login or API-key setup
+Ralph does not handle runner auth. For Copilot: `copilot login`, or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
 
 ## State files
 
-Ralph writes the following files in the working directory. All are covered by the repo `.gitignore`. Run `ralph clean` to delete these artifacts idempotently (safe to run when none exist).
+Written in the working directory (gitignored). New runs archive prior state to `.ralph/backups/<timestamp>/`. `--resume` does not archive existing state.
 
-Starting a new run (TUI with a prompt and without `--resume`, or `POST /api/runs`) automatically moves any prior `prd.json`, its lock, transient state files, `.ralph/prd.tmp.*` orphans, and `.ralph/runs/` data into `.ralph/backups/<timestamp>/` under the workdir. Older backup folders are kept. `--resume` and checkpoint resume do not archive existing state.
+| Path | Purpose |
+|------|---------|
+| `prd.json` / `prd.json.lock` | PRD and file lock |
+| `.ralph/questions.json` | Clarification questions (temporary) |
+| `.ralph/prd_review.json` | PRD self-review verdict in `--yolo` runs (temporary) |
+| `.ralph/prd.tmp.*` | Atomic-save temp files |
+| `.ralph/runs/<id>/` | Run metadata, events, review transcripts |
+| `.ralph/backups/<timestamp>/` | Prior state from earlier runs |
 
-| Path | Created by | Purpose |
-|------|-----------|---------|
-| `prd.json` | TUI + web | The generated PRD |
-| `prd.json.lock` | TUI + web | File lock for concurrent PRD access |
-| `.ralph/questions.json` | Runner | Temporary clarification questions (deleted after read) |
-| `.ralph/prd_review.json` | Runner | PRD self-review verdict in `--yolo` runs (deleted after read) |
-| `.ralph/prd.tmp.*` | TUI + web | Atomic-save temp files (orphans removed by `ralph clean`) |
-| `.ralph/runs/<id>/meta.json` | TUI + web | Per-run metadata (status, checkpoint, review loop) |
-| `.ralph/runs/<id>/events.ndjson` | Web UI | Per-run event log for SSE replay |
-| `.ralph/runs/<id>/review-*.txt` | TUI + web | Implementation review transcripts |
-| `.ralph/backups/<timestamp>/` | TUI + web | Prior state moved aside before a new run (not touched by `--resume`) |
+`ralph clean` deletes these artifacts idempotently.
 
 ## Development
 
-Release-style build with git metadata embedded in the binary:
-
 ```bash
 scripts/build.sh -o "$(go env GOPATH)/bin/ralph"
+go test ./...
+cd web && npm test
+cd e2e && npx playwright test
+go generate ./internal/web/...   # after web UI changes
 ```
-
-```bash
-go test ./...                 # Go unit + integration tests
-cd web && npm test            # React/Vitest frontend tests
-cd e2e && npx playwright test # Playwright E2E tests (builds Go + frontend first)
-```
-
-Optional manual runner smoke test (requires real binaries on `PATH`):
-
-```bash
-MANUAL_RUNNER_TEST=1 MANUAL_RUNNER_PROMPT=/path/to/large-prompt.txt \
-  go test -tags manual ./internal/shared/runner/ -run TestManualAllRunnersAvoidArgvOverflow
-```
-
-When you change the web UI (`web/`), rebuild the embedded assets:
-
-```bash
-go generate ./internal/web/...
-```
-
-CI runs all three test suites on push and PR via GitHub Actions (`.github/workflows/ci.yml`).
