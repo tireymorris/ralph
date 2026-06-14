@@ -148,3 +148,13 @@ func TestParseCopilotJSONL_ModelCallFailure(t *testing.T) {
 		t.Error("Verbose should be false")
 	}
 }
+
+func TestParseCopilotJSONL_MalformedJSON(t *testing.T) {
+	lines := parseCopilotJSONL("not json at all")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("malformed JSON line should have Verbose=true")
+	}
+}
