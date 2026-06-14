@@ -131,3 +131,20 @@ func TestParseCopilotJSONL_SessionError(t *testing.T) {
 		t.Error("Verbose should be false")
 	}
 }
+
+func TestParseCopilotJSONL_ModelCallFailure(t *testing.T) {
+	line := `{"type":"model.call_failure","data":{"errorMessage":"rate limited"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "rate limited" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "rate limited")
+	}
+	if !lines[0].IsErr {
+		t.Error("IsErr should be true")
+	}
+	if lines[0].Verbose {
+		t.Error("Verbose should be false")
+	}
+}

@@ -80,6 +80,7 @@ func parseCopilotJSONL(line string) []OutputLine {
 			DeltaContent string `json:"deltaContent"`
 			ToolName     string `json:"toolName"`
 			Message      string `json:"message"`
+			ErrorMessage string `json:"errorMessage"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
@@ -100,6 +101,10 @@ func parseCopilotJSONL(line string) []OutputLine {
 	case "session.error":
 		if event.Data.Message != "" {
 			return []OutputLine{{Text: event.Data.Message, Time: now, IsErr: true}}
+		}
+	case "model.call_failure":
+		if event.Data.ErrorMessage != "" {
+			return []OutputLine{{Text: event.Data.ErrorMessage, Time: now, IsErr: true}}
 		}
 	}
 
