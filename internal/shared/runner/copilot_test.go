@@ -183,3 +183,14 @@ func TestParseCopilotJSONL_AssistantTurnStart(t *testing.T) {
 		t.Error("Verbose should be true")
 	}
 }
+
+func TestParseCopilotJSONL_ToolExecutionComplete(t *testing.T) {
+	line := `{"type":"tool.execution_complete","data":{"toolName":"bash"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if !lines[0].Verbose {
+		t.Error("Verbose should be true")
+	}
+}

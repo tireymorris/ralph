@@ -108,6 +108,12 @@ func parseCopilotJSONL(line string) []OutputLine {
 		}
 	case "assistant.turn_start", "assistant.turn_end", "assistant.message_start":
 		return []OutputLine{{Text: event.Type, Time: now, Verbose: true}}
+	case "tool.execution_complete", "tool.execution_partial_result":
+		text := event.Type
+		if event.Data.ToolName != "" {
+			text = fmt.Sprintf("%s: %s", event.Type, event.Data.ToolName)
+		}
+		return []OutputLine{{Text: text, Time: now, Verbose: true}}
 	}
 
 	if strings.HasPrefix(event.Type, "session.") {
