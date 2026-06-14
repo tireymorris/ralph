@@ -54,6 +54,12 @@ type ReviewLoopUpdate struct {
 	RecoveryAttempts           int
 }
 
+type LifecycleUpdate struct {
+	Status     string
+	Phase      string
+	Checkpoint string
+}
+
 type Registry struct {
 	mu   sync.RWMutex
 	runs map[string]*Run
@@ -217,6 +223,29 @@ func (r *Registry) UpdateStatus(id, status, phase string) error {
 
 	run.Status = status
 	run.Phase = phase
+	run.UpdatedAt = time.Now()
+
+	return persistRun(run)
+}
+
+func (r *Registry) UpdateLifecycle(id string, u LifecycleUpdate) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	run, ok := r.runs[id]
+	if !ok {
+		return fmt.Errorf("run %q not found", id)
+	}
+
+	if u.Status != "" {
+		run.Status = u.Status
+	}
+	if u.Phase != "" {
+		run.Phase = u.Phase
+	}
+	if u.Checkpoint != "" {
+		run.Checkpoint = u.Checkpoint
+	}
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)
