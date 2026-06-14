@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runpaths"
 )
 
 type Params struct {
@@ -57,7 +57,7 @@ func ReviewDiffWithChanged(ctx context.Context, p Params, changed []string) (Res
 	}
 
 	relPath := transcriptRelPath(p.Iteration)
-	if err := writeTranscript(p.WorkDir, p.RunID, relPath, transcript); err != nil {
+	if err := writeTranscript(p.WorkDir, p.RunID, p.Iteration, transcript); err != nil {
 		return Result{}, err
 	}
 
@@ -104,12 +104,12 @@ func transcriptRelPath(iteration int) string {
 	return fmt.Sprintf("review-%d.txt", iteration)
 }
 
-func writeTranscript(workDir, runID, relPath, transcript string) error {
-	dir := filepath.Join(workDir, ".ralph", "runs", runID)
+func writeTranscript(workDir, runID string, iteration int, transcript string) error {
+	dir := runpaths.RunDir(workDir, runID)
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("create review transcript dir: %w", err)
 	}
-	path := filepath.Join(dir, relPath)
+	path := runpaths.ReviewTranscriptPath(workDir, runID, iteration)
 	if err := os.WriteFile(path, []byte(transcript), 0o600); err != nil {
 		return fmt.Errorf("write review transcript %q: %w", path, err)
 	}

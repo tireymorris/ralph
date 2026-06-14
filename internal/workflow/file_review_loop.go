@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"ralph/internal/shared/runpaths"
 )
 
 type fileRunMeta struct {
@@ -30,7 +32,7 @@ func NewFileReviewLoop(workDir, runID string) *FileReviewLoop {
 }
 
 func (f *FileReviewLoop) metaPath() string {
-	return filepath.Join(f.workDir, ".ralph", "runs", f.runID, "meta.json")
+	return runpaths.MetaPath(f.workDir, f.runID)
 }
 
 func (f *FileReviewLoop) load() (fileRunMeta, error) {

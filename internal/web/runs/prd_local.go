@@ -3,12 +3,12 @@ package runs
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runpaths"
 	"ralph/internal/shared/runstate"
 )
 
@@ -81,7 +81,7 @@ type localPRDMeta struct {
 }
 
 func loadLocalPRDMeta(workDir string) localPRDMeta {
-	path := filepath.Join(workDir, ".ralph", "runs", LocalPRDRunID, "meta.json")
+	path := runpaths.MetaPath(workDir, LocalPRDRunID)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return localPRDMeta{}

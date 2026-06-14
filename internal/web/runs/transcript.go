@@ -3,12 +3,13 @@ package runs
 import (
 	"bufio"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"ralph/internal/shared/runpaths"
 )
 
 func ReadEventTranscript(workDir, runID string, maxLines int) (string, error) {
-	path := filepath.Join(workDir, ".ralph", "runs", runID, "events.ndjson")
+	path := runpaths.EventsPath(workDir, runID)
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runpaths"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/session"
 	"ralph/internal/web/runs"
@@ -220,7 +220,7 @@ func appendRunEvent(workDir, runID string, ev events.Event) error {
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(workDir, ".ralph", "runs", runID, "events.ndjson")
+	path := runpaths.EventsPath(workDir, runID)
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("open events log: %w", err)

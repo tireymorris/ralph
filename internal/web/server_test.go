@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -54,9 +56,9 @@ func TestHealthEndpoint(t *testing.T) {
 type noopRunner struct{}
 
 func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
-func (noopRunner) RunnerName() string                                         { return "mock" }
-func (noopRunner) CommandName() string                                        { return "mock" }
-func (noopRunner) IsInternalLog(string) bool                                  { return false }
+func (noopRunner) RunnerName() string                                          { return "mock" }
+func (noopRunner) CommandName() string                                         { return "mock" }
+func (noopRunner) IsInternalLog(string) bool                                   { return false }
 
 func TestCreateRunRouteRegistered(t *testing.T) {
 	workDir := t.TempDir()
@@ -75,7 +77,10 @@ func TestCreateRunRouteRegistered(t *testing.T) {
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
 		return noopRunner{}, nil
 	})
-	t.Cleanup(api.ReleaseAllControllers)
+	t.Cleanup(func() {
+		api.ReleaseAllControllers()
+		_ = os.RemoveAll(filepath.Join(workDir, ".ralph"))
+	})
 
 	h.ServeHTTP(rec, req)
 

@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"net/http"
 	"os"
-	"path/filepath"
 
+	"ralph/internal/shared/runpaths"
 	"ralph/internal/web/runner"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
@@ -63,7 +63,7 @@ func (a *API) RunEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func replayRunEvents(w http.ResponseWriter, workDir, runID string) error {
-	path := filepath.Join(workDir, ".ralph", "runs", runID, "events.ndjson")
+	path := runpaths.EventsPath(workDir, runID)
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
