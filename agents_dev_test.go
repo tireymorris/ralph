@@ -25,6 +25,24 @@ func agentsStateFilesSection(t *testing.T) string {
 	return rest
 }
 
+func TestAgentsSupportedBackendsListsCopilot(t *testing.T) {
+	data, err := os.ReadFile("AGENTS.md")
+	if err != nil {
+		t.Fatalf("read AGENTS.md: %v", err)
+	}
+	start := strings.Index(string(data), "Supported backends:")
+	if start < 0 {
+		t.Fatal("AGENTS.md must have a Supported backends section")
+	}
+	rest := string(data)[start:]
+	if next := strings.Index(rest, "\n## "); next >= 0 {
+		rest = rest[:next]
+	}
+	if !strings.Contains(rest, "copilot") {
+		t.Fatal("AGENTS.md Supported backends section must list copilot")
+	}
+}
+
 func TestAgentsDocumentsBackups(t *testing.T) {
 	section := agentsStateFilesSection(t)
 	if !strings.Contains(section, "backups") {

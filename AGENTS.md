@@ -8,6 +8,7 @@ Supported backends:
 - `opencode`
 - `claude`
 - Cursor Agent CLI (`cursor-agent`; set `RALPH_RUNNER=cursor`)
+- GitHub Copilot CLI (`copilot`; set `RALPH_RUNNER=copilot`)
 
 ## High-level flow
 1. Parse CLI args
