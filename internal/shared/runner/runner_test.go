@@ -393,6 +393,28 @@ func TestOutputLineVerboseField(t *testing.T) {
 	}
 }
 
+func TestNewReturnsCopilotRunner(t *testing.T) {
+	cfg := &config.Config{Runner: "copilot"}
+	r := New(cfg)
+
+	if r == nil {
+		t.Fatal("New() returned nil")
+	}
+
+	copilotRunner, ok := r.(*CopilotRunner)
+	if !ok {
+		t.Fatalf("New() returned %T, want *CopilotRunner", r)
+	}
+
+	if copilotRunner.RunnerName() != "copilot" {
+		t.Errorf("RunnerName() = %q, want %q", copilotRunner.RunnerName(), "copilot")
+	}
+
+	if copilotRunner.CommandName() != "copilot" {
+		t.Errorf("CommandName() = %q, want %q", copilotRunner.CommandName(), "copilot")
+	}
+}
+
 func TestNewReturnsCursorAgentRunner(t *testing.T) {
 	cfg := &config.Config{Runner: "cursor"}
 	r := New(cfg)
