@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -77,6 +78,7 @@ func parseCopilotJSONL(line string) []OutputLine {
 		Type string `json:"type"`
 		Data struct {
 			DeltaContent string `json:"deltaContent"`
+			ToolName     string `json:"toolName"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal([]byte(line), &event); err != nil {
@@ -89,6 +91,10 @@ func parseCopilotJSONL(line string) []OutputLine {
 	case "assistant.message_delta":
 		if event.Data.DeltaContent != "" {
 			return []OutputLine{{Text: event.Data.DeltaContent, Time: now}}
+		}
+	case "tool.execution_start":
+		if event.Data.ToolName != "" {
+			return []OutputLine{{Text: fmt.Sprintf("Using tool: %s", event.Data.ToolName), Time: now}}
 		}
 	}
 

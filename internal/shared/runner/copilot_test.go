@@ -97,3 +97,20 @@ func TestParseCopilotJSONL_MessageDelta(t *testing.T) {
 		t.Error("Verbose should be false")
 	}
 }
+
+func TestParseCopilotJSONL_ToolExecutionStart(t *testing.T) {
+	line := `{"type":"tool.execution_start","data":{"toolName":"bash"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "Using tool: bash" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "Using tool: bash")
+	}
+	if lines[0].IsErr {
+		t.Error("IsErr should be false")
+	}
+	if lines[0].Verbose {
+		t.Error("Verbose should be false")
+	}
+}
