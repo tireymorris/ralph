@@ -80,3 +80,20 @@ func TestCopilotRunnerSupportsLargePrompts(t *testing.T) {
 
 	assertPromptDeliveredViaStdin(t, mock, prompt)
 }
+
+func TestParseCopilotJSONL_MessageDelta(t *testing.T) {
+	line := `{"type":"assistant.message_delta","data":{"deltaContent":"hello"}}`
+	lines := parseCopilotJSONL(line)
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 output, got %d", len(lines))
+	}
+	if lines[0].Text != "hello" {
+		t.Errorf("Text = %q, want %q", lines[0].Text, "hello")
+	}
+	if lines[0].IsErr {
+		t.Error("IsErr should be false")
+	}
+	if lines[0].Verbose {
+		t.Error("Verbose should be false")
+	}
+}
