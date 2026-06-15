@@ -59,7 +59,7 @@
           "behavior": "RunDetail keeps the current story expanded while the per-slice states are visible.",
           "red_hint": "Add a failing test in web/src/pages/RunDetail.test.tsx that loads a PRD with mixed slice states and asserts the current story details element remains open.",
           "refactor_hint": "Keep the current-story expansion logic inside StoryProgressPanel rather than copying it into RunDetail.",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 2,
