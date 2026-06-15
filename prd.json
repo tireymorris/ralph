@@ -78,7 +78,7 @@
       "depends_on": [
         "story-1"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "story-3",
