@@ -129,13 +129,16 @@ func TestPRDGeneration(t *testing.T) {
 				"project_name",
 				"context",
 				"stories",
+				"slices",
 				"prd.json",
 				"feature/",
 				`"version": 1`,
-				"ACTUALLY observe",
+				"behavior",
+				"red_hint",
+				"refactor_hint",
 			},
 			mustNotInclude: []string{
-				"no existing source code",
+				"acceptance_criteria",
 			},
 		},
 		{
@@ -149,9 +152,10 @@ func TestPRDGeneration(t *testing.T) {
 				`"version": 1`,
 				"no existing source code",
 				"Do NOT assume or invent",
+				"slices",
 			},
 			mustNotInclude: []string{
-				"ACTUALLY observe",
+				"acceptance_criteria",
 			},
 		},
 		{
@@ -181,6 +185,24 @@ func TestPRDGeneration(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPRDGenerationUsesSlicesShape(t *testing.T) {
+	result := PRDGeneration("Build API", "prd.json", "feature", false)
+
+	for _, want := range []string{
+		`"slices": [`,
+		`"behavior"`,
+		`"red_hint"`,
+		`"refactor_hint"`,
+	} {
+		if !strings.Contains(result, want) {
+			t.Fatalf("PRDGeneration() missing %q in:\n%s", want, result)
+		}
+	}
+	if strings.Contains(result, "acceptance_criteria") {
+		t.Fatalf("PRDGeneration() should not mention acceptance_criteria:\n%s", result)
 	}
 }
 
