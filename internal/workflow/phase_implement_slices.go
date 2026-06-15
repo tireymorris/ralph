@@ -10,6 +10,8 @@ import (
 	"ralph/internal/workflow/events"
 )
 
+var commitChangedFiles = gitdiff.CommitChangedFiles
+
 func storyImplementationSliceData(slice *prd.Slice) []prompt.SliceData {
 	if slice == nil {
 		return nil
@@ -63,7 +65,7 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 			}
 		}
 
-		committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, fmt.Sprintf("ralph: %s", story.ID))
+		committed, commitErr := commitChangedFiles(e.cfg.WorkDir, fmt.Sprintf("ralph: %s/%s", story.ID, currentSlice.ID))
 		if commitErr != nil {
 			return nil, nil, fmt.Errorf("commit story %s slice %s changes: %w", story.ID, currentSlice.ID, commitErr)
 		}

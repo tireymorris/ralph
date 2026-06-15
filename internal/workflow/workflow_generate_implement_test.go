@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -149,6 +150,19 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
 	commitPRDFile(t, tmpDir, cfg.PRDFile)
+	if err := os.WriteFile(filepath.Join(tmpDir, "feature.txt"), []byte("base\n"), 0644); err != nil {
+		t.Fatalf("write feature file: %v", err)
+	}
+	trackFeature := exec.Command("git", "add", "feature.txt")
+	trackFeature.Dir = tmpDir
+	if out, err := trackFeature.CombinedOutput(); err != nil {
+		t.Fatalf("git add feature.txt: %v\n%s", err, out)
+	}
+	commitFeature := exec.Command("git", "commit", "-m", "add feature file")
+	commitFeature.Dir = tmpDir
+	if out, err := commitFeature.CombinedOutput(); err != nil {
+		t.Fatalf("git commit feature.txt: %v\n%s", err, out)
+	}
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -329,6 +343,123 @@ func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
+	var commitMessages []string
+	originalCommitChangedFiles := commitChangedFiles
+	t.Cleanup(func() { commitChangedFiles = originalCommitChangedFiles })
+	commitChangedFiles = func(workDir, message string) (bool, error) {
+		commitMessages = append(commitMessages, message)
+		return true, nil
+	}
+	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(promptText, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
+		switch {
+		case strings.Contains(promptText, "first behavior"):
+			if err := os.WriteFile(filepath.Join(tmpDir, "feature.txt"), []byte("slice-1\n"), 0644); err != nil {
+				return err
+			}
+			progressed := &prd.PRD{
+				ProjectName: "Test",
+				Stories: []*prd.Story{{
+					ID:          "story-1",
+					Title:       "Story",
+					Description: "Desc",
+					Slices: []*prd.Slice{
+						{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test", Passes: true},
+						{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test", RefactorHint: "extract helper", Passes: false},
+					},
+					Priority: 1,
+					Passes:   false,
+				}},
+			}
+			return prd.Save(cfg, progressed)
+		case strings.Contains(promptText, "second behavior"):
+			if err := os.WriteFile(filepath.Join(tmpDir, "feature.txt"), []byte("slice-2\n"), 0644); err != nil {
+				return err
+			}
+			progressed := &prd.PRD{
+				ProjectName: "Test",
+				Stories: []*prd.Story{{
+					ID:          "story-1",
+					Title:       "Story",
+					Description: "Desc",
+					Slices: []*prd.Slice{
+						{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test", Passes: true},
+						{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test", RefactorHint: "extract helper", Passes: true},
+					},
+					Priority: 1,
+					Passes:   true,
+				}},
+			}
+			return prd.Save(cfg, progressed)
+		default:
+			t.Fatalf("unexpected implementation prompt:\n%s", promptText)
+			return nil
+		}
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	var prompts []string
+	for _, call := range mock.calls {
+		if strings.Contains(call, "critical diff review") {
+			continue
+		}
+		prompts = append(prompts, call)
+	}
+	if len(prompts) != 2 {
+		t.Fatalf("implementation prompt count = %d, want 2", len(prompts))
+	}
+	if strings.Contains(prompts[0], "second behavior") || strings.Contains(prompts[0], "extract helper") {
+		t.Fatalf("first prompt should only mention the first slice:\n%s", prompts[0])
+	}
+	if strings.Contains(prompts[1], "first behavior") || strings.Contains(prompts[1], "write first failing test") {
+		t.Fatalf("second prompt should only mention the second slice:\n%s", prompts[1])
+	}
+}
+
+func TestRunImplementationCommitsEachSliceWithSliceScopedMessage(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:          "story-1",
+			Title:       "Story",
+			Description: "Desc",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test"},
+				{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test", RefactorHint: "extract helper"},
+			},
+			Priority: 1,
+			Passes:   false,
+		}},
+	}
+
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	var commitMessages []string
+	originalCommitChangedFiles := commitChangedFiles
+	t.Cleanup(func() { commitChangedFiles = originalCommitChangedFiles })
+	commitChangedFiles = func(workDir, message string) (bool, error) {
+		commitMessages = append(commitMessages, message)
+		return true, nil
+	}
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
 		if strings.Contains(promptText, "critical diff review") {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
@@ -373,26 +504,19 @@ func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 		}
 	}
 
-	exec := NewExecutorWithRunner(cfg, ch, mock)
-	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+	runnerExec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := runnerExec.RunImplementation(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	var prompts []string
-	for _, call := range mock.calls {
-		if strings.Contains(call, "critical diff review") {
-			continue
-		}
-		prompts = append(prompts, call)
+	if len(commitMessages) != 2 {
+		t.Fatalf("slice commit count = %d, want 2", len(commitMessages))
 	}
-	if len(prompts) != 2 {
-		t.Fatalf("implementation prompt count = %d, want 2", len(prompts))
+	if !strings.Contains(commitMessages[0], "story-1") || !strings.Contains(commitMessages[0], "slice-1") {
+		t.Fatalf("first slice commit subject = %q, want story and slice ids", commitMessages[0])
 	}
-	if strings.Contains(prompts[0], "second behavior") || strings.Contains(prompts[0], "extract helper") {
-		t.Fatalf("first prompt should only mention the first slice:\n%s", prompts[0])
-	}
-	if strings.Contains(prompts[1], "first behavior") || strings.Contains(prompts[1], "write first failing test") {
-		t.Fatalf("second prompt should only mention the second slice:\n%s", prompts[1])
+	if !strings.Contains(commitMessages[1], "story-1") || !strings.Contains(commitMessages[1], "slice-2") {
+		t.Fatalf("second slice commit subject = %q, want story and slice ids", commitMessages[1])
 	}
 }
 
