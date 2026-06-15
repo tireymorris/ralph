@@ -209,6 +209,7 @@ func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 			Passes:   false,
 		}},
 	}
+
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
@@ -298,6 +299,77 @@ func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 	}
 	if !loaded.GetStory("story-1").Passes {
 		t.Fatal("expected story to be marked passed after final slice")
+	}
+}
+
+func TestRunImplementationOmitsPassedSlicesFromPrompt(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:          "story-1",
+			Title:       "Story",
+			Description: "Desc",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "finished behavior", RedHint: "write finished test", Passes: true},
+				{ID: "slice-2", Behavior: "pending behavior", RedHint: "write pending test", RefactorHint: "extract helper"},
+			},
+			Priority: 1,
+			Passes:   false,
+		}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	calls := 0
+	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(promptText, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
+		if strings.Contains(promptText, "finished behavior") {
+			t.Fatalf("prompt should omit passed slices:\n%s", promptText)
+		}
+		if !strings.Contains(promptText, "pending behavior") || !strings.Contains(promptText, "extract helper") {
+			t.Fatalf("prompt missing pending slice details:\n%s", promptText)
+		}
+		calls++
+		if calls == 1 {
+			progressed := &prd.PRD{
+				ProjectName: "Test",
+				Stories: []*prd.Story{{
+					ID:          "story-1",
+					Title:       "Story",
+					Description: "Desc",
+					Slices: []*prd.Slice{
+						{ID: "slice-1", Behavior: "finished behavior", RedHint: "write finished test", Passes: true},
+						{ID: "slice-2", Behavior: "pending behavior", RedHint: "write pending test", RefactorHint: "extract helper", Passes: true},
+					},
+					Priority: 1,
+					Passes:   true,
+				}},
+			}
+			return prd.Save(cfg, progressed)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("runner calls = %d, want 1", calls)
 	}
 }
 
