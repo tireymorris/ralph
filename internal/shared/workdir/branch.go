@@ -6,10 +6,8 @@ import (
 	"strings"
 )
 
-const featureBranchPrefix = "feature/"
-
-func IsFeatureBranch(branchName string) bool {
-	return strings.HasPrefix(branchName, featureBranchPrefix)
+func IsDefaultBranch(branchName string) bool {
+	return branchName == "main" || branchName == "master"
 }
 
 func CurrentBranchName(workDir string) (string, error) {

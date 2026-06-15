@@ -220,7 +220,7 @@ func TestDriverStartResumeEmitsLoadedEvent(t *testing.T) {
 	}
 }
 
-func TestDriverStartImplementationSkipsCheckoutOnFeatureBranch(t *testing.T) {
+func TestDriverStartImplementationInheritsBranchOnNonMain(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
 
@@ -279,6 +279,17 @@ func TestDriverStartImplementationSkipsCheckoutOnFeatureBranch(t *testing.T) {
 	d := NewDriverWithRunner(cfg, mock)
 	t.Cleanup(d.Cancel)
 	d.StartImplementation(context.Background(), p)
+
+	if p.BranchName != "feature/test" {
+		t.Fatalf("in-memory BranchName = %q, want %q", p.BranchName, "feature/test")
+	}
+	loaded, err := prd.Load(cfg)
+	if err != nil {
+		t.Fatalf("load PRD: %v", err)
+	}
+	if loaded.BranchName != "feature/test" {
+		t.Fatalf("saved BranchName = %q, want %q", loaded.BranchName, "feature/test")
+	}
 
 	deadline := time.Now().Add(2 * time.Second)
 	seenSliceStarted := false
