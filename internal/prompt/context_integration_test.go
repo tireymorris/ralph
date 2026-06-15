@@ -1,4 +1,4 @@
-package main
+package prompt
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 )
@@ -88,11 +87,11 @@ func TestContextFieldOmittedWhenEmpty(t *testing.T) {
 func TestStoryPromptIncludesContext(t *testing.T) {
 	context := "Go 1.21 with standard testing. Tests alongside code as _test.go. Run with 'go test ./...'."
 
-	result := prompt.StoryImplementation(
+	result := StoryImplementation(
 		"story-1",
 		"Add feature",
 		"Implement it",
-		[]prompt.SliceData{{ID: "slice-1", Behavior: "It works", RedHint: "write failing test"}},
+		[]SliceData{{ID: "slice-1", Behavior: "It works", RedHint: "write failing test"}},
 		"Test it",
 		context,
 		"prd.json",
@@ -112,11 +111,11 @@ func TestStoryPromptIncludesContext(t *testing.T) {
 }
 
 func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
-	result := prompt.StoryImplementation(
+	result := StoryImplementation(
 		"story-1",
 		"Add feature",
 		"Implement it",
-		[]prompt.SliceData{{ID: "slice-1", Behavior: "It works", RedHint: "write failing test"}},
+		[]SliceData{{ID: "slice-1", Behavior: "It works", RedHint: "write failing test"}},
 		"Test it",
 		"",
 		"prd.json",
@@ -130,7 +129,7 @@ func TestStoryPromptOmitsContextSectionWhenEmpty(t *testing.T) {
 }
 
 func TestPRDGenerationPromptMentionsContext(t *testing.T) {
-	result := prompt.PRDGeneration("Add auth", "prd.json", "feature", false)
+	result := PRDGeneration("Add auth", "prd.json", "feature", false)
 
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
