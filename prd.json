@@ -26,7 +26,7 @@
           "id": "slice-3",
           "behavior": "story.passes is set only after Story.AllSlicesPassed; implementation review runs once per story, not per slice",
           "red_hint": "add failing test for: story.passes is set only after Story.AllSlicesPassed; implementation review runs once per story, not per slice",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-4",
