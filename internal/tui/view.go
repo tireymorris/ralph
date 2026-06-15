@@ -385,11 +385,13 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 }
 
 func (m *Model) renderImplementationSlice(slice *prd.Slice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {
-	passes := slice.Passes
-	inProgress := nextPendingSlice != nil && slice.ID == nextPendingSlice.ID
-	if index < completedSlices {
+	var passes bool
+	var inProgress bool
+	switch {
+	case index < completedSlices:
 		passes = true
-		inProgress = false
+	case nextPendingSlice != nil && slice.ID == nextPendingSlice.ID:
+		inProgress = true
 	}
 
 	sliceLine := fmt.Sprintf("    %s %s  %s", getStatusIcon(passes, inProgress), slice.Behavior, getStatusText(passes, inProgress))

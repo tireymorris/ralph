@@ -267,6 +267,47 @@ func TestViewPhaseImplementationShowsSliceProgress(t *testing.T) {
 	}
 }
 
+func TestViewPhaseImplementationIgnoresPostGapSlicePasses(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story One",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "write failing test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "write failing test", Passes: false},
+				{ID: "slice-3", Behavior: "gap passed third", RedHint: "write failing test", Passes: true},
+			},
+		}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	lines := strings.Split(view, "\n")
+	gapPassedLine := ""
+	for _, line := range lines {
+		if strings.Contains(line, "gap passed third") {
+			gapPassedLine = line
+			break
+		}
+	}
+	if gapPassedLine == "" {
+		t.Fatal("View() should contain the post-gap slice line")
+	}
+	if !strings.Contains(gapPassedLine, "pending") {
+		t.Fatalf("post-gap slice should show pending, got %q", gapPassedLine)
+	}
+	if strings.Contains(gapPassedLine, iconCompleted) {
+		t.Fatalf("post-gap slice should not show completed icon, got %q", gapPassedLine)
+	}
+}
+
 func TestViewPhaseImplementationKeepsCurrentStoryHighlightedWithSlices(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)

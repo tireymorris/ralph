@@ -9,6 +9,23 @@ function storyStatus(story: PRDStory): "done" | "pending" {
   return story.passes ? "done" : "pending";
 }
 
+function firstUnfinishedSliceIndex(story: PRDStory): number {
+  return story.slices.findIndex((slice) => !slice.passes);
+}
+
+function completedSliceCount(story: PRDStory): number {
+  if (story.passes) {
+    return story.slices.length;
+  }
+
+  const firstUnfinishedIndex = firstUnfinishedSliceIndex(story);
+  if (firstUnfinishedIndex === -1) {
+    return story.slices.length;
+  }
+
+  return firstUnfinishedIndex;
+}
+
 function sliceStatus(
   story: PRDStory,
   sliceIndex: number,
@@ -22,7 +39,7 @@ function sliceStatus(
     return "pending";
   }
 
-  const firstUnfinishedIndex = story.slices.findIndex((slice) => !slice.passes);
+  const firstUnfinishedIndex = firstUnfinishedSliceIndex(story);
 
   if (firstUnfinishedIndex === -1) {
     return "completed";
@@ -59,7 +76,7 @@ export default function StoryProgressPanel({
         {prd.stories.map((story, i) => {
           const status = storyStatus(story);
           const isCurrent = i === currentIndex;
-          const completedSlices = story.slices.filter((slice) => slice.passes).length;
+          const completedSlices = completedSliceCount(story);
           return (
             <li key={story.id}>
               <details

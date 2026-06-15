@@ -79,6 +79,40 @@ const mixedSlicePRD = {
   ],
 };
 
+const mixedSliceGapPRD = {
+  version: 1,
+  project_name: "Test",
+  stories: [
+    {
+      id: "story-1",
+      title: "Slice labels story",
+      description: "Show slice states",
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "passed slice behavior",
+          red_hint: "passed slice red hint",
+          passes: true,
+        },
+        {
+          id: "slice-2",
+          behavior: "current slice behavior",
+          red_hint: "current slice red hint",
+          passes: false,
+        },
+        {
+          id: "slice-3",
+          behavior: "gap passed slice behavior",
+          red_hint: "gap passed slice red hint",
+          passes: true,
+        },
+      ],
+      priority: 1,
+      passes: false,
+    },
+  ],
+};
+
 afterEach(() => {
   cleanup();
 });
@@ -111,5 +145,15 @@ describe("StoryProgressPanel", () => {
     expect(screen.getByText("pending")).toBeInTheDocument();
     expect(screen.getByText("passed slice behavior")).toBeInTheDocument();
     expect(screen.getByText("current slice red hint")).toBeInTheDocument();
+  });
+
+  it("counts only sequential completed slices when later slices pass early", () => {
+    render(<StoryProgressPanel prd={mixedSliceGapPRD} />);
+
+    expect(screen.getByText("1/3 slices done")).toBeInTheDocument();
+    expect(screen.getByText("completed")).toBeInTheDocument();
+    expect(screen.getByText("in progress")).toBeInTheDocument();
+    expect(screen.getByText("pending")).toBeInTheDocument();
+    expect(screen.getByText("gap passed slice behavior")).toBeInTheDocument();
   });
 });
