@@ -1,6 +1,6 @@
 # Ralph
 
-Turn a goal into `prd.json`, then implement it story-by-story via an AI coding CLI.
+Turn a goal into `prd.json`, then implement it story-by-story via an AI coding CLI. Ralph orchestrates; the runner writes code.
 
 ## Install
 
@@ -8,14 +8,14 @@ Turn a goal into `prd.json`, then implement it story-by-story via an AI coding C
 curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
 ```
 
-**Requires:** Go 1.24.0+, Git, and one of `claude`, `opencode`, `pi`, `cursor-agent`, or `copilot` on `PATH`.
+**Requires:** Go 1.24.0+, Git, and one runner on `PATH`.
 
-Upgrade: `ralph update` (see `ralph update --help`). From a clone: `go install .` or `scripts/build.sh -o ralph`.
+Upgrade: `ralph update`. From a clone: `go install .` or `scripts/build.sh -o ralph`.
 
 ## Usage
 
 ```bash
-ralph "build a feature"          # TUI
+ralph "build a feature"          # TUI (needs a terminal)
 ralph "build a feature" --dry-run
 ralph --resume
 ralph status
@@ -23,58 +23,64 @@ ralph clean
 ralph web                        # http://127.0.0.1:8080
 ```
 
-Implementation requires a git repository in the working directory.
-
-`ralph clean` removes `prd.json`, its lock, and `.ralph/` (including `.ralph/prd.tmp.*` and run data).
+Implementation requires a git repo in the working directory.
 
 | Flag / env | Purpose |
 |------------|---------|
 | `--dry-run` | PRD only |
-| `--resume` | Continue from `prd.json` |
+| `--resume` | Continue from `prd.json` (checkpoint-aware) |
 | `--skip-cleanup` | Skip post-implementation cleanup |
-| `--yolo` / `RALPH_YOLO=1` | Skip manual clarify and PRD approval |
+| `--yolo` / `RALPH_YOLO=1` | Skip clarify and PRD approval |
+| `--verbose` | Debug logging |
 | `RALPH_RUNNER` | `claude`, `opencode`, `pi`, `cursor`, or `copilot` |
 | `RALPH_RUNNER_TIMEOUT` | Per-session timeout, e.g. `30m` |
-| `-v`, `--verbose` | Debug logging |
+
+`ralph clean` removes `prd.json`, its lock, and `.ralph/` (including temp files and run data).
+
+## Workflow
+
+1. **Clarify** — runner may write `.ralph/questions.json`; Ralph reads and removes it
+2. **Generate/load PRD** — runner writes `prd.json`
+3. **PRD self-review** — `--yolo` runs only; failures keep the last revision
+4. **Review PRD** — approve or revise (skipped with `--yolo` / `auto_approve`)
+5. **Implement** — one runner session per ready story; marks `passes: true` on success
+6. **Implementation review** — critical diff review after each story; may block on findings (TUI: Enter; web: `POST .../implementation-review`)
+7. **Cleanup** — optional final pass (skip with `--skip-cleanup`)
+
+TUI and web share `workflow.Driver` → `Executor`. Web adds registry + SSE via `RunController`; TUI uses `FileReviewLoop` under `.ralph/runs/prd-local/`.
 
 ## Runners
 
-| `RALPH_RUNNER` | Binary | Link |
-|----------------|--------|------|
+| `RALPH_RUNNER` | Binary | Notes |
+|----------------|--------|-------|
 | `claude` (default) | `claude` | [Claude Code](https://github.com/anthropics/claude-code) |
 | `opencode` | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) |
 | `pi` | `pi` | [pi](https://pi.dev) |
 | `cursor` | `cursor-agent` | [Cursor](https://cursor.com) |
-| `copilot` | `copilot` | [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli) |
+| `copilot` | `copilot` | [Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli); `copilot login` or token env vars |
 
-Ralph does not handle runner auth. For Copilot: `copilot login`, or set `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`.
+Ralph does not handle runner auth.
 
 ## Web API
 
-`ralph web` exposes a local REST/SSE API at `http://127.0.0.1:8080`.
+`ralph web` serves a local REST/SSE API (default `http://127.0.0.1:8080`). Prefer this for programmatic use (no TTY).
 
 | Endpoint | Purpose |
 |----------|---------|
-| `POST /api/runs` | Start a run (`auto_approve: true` = `--yolo`) |
-| `GET /api/runs` | List runs |
-| `GET /api/runs/{id}` | Run status |
-| `GET /api/runs/{id}/prd` | PRD JSON |
+| `POST /api/runs` | Start run (`auto_approve: true` = `--yolo`) |
+| `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/prd` | List / status / PRD |
 | `GET /api/runs/{id}/events` | SSE replay + live stream |
 | `POST /api/runs/{id}/clarify` | Clarification answers |
 | `POST /api/runs/{id}/review` | Approve or revise PRD |
-| `POST /api/runs/{id}/implementation-review` | Continue after implementation review |
-| `POST /api/runs/{id}/cancel` | Cancel run |
-| `POST /api/runs/{id}/resume` | Resume from checkpoint |
-| `POST /api/runs/{id}/followup` | Follow-up on a completed run |
-| `GET /api/version` | Version info |
-| `POST /api/update` | Install update |
-| `POST /api/clean` | Remove Ralph state in cwd |
+| `POST /api/runs/{id}/implementation-review` | Continue after review findings |
+| `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume`, `POST /api/runs/{id}/followup` | Control |
+| `GET /api/version`, `POST /api/update`, `POST /api/clean` | Meta |
 
 Statuses: `running`, `waiting_clarify`, `waiting_review`, `waiting_implementation_review`, `implementing`, `completed`, `failed`, `cancelled`. TUI runs use id `prd-local`.
 
 ## State files
 
-Written in the working directory (gitignored). New runs archive prior state to `.ralph/backups/<timestamp>/`. `--resume` does not archive existing state.
+Written in the working directory (gitignored). New runs archive prior state to `.ralph/backups/<timestamp>/`; `--resume` does not archive.
 
 | Path | Purpose |
 |------|---------|
@@ -82,10 +88,30 @@ Written in the working directory (gitignored). New runs archive prior state to `
 | `.ralph/questions.json` | Clarification questions (temporary) |
 | `.ralph/prd_review.json` | PRD self-review verdict in `--yolo` runs (temporary) |
 | `.ralph/prd.tmp.*` | Atomic-save temp files |
-| `.ralph/runs/<id>/` | Run metadata, events, review transcripts |
-| `.ralph/backups/<timestamp>/` | Archived state from prior runs |
+| `.ralph/runs/<id>/meta.json` | Status, checkpoint, review loop state |
+| `.ralph/runs/<id>/events.ndjson` | Event log for SSE replay |
+| `.ralph/runs/<id>/review-*.txt` | Implementation review transcripts |
+| `.ralph/backups/<timestamp>/` | Archived prior state |
 
-`ralph clean` deletes these artifacts idempotently.
+Checkpoints: `prd_review`, `impl_review`, `followup`, `complete`.
+
+## Architecture
+
+Go CLI/TUI with optional embedded web UI (`web/` → `internal/web/static/dist/`).
+
+| Package | Role |
+|---------|------|
+| `internal/app` | Coordinator: CLI routing, config, validation |
+| `internal/args` | Flag parsing |
+| `internal/workflow` | State machine, phases, events, `Driver` |
+| `internal/shared/session` | Facade over `Driver` for TUI/web |
+| `internal/tui` | Bubble Tea UI |
+| `internal/web` | HTTP server, handlers, `RunController`, registry |
+| `internal/shared/prd` | PRD model, locking, storage |
+| `internal/shared/runner` | Runner integrations + mock |
+| `internal/shared/runpaths` | `.ralph/runs/<id>/` path helpers |
+
+**Start reading:** `internal/app/coordinator.go`, `internal/workflow/phase_generate.go`, `internal/workflow/phase_implement.go`, `internal/workflow/phase_implement_review.go`.
 
 ## Development
 
@@ -96,3 +122,10 @@ cd web && npm test
 cd e2e && npx playwright test
 go generate ./internal/web/...   # after web UI changes
 ```
+
+## Caveats
+
+- `passes: true` means the runner exited 0, not that tests passed
+- `ralph status` is progress, not QA sign-off
+- Large PRDs can overscope; keep stories small
+- Implementation review needs git and a runner that emits `===ralph-findings===` JSON
