@@ -88,7 +88,7 @@ func (a *API) ensureController(id string) (*runctrl.RunController, error) {
 }
 
 func (a *API) registerControllerLocked(id string, ctrl *runctrl.RunController) {
-	ctrl.SetOnTerminal(func() { a.releaseController(id) })
+	ctrl.SetOnTerminal(func() { go a.releaseController(id) })
 	a.controllers[id] = ctrl
 }
 

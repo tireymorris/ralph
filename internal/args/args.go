@@ -21,7 +21,9 @@ type Options struct {
 	Web          bool
 	WebPort      int
 	SkipCleanup  bool
+	Yolo         bool
 	AutoApprove  bool
+	Headless     bool
 	UnknownFlags []string
 }
 
@@ -66,6 +68,10 @@ func Parse(args []string) *Options {
 		case "--skip-cleanup":
 			opts.SkipCleanup = true
 		case "--yolo":
+			opts.Yolo = true
+			opts.AutoApprove = true
+		case "--headless":
+			opts.Headless = true
 			opts.AutoApprove = true
 		case "status":
 			opts.Status = true
@@ -106,6 +112,19 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
+	if o.Headless {
+		switch {
+		case o.Yolo:
+			return fmt.Errorf("--headless cannot be used with --yolo")
+		case o.DryRun:
+			return fmt.Errorf("--headless cannot be used with --dry-run")
+		case o.Web:
+			return fmt.Errorf("--headless cannot be used with web")
+		}
+		if !o.Resume && o.Prompt == "" {
+			return fmt.Errorf("--headless requires a prompt or --resume")
+		}
+	}
 	if o.AutoApprove {
 		switch {
 		case o.DryRun:
@@ -137,6 +156,7 @@ func HelpText() string {
 Usage:
   ralph                                              # TUI prompt screen (requires a terminal)
   ralph "your feature description"                   # TUI mode
+  ralph --headless "your feature description"        # Unattended yolo mode without the TUI
   ralph "your feature description" --dry-run         # Generate PRD only
   ralph --dry-run                                    # Prompt in TUI, then generate PRD only
   ralph --resume                                     # Resume from existing prd.json
@@ -151,6 +171,7 @@ Options:
   --resume         Resume implementation from existing prd.json (--yolo auto-continues without gates)
   --skip-cleanup   Skip post-implementation cleanup phase
   --yolo           Skip manual clarify and PRD approval gates (not with --dry-run or web)
+  --headless       Unattended yolo mode without the TUI (--yolo plus no Bubble Tea)
   --verbose, -v    Enable debug logging
   --help, -h       Show this help message
   --port PORT      Web server port (with ralph web; default 8080)

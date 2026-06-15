@@ -23,6 +23,7 @@ type OutputLine struct {
 	IsErr   bool
 	Time    time.Time
 	Verbose bool
+	Append  bool
 }
 
 type Runner struct {

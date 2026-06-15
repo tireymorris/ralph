@@ -10,9 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
+	"ralph/internal/web/runs"
 )
 
 func initGitRepoInDir(t *testing.T, dir string) {
@@ -87,4 +89,29 @@ func TestCreateRunRouteRegistered(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body.String())
 	}
+
+	var created map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	waitForRunTerminal(t, h, created["id"])
+}
+
+func waitForRunTerminal(t *testing.T, h http.Handler, id string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/runs/"+id, nil))
+		if rec.Code == http.StatusOK {
+			var run struct {
+				Status string `json:"status"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &run); err == nil && runs.IsTerminalStatus(run.Status) {
+				return
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatal("run did not reach terminal status")
 }

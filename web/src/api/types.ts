@@ -25,6 +25,7 @@ export interface EventOutputPayload {
   Text: string;
   IsErr: boolean;
   Verbose: boolean;
+  Append?: boolean;
 }
 
 export interface EventClarifyingQuestionsPayload {

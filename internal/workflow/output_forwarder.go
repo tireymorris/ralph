@@ -12,6 +12,11 @@ func NewOutputForwarder(emit func(Event)) *OutputForwarder {
 
 func (f *OutputForwarder) Forward(outputCh <-chan runner.OutputLine) {
 	for line := range outputCh {
-		f.emit(EventOutput{Output: Output{Text: line.Text, IsErr: line.IsErr, Verbose: line.Verbose}})
+		f.emit(EventOutput{Output: Output{
+			Text:    line.Text,
+			IsErr:   line.IsErr,
+			Verbose: line.Verbose,
+			Append:  line.Append,
+		}})
 	}
 }

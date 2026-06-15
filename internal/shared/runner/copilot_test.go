@@ -125,6 +125,9 @@ func TestParseCopilotJSONL_MessageDelta(t *testing.T) {
 	if lines[0].Verbose {
 		t.Error("Verbose should be false")
 	}
+	if !lines[0].Append {
+		t.Error("Append should be true for message deltas")
+	}
 }
 
 func TestParseCopilotJSONL_ToolExecutionStart(t *testing.T) {

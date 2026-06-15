@@ -17,6 +17,7 @@ func TestParse(t *testing.T) {
 		{name: "dry run flag", args: []string{"--dry-run"}, expected: Options{DryRun: true}},
 		{name: "yolo flag", args: []string{"--yolo"}, expected: Options{AutoApprove: true}},
 		{name: "resume flag", args: []string{"--resume"}, expected: Options{Resume: true}},
+		{name: "headless flag", args: []string{"--headless", "build"}, expected: Options{Prompt: "build", Headless: true, AutoApprove: true}},
 		{name: "verbose flag short", args: []string{"-v"}, expected: Options{Verbose: true}},
 		{name: "verbose flag long", args: []string{"--verbose"}, expected: Options{Verbose: true}},
 		{name: "single prompt word", args: []string{"hello"}, expected: Options{Prompt: "hello"}},
@@ -115,6 +116,10 @@ func TestValidate(t *testing.T) {
 		{name: "update rejects yolo", opts: Options{Update: true, AutoApprove: true}, wantErr: true},
 		{name: "dry run rejects yolo", opts: Options{DryRun: true, AutoApprove: true}, wantErr: true},
 		{name: "web rejects yolo", opts: Options{Web: true, AutoApprove: true}, wantErr: true},
+		{name: "headless rejects redundant yolo", opts: Options{Headless: true, Yolo: true, Prompt: "build"}, wantErr: true},
+		{name: "headless rejects dry run", opts: Options{Headless: true, DryRun: true, Prompt: "build"}, wantErr: true},
+		{name: "headless rejects web", opts: Options{Headless: true, Web: true, Prompt: "build"}, wantErr: true},
+		{name: "headless requires prompt or resume", opts: Options{Headless: true, AutoApprove: true}, wantErr: true},
 		{name: "resume without prompt is valid", opts: Options{Resume: true}, wantErr: false},
 		{name: "resume with yolo is valid", opts: Options{Resume: true, AutoApprove: true}, wantErr: false},
 		{name: "prompt provided is valid", opts: Options{Prompt: "do something"}, wantErr: false},
@@ -134,7 +139,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "copilot", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup", "--yolo"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "copilot", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup", "--yolo", "--headless"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}

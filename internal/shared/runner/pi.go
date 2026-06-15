@@ -103,7 +103,7 @@ func parsePiJSONLine(line string) []OutputLine {
 			return nil
 		}
 		if am.Type == "text_delta" && am.Delta != "" {
-			return []OutputLine{{Text: am.Delta, Time: now}}
+			return []OutputLine{{Text: am.Delta, Time: now, Append: true}}
 		}
 	case "tool_execution_start":
 		var ts struct {

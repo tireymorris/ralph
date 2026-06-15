@@ -10,6 +10,7 @@ type Output struct {
 	Text    string
 	IsErr   bool
 	Verbose bool
+	Append  bool
 }
 
 type Event interface {
