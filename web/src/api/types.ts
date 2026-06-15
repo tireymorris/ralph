@@ -50,6 +50,11 @@ export interface EventClarifyingQuestionsPayload {
   Questions: string[];
 }
 
+export interface EventSlicePayload {
+  StoryID: string;
+  SliceID: string;
+}
+
 export interface EventErrorPayload {
   error: string;
 }

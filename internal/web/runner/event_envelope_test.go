@@ -64,6 +64,32 @@ func TestMarshalEventEnvelope_CleanupEvents(t *testing.T) {
 	}
 }
 
+func TestMarshalEventEnvelope_SliceEvents(t *testing.T) {
+	cases := []struct {
+		name     string
+		ev       events.Event
+		wantType string
+	}{
+		{name: "started", ev: events.EventSliceStarted{StoryID: "story-1", SliceID: "slice-1"}, wantType: "EventSliceStarted"},
+		{name: "completed", ev: events.EventSliceCompleted{StoryID: "story-1", SliceID: "slice-1"}, wantType: "EventSliceCompleted"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := MarshalEventEnvelope(tc.ev)
+			if err != nil {
+				t.Fatalf("MarshalEventEnvelope() error = %v", err)
+			}
+			var env eventEnvelope
+			if err := json.Unmarshal(data, &env); err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+			if env.Type != tc.wantType {
+				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
+			}
+		})
+	}
+}
+
 func TestMapEventToStatusPhase_CleanupEvents(t *testing.T) {
 	cases := []struct {
 		name string

@@ -1,6 +1,7 @@
 import type {
   EventEnvelope,
   EventErrorPayload,
+  EventSlicePayload,
   EventOutputPayload,
 } from "../api/types";
 
@@ -39,6 +40,10 @@ export interface ImplementationReviewPayload {
 export interface ImplementationReviewCompletedPayload {
   Iteration?: number;
   Clean?: boolean;
+}
+
+function formatSliceLabel(payload: EventSlicePayload): string {
+  return `${payload.StoryID ?? "unknown"}/${payload.SliceID ?? "unknown"}`;
 }
 
 let ephemeralEntryCounter = 0;
@@ -98,6 +103,15 @@ export function entryFromEnvelope(
         id,
         variant: "system",
         text: `Story ${outcome}: ${label}`,
+      };
+    }
+    case "EventSliceStarted":
+    case "EventSliceCompleted": {
+      const payload = envelope.payload as EventSlicePayload;
+      return {
+        id,
+        variant: "system",
+        text: `${envelope.type === "EventSliceStarted" ? "Started" : "Completed"} slice: ${formatSliceLabel(payload)}`,
       };
     }
     case "EventImplementationReviewStarted": {

@@ -61,6 +61,36 @@ describe("entryFromEnvelope implementation review", () => {
   });
 });
 
+describe("entryFromEnvelope slice events", () => {
+  it("renders slice started and completed events as system entries", () => {
+    const started = entryFromEnvelope({
+      type: "EventSliceStarted",
+      payload: { StoryID: "story-1", SliceID: "slice-1" },
+    });
+    expect(started).toEqual({
+      id: stableEnvelopeEntryId({
+        type: "EventSliceStarted",
+        payload: { StoryID: "story-1", SliceID: "slice-1" },
+      }),
+      variant: "system",
+      text: "Started slice: story-1/slice-1",
+    });
+
+    const completed = entryFromEnvelope({
+      type: "EventSliceCompleted",
+      payload: { StoryID: "story-1", SliceID: "slice-1" },
+    });
+    expect(completed).toEqual({
+      id: stableEnvelopeEntryId({
+        type: "EventSliceCompleted",
+        payload: { StoryID: "story-1", SliceID: "slice-1" },
+      }),
+      variant: "system",
+      text: "Completed slice: story-1/slice-1",
+    });
+  });
+});
+
 describe("entryFromEnvelope", () => {
   it("reuses stable ids across repeated calls", () => {
     const envelope = {
