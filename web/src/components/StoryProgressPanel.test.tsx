@@ -61,6 +61,9 @@ describe("StoryProgressPanel", () => {
   it("renders slice progress and refactor hints", () => {
     render(<StoryProgressPanel prd={expandedPRD} />);
 
+    expect(screen.getAllByText("Behavior:")).toHaveLength(2);
+    expect(screen.getAllByText("Red hint:")).toHaveLength(2);
+    expect(screen.getAllByText("Refactor hint:")).toHaveLength(1);
     expect(screen.getByText("shows as done")).toBeInTheDocument();
     expect(screen.getByText("extract helper")).toBeInTheDocument();
     expect(screen.getByText("1/1 slices done")).toBeInTheDocument();

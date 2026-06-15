@@ -4,21 +4,21 @@ export interface StoryProgress {
   stories?: StoryProgressStory[];
 }
 
+export interface PRDSlice {
+  id: string;
+  behavior: string;
+  red_hint: string;
+  refactor_hint?: string;
+  passes: boolean;
+}
+
 export interface StoryProgressStory {
   id: string;
   title: string;
   passes: boolean;
   completed_slices: number;
   total_slices: number;
-  slices?: StoryProgressSlice[];
-}
-
-export interface StoryProgressSlice {
-  id: string;
-  behavior: string;
-  red_hint: string;
-  refactor_hint?: string;
-  passes: boolean;
+  slices?: PRDSlice[];
 }
 
 export interface CreateRunRequestOptions {
@@ -97,7 +97,7 @@ export interface PRDStory {
   id: string;
   title: string;
   description: string;
-  acceptance_criteria: string[];
+  slices: PRDSlice[];
   priority: number;
   depends_on?: string[];
   passes: boolean;

@@ -75,6 +75,9 @@ describe("PRDReviewPanel", () => {
 
   it("renders slice details and refactor hints", () => {
     render(<PRDReviewPanel runId="run-1" prd={samplePRD} />);
+    expect(screen.getAllByText("Behavior:")).toHaveLength(1);
+    expect(screen.getAllByText("Red hint:")).toHaveLength(1);
+    expect(screen.getAllByText("Refactor hint:")).toHaveLength(1);
     expect(screen.getByText("works")).toBeInTheDocument();
     expect(screen.getByText("make it fail")).toBeInTheDocument();
     expect(screen.getByText("extract helper")).toBeInTheDocument();
