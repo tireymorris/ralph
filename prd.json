@@ -43,14 +43,14 @@
           "id": "slice-2",
           "behavior": "Starting implementation on `main` checks out the PRD branch before the first implementation slice runs.",
           "red_hint": "Write a failing workflow test that uses the same checkout spy, checks out `main`, starts implementation from a PRD with `branch_name` set to a feature branch, and asserts the checkout helper is called once with that branch name.",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 2,
       "depends_on": [
         "story-1"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

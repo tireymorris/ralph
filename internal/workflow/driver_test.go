@@ -306,6 +306,90 @@ func TestDriverStartImplementationSkipsCheckoutOnFeatureBranch(t *testing.T) {
 	}
 }
 
+func TestDriverStartImplementationChecksOutPRDBranchOnMain(t *testing.T) {
+	workDir := t.TempDir()
+	initGitRepoInDir(t, workDir)
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	p := &prd.PRD{
+		ProjectName: "Main branch",
+		BranchName:  "feature/target",
+		Stories: []*prd.Story{{
+			ID:          "1",
+			Title:       "Story",
+			Description: "desc",
+			Priority:    1,
+			Slices: []*prd.Slice{{
+				ID:       "slice-1",
+				Behavior: "do work",
+				RedHint:  "test work",
+			}},
+		}},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("save PRD: %v", err)
+	}
+	commitPRDFile(t, workDir, cfg.PRDFile)
+
+	originalCheckoutBranch := checkoutBranch
+	t.Cleanup(func() { checkoutBranch = originalCheckoutBranch })
+	checkoutCalls := 0
+	checkoutTargets := make([]string, 0, 1)
+	checkoutBranch = func(workDir, branchName string) error {
+		checkoutCalls++
+		checkoutTargets = append(checkoutTargets, branchName)
+		return nil
+	}
+
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, _ chan<- runner.OutputLine) error {
+		if strings.Contains(prompt, "Implement story:") {
+			if checkoutCalls != 1 {
+				t.Fatalf("implementation started before checkout completed: calls=%d", checkoutCalls)
+			}
+			<-ctx.Done()
+			return ctx.Err()
+		}
+		return nil
+	}
+
+	d := NewDriverWithRunner(cfg, mock)
+	t.Cleanup(d.Cancel)
+	d.StartImplementation(context.Background(), p)
+
+	deadline := time.Now().Add(2 * time.Second)
+	seenSliceStarted := false
+	for time.Now().Before(deadline) {
+		select {
+		case ev := <-d.EventsCh():
+			if _, ok := ev.(events.EventSliceStarted); ok {
+				seenSliceStarted = true
+				break
+			}
+		default:
+		}
+		if seenSliceStarted {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !seenSliceStarted {
+		t.Fatal("expected EventSliceStarted, never received")
+	}
+	d.Cancel()
+	d.Wait()
+	if checkoutCalls != 1 {
+		t.Fatalf("checkout helper called %d times, want 1", checkoutCalls)
+	}
+	if len(checkoutTargets) != 1 || checkoutTargets[0] != p.BranchName {
+		t.Fatalf("checkout targets = %v, want [%q]", checkoutTargets, p.BranchName)
+	}
+}
+
 func TestDriverSubmitClarify(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

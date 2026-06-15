@@ -13,7 +13,7 @@ func IsFeatureBranch(branchName string) bool {
 }
 
 func CurrentBranchName(workDir string) (string, error) {
-	out, err := runGitCommand(workDir, "rev-parse", "--abbrev-ref", "HEAD")
+	out, err := runGitCommand(workDir, "symbolic-ref", "--short", "HEAD")
 	if err != nil {
 		return "", err
 	}

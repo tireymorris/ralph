@@ -14,7 +14,7 @@ var isFeatureBranch = workdir.IsFeatureBranch
 var checkoutBranch = runGitCheckout
 
 func runGitCheckout(workDir, branchName string) error {
-	cmd := exec.Command("git", "checkout", branchName)
+	cmd := exec.Command("git", "checkout", "-B", branchName)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
