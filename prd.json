@@ -71,7 +71,7 @@
           "id": "slice-4",
           "behavior": "go test ./internal/prompt/... passes",
           "red_hint": "add failing test for: go test ./internal/prompt/... passes",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 2,
