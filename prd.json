@@ -1,0 +1,126 @@
+{
+  "version": 2,
+  "project_name": "Ralph per-slice commits",
+  "branch_name": "feature/ralph-slice-commits",
+  "context": "Ralph is a Go CLI/TUI app with an optional local web UI. After the PRD slices model lands, stories have slices[] and commit-rules.tmpl already tells the implementation agent to red/green/refactor/commit per slice. In practice agents often skip per-slice commits and leave a large uncommitted diff until the story ends. Today phase_implement.go runs one runner session per story and calls gitdiff.CommitChangedFiles once afterward with message \"ralph: \u003cstory-id\u003e\", which sweeps any uncommitted work into a single commit. That hides slice boundaries in git history and makes long stories risky to monitor (no commits until story completes). This PRD moves commit ownership to Ralph at slice boundaries: one runner session per pending slice, Ralph commits immediately after each successful slice, and story completion plus implementation review happen only when every slice passes.",
+  "test_spec": "Verify per-slice commits without regressing TUI, web, or headless. Objective scenarios: a two-slice story produces at least two git commits with slice-scoped messages before story.passes becomes true; resuming mid-story continues from the first pending slice without redoing passed slices; prd.json slice.passes updates persist across slice iterations; Ralph excludes prd.json and .ralph/ from auto-commits as today; mock runner completes slice-by-slice loop in workflow tests; headless NDJSON emits slice lifecycle events; validation through go test ./..., cd web \u0026\u0026 npm test, and cd e2e \u0026\u0026 npx playwright test.",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Run and commit one slice at a time",
+      "description": "Refactor implementation to loop on Story.NextPendingSlice instead of one session per story. For each pending slice: emit slice-started, build a single-slice implementation prompt (only that slice's behavior/red_hint/refactor_hint), run the runner once, then call gitdiff.CommitChangedFiles with message \"ralph: \u003cstory-id\u003e/\u003cslice-id\u003e\" (or \"ralph: \u003cstory-id\u003e \u003cslice-id\u003e\" if slash is awkward). Reload prd.json; require the current slice to have passes true (set it if the runner exited 0 and tests are implied green but the agent forgot to update prd.json — only when slice work is committed). Repeat until Story.AllSlicesPassed, then mark story.passes and run implementation review. Remove the story-level bulk commit at the end, or keep a final no-op sweep that commits only if leftover non-ralph-state files remain and logs a warning. Do not start the next slice while uncommitted non-state changes exist from the previous slice.",
+      "slices": [
+        {
+          "id": "slice-1",
+          "behavior": "phase_implement.go (or extracted helper) iterates pending slices and runs one runner session per slice",
+          "red_hint": "add failing test for: phase_implement.go (or extracted helper) iterates pending slices and runs one runner session per slice",
+          "passes": true
+        },
+        {
+          "id": "slice-2",
+          "behavior": "gitdiff.CommitChangedFiles runs after each successful slice with a message containing story id and slice id",
+          "red_hint": "add failing test for: gitdiff.CommitChangedFiles runs after each successful slice with a message containing story id and slice id",
+          "passes": true
+        },
+        {
+          "id": "slice-3",
+          "behavior": "story.passes is set only after Story.AllSlicesPassed; implementation review runs once per story, not per slice",
+          "red_hint": "add failing test for: story.passes is set only after Story.AllSlicesPassed; implementation review runs once per story, not per slice",
+          "passes": false
+        },
+        {
+          "id": "slice-4",
+          "behavior": "workflow test with mock runner proves two commits (two slice messages) before story completion on a two-slice fixture",
+          "red_hint": "add failing test for: workflow test with mock runner proves two commits (two slice messages) before story completion on a two-slice fixture",
+          "passes": false
+        },
+        {
+          "id": "slice-5",
+          "behavior": "go test ./internal/workflow/... ./internal/shared/gitdiff/... passes",
+          "red_hint": "add failing test for: go test ./internal/workflow/... ./internal/shared/gitdiff/... passes",
+          "passes": false
+        }
+      ],
+      "priority": 1,
+      "passes": false
+    },
+    {
+      "id": "story-2",
+      "title": "Single-slice prompts and agent commit rules",
+      "description": "Add a single-slice story-implement template (or parameterize the existing one) so each runner session sees exactly one pending slice, not the full list. Update partials/commit-rules.tmpl: the agent may still commit during the slice, but Ralph commits after the session regardless; agent commits must use the same lowercase imperative single-line style. Tell the agent to set slice.passes true in prd.json before exiting. Clarify that Ralph's post-slice commit is authoritative for history — agent commits are optional fine-grained steps inside the slice, not required for progression.",
+      "slices": [
+        {
+          "id": "slice-1",
+          "behavior": "story-implement.tmpl (or slice-implement.tmpl) renders one pending slice with behavior, red_hint, and refactor_hint",
+          "red_hint": "add failing test for: story-implement.tmpl (or slice-implement.tmpl) renders one pending slice with behavior, red_hint, and refactor_hint",
+          "passes": false
+        },
+        {
+          "id": "slice-2",
+          "behavior": "commit-rules partial states Ralph commits after each slice session and documents message shape",
+          "red_hint": "add failing test for: commit-rules partial states Ralph commits after each slice session and documents message shape",
+          "passes": false
+        },
+        {
+          "id": "slice-3",
+          "behavior": "prompt tests assert single-slice output and no multi-slice \"implement everything\" wording",
+          "red_hint": "add failing test for: prompt tests assert single-slice output and no multi-slice \"implement everything\" wording",
+          "passes": false
+        },
+        {
+          "id": "slice-4",
+          "behavior": "go test ./internal/prompt/... passes",
+          "red_hint": "add failing test for: go test ./internal/prompt/... passes",
+          "passes": false
+        }
+      ],
+      "priority": 2,
+      "depends_on": [
+        "story-1"
+      ],
+      "passes": false
+    },
+    {
+      "id": "story-3",
+      "title": "Slice events, resume, and mock alignment",
+      "description": "Add EventSliceStarted and EventSliceCompleted (story id + slice id) to the workflow event protocol; surface them in headless NDJSON and web SSE/timeline if other lifecycle events are already shown. Ensure --resume and checkpoint metadata advance correctly when a story is partially sliced (passed slices are skipped). Update mock runner to complete one slice per invocation: mark only the first pending slice passed in prd.json and exit, so workflow tests exercise the multi-commit loop without a real coding CLI.",
+      "slices": [
+        {
+          "id": "slice-1",
+          "behavior": "workflow events include slice started/completed with story and slice identifiers",
+          "red_hint": "add failing test for: workflow events include slice started/completed with story and slice identifiers",
+          "passes": false
+        },
+        {
+          "id": "slice-2",
+          "behavior": "headless and web consumers render or forward slice events without breaking existing story events",
+          "red_hint": "add failing test for: headless and web consumers render or forward slice events without breaking existing story events",
+          "passes": false
+        },
+        {
+          "id": "slice-3",
+          "behavior": "mock runner marks one pending slice per call and does not mark the whole story in one shot",
+          "red_hint": "add failing test for: mock runner marks one pending slice per call and does not mark the whole story in one shot",
+          "passes": false
+        },
+        {
+          "id": "slice-4",
+          "behavior": "workflow test resumes after one slice and runs only the second slice session",
+          "red_hint": "add failing test for: workflow test resumes after one slice and runs only the second slice session",
+          "passes": false
+        },
+        {
+          "id": "slice-5",
+          "behavior": "go test ./internal/workflow/... ./internal/shared/runner/... passes; cd e2e \u0026\u0026 npx playwright test passes",
+          "red_hint": "add failing test for: go test ./internal/workflow/... ./internal/shared/runner/... passes; cd e2e \u0026\u0026 npx playwright test passes",
+          "passes": false
+        }
+      ],
+      "priority": 3,
+      "depends_on": [
+        "story-2"
+      ],
+      "passes": false
+    }
+  ]
+}
