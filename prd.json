@@ -32,7 +32,7 @@
           "id": "slice-4",
           "behavior": "workflow test with mock runner proves two commits (two slice messages) before story completion on a two-slice fixture",
           "red_hint": "add failing test for: workflow test with mock runner proves two commits (two slice messages) before story completion on a two-slice fixture",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-5",
