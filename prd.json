@@ -52,7 +52,7 @@
           "behavior": "RunDetail keeps the story summary counts unchanged while the per-slice states are visible.",
           "red_hint": "Add a failing test in web/src/pages/RunDetail.test.tsx that loads a PRD with mixed slice states and asserts the toolbar count stays at completed/total while the panel renders the slice labels.",
           "refactor_hint": "Let StoryProgressPanel derive its own labels from the PRD data instead of duplicating slice state in RunDetail.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-3",

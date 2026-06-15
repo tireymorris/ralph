@@ -1,10 +1,18 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   getRun,
+  getRunPRD,
   openEventStream,
   submitFollowUp,
 } from "../api/client";
@@ -24,6 +32,7 @@ vi.mock("../api/client", async (importOriginal) => {
   return {
     ...actual,
     getRun: vi.fn(),
+    getRunPRD: vi.fn(),
     submitFollowUp: vi.fn().mockResolvedValue(undefined),
     openEventStream: vi.fn(() => {
       mockEventSource = {
@@ -53,6 +62,55 @@ const baseRun = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const mixedPRD = {
+  version: 1,
+  project_name: "Test Project",
+  stories: [
+    {
+      id: "story-1",
+      title: "Completed story",
+      description: "Done already",
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "done",
+          red_hint: "make it fail",
+          passes: true,
+        },
+      ],
+      priority: 1,
+      passes: true,
+    },
+    {
+      id: "story-2",
+      title: "Current story",
+      description: "Still in progress",
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "passed slice",
+          red_hint: "make it fail",
+          passes: true,
+        },
+        {
+          id: "slice-2",
+          behavior: "current slice",
+          red_hint: "make it fail",
+          passes: false,
+        },
+        {
+          id: "slice-3",
+          behavior: "pending slice",
+          red_hint: "make it fail",
+          passes: false,
+        },
+      ],
+      priority: 2,
+      passes: false,
+    },
+  ],
+};
+
 beforeEach(() => {
   resetTimelineEntryIdsForTests();
 });
@@ -69,6 +127,7 @@ afterEach(() => {
     };
     return mockEventSource as unknown as EventSource;
   });
+  vi.mocked(getRunPRD).mockReset();
   vi.mocked(submitFollowUp).mockResolvedValue(undefined);
 });
 
@@ -243,6 +302,31 @@ describe("RunDetail", () => {
     });
   });
 
+  it("keeps the toolbar counts unchanged while slice labels render", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "implementing",
+      phase: "implement",
+      story_progress: { completed: 2, total: 4 },
+    });
+    vi.mocked(getRunPRD).mockResolvedValue(mixedPRD);
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("2/4", { selector: ".run-detail-progress-label" }),
+      ).toBeInTheDocument();
+
+      const currentStory = screen.getByText("Current story").closest("details");
+      expect(currentStory).not.toBeNull();
+      const story = within(currentStory as HTMLElement);
+      expect(story.getByText("completed")).toBeInTheDocument();
+      expect(story.getByText("in progress")).toBeInTheDocument();
+      expect(story.getByText("pending")).toBeInTheDocument();
+    });
+  });
+
   it("renders follow-up composer when status is completed", async () => {
     vi.mocked(getRun).mockResolvedValue({
       ...baseRun,
@@ -330,5 +414,23 @@ describe("RunDetail", () => {
     expect(
       screen.queryByRole("button", { name: /^send$/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps the current story expanded while slice labels render", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "implementing",
+      phase: "implement",
+      story_progress: { completed: 2, total: 4 },
+    });
+    vi.mocked(getRunPRD).mockResolvedValue(mixedPRD);
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      const currentStory = screen.getByText("Current story").closest("details");
+      expect(currentStory).not.toBeNull();
+      expect(currentStory).toHaveAttribute("open");
+    });
   });
 });
