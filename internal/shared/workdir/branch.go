@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const featureBranchPrefix = "feature/"
+
+func IsFeatureBranch(branchName string) bool {
+	return strings.HasPrefix(branchName, featureBranchPrefix)
+}
+
 func CurrentBranchName(workDir string) (string, error) {
 	out, err := runGitCommand(workDir, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {

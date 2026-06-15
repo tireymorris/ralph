@@ -51,3 +51,23 @@ func TestCurrentBranchNameFeatureBranch(t *testing.T) {
 		t.Fatalf("CurrentBranchName() = %q, want %q", got, "feature/test")
 	}
 }
+
+func TestIsFeatureBranch(t *testing.T) {
+	tests := []struct {
+		name       string
+		branchName string
+		want       bool
+	}{
+		{name: "feature branch", branchName: "feature/test", want: true},
+		{name: "main branch", branchName: "main", want: false},
+		{name: "release branch", branchName: "release/1.0", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := workdir.IsFeatureBranch(tt.branchName); got != tt.want {
+				t.Fatalf("IsFeatureBranch(%q) = %v, want %v", tt.branchName, got, tt.want)
+			}
+		})
+	}
+}
