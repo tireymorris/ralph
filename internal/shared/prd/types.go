@@ -124,31 +124,18 @@ func (p *PRD) CompletedCount() int {
 }
 
 func (s *Story) CompletedSliceCount() int {
-	count := 0
-	for _, sl := range s.Slices {
-		if sl.Passes {
-			count++
-		}
-	}
-	return count
+	completed, _, _ := s.sliceProgress()
+	return completed
 }
 
 func (s *Story) AllSlicesPassed() bool {
-	for _, sl := range s.Slices {
-		if !sl.Passes {
-			return false
-		}
-	}
-	return true
+	_, _, allPassed := s.sliceProgress()
+	return allPassed
 }
 
 func (s *Story) NextPendingSlice() *Slice {
-	for _, sl := range s.Slices {
-		if !sl.Passes {
-			return sl
-		}
-	}
-	return nil
+	_, next, _ := s.sliceProgress()
+	return next
 }
 
 func (p *PRD) AllCompleted() bool {
@@ -266,6 +253,23 @@ func (s *Story) ResetSlicePasses() {
 	for _, sl := range s.Slices {
 		sl.Passes = false
 	}
+}
+
+func (s *Story) sliceProgress() (completed int, next *Slice, allPassed bool) {
+	allPassed = true
+	for _, sl := range s.Slices {
+		if sl.Passes {
+			if next == nil {
+				completed++
+			}
+			continue
+		}
+		if next == nil {
+			next = sl
+		}
+		allPassed = false
+	}
+	return completed, next, allPassed
 }
 
 func (p *PRD) dependenciesSatisfied(story *Story) bool {
