@@ -26,6 +26,7 @@ type Coordinator struct {
 	runClean       func(*config.Config) int
 	runStatus      func(*config.Config) int
 	runTUI         func(*config.Config, string, bool, bool, bool) int
+	runHeadless    func(*config.Config, string, bool) int
 	runUpdate      func(*args.Options) int
 	runUpdateCheck func(*args.Options) int
 	runWeb         func(*config.Config, int) int
@@ -42,6 +43,7 @@ func newCoordinator() *Coordinator {
 		runClean:       runClean,
 		runStatus:      runStatus,
 		runTUI:         runTUI,
+		runHeadless:    runHeadless,
 		runUpdate:      RunUpdate,
 		runUpdateCheck: RunUpdateCheck,
 		runWeb:         runWeb,
@@ -106,6 +108,15 @@ func (c *Coordinator) Run(opts *args.Options) int {
 	if opts.Web {
 		return c.runWeb(cfg, opts.WebPort)
 	}
+	if opts.Headless {
+		if opts.Prompt != "" || opts.Resume {
+			if err := c.validateGit(cfg.WorkDir); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				return 1
+			}
+		}
+		return c.runHeadless(cfg, opts.Prompt, opts.Resume)
+	}
 	if opts.Prompt == "" && !opts.Resume && !c.isTerminal(os.Stdin.Fd()) {
 		fmt.Fprintf(os.Stderr, "Error: interactive prompt requires a terminal (provide a prompt argument or use --resume)\n")
 		return 1
@@ -134,6 +145,9 @@ func (c *Coordinator) withDefaults() *Coordinator {
 	}
 	if c.runTUI == nil {
 		c.runTUI = runTUI
+	}
+	if c.runHeadless == nil {
+		c.runHeadless = runHeadless
 	}
 	if c.runUpdate == nil {
 		c.runUpdate = RunUpdate

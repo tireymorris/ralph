@@ -24,6 +24,7 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 		wantRunStatus      bool
 		wantRunWeb         bool
 		wantRunTUI         bool
+		wantRunHeadless    bool
 		wantRunUpdate      bool
 		wantRunUpdateCheck bool
 		wantResume         bool
@@ -99,6 +100,17 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 			wantTerminalCheck:  true,
 		},
 		{
+			name:               "headless",
+			opts:               &args.Options{Headless: true, Prompt: "build a feature", AutoApprove: true},
+			wantCode:           9,
+			wantLoadConfig:     true,
+			wantValidateResume: true,
+			wantValidateGit:    true,
+			wantRunHeadless:    true,
+			wantPrompt:         "build a feature",
+			wantTerminalCheck:  true,
+		},
+		{
 			name:               "non-tty prompt rejection",
 			opts:               &args.Options{},
 			wantCode:           1,
@@ -124,6 +136,10 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 					dryRun  bool
 					resume  bool
 					verbose bool
+				}
+				runHeadless []struct {
+					prompt string
+					resume bool
 				}
 				runUpdate      int
 				runUpdateCheck int
@@ -154,6 +170,13 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 						verbose bool
 					}{prompt: tt.opts.Prompt, dryRun: tt.opts.DryRun, resume: tt.opts.Resume, verbose: tt.opts.Verbose})
 					return 3
+				},
+				runHeadless: func(*config.Config, string, bool) int {
+					calls.runHeadless = append(calls.runHeadless, struct {
+						prompt string
+						resume bool
+					}{prompt: tt.opts.Prompt, resume: tt.opts.Resume})
+					return 9
 				},
 				runUpdate: func(*args.Options) int {
 					calls.runUpdate++
@@ -214,6 +237,9 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 			if got := len(calls.runTUI) > 0; got != tt.wantRunTUI {
 				t.Fatalf("runTUI called = %v, want %v", got, tt.wantRunTUI)
 			}
+			if got := len(calls.runHeadless) > 0; got != tt.wantRunHeadless {
+				t.Fatalf("runHeadless called = %v, want %v", got, tt.wantRunHeadless)
+			}
 			if got := calls.runUpdate > 0; got != tt.wantRunUpdate {
 				t.Fatalf("runUpdate called = %v, want %v", got, tt.wantRunUpdate)
 			}
@@ -224,6 +250,12 @@ func TestCoordinatorRoutesCommands(t *testing.T) {
 				got := calls.runTUI[0]
 				if got.prompt != tt.wantPrompt || got.dryRun != tt.wantDryRun || got.resume != tt.wantResume || got.verbose != tt.wantVerbose {
 					t.Fatalf("runTUI args = %#v, want prompt=%q dryRun=%v resume=%v verbose=%v", got, tt.wantPrompt, tt.wantDryRun, tt.wantResume, tt.wantVerbose)
+				}
+			}
+			if tt.wantRunHeadless {
+				got := calls.runHeadless[0]
+				if got.prompt != tt.wantPrompt || got.resume != tt.wantResume {
+					t.Fatalf("runHeadless args = %#v, want prompt=%q resume=%v", got, tt.wantPrompt, tt.wantResume)
 				}
 			}
 			if tt.wantRunWeb && calls.runWeb[0] != tt.wantWebPort {

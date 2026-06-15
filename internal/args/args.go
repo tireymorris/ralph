@@ -21,6 +21,7 @@ type Options struct {
 	Web          bool
 	WebPort      int
 	SkipCleanup  bool
+	Yolo         bool
 	AutoApprove  bool
 	Headless     bool
 	UnknownFlags []string
@@ -67,6 +68,7 @@ func Parse(args []string) *Options {
 		case "--skip-cleanup":
 			opts.SkipCleanup = true
 		case "--yolo":
+			opts.Yolo = true
 			opts.AutoApprove = true
 		case "--headless":
 			opts.Headless = true
@@ -110,6 +112,19 @@ func Parse(args []string) *Options {
 }
 
 func (o *Options) Validate() error {
+	if o.Headless {
+		switch {
+		case o.Yolo:
+			return fmt.Errorf("--headless cannot be used with --yolo")
+		case o.DryRun:
+			return fmt.Errorf("--headless cannot be used with --dry-run")
+		case o.Web:
+			return fmt.Errorf("--headless cannot be used with web")
+		}
+		if !o.Resume && o.Prompt == "" {
+			return fmt.Errorf("--headless requires a prompt or --resume")
+		}
+	}
 	if o.AutoApprove {
 		switch {
 		case o.DryRun:
@@ -124,17 +139,6 @@ func (o *Options) Validate() error {
 			return fmt.Errorf("--yolo cannot be used with version")
 		case o.Update:
 			return fmt.Errorf("--yolo cannot be used with update")
-		}
-	}
-	if o.Headless {
-		switch {
-		case o.DryRun:
-			return fmt.Errorf("--headless cannot be used with --dry-run")
-		case o.Web:
-			return fmt.Errorf("--headless cannot be used with web")
-		}
-		if !o.Resume && o.Prompt == "" {
-			return fmt.Errorf("--headless requires a prompt or --resume")
 		}
 	}
 	if o.Help || o.Status || o.Clean || o.Version || o.Update || o.Web {
