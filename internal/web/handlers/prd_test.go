@@ -20,7 +20,7 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
   "version": 1,
   "project_name": "test",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "write failing test for: c", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -55,9 +55,14 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
 	}
 	var body struct {
 		Stories []struct {
-			ID                 string   `json:"id"`
-			AcceptanceCriteria []string `json:"acceptance_criteria"`
-			Priority           int      `json:"priority"`
+			ID       string `json:"id"`
+			Slices   []struct {
+				ID       string `json:"id"`
+				Behavior string `json:"behavior"`
+				RedHint  string `json:"red_hint"`
+				Passes   bool   `json:"passes"`
+			} `json:"slices"`
+			Priority int `json:"priority"`
 		} `json:"stories"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
@@ -69,8 +74,8 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
 	if body.Stories[0].ID != "s1" {
 		t.Fatalf("story id = %q, want s1", body.Stories[0].ID)
 	}
-	if len(body.Stories[0].AcceptanceCriteria) != 1 || body.Stories[0].AcceptanceCriteria[0] != "c" {
-		t.Fatalf("acceptance_criteria = %#v, want [c]", body.Stories[0].AcceptanceCriteria)
+	if len(body.Stories[0].Slices) != 1 || body.Stories[0].Slices[0].Behavior != "c" {
+		t.Fatalf("slices = %#v, want one slice for c", body.Stories[0].Slices)
 	}
 	if body.Stories[0].Priority != 1 {
 		t.Fatalf("priority = %d, want 1", body.Stories[0].Priority)

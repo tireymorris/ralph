@@ -16,8 +16,10 @@ test.describe("PRD review", () => {
     await expect(page.locator(".prd-review-panel")).toBeVisible();
     await expect(page.locator(".prd-review-panel h2")).toHaveText("Mock");
     await expect(page.locator(".prd-review-version")).toContainText("v1");
-    await expect(page.locator(".prd-review-stories li")).toHaveCount(1);
-    await expect(page.locator(".prd-review-stories li").first()).toContainText("Mock story");
+    await expect(page.locator(".prd-review-stories > li")).toHaveCount(1);
+    await expect(page.locator(".prd-review-stories > li").first()).toContainText("Mock story");
+    await expect(page.locator(".prd-review-slices li")).toHaveCount(1);
+    await expect(page.locator(".prd-review-slices li").first()).toContainText("ok");
   });
 
   test("approving PRD completes the run", async ({ serverPage: page }) => {
