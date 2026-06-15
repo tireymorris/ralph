@@ -59,7 +59,7 @@
           "id": "slice-2",
           "behavior": "commit-rules partial states Ralph commits after each slice session and documents message shape",
           "red_hint": "add failing test for: commit-rules partial states Ralph commits after each slice session and documents message shape",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-3",

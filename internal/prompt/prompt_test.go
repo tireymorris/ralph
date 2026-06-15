@@ -420,6 +420,22 @@ func TestCommitRulesRequireMandatoryRefactor(t *testing.T) {
 	}
 }
 
+func TestCommitRulesDescribeRalphPostSliceCommit(t *testing.T) {
+	result := render("commit-rules", nil)
+
+	for _, want := range []string{
+		"Ralph commits after each slice session",
+		"slice.passes true",
+		"lowercase, imperative, single-line",
+		"optional fine-grained steps inside the slice",
+		"authoritative for history",
+	} {
+		if !strings.Contains(result, want) {
+			t.Fatalf("commit-rules template missing %q in:\n%s", want, result)
+		}
+	}
+}
+
 func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 	result := PRDCritiqueRevision("add login", "prd.json", "Needs more tests")
 

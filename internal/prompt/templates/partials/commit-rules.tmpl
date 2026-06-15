@@ -6,8 +6,12 @@ Work in tight TDD cycles. Do NOT implement the whole story in one pass. Break it
   c. refactor (mandatory) — improve names/structure while tests stay green; use refactor_hint when present; no skipping refactor.
   d. COMMIT — commit just that slice on its own.
 
+Ralph commits after each slice session and that commit is authoritative for history.
+Agent commits are optional fine-grained steps inside the slice, not required for progression.
+Before exiting, set slice.passes true in prd.json.
+
 Commit message rules:
-- One short sentence, lowercase, imperative mood, no trailing period.
+- One short sentence, lowercase, imperative, single-line, no trailing period.
 - NO conventional-commit prefixes. Do NOT start with "feat:", "fix:", "refactor:", "chore:", "test:", "docs:", etc.
 - Describe what this one slice does, not the whole story. Example: "parse empty input as zero-length token list", not "feat: add parser".
 - The commit message is ONLY the single subject line. Do NOT append a body, signature, trailer, or footer. In particular, do NOT add "Co-Authored-By:" lines, "Signed-off-by:" lines, "🤖 Generated with ..." footers, or any attribution trailer. If your tooling adds these by default, strip them before committing.
