@@ -9,6 +9,36 @@ function storyStatus(story: PRDStory): "done" | "pending" {
   return story.passes ? "done" : "pending";
 }
 
+function sliceStatus(
+  story: PRDStory,
+  sliceIndex: number,
+  isCurrent: boolean,
+): "completed" | "in progress" | "pending" {
+  if (story.passes) {
+    return "completed";
+  }
+
+  if (!isCurrent) {
+    return "pending";
+  }
+
+  const firstUnfinishedIndex = story.slices.findIndex((slice) => !slice.passes);
+
+  if (firstUnfinishedIndex === -1) {
+    return "completed";
+  }
+
+  if (sliceIndex < firstUnfinishedIndex) {
+    return "completed";
+  }
+
+  if (sliceIndex === firstUnfinishedIndex) {
+    return "in progress";
+  }
+
+  return "pending";
+}
+
 export default function StoryProgressPanel({
   prd,
   defaultOpen = true,
@@ -55,22 +85,29 @@ export default function StoryProgressPanel({
                     : "0/0 slices done"}
                 </p>
                 <ul className="story-progress-slice-list">
-                  {story.slices.map((slice) => (
-                    <li key={slice.id} className="story-progress-slice">
-                      <p>
-                        <strong>Behavior:</strong> {slice.behavior}
-                      </p>
-                      <p>
-                        <strong>Red hint:</strong> {slice.red_hint}
-                      </p>
-                      {slice.refactor_hint ? (
-                        <p>
-                          <strong>Refactor hint:</strong>{" "}
-                          {slice.refactor_hint}
+                  {story.slices.map((slice, sliceIndex) => {
+                    const status = sliceStatus(story, sliceIndex, isCurrent);
+
+                    return (
+                      <li key={slice.id} className="story-progress-slice">
+                        <p className="story-progress-slice-status">
+                          <strong>Status:</strong> {status}
                         </p>
-                      ) : null}
-                    </li>
-                  ))}
+                        <p>
+                          <strong>Behavior:</strong> {slice.behavior}
+                        </p>
+                        <p>
+                          <strong>Red hint:</strong> {slice.red_hint}
+                        </p>
+                        {slice.refactor_hint ? (
+                          <p>
+                            <strong>Refactor hint:</strong>{" "}
+                            {slice.refactor_hint}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               </details>
             </li>

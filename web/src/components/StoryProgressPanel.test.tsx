@@ -45,6 +45,40 @@ const expandedPRD = {
   ],
 };
 
+const mixedSlicePRD = {
+  version: 1,
+  project_name: "Test",
+  stories: [
+    {
+      id: "story-1",
+      title: "Slice labels story",
+      description: "Show slice states",
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "passed slice behavior",
+          red_hint: "passed slice red hint",
+          passes: true,
+        },
+        {
+          id: "slice-2",
+          behavior: "current slice behavior",
+          red_hint: "current slice red hint",
+          passes: false,
+        },
+        {
+          id: "slice-3",
+          behavior: "pending slice behavior",
+          red_hint: "pending slice red hint",
+          passes: false,
+        },
+      ],
+      priority: 1,
+      passes: false,
+    },
+  ],
+};
+
 afterEach(() => {
   cleanup();
 });
@@ -67,5 +101,15 @@ describe("StoryProgressPanel", () => {
     expect(screen.getByText("shows as done")).toBeInTheDocument();
     expect(screen.getByText("extract helper")).toBeInTheDocument();
     expect(screen.getByText("1/1 slices done")).toBeInTheDocument();
+  });
+
+  it("renders labels for completed, in progress, and pending slices", () => {
+    render(<StoryProgressPanel prd={mixedSlicePRD} />);
+
+    expect(screen.getByText("completed")).toBeInTheDocument();
+    expect(screen.getByText("in progress")).toBeInTheDocument();
+    expect(screen.getByText("pending")).toBeInTheDocument();
+    expect(screen.getByText("passed slice behavior")).toBeInTheDocument();
+    expect(screen.getByText("current slice red hint")).toBeInTheDocument();
   });
 });
