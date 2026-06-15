@@ -46,6 +46,20 @@ type EventStoryCompleted struct {
 
 func (EventStoryCompleted) isEvent() {}
 
+type EventSliceStarted struct {
+	StoryID string
+	SliceID string
+}
+
+func (EventSliceStarted) isEvent() {}
+
+type EventSliceCompleted struct {
+	StoryID string
+	SliceID string
+}
+
+func (EventSliceCompleted) isEvent() {}
+
 type EventOutput struct {
 	Output
 }

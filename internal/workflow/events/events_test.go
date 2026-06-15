@@ -15,6 +15,8 @@ func TestEventTypes(t *testing.T) {
 		EventPRDLoaded{PRD: &prd.PRD{}},
 		EventStoryStarted{Story: &prd.Story{}},
 		EventStoryCompleted{Story: &prd.Story{}, Success: true},
+		EventSliceStarted{StoryID: "story-1", SliceID: "slice-1"},
+		EventSliceCompleted{StoryID: "story-1", SliceID: "slice-1"},
 		EventOutput{Output: Output{Text: "test", IsErr: false}},
 		EventError{Err: nil},
 		EventCompleted{},
@@ -36,27 +38,33 @@ func TestEventTypes(t *testing.T) {
 }
 
 func TestAllEventIsEventMethods(t *testing.T) {
-	EventPRDGenerating{}.isEvent()
-	EventPRDGenerated{}.isEvent()
-	EventPRDLoaded{}.isEvent()
-	EventStoryStarted{}.isEvent()
-	EventStoryCompleted{}.isEvent()
-	EventOutput{}.isEvent()
-	EventError{}.isEvent()
-	EventCompleted{}.isEvent()
-	EventPRDReview{}.isEvent()
-	EventPRDRevising{}.isEvent()
-	EventCleanupStarted{}.isEvent()
-	EventCleanupCompleted{}.isEvent()
-	EventImplementationReviewStarted{}.isEvent()
-	EventImplementationReviewCompleted{}.isEvent()
-	EventImplementationReview{}.isEvent()
-	EventRecoveryStarted{}.isEvent()
-	EventRecoveryCompleted{}.isEvent()
+	evs := []Event{
+		EventPRDGenerating{},
+		EventPRDGenerated{},
+		EventPRDLoaded{},
+		EventStoryStarted{},
+		EventStoryCompleted{},
+		EventSliceStarted{},
+		EventSliceCompleted{},
+		EventOutput{},
+		EventError{},
+		EventCompleted{},
+		EventPRDReview{},
+		EventPRDRevising{},
+		EventCleanupStarted{},
+		EventCleanupCompleted{},
+		EventImplementationReviewStarted{},
+		EventImplementationReviewCompleted{},
+		EventImplementationReview{},
+		EventRecoveryStarted{},
+		EventRecoveryCompleted{},
+	}
+	for _, e := range evs {
+		e.isEvent()
+	}
 }
 
 func TestAllEventIsEventMethodsIncludesClarifying(t *testing.T) {
 	answersCh := make(chan []prompt.QuestionAnswer, 1)
 	EventClarifyingQuestions{Questions: []string{"Q?"}, AnswersCh: answersCh}.isEvent()
 }
-
