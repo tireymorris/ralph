@@ -404,3 +404,47 @@ func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
 		t.Fatal("runTUI was not called after boot update failure")
 	}
 }
+
+func TestCoordinatorExplicitUpdateSkipsBootUpdate(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+	}()
+
+	calls := make([]string, 0, 2)
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		calls = append(calls, "boot-check")
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		calls = append(calls, "boot-install")
+		return nil
+	}
+
+	c := &Coordinator{
+		runUpdate: func(*args.Options) int {
+			calls = append(calls, "run-update")
+			return 0
+		},
+		loadConfig: func() (*config.Config, error) {
+			t.Fatal("loadConfig should not run for explicit update")
+			return nil, nil
+		},
+		helpText:    func() string { return "help text" },
+		versionInfo: func() string { return "version text" },
+		isTerminal:  func(uintptr) bool { return true },
+	}
+
+	code, stdout, stderr := captureCoordinatorRun(t, c, &args.Options{Update: true})
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0", code)
+	}
+	if stdout != "" || stderr != "" {
+		t.Fatalf("stdout/stderr = %q / %q, want both empty", stdout, stderr)
+	}
+	if len(calls) != 1 || calls[0] != "run-update" {
+		t.Fatalf("calls = %v, want only run-update", calls)
+	}
+}
