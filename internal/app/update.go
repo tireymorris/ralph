@@ -15,6 +15,29 @@ var (
 	updateCheck   = update.Check
 )
 
+type updateAttemptResult struct {
+	upToDate            bool
+	local               string
+	remote              string
+	metadataUnavailable bool
+}
+
+func attemptUpdate(ctx context.Context, repo, ref string) (updateAttemptResult, error) {
+	up, local, remote, checkErr := updateCheck(ctx, repo, ref)
+	if checkErr == nil && up {
+		return updateAttemptResult{upToDate: true, local: local, remote: remote}, nil
+	}
+	if checkErr != nil && !strings.Contains(checkErr.Error(), "build metadata") {
+		return updateAttemptResult{local: local, remote: remote}, checkErr
+	}
+
+	result := updateAttemptResult{local: local, remote: remote, metadataUnavailable: checkErr != nil}
+	if err := updateInstall(ctx, update.InstallOptions{Repo: repo, Ref: ref}); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func RunUpdate(opts *args.Options) int {
 	ctx := context.Background()
 	repo := update.RepoFromEnv()
@@ -23,35 +46,35 @@ func RunUpdate(opts *args.Options) int {
 		ref = update.DefaultRef
 	}
 
-	up, local, remote, checkErr := updateCheck(ctx, repo, ref)
-	if checkErr == nil && up {
-		fmt.Fprintf(os.Stdout, "ralph is already up to date (commit=%s)\n", local)
+	result, err := attemptUpdate(ctx, repo, ref)
+	if result.upToDate {
+		fmt.Fprintf(os.Stdout, "ralph is already up to date (commit=%s)\n", result.local)
 		return 0
 	}
-	if checkErr != nil && !strings.Contains(checkErr.Error(), "build metadata") {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", checkErr)
-		return 1
-	}
-
-	if checkErr != nil {
+	if result.metadataUnavailable {
 		fmt.Fprintf(os.Stdout, "installing ralph from %s@%s (version metadata unavailable)\n", repo, ref)
 	} else {
-		fmt.Fprintf(os.Stdout, "updating ralph from %s@%s (commit %s → %s)\n", repo, ref, local, remote)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(os.Stdout, "updating ralph from %s@%s (commit %s → %s)\n", repo, ref, result.local, result.remote)
 	}
 
-	if err := updateInstall(ctx, update.InstallOptions{Repo: repo, Ref: ref}); err != nil {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
+
 	bin, err := update.InstalledBinaryPath(ctx, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
-	if checkErr != nil {
+	if result.metadataUnavailable {
 		fmt.Fprintf(os.Stdout, "installed %s\n", bin)
 	} else {
-		fmt.Fprintf(os.Stdout, "updated: installed %s (commit %s)\n", bin, remote)
+		fmt.Fprintf(os.Stdout, "updated: installed %s (commit %s)\n", bin, result.remote)
 	}
 	return 0
 }

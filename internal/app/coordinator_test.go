@@ -2,12 +2,14 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"testing"
 
 	"ralph/internal/args"
 	"ralph/internal/shared/config"
+	"ralph/internal/update"
 )
 
 func TestCoordinatorRoutesCommands(t *testing.T) {
@@ -301,4 +303,104 @@ func captureCoordinatorRun(t *testing.T, c *Coordinator, opts *args.Options) (in
 	}
 	code := <-codeCh
 	return code, stdoutBuf.String(), stderrBuf.String()
+}
+
+func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+	}()
+
+	calls := make([]string, 0, 4)
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		calls = append(calls, "update-check")
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		calls = append(calls, "update-install")
+		return nil
+	}
+
+	c := &Coordinator{
+		loadConfig: func() (*config.Config, error) {
+			calls = append(calls, "load-config")
+			return &config.Config{WorkDir: t.TempDir(), PRDFile: "prd.json"}, nil
+		},
+		runTUI: func(*config.Config, string, bool, bool, bool) int {
+			calls = append(calls, "run-tui")
+			return 0
+		},
+		validateGit: func(string) error {
+			return nil
+		},
+		validateResume: func(*config.Config, bool) error {
+			return nil
+		},
+		helpText:    func() string { return "help text" },
+		versionInfo: func() string { return "version text" },
+		isTerminal:  func(uintptr) bool { return true },
+	}
+
+	code, _, stderr := captureCoordinatorRun(t, c, &args.Options{Prompt: "build a feature"})
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0", code)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+	if len(calls) < 3 {
+		t.Fatalf("calls = %v, want update and TUI flow", calls)
+	}
+	if calls[0] != "update-check" || calls[1] != "update-install" || calls[len(calls)-1] != "run-tui" {
+		t.Fatalf("calls = %v, want boot update before prompt flow", calls)
+	}
+}
+
+func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+	}()
+
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		return context.Canceled
+	}
+
+	runTUICalled := false
+	c := &Coordinator{
+		loadConfig: func() (*config.Config, error) {
+			return &config.Config{WorkDir: t.TempDir(), PRDFile: "prd.json"}, nil
+		},
+		runTUI: func(*config.Config, string, bool, bool, bool) int {
+			runTUICalled = true
+			return 0
+		},
+		validateGit: func(string) error {
+			return nil
+		},
+		validateResume: func(*config.Config, bool) error {
+			return nil
+		},
+		helpText:    func() string { return "help text" },
+		versionInfo: func() string { return "version text" },
+		isTerminal:  func(uintptr) bool { return true },
+	}
+
+	code, _, stderr := captureCoordinatorRun(t, c, &args.Options{Prompt: "build a feature"})
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0", code)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+	if !runTUICalled {
+		t.Fatal("runTUI was not called after boot update failure")
+	}
 }

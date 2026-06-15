@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"ralph/internal/shared/workdir"
 	"ralph/internal/status"
 	"ralph/internal/tui"
+	"ralph/internal/update"
 	"ralph/internal/version"
 	"ralph/internal/web"
 )
@@ -80,6 +82,12 @@ func (c *Coordinator) Run(opts *args.Options) int {
 		}
 		return c.runUpdate(opts)
 	}
+	repo := update.RepoFromEnv()
+	ref := opts.UpdateRef
+	if ref == "" {
+		ref = update.DefaultRef
+	}
+	_, _ = attemptUpdate(context.Background(), repo, ref)
 
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
