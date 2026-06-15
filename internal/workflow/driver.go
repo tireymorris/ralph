@@ -153,6 +153,10 @@ func (d *Driver) SetReviewLoop(runID string, updater ReviewLoopUpdater) {
 }
 
 func (d *Driver) StartImplementation(ctx context.Context, p *prd.PRD) {
+	if err := d.prepareImplementationBranch(p); err != nil {
+		d.EmitError(err)
+		return
+	}
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()

@@ -44,7 +44,7 @@ func (s *Session) ContinueImplementationReview(ctx context.Context, cfg *config.
 }
 
 func (s *Session) StartImplementationFromPRD(ctx context.Context, p *prd.PRD) {
-	s.StartImplementation(ctx, p)
+	s.Driver.StartImplementation(ctx, p)
 }
 
 func (s *Session) ContinueImplementationReviewFromPRD(ctx context.Context, p *prd.PRD) {

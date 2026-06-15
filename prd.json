@@ -1,0 +1,56 @@
+{
+  "version": 3,
+  "project_name": "Feature Branch Checkout Skip",
+  "branch_name": "feature/skip-branch-checkout-if-already-on-a-feature-branch",
+  "context": "Go 1.24 CLI/TUI app in a single `ralph` module. Core code lives under `internal/app`, `internal/workflow`, `internal/shared`, `internal/tui`, and `internal/web`; the UI uses Bubble Tea, Bubbles, and Lip Gloss, and the web surface is a local HTTP/SSE server. Workflow execution starts in `internal/shared/session/session.go`, which calls `workflow.Driver.StartImplementation` in `internal/workflow/driver.go`. Workflow code is split into small phase files such as `internal/workflow/phase_generate.go` and `internal/workflow/phase_implement.go`, tests are mostly table-driven `*_test.go` files, PRDs are modeled in `internal/shared/prd/types.go`, and PRD persistence uses shared locking plus atomic saves in `internal/shared/prd/storage.go`. Git validation currently only checks that the workdir exists and contains a `.git` entry in `internal/shared/workdir/validate.go`. Primary test command: `go test ./...`; the repo also has `cd web \u0026\u0026 npm test` and `cd e2e \u0026\u0026 npx playwright test` for the browser surfaces.",
+  "test_spec": "A temporary git repo checked out to a `feature/*` branch makes the new shared branch helper return that branch name and causes `workflow.Driver.StartImplementation` to skip the checkout path before any implementation slice runs. A temporary repo checked out to `main` still takes the checkout path before the first implementation slice prompt and uses the PRD branch name as the checkout target. Branch detection is table-driven and deterministic for `feature/*` versus non-feature branches, and the behavior is covered by Go tests in `internal/shared/workdir` and `internal/workflow`.",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Detect the active branch",
+      "description": "Add `CurrentBranchName(workDir string) (string, error)` and `IsFeatureBranch(branchName string) bool` in `internal/shared/workdir` so workflow code can read the active git branch without changing `ValidateGit`.",
+      "slices": [
+        {
+          "id": "slice-1",
+          "behavior": "The shared helper returns the current branch name from a real git worktree.",
+          "red_hint": "Write a failing test in `internal/shared/workdir` that creates a temporary git repo, runs `git checkout -b feature/test`, and asserts `CurrentBranchName(dir)` returns `feature/test`.",
+          "refactor_hint": "Reuse the same git command execution pattern already used by other shared git helpers.",
+          "passes": true
+        },
+        {
+          "id": "slice-2",
+          "behavior": "The shared helper classifies `feature/*` branches as feature branches and rejects non-feature branches.",
+          "red_hint": "Write failing table-driven tests for `IsFeatureBranch` that cover `feature/test`, `main`, and `release/1.0`.",
+          "refactor_hint": "Keep the branch-name check isolated so workflow code only depends on a small predicate.",
+          "passes": true
+        }
+      ],
+      "priority": 1,
+      "passes": true
+    },
+    {
+      "id": "story-2",
+      "title": "Skip redundant checkout",
+      "description": "Update `workflow.Driver.StartImplementation` and `session.Session.StartImplementationFromPRD` so implementation startup skips checkout when the active branch already matches `feature/*`, and otherwise checks out `p.BranchName` before the first implementation slice runs.",
+      "slices": [
+        {
+          "id": "slice-1",
+          "behavior": "Starting implementation on an existing feature branch does not invoke a checkout command.",
+          "red_hint": "Write a failing workflow test that uses a stubbed checkout helper, checks out `feature/test`, starts implementation from a PRD, and asserts the checkout helper is not called.",
+          "passes": true
+        },
+        {
+          "id": "slice-2",
+          "behavior": "Starting implementation on `main` checks out the PRD branch before the first implementation slice runs.",
+          "red_hint": "Write a failing workflow test that uses the same checkout spy, checks out `main`, starts implementation from a PRD with `branch_name` set to a feature branch, and asserts the checkout helper is called once with that branch name.",
+          "passes": false
+        }
+      ],
+      "priority": 2,
+      "depends_on": [
+        "story-1"
+      ],
+      "passes": false
+    }
+  ]
+}
