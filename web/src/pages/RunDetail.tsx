@@ -56,7 +56,18 @@ export default function RunDetail() {
   useTimelineScroll(scrollRef, entries);
 
   const appendEntry = useCallback((entry: TimelineEntry) => {
-    setEntries((prev) => [...prev, entry]);
+    setEntries((prev) => {
+      if (entry.append && prev.length > 0) {
+        const last = prev[prev.length - 1];
+        if (last.variant === entry.variant && last.append) {
+          return [
+            ...prev.slice(0, -1),
+            { ...last, text: last.text + entry.text, append: true },
+          ];
+        }
+      }
+      return [...prev, entry];
+    });
   }, []);
 
   const handleEnvelope = useCallback((envelope: EventEnvelope) => {

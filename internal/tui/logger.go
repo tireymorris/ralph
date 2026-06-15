@@ -15,6 +15,7 @@ type Logger struct {
 	width   int
 	height  int
 	verbose bool
+	streaming bool
 }
 
 func NewLogger(verbose bool) *Logger {
@@ -40,11 +41,27 @@ func (l *Logger) AddLog(line string) {
 }
 
 func (l *Logger) AddOutputLine(line runner.OutputLine) {
-
-	// Skip verbose output unless --verbose is enabled.
-	if !line.Verbose || l.verbose {
-		l.AddLog(line.Text)
+	if line.Verbose && !l.verbose {
+		return
 	}
+	if line.Append {
+		if len(l.logs) > 0 && l.streaming {
+			l.logs[len(l.logs)-1] += line.Text
+		} else {
+			l.logs = append(l.logs, line.Text)
+			if len(l.logs) > l.maxLogs {
+				l.logs = l.logs[1:]
+			}
+		}
+		l.streaming = true
+	} else {
+		l.logs = append(l.logs, line.Text)
+		if len(l.logs) > l.maxLogs {
+			l.logs = l.logs[1:]
+		}
+		l.streaming = false
+	}
+	l.refreshLogView()
 }
 
 func (l *Logger) SetSize(width, logHeight int) {

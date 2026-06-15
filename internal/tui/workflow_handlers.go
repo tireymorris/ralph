@@ -159,7 +159,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventOutput:
 		if !e.Verbose || m.verbose {
-			m.logger.AddOutputLine(runner.OutputLine{Text: e.Text, IsErr: e.IsErr})
+			m.logger.AddOutputLine(runner.OutputLine{Text: e.Text, IsErr: e.IsErr, Append: e.Append})
 		}
 
 	case events.EventError:

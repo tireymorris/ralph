@@ -10,6 +10,7 @@ export interface TimelineEntry {
   id: string;
   variant: TimelineVariant;
   text: string;
+  append?: boolean;
 }
 
 export interface StoryPayload {
@@ -76,6 +77,7 @@ export function entryFromEnvelope(
         id,
         variant: payload.IsErr ? "error" : "assistant",
         text: payload.Text,
+        append: payload.Append,
       };
     }
     case "EventStoryStarted": {

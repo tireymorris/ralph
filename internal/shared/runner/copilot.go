@@ -103,7 +103,7 @@ func parseCopilotJSONL(line string) []OutputLine {
 	switch event.Type {
 	case "assistant.message_delta":
 		if event.Data.DeltaContent != "" {
-			return []OutputLine{{Text: event.Data.DeltaContent, Time: now}}
+			return []OutputLine{{Text: event.Data.DeltaContent, Time: now, Append: true}}
 		}
 	case "tool.execution_start":
 		if event.Data.ToolName != "" {
