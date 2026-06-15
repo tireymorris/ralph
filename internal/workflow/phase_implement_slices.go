@@ -95,7 +95,6 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 			updatedSlice.Passes = true
 		}
 
-		updatedStory.Passes = updatedStory.AllSlicesPassed()
 		if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
 			return nil, nil, fmt.Errorf("failed to save PRD after completing story %s slice %s: %w", story.ID, currentSlice.ID, saveErr)
 		}
