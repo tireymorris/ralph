@@ -12,6 +12,12 @@ Critically review the PRD in {{.PRDFile}} against the actual codebase and revise
 - "depends_on" must be minimal and correct — only dependencies a story genuinely cannot start without.
 - "context" must let an implementer start without re-discovering the architecture.
 - Prefer the approach with the fewest touched lines.
+- Every story must have 1-10 slices. If a story bundles multiple behaviors into one slice or needs more than 10 slices, split it.
+- Every slice must have verifiable behaviors.
+- Every slice must have non-empty red_hints.
+- Every slice must follow one-behavior-per-slice.
+- refactor_hint is optional but should be present when it helps the mandatory refactor step.
+- Reject vague behaviors, guessed file paths in red_hint, and slices that combine multiple behaviors.
 
 Task:
 1. Read {{.PRDFile}} and inspect the codebase enough to verify every file, function, and symbol the stories reference.

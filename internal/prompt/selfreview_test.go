@@ -22,6 +22,11 @@ func TestPRDSelfReview(t *testing.T) {
 		"depends_on",
 		"context",
 		"fewest touched lines",
+		"slices",
+		"1-10",
+		"verifiable behaviors",
+		"non-empty red_hints",
+		"one-behavior-per-slice",
 	}
 	for _, phrase := range mustInclude {
 		if !strings.Contains(result, phrase) {

@@ -135,14 +135,26 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
 	}
+	if !strings.Contains(result, "slices") {
+		t.Error("PRD generation prompt should mention slices")
+	}
+	if !strings.Contains(result, "red_hint") {
+		t.Error("PRD generation prompt should mention red_hint")
+	}
+	if !strings.Contains(result, "refactor_hint") {
+		t.Error("PRD generation prompt should mention refactor_hint")
+	}
 	if !strings.Contains(result, "tech stack") {
 		t.Error("PRD generation prompt should mention capturing context")
 	}
 	if !strings.Contains(result, "3-5 holistic test scenarios") {
 		t.Error("PRD generation prompt should mention test scenarios")
 	}
-	if !strings.Contains(result, "specific, measurable requirements") {
-		t.Error("PRD generation prompt should mention requirements")
+	if !strings.Contains(result, "specific, measurable slices") {
+		t.Error("PRD generation prompt should mention slices as measurable units")
+	}
+	if strings.Contains(result, "acceptance_criteria") {
+		t.Error("PRD generation prompt should not mention acceptance_criteria")
 	}
 }
 
