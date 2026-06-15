@@ -518,6 +518,14 @@ func TestRunImplementationCommitsEachSliceWithSliceScopedMessage(t *testing.T) {
 	if !strings.Contains(commitMessages[1], "story-1") || !strings.Contains(commitMessages[1], "slice-2") {
 		t.Fatalf("second slice commit subject = %q, want story and slice ids", commitMessages[1])
 	}
+
+	loaded, err := prd.Load(cfg)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !loaded.GetStory("story-1").Passes {
+		t.Fatal("expected story to be marked passed after the final slice")
+	}
 }
 
 func TestRunImplementationOmitsPassedSlicesFromPrompt(t *testing.T) {
