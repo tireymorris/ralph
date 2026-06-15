@@ -56,12 +56,15 @@ func TestPrintStoryDetails(t *testing.T) {
 	p := &prd.PRD{
 		Stories: []*prd.Story{
 			{
-				ID:                 "story-1",
-				Title:              "Test Story",
-				Priority:           1,
-				Description:        "A test story",
-				DependsOn:          []string{"story-0"},
-				AcceptanceCriteria: []string{"AC1", "AC2"},
+				ID:          "story-1",
+				Title:       "Test Story",
+				Priority:    1,
+				Description: "A test story",
+				DependsOn:   []string{"story-0"},
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "AC1", RedHint: "red it"},
+					{ID: "slice-2", Behavior: "AC2", RedHint: "red it again", RefactorHint: "extract helper"},
+				},
 			},
 		},
 	}
@@ -82,8 +85,11 @@ func TestPrintStoryDetails(t *testing.T) {
 	if !strings.Contains(output, "story-0") {
 		t.Error("output should contain dependency")
 	}
-	if !strings.Contains(output, "AC1") {
-		t.Error("output should contain acceptance criteria")
+	if !strings.Contains(output, "Slices:") {
+		t.Error("output should contain slice section")
+	}
+	if !strings.Contains(output, "extract helper") {
+		t.Error("output should contain refactor hint")
 	}
 }
 

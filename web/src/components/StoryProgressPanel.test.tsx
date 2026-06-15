@@ -14,7 +14,14 @@ const expandedPRD = {
       id: "story-1",
       title: "Completed story",
       description: "Done already",
-      acceptance_criteria: ["shows as done"],
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "shows as done",
+          red_hint: "make it fail",
+          passes: true,
+        },
+      ],
       priority: 1,
       depends_on: ["setup"],
       passes: true,
@@ -23,7 +30,15 @@ const expandedPRD = {
       id: "story-2",
       title: "Pending story",
       description: "Still pending",
-      acceptance_criteria: ["shows as pending"],
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "shows as pending",
+          red_hint: "make it fail",
+          refactor_hint: "extract helper",
+          passes: false,
+        },
+      ],
       priority: 2,
       passes: false,
     },
@@ -41,5 +56,13 @@ describe("StoryProgressPanel", () => {
     expect(screen.getByText("Completed story")).toBeInTheDocument();
     expect(screen.getByText("Pending story")).toBeInTheDocument();
     expect(screen.getByText("1/2 done")).toBeInTheDocument();
+  });
+
+  it("renders slice progress and refactor hints", () => {
+    render(<StoryProgressPanel prd={expandedPRD} />);
+
+    expect(screen.getByText("shows as done")).toBeInTheDocument();
+    expect(screen.getByText("extract helper")).toBeInTheDocument();
+    expect(screen.getByText("1/1 slices done")).toBeInTheDocument();
   });
 });

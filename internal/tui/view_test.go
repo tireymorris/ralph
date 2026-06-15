@@ -498,12 +498,12 @@ func TestViewPhaseClarifyingInstructionWrap(t *testing.T) {
 	}
 }
 
-func TestViewPhasePRDReviewLongAcceptanceCriteria(t *testing.T) {
+func TestViewPhasePRDReviewLongSliceBehavior(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	criterion := "START_" + strings.Repeat("x", 108) + "_END__"
-	if len(criterion) != 120 {
-		t.Fatalf("criterion length = %d, want 120", len(criterion))
+	behavior := "START_" + strings.Repeat("x", 108) + "_END__"
+	if len(behavior) != 120 {
+		t.Fatalf("behavior length = %d, want 120", len(behavior))
 	}
 	m.phase = PhasePRDReview
 	m.prd = &prd.PRD{
@@ -512,7 +512,11 @@ func TestViewPhasePRDReviewLongAcceptanceCriteria(t *testing.T) {
 			ID:                 "1",
 			Title:              "Story",
 			Passes:             false,
-			AcceptanceCriteria: []string{criterion},
+			Slices: []*prd.Slice{{
+				ID:       "slice-1",
+				Behavior: behavior,
+				RedHint:  "make it fail",
+			}},
 		}},
 	}
 	m.width = 80
@@ -528,16 +532,16 @@ func TestViewPhasePRDReviewLongAcceptanceCriteria(t *testing.T) {
 		}
 		return -1
 	}
-	firstLine := lineIndex(criterion[:20])
-	secondLine := lineIndex(criterion[len(criterion)-20:])
+	firstLine := lineIndex(behavior[:20])
+	secondLine := lineIndex(behavior[len(behavior)-20:])
 	if firstLine < 0 || secondLine < 0 {
-		t.Fatalf("View() missing criterion text (first=%d second=%d)", firstLine, secondLine)
+		t.Fatalf("View() missing slice behavior text (first=%d second=%d)", firstLine, secondLine)
 	}
 	if firstLine == secondLine {
-		t.Errorf("View() should wrap acceptance criterion across lines, both segments on line %d", firstLine)
+		t.Errorf("View() should wrap slice behavior across lines, both segments on line %d", firstLine)
 	}
 	if !strings.Contains(strings.Split(view, "\n")[firstLine], "      - ") {
-		t.Errorf("first criterion line should start with indent prefix, got %q", strings.Split(view, "\n")[firstLine])
+		t.Errorf("first slice line should start with indent prefix, got %q", strings.Split(view, "\n")[firstLine])
 	}
 }
 

@@ -21,7 +21,15 @@ const samplePRD = {
       id: "story-1",
       title: "First story",
       description: "Do thing",
-      acceptance_criteria: ["works"],
+      slices: [
+        {
+          id: "slice-1",
+          behavior: "works",
+          red_hint: "make it fail",
+          refactor_hint: "extract helper",
+          passes: false,
+        },
+      ],
       priority: 1,
       passes: false,
     },
@@ -63,5 +71,12 @@ describe("PRDReviewPanel", () => {
     expect(
       screen.getByLabelText(/request changes/i, { selector: "textarea" }),
     ).toHaveClass("composer-input");
+  });
+
+  it("renders slice details and refactor hints", () => {
+    render(<PRDReviewPanel runId="run-1" prd={samplePRD} />);
+    expect(screen.getByText("works")).toBeInTheDocument();
+    expect(screen.getByText("make it fail")).toBeInTheDocument();
+    expect(screen.getByText("extract helper")).toBeInTheDocument();
   });
 });

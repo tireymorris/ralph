@@ -29,6 +29,7 @@ export default function StoryProgressPanel({
         {prd.stories.map((story, i) => {
           const status = storyStatus(story);
           const isCurrent = i === currentIndex;
+          const completedSlices = story.slices.filter((slice) => slice.passes).length;
           return (
             <li key={story.id}>
               <details
@@ -48,6 +49,20 @@ export default function StoryProgressPanel({
                 <p className="story-progress-item-description">
                   {story.description}
                 </p>
+                <p className="story-progress-item-description">
+                  {story.slices.length > 0
+                    ? `${completedSlices}/${story.slices.length} slices done`
+                    : "0/0 slices done"}
+                </p>
+                <ul className="story-progress-slice-list">
+                  {story.slices.map((slice) => (
+                    <li key={slice.id} className="story-progress-slice">
+                      <strong>{slice.behavior}</strong>
+                      <span>{slice.red_hint}</span>
+                      {slice.refactor_hint ? <em>{slice.refactor_hint}</em> : null}
+                    </li>
+                  ))}
+                </ul>
               </details>
             </li>
           );

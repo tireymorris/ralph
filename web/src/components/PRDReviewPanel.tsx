@@ -69,6 +69,15 @@ export default function PRDReviewPanel({
             <div>
               <strong>{story.title}</strong>
               <p>{story.description}</p>
+              <ul className="prd-review-slices">
+                {story.slices.map((slice) => (
+                  <li key={slice.id}>
+                    <strong>{slice.behavior}</strong>
+                    <span>{slice.red_hint}</span>
+                    {slice.refactor_hint ? <em>{slice.refactor_hint}</em> : null}
+                  </li>
+                ))}
+              </ul>
             </div>
           </li>
         ))}

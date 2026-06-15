@@ -186,30 +186,33 @@ func TestPRDGeneration(t *testing.T) {
 
 func TestStoryImplementation(t *testing.T) {
 	tests := []struct {
-		name               string
-		storyID            string
-		title              string
-		description        string
-		acceptanceCriteria []string
-		featureTestSpec    string
-		context            string
-		prdFile            string
-		completed          int
-		total              int
-		mustInclude        []string
-		mustNotInclude     []string
+		name            string
+		storyID         string
+		title           string
+		description     string
+		slices          []SliceData
+		featureTestSpec string
+		context         string
+		prdFile         string
+		completed       int
+		total           int
+		mustInclude     []string
+		mustNotInclude  []string
 	}{
 		{
-			name:               "basic story without context or test spec",
-			storyID:            "story-1",
-			title:              "Add login",
-			description:        "Implement login functionality",
-			acceptanceCriteria: []string{"User can login", "Error on bad credentials"},
-			featureTestSpec:    "",
-			context:            "",
-			prdFile:            "prd.json",
-			completed:          0,
-			total:              3,
+			name:        "basic story without context or test spec",
+			storyID:     "story-1",
+			title:       "Add login",
+			description: "Implement login functionality",
+			slices: []SliceData{
+				{ID: "slice-1", Behavior: "User can login", RedHint: "add failing test for login"},
+				{ID: "slice-2", Behavior: "Error on bad credentials", RedHint: "add failing test for bad credentials"},
+			},
+			featureTestSpec: "",
+			context:         "",
+			prdFile:         "prd.json",
+			completed:       0,
+			total:           3,
 			mustInclude: []string{
 				"Add login",
 				"story-1",
@@ -222,20 +225,23 @@ func TestStoryImplementation(t *testing.T) {
 			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC", "CRITIQUE"},
 		},
 		{
-			name:               "story with context and feature test spec",
-			storyID:            "story-1",
-			title:              "Add feature",
-			description:        "Implement feature",
-			acceptanceCriteria: []string{"Works"},
-			featureTestSpec:    "Test end-to-end: 1) Login works, 2) Errors handled",
-			context:            "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'.",
-			prdFile:            "prd.json",
-			completed:          0,
-			total:              2,
+			name:        "story with context and feature test spec",
+			storyID:     "story-1",
+			title:       "Add feature",
+			description: "Implement feature",
+			slices: []SliceData{
+				{ID: "slice-1", Behavior: "Works", RedHint: "add failing test", RefactorHint: "extract shared helper"},
+			},
+			featureTestSpec: "Test end-to-end: 1) Login works, 2) Errors handled",
+			context:         "Ruby 3.2 with RSpec. Tests in spec/ directory. Run with 'bundle exec rspec'.",
+			prdFile:         "prd.json",
+			completed:       0,
+			total:           2,
 			mustInclude: []string{
 				"Add feature",
 				"Implement feature",
 				"Works",
+				"extract shared helper",
 				"CODEBASE CONTEXT",
 				"Ruby 3.2 with RSpec",
 				"bundle exec rspec",
@@ -244,17 +250,21 @@ func TestStoryImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:               "multiple acceptance criteria joined",
-			storyID:            "story-3",
-			title:              "T",
-			description:        "D",
-			acceptanceCriteria: []string{"A", "B", "C"},
-			featureTestSpec:    "",
-			context:            "",
-			prdFile:            "prd.json",
-			completed:          0,
-			total:              1,
-			mustInclude:        []string{"A; B; C"},
+			name:        "multiple slices rendered",
+			storyID:     "story-3",
+			title:       "T",
+			description: "D",
+			slices: []SliceData{
+				{ID: "slice-1", Behavior: "A", RedHint: "red A"},
+				{ID: "slice-2", Behavior: "B", RedHint: "red B", RefactorHint: "refactor B"},
+				{ID: "slice-3", Behavior: "C", RedHint: "red C"},
+			},
+			featureTestSpec: "",
+			context:         "",
+			prdFile:         "prd.json",
+			completed:       0,
+			total:           1,
+			mustInclude:     []string{"Slice 1", "Slice 2", "Slice 3", "refactor B"},
 		},
 	}
 
@@ -264,7 +274,7 @@ func TestStoryImplementation(t *testing.T) {
 				tt.storyID,
 				tt.title,
 				tt.description,
-				tt.acceptanceCriteria,
+				tt.slices,
 				tt.featureTestSpec,
 				tt.context,
 				tt.prdFile,
@@ -283,6 +293,28 @@ func TestStoryImplementation(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestStoryImplementationUsesSliceWording(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Title",
+		"Desc",
+		[]SliceData{{ID: "slice-1", Behavior: "B", RedHint: "R", RefactorHint: "extract helper"}},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	if !strings.Contains(result, "every slice passes") {
+		t.Fatalf("StoryImplementation() should describe slice completion, got:\n%s", result)
+	}
+	if !strings.Contains(result, "Refactor hint") {
+		t.Fatalf("StoryImplementation() should expose optional refactor hints, got:\n%s", result)
 	}
 }
 

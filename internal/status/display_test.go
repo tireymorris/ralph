@@ -128,6 +128,46 @@ func TestDisplay_AllCompletedStories(t *testing.T) {
 	}
 }
 
+func TestDisplay_ShowsSliceProgress(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := &config.Config{PRDFile: "prd.json", WorkDir: tmpDir}
+
+	testPRD := &prd.PRD{
+		ProjectName: "Slice Project",
+		Stories: []*prd.Story{
+			{
+				ID:       "story-1",
+				Title:    "Sliced story",
+				Priority: 1,
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "red first", RedHint: "write failing test", Passes: true},
+					{ID: "slice-2", Behavior: "refactor second", RedHint: "cover the second case", RefactorHint: "extract helper", Passes: false},
+				},
+			},
+		},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("Failed to save test PRD: %v", err)
+	}
+
+	output := captureStdout(t, func() {
+		if err := Display(cfg); err != nil {
+			t.Errorf("Display() returned error: %v", err)
+		}
+	})
+
+	for _, want := range []string{
+		"1/2 slices complete",
+		"red first",
+		"refactor second",
+		"extract helper",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("output missing %q\ngot: %s", want, output)
+		}
+	}
+}
+
 func TestDisplay_CorruptedPRD(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := &config.Config{PRDFile: "corrupted.json", WorkDir: tmpDir}

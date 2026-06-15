@@ -228,10 +228,10 @@ func TestGetRunStoryProgress(t *testing.T) {
   "version": 1,
   "project_name": "test",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": true},
-    {"id": "s2", "title": "b", "description": "d", "acceptance_criteria": ["c"], "priority": 2, "passes": false},
-    {"id": "s3", "title": "c", "description": "d", "acceptance_criteria": ["c"], "priority": 3, "passes": false},
-    {"id": "s4", "title": "d", "description": "d", "acceptance_criteria": ["c"], "priority": 4, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "first", "red_hint": "test it", "passes": true}], "priority": 1, "passes": true},
+    {"id": "s2", "title": "b", "description": "d", "slices": [{"id": "slice-1", "behavior": "second", "red_hint": "test it", "refactor_hint": "extract helper", "passes": false}], "priority": 2, "passes": false},
+    {"id": "s3", "title": "c", "description": "d", "slices": [{"id": "slice-1", "behavior": "third", "red_hint": "test it", "passes": false}], "priority": 3, "passes": false},
+    {"id": "s4", "title": "d", "description": "d", "slices": [{"id": "slice-1", "behavior": "fourth", "red_hint": "test it", "passes": false}], "priority": 4, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -268,6 +268,18 @@ func TestGetRunStoryProgress(t *testing.T) {
 		StoryProgress struct {
 			Completed int `json:"completed"`
 			Total     int `json:"total"`
+			Stories   []struct {
+				ID       string `json:"id"`
+				Title    string `json:"title"`
+				Passes   bool   `json:"passes"`
+				Slices   []struct {
+					ID           string `json:"id"`
+					Behavior     string `json:"behavior"`
+					RedHint      string `json:"red_hint"`
+					RefactorHint string `json:"refactor_hint"`
+					Passes       bool   `json:"passes"`
+				} `json:"slices"`
+			} `json:"stories"`
 		} `json:"story_progress"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
@@ -278,6 +290,12 @@ func TestGetRunStoryProgress(t *testing.T) {
 	}
 	if body.StoryProgress.Total != 4 {
 		t.Fatalf("total = %d, want 4", body.StoryProgress.Total)
+	}
+	if len(body.StoryProgress.Stories) != 4 {
+		t.Fatalf("stories = %d, want 4", len(body.StoryProgress.Stories))
+	}
+	if body.StoryProgress.Stories[1].Slices[0].RefactorHint != "extract helper" {
+		t.Fatalf("refactor_hint = %q, want extract helper", body.StoryProgress.Stories[1].Slices[0].RefactorHint)
 	}
 }
 
@@ -438,4 +456,3 @@ func TestListRunsEmpty(t *testing.T) {
 		t.Fatalf("len(list) = %d, want 0", len(list))
 	}
 }
-

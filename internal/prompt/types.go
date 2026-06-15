@@ -39,16 +39,24 @@ type PRDSelfReviewData struct {
 }
 
 type StoryImplementData struct {
-	StoryID            string
-	Title              string
-	Description        string
-	AcceptanceCriteria string
-	FeatureTestSpec    string
-	Context            string
-	PRDFile            string
-	Completed          int
-	Total              int
-	DependsOn          []string
+	StoryID         string
+	Title           string
+	Description     string
+	Slices          []SliceData
+	FeatureTestSpec string
+	Context         string
+	PRDFile         string
+	Completed       int
+	Total           int
+	DependsOn       []string
+}
+
+type SliceData struct {
+	ID           string
+	Behavior     string
+	RedHint      string
+	RefactorHint string
+	Passes       bool
 }
 
 type DiffReviewData struct {

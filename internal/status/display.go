@@ -44,6 +44,21 @@ func Display(cfg *config.Config) error {
 
 		fmt.Printf("%s [%s] %s (priority: %d)\n",
 			status, story.ID, story.Title, story.Priority)
+		if len(story.Slices) == 0 {
+			continue
+		}
+		fmt.Printf("  %d/%d slices complete\n", story.CompletedSliceCount(), len(story.Slices))
+		for _, slice := range story.Slices {
+			sliceStatus := "⏳"
+			if slice.Passes {
+				sliceStatus = "✓"
+			}
+			fmt.Printf("    %s [%s] %s\n", sliceStatus, slice.ID, slice.Behavior)
+			fmt.Printf("      Red hint: %s\n", slice.RedHint)
+			if slice.RefactorHint != "" {
+				fmt.Printf("      Refactor hint: %s\n", slice.RefactorHint)
+			}
+		}
 	}
 
 	return nil

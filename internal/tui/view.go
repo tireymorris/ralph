@@ -334,12 +334,12 @@ func (m *Model) renderReviewStory(s *prd.Story) string {
 	}
 	b.WriteString(storyItemStyle.Render(fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)))
 	b.WriteString("\n")
-	if len(s.AcceptanceCriteria) > 0 {
-		b.WriteString(mutedStyle.Render("    Acceptance criteria:"))
+	if len(s.Slices) > 0 {
+		b.WriteString(mutedStyle.Render("    Slices:"))
 		b.WriteString("\n")
 		wrapWidth := max(20, m.mainPane.Width-6)
-		for _, ac := range s.AcceptanceCriteria {
-			wrapped := wrapText(ac, wrapWidth)
+		for _, slice := range s.Slices {
+			wrapped := wrapText(slice.Behavior, wrapWidth)
 			lines := strings.Split(wrapped, "\n")
 			for i, line := range lines {
 				if i == 0 {
@@ -347,6 +347,12 @@ func (m *Model) renderReviewStory(s *prd.Story) string {
 				} else {
 					b.WriteString(mutedStyle.Render("        " + line))
 				}
+				b.WriteString("\n")
+			}
+			b.WriteString(mutedStyle.Render("        Red hint: " + slice.RedHint))
+			b.WriteString("\n")
+			if slice.RefactorHint != "" {
+				b.WriteString(mutedStyle.Render("        Refactor hint: " + slice.RefactorHint))
 				b.WriteString("\n")
 			}
 		}

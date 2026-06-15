@@ -1,7 +1,5 @@
 package prompt
 
-import "strings"
-
 // QuestionAnswer holds a clarifying question and the user's answer.
 type QuestionAnswer struct {
 	Question string
@@ -65,17 +63,17 @@ func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
 	})
 }
 
-func StoryImplementation(storyID, title, description string, acceptanceCriteria []string, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
+func StoryImplementation(storyID, title, description string, slices []SliceData, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
 	return mustRender("story-implement", StoryImplementData{
-		StoryID:            storyID,
-		Title:              title,
-		Description:        description,
-		AcceptanceCriteria: strings.Join(acceptanceCriteria, "; "),
-		FeatureTestSpec:    featureTestSpec,
-		Context:            codebaseContext,
-		PRDFile:            prdFile,
-		Completed:          completed,
-		Total:              total,
-		DependsOn:          dependsOn,
+		StoryID:         storyID,
+		Title:           title,
+		Description:     description,
+		Slices:          slices,
+		FeatureTestSpec: featureTestSpec,
+		Context:         codebaseContext,
+		PRDFile:         prdFile,
+		Completed:       completed,
+		Total:           total,
+		DependsOn:       dependsOn,
 	})
 }

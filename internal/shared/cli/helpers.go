@@ -39,10 +39,18 @@ func PrintStoryDetails(w io.Writer, p *prd.PRD) {
 			fmt.Fprintf(w, "  Depends on: %s\n", strings.Join(s.DependsOn, ", "))
 		}
 		fmt.Fprintf(w, "  Description: %s\n", s.Description)
-		if len(s.AcceptanceCriteria) > 0 {
-			fmt.Fprintln(w, "  Acceptance Criteria:")
-			for _, ac := range s.AcceptanceCriteria {
-				fmt.Fprintf(w, "    - %s\n", ac)
+		if len(s.Slices) > 0 {
+			fmt.Fprintf(w, "  Slices: %d/%d complete\n", s.CompletedSliceCount(), len(s.Slices))
+			for _, slice := range s.Slices {
+				status := "[ ]"
+				if slice.Passes {
+					status = "[x]"
+				}
+				fmt.Fprintf(w, "    %s %s\n", status, slice.Behavior)
+				fmt.Fprintf(w, "      Red hint: %s\n", slice.RedHint)
+				if slice.RefactorHint != "" {
+					fmt.Fprintf(w, "      Refactor hint: %s\n", slice.RefactorHint)
+				}
 			}
 		}
 		fmt.Fprintln(w)

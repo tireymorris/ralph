@@ -8,11 +8,16 @@ FEATURE TEST SPEC:
 DEPENDENCIES: This story depends on: {{join .DependsOn ", "}}
 Before starting, re-read {{.PRDFile}} and confirm each of those stories has "passes": true. If any dependency is not yet passing, stop and do not implement this story.{{end}}
 Description: {{.Description}}
-Done when: {{.AcceptanceCriteria}}
+SLICES:
+{{range $index, $slice := .Slices}}- Slice {{add $index 1}} ({{if $slice.Passes}}passed{{else}}pending{{end}})
+  Behavior: {{$slice.Behavior}}
+  Red hint: {{$slice.RedHint}}{{if $slice.RefactorHint}}
+  Refactor hint: {{$slice.RefactorHint}}{{end}}
+{{end}}Done when: every slice passes, the PRD has been updated after each slice, and the story passes only after the final slice.
 
 {{template "commit-rules" .}}
 
-When every acceptance criterion passes and the full test suite is green, stop. Ralph will automatically mark the story complete and proceed to the next one.
+When every slice passes and the full test suite is green, stop. Ralph will automatically mark the story complete and proceed to the next one.
 
 After completing this story, update the "context" field in {{.PRDFile}} ONLY if you established a new pattern, added a new module, or discovered a convention that future stories need to know. Skip the context update for routine stories.
 

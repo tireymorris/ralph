@@ -81,7 +81,7 @@ func TestAllTemplatesExecuteWithMinimalData(t *testing.T) {
 			return PRDClarificationRevision("build x", "prd.json", []QuestionAnswer{{Question: "Q?", Answer: "A"}})
 		}},
 		{"story-implement", func() string {
-			return StoryImplementation("story-1", "Title", "Desc", []string{"done"}, "", "", "prd.json", 0, 1, nil)
+			return StoryImplementation("story-1", "Title", "Desc", []SliceData{{ID: "slice-1", Behavior: "done", RedHint: "red"}}, "", "", "prd.json", 0, 1, nil)
 		}},
 		{"diff-review", func() string {
 			return CriticalDiffReview("", "prd.json", nil)

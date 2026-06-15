@@ -1,6 +1,24 @@
 export interface StoryProgress {
   completed: number;
   total: number;
+  stories?: StoryProgressStory[];
+}
+
+export interface StoryProgressStory {
+  id: string;
+  title: string;
+  passes: boolean;
+  completed_slices: number;
+  total_slices: number;
+  slices?: StoryProgressSlice[];
+}
+
+export interface StoryProgressSlice {
+  id: string;
+  behavior: string;
+  red_hint: string;
+  refactor_hint?: string;
+  passes: boolean;
 }
 
 export interface CreateRunRequestOptions {

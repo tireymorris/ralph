@@ -24,8 +24,26 @@ type createRunRequest struct {
 }
 
 type storyProgress struct {
-	Completed int `json:"completed"`
-	Total     int `json:"total"`
+	Completed int                  `json:"completed"`
+	Total     int                  `json:"total"`
+	Stories   []storyProgressStory `json:"stories,omitempty"`
+}
+
+type storyProgressStory struct {
+	ID              string                `json:"id"`
+	Title           string                `json:"title"`
+	Passes          bool                  `json:"passes"`
+	CompletedSlices  int                   `json:"completed_slices"`
+	TotalSlices      int                   `json:"total_slices"`
+	Slices          []storyProgressSlice  `json:"slices,omitempty"`
+}
+
+type storyProgressSlice struct {
+	ID           string `json:"id"`
+	Behavior     string `json:"behavior"`
+	RedHint      string `json:"red_hint"`
+	RefactorHint string `json:"refactor_hint,omitempty"`
+	Passes       bool   `json:"passes"`
 }
 
 type runResponse struct {
@@ -206,8 +224,37 @@ func (a *API) storyProgress(run *runs.Run) *storyProgress {
 	if err != nil {
 		return nil
 	}
-	return &storyProgress{
+	progress := &storyProgress{
 		Completed: p.CompletedCount(),
 		Total:     len(p.Stories),
 	}
+	progress.Stories = make([]storyProgressStory, 0, len(p.Stories))
+	for _, story := range p.Stories {
+		progress.Stories = append(progress.Stories, storyProgressStory{
+			ID:             story.ID,
+			Title:          story.Title,
+			Passes:         story.Passes,
+			CompletedSlices: story.CompletedSliceCount(),
+			TotalSlices:     len(story.Slices),
+			Slices:          toStoryProgressSlices(story.Slices),
+		})
+	}
+	return progress
+}
+
+func toStoryProgressSlices(slices []*prd.Slice) []storyProgressSlice {
+	out := make([]storyProgressSlice, 0, len(slices))
+	for _, slice := range slices {
+		if slice == nil {
+			continue
+		}
+		out = append(out, storyProgressSlice{
+			ID:           slice.ID,
+			Behavior:     slice.Behavior,
+			RedHint:      slice.RedHint,
+			RefactorHint: slice.RefactorHint,
+			Passes:       slice.Passes,
+		})
+	}
+	return out
 }
