@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "project_name": "Story Slice Progress",
   "branch_name": "feature/story-slice-progress",
   "context": "Go 1.24 CLI/TUI code lives under internal/, with shared PRD state and validation in internal/shared/prd. The web UI is a Vite + React + TypeScript app in web/src, the run detail page loads PRDs from GET /api/runs/{id}/prd through web/src/hooks/usePRDLoader.ts, and the implementation story list is rendered by web/src/components/StoryProgressPanel.tsx inside web/src/pages/RunDetail.tsx. The TUI implementation view lives in internal/tui/view.go and already uses getStatusIcon/getStatusText in internal/tui/styles.go. The backend run response already exposes story_progress with per-story completed_slices, total_slices, and per-slice passes flags in internal/web/handlers/runs.go. Run the focused tests with go test ./internal/shared/prd ./internal/tui ./internal/web/handlers \u0026\u0026 cd web \u0026\u0026 npm test.",
@@ -63,7 +63,7 @@
         }
       ],
       "priority": 2,
-      "passes": false
+      "passes": true
     },
     {
       "id": "story-3",
@@ -75,18 +75,18 @@
           "behavior": "The TUI implementation view prints each slice in the current story with a visible completed, in-progress, or pending status.",
           "red_hint": "Add a failing internal/tui/view_test.go case that renders PhaseImplementation with mixed slice progress and expects the slice status text and icons under the active story.",
           "refactor_hint": "Reuse the existing status icon and text helpers instead of inventing a second styling path.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-2",
           "behavior": "The current story row stays highlighted while its slice list renders.",
           "red_hint": "Add a failing internal/tui/view_test.go case that renders a current story and a non-current story and asserts the selected styling stays on the current story row after slice rows are added.",
           "refactor_hint": "Keep the story highlight logic separate from the slice rows so the two concerns do not drift.",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 3,
-      "passes": false
+      "passes": true
     }
   ]
 }

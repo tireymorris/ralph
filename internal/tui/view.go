@@ -365,8 +365,33 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	icon := getStatusIcon(s.Passes, isCurrentStory)
 	status := getStatusText(s.Passes, isCurrentStory)
 	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
+	var b strings.Builder
 	if isCurrentStory {
-		return selectedStoryStyle.Render(line)
+		b.WriteString(selectedStoryStyle.Render(line))
+		if len(s.Slices) > 0 {
+			completedSlices := s.CompletedSliceCount()
+			nextPendingSlice := s.NextPendingSlice()
+			b.WriteString("\n")
+			for i, slice := range s.Slices {
+				b.WriteString(m.renderImplementationSlice(slice, i, completedSlices, nextPendingSlice))
+				if i < len(s.Slices)-1 {
+					b.WriteString("\n")
+				}
+			}
+		}
+		return b.String()
 	}
 	return storyItemStyle.Render(line)
+}
+
+func (m *Model) renderImplementationSlice(slice *prd.Slice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {
+	passes := slice.Passes
+	inProgress := nextPendingSlice != nil && slice.ID == nextPendingSlice.ID
+	if index < completedSlices {
+		passes = true
+		inProgress = false
+	}
+
+	sliceLine := fmt.Sprintf("    %s %s  %s", getStatusIcon(passes, inProgress), slice.Behavior, getStatusText(passes, inProgress))
+	return storyItemStyle.Render(sliceLine)
 }

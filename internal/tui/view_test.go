@@ -230,6 +230,92 @@ func TestViewPhaseImplementation(t *testing.T) {
 	}
 }
 
+func TestViewPhaseImplementationShowsSliceProgress(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story One",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "write failing test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "write failing test", Passes: false},
+				{ID: "slice-3", Behavior: "third", RedHint: "write failing test", Passes: false},
+			},
+		}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "Story One") {
+		t.Fatal("View() should contain the active story title")
+	}
+	for _, want := range []string{"completed", "in progress", "pending"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("View() should contain slice status %q, got %q", want, view)
+		}
+	}
+	for _, want := range []string{iconCompleted, iconInProgress, iconPending} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("View() should contain slice status icon %q, got %q", want, view)
+		}
+	}
+}
+
+func TestViewPhaseImplementationKeepsCurrentStoryHighlightedWithSlices(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{
+			{
+				ID:    "1",
+				Title: "Story One",
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "first", RedHint: "write failing test", Passes: true},
+					{ID: "slice-2", Behavior: "second", RedHint: "write failing test", Passes: false},
+				},
+			},
+			{ID: "2", Title: "Story Two", Passes: true},
+		},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	lines := strings.Split(view, "\n")
+	currentStoryLine := -1
+	otherStoryLine := -1
+	for i, line := range lines {
+		if strings.Contains(line, "Story One") {
+			currentStoryLine = i
+		}
+		if strings.Contains(line, "Story Two") {
+			otherStoryLine = i
+		}
+	}
+	if currentStoryLine < 0 {
+		t.Fatal("View() should contain the current story line")
+	}
+	if otherStoryLine < 0 {
+		t.Fatal("View() should contain the other story line")
+	}
+	if !strings.Contains(lines[currentStoryLine], "┃") {
+		t.Fatalf("current story line should remain highlighted, got %q", lines[currentStoryLine])
+	}
+	if strings.Contains(lines[otherStoryLine], "┃") {
+		t.Fatalf("non-current story line should not be highlighted, got %q", lines[otherStoryLine])
+	}
+}
+
 func TestViewPhaseImplementationNilPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
@@ -509,9 +595,9 @@ func TestViewPhasePRDReviewLongSliceBehavior(t *testing.T) {
 	m.prd = &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{{
-			ID:                 "1",
-			Title:              "Story",
-			Passes:             false,
+			ID:     "1",
+			Title:  "Story",
+			Passes: false,
 			Slices: []*prd.Slice{{
 				ID:       "slice-1",
 				Behavior: behavior,
