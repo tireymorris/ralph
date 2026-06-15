@@ -31,13 +31,16 @@ func TestUnmarkStories_unknownID(t *testing.T) {
 
 func TestUnmarkAllStories(t *testing.T) {
 	p := &PRD{Stories: []*Story{
-		{ID: "story-1", Passes: true},
-		{ID: "story-2", Passes: true},
+		{ID: "story-1", Passes: true, Slices: []*Slice{{ID: "slice-1", Behavior: "one", RedHint: "red", Passes: true}}},
+		{ID: "story-2", Passes: true, Slices: []*Slice{{ID: "slice-2", Behavior: "two", RedHint: "red", Passes: true}}},
 	}}
 	p.UnmarkAllStories()
 	for _, id := range []string{"story-1", "story-2"} {
 		if p.GetStory(id).Passes {
 			t.Errorf("expected %s Passes false", id)
+		}
+		if got := p.GetStory(id).CompletedSliceCount(); got != 0 {
+			t.Errorf("expected %s slice passes reset, got %d", id, got)
 		}
 	}
 }

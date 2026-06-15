@@ -31,6 +31,7 @@ func (p *PRD) Snapshot(path string) error {
 func (p *PRD) UnmarkAllStories() {
 	for _, story := range p.Stories {
 		story.Passes = false
+		story.ResetSlicePasses()
 	}
 }
 

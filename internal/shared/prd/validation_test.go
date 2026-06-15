@@ -130,6 +130,64 @@ func TestStory_Validate(t *testing.T) {
 			wantErr: true,
 			errMsg:  "acceptance criteria",
 		},
+		{
+			name: "duplicate slice IDs",
+			story: &Story{
+				ID:          "story-1",
+				Title:       "Story 1",
+				Description: "Description",
+				Slices: []*Slice{
+					{ID: "slice-1", Behavior: "first", RedHint: "red"},
+					{ID: "slice-1", Behavior: "second", RedHint: "red"},
+				},
+			},
+			seenIDs: make(map[string]bool),
+			wantErr: true,
+			errMsg:  "duplicate slice ID",
+		},
+		{
+			name: "empty slice behavior",
+			story: &Story{
+				ID:          "story-1",
+				Title:       "Story 1",
+				Description: "Description",
+				Slices: []*Slice{
+					{ID: "slice-1", RedHint: "red"},
+				},
+			},
+			seenIDs: make(map[string]bool),
+			wantErr: true,
+			errMsg:  "behavior cannot be empty",
+		},
+		{
+			name: "empty red hint",
+			story: &Story{
+				ID:          "story-1",
+				Title:       "Story 1",
+				Description: "Description",
+				Slices: []*Slice{
+					{ID: "slice-1", Behavior: "first"},
+				},
+			},
+			seenIDs: make(map[string]bool),
+			wantErr: true,
+			errMsg:  "red hint cannot be empty",
+		},
+		{
+			name: "mixed legacy and slices",
+			story: &Story{
+				ID:                 "story-1",
+				Title:              "Story 1",
+				Description:        "Description",
+				AcceptanceCriteria: []string{"criterion"},
+				Slices: []*Slice{
+					{ID: "slice-1", Behavior: "first", RedHint: "red"},
+				},
+			},
+			seenIDs: make(map[string]bool),
+			wantErr: true,
+			errMsg:  "both acceptance criteria and slices",
+		},
 	}
 
 	for _, tt := range tests {

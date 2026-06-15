@@ -12,11 +12,20 @@ const (
 	MaxAcceptanceCriteria = 50              // Maximum acceptance criteria per story
 )
 
+type Slice struct {
+	ID           string `json:"id"`
+	Behavior     string `json:"behavior"`
+	RedHint      string `json:"red_hint"`
+	RefactorHint string `json:"refactor_hint,omitempty"`
+	Passes       bool   `json:"passes"`
+}
+
 type Story struct {
 	ID                 string   `json:"id"`
 	Title              string   `json:"title"`
 	Description        string   `json:"description"`
-	AcceptanceCriteria []string `json:"acceptance_criteria"`
+	AcceptanceCriteria []string `json:"acceptance_criteria,omitempty"`
+	Slices             []*Slice `json:"slices,omitempty"`
 	Priority           int      `json:"priority"`
 	DependsOn          []string `json:"depends_on,omitempty"` // Story IDs this story depends on
 	Passes             bool     `json:"passes"`
@@ -114,6 +123,34 @@ func (p *PRD) CompletedCount() int {
 	return count
 }
 
+func (s *Story) CompletedSliceCount() int {
+	count := 0
+	for _, sl := range s.Slices {
+		if sl.Passes {
+			count++
+		}
+	}
+	return count
+}
+
+func (s *Story) AllSlicesPassed() bool {
+	for _, sl := range s.Slices {
+		if !sl.Passes {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Story) NextPendingSlice() *Slice {
+	for _, sl := range s.Slices {
+		if !sl.Passes {
+			return sl
+		}
+	}
+	return nil
+}
+
 func (p *PRD) AllCompleted() bool {
 	for _, story := range p.Stories {
 		if !story.Passes {
@@ -152,6 +189,27 @@ func (p *PRD) Validate() error {
 	return nil
 }
 
+func (p *PRD) normalizeLegacyStories() error {
+	for _, story := range p.Stories {
+		if len(story.Slices) > 0 && len(story.AcceptanceCriteria) > 0 {
+			return fmt.Errorf("story %q cannot contain both acceptance criteria and slices", story.ID)
+		}
+		if len(story.Slices) == 0 && len(story.AcceptanceCriteria) > 0 {
+			story.Slices = make([]*Slice, 0, len(story.AcceptanceCriteria))
+			for i, criterion := range story.AcceptanceCriteria {
+				behavior := criterion
+				story.Slices = append(story.Slices, &Slice{
+					ID:       fmt.Sprintf("slice-%d", i+1),
+					Behavior: behavior,
+					RedHint:  fmt.Sprintf("add failing test for: %s", behavior),
+				})
+			}
+			story.AcceptanceCriteria = nil
+		}
+	}
+	return nil
+}
+
 func (s *Story) Validate(seenIDs map[string]bool) error {
 	if s.ID == "" {
 		return errors.New("story ID cannot be empty")
@@ -171,6 +229,28 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	if len(s.AcceptanceCriteria) > MaxAcceptanceCriteria {
 		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
 	}
+	if len(s.Slices) > 0 && len(s.AcceptanceCriteria) > 0 {
+		return errors.New("story cannot use both acceptance criteria and slices")
+	}
+	sliceIDs := make(map[string]bool)
+	for i, sl := range s.Slices {
+		if sl == nil {
+			return fmt.Errorf("story %q slice %d cannot be nil", s.ID, i)
+		}
+		if sl.ID == "" {
+			return fmt.Errorf("story %q slice %d id cannot be empty", s.ID, i)
+		}
+		if sliceIDs[sl.ID] {
+			return fmt.Errorf("story %q has duplicate slice ID %q", s.ID, sl.ID)
+		}
+		sliceIDs[sl.ID] = true
+		if sl.Behavior == "" {
+			return fmt.Errorf("story %q slice %q behavior cannot be empty", s.ID, sl.ID)
+		}
+		if sl.RedHint == "" {
+			return fmt.Errorf("story %q slice %q red hint cannot be empty", s.ID, sl.ID)
+		}
+	}
 	for _, dep := range s.DependsOn {
 		if dep == "" {
 			return fmt.Errorf("story %q has empty dependency ID", s.ID)
@@ -180,6 +260,12 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 		}
 	}
 	return nil
+}
+
+func (s *Story) ResetSlicePasses() {
+	for _, sl := range s.Slices {
+		sl.Passes = false
+	}
 }
 
 func (p *PRD) dependenciesSatisfied(story *Story) bool {

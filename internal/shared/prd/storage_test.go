@@ -1,6 +1,7 @@
 package prd
 
 import (
+	"strings"
 	"os"
 	"path/filepath"
 	"sync"
@@ -47,6 +48,61 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 	if len(loaded.Stories) != len(original.Stories) {
 		t.Errorf("Stories count = %d, want %d", len(loaded.Stories), len(original.Stories))
+	}
+}
+
+func TestLoadConvertsLegacyAcceptanceCriteriaToSlices(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := newTestConfig(t, tmpDir, "legacy.json")
+
+	legacyJSON := `{
+  "project_name": "Legacy Project",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Legacy Story",
+      "description": "A legacy story",
+      "acceptance_criteria": ["criterion 1"],
+      "priority": 1,
+      "passes": false
+    }
+  ]
+}`
+	if err := os.WriteFile(cfg.PRDPath(), []byte(legacyJSON), 0600); err != nil {
+		t.Fatalf("write legacy PRD: %v", err)
+	}
+
+	loaded, err := Load(cfg)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if got := len(loaded.Stories); got != 1 {
+		t.Fatalf("len(stories) = %d, want 1", got)
+	}
+	story := loaded.Stories[0]
+	if got := len(story.Slices); got != 1 {
+		t.Fatalf("len(slices) = %d, want 1", got)
+	}
+	if story.Slices[0].Behavior != "criterion 1" {
+		t.Fatalf("slice behavior = %q, want %q", story.Slices[0].Behavior, "criterion 1")
+	}
+	if story.Slices[0].RedHint == "" {
+		t.Fatal("slice red_hint = empty, want legacy conversion hint")
+	}
+
+	if err := Save(cfg, loaded); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+	data, err := os.ReadFile(cfg.PRDPath())
+	if err != nil {
+		t.Fatalf("read saved PRD: %v", err)
+	}
+	if strings.Contains(string(data), "acceptance_criteria") {
+		t.Fatalf("saved PRD still contains acceptance_criteria: %s", string(data))
+	}
+	if !strings.Contains(string(data), `"slices"`) {
+		t.Fatalf("saved PRD does not contain slices: %s", string(data))
 	}
 }
 

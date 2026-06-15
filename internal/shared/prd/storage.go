@@ -32,6 +32,9 @@ func Load(cfg *config.Config) (*PRD, error) {
 		return nil, fmt.Errorf("failed to parse PRD file %q: %w", prdPath, err)
 	}
 
+	if err := p.normalizeLegacyStories(); err != nil {
+		return nil, fmt.Errorf("PRD legacy conversion failed for %q: %w", prdPath, err)
+	}
 	if err := p.Validate(); err != nil {
 		return nil, fmt.Errorf("PRD validation failed for %q: %w", prdPath, err)
 	}
@@ -43,6 +46,9 @@ func Load(cfg *config.Config) (*PRD, error) {
 func Save(cfg *config.Config, p *PRD) error {
 	prdPath := cfg.PRDPath()
 
+	if err := p.normalizeLegacyStories(); err != nil {
+		return fmt.Errorf("PRD normalization failed before saving %q: %w", prdPath, err)
+	}
 	if err := p.Validate(); err != nil {
 		return fmt.Errorf("PRD validation failed before saving %q: %w", prdPath, err)
 	}
