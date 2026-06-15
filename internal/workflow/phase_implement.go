@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
-	"ralph/internal/workflow/events"
 )
 
 func describeBlockedStories(p *prd.PRD, blocked []*prd.Story) string {
@@ -57,6 +54,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 					return err
 				}
 			}
+
 			e.emit(EventCompleted{})
 			return nil
 		}
@@ -81,67 +79,11 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		e.emit(EventStoryStarted{Story: story})
 
-		storyPrompt := prompt.StoryImplementation(
-			story.ID,
-			story.Title,
-			story.Description,
-			story.AcceptanceCriteria,
-			p.TestSpec,
-			p.Context,
-			e.cfg.PRDFile,
-			p.CompletedCount(),
-			len(p.Stories),
-			story.DependsOn,
-		)
-
-		runErr := e.runWithForwardedOutput(ctx, storyPrompt)
-		if runErr != nil {
-			recovered, recErr := e.runRecovery(ctx, p, prompt.RecoveryReasonStoryFailure, runErr.Error(), nil)
-			if recErr != nil {
-				logger.Error("implementation recovery failed", "error", recErr, "story_id", story.ID)
-				e.emit(EventError{Err: fmt.Errorf("implementation recovery failed for story %s: %w", story.ID, recErr)})
-				return fmt.Errorf("implementation recovery failed for story %s: %w", story.ID, recErr)
-			}
-			if recovered {
-				runErr = e.runWithForwardedOutput(ctx, storyPrompt)
-			}
-			if runErr != nil {
-				logger.Error("implementation runner failed", "error", runErr, "story_id", story.ID)
-				e.emit(EventError{Err: fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)})
-				return fmt.Errorf("implementation failed for story %s: %w", story.ID, runErr)
-			}
-		}
-
-		committed, commitErr := gitdiff.CommitChangedFiles(e.cfg.WorkDir, fmt.Sprintf("ralph: %s", story.ID))
-		if commitErr != nil {
-			logger.Error("failed to commit story changes", "error", commitErr, "story_id", story.ID)
-			e.emit(EventError{Err: fmt.Errorf("commit story %s changes: %w", story.ID, commitErr)})
-			return fmt.Errorf("commit story %s changes: %w", story.ID, commitErr)
-		}
-		if committed {
-			e.emit(EventOutput{Output: events.Output{Text: fmt.Sprintf("Committed story %s changes before review.", story.ID)}})
-		}
-
-		updatedPRD, loadErr := e.store.Load(e.cfg)
-		if loadErr != nil {
-			logger.Error("failed to reload PRD after story, cannot continue", "error", loadErr, "story_id", story.ID)
-			wrappedErr := fmt.Errorf("failed to reload PRD %s after story %s: %w", e.cfg.PRDFile, story.ID, loadErr)
-			e.emit(EventError{Err: wrappedErr})
-			return wrappedErr
-		}
-
-		updatedStory := updatedPRD.GetStory(story.ID)
-		if updatedStory == nil {
-			logger.Error("story disappeared after implementation", "story_id", story.ID)
-			e.emit(EventStoryCompleted{Story: story, Success: false})
-			continue
-		}
-
-		updatedStory.Passes = true
-		if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
-			logger.Warn("failed to save PRD after marking story complete", "error", saveErr, "story_id", story.ID)
-			e.emit(EventError{Err: fmt.Errorf("failed to save PRD after completing story %s: %w", story.ID, saveErr)})
-			return fmt.Errorf("failed to save PRD after completing story %s: %w", story.ID, saveErr)
+		updatedPRD, updatedStory, sliceErr := e.runStorySlices(ctx, p, story)
+		if sliceErr != nil {
+			logger.Error("implementation runner failed", "error", sliceErr, "story_id", story.ID)
+			e.emit(EventError{Err: sliceErr})
+			return sliceErr
 		}
 
 		logger.Debug("story completed", "story_id", story.ID)
