@@ -18,6 +18,7 @@ do not invent ad hoc slices; work only on the pending slice from {{.PRDFile}}.
 update slice.passes in {{.PRDFile}} after each slice before starting the next one.
 Done when: every slice passes, the PRD has been updated after each slice, and the story passes only after the final slice.
 
+{{template "working-conventions" .}}
 {{template "commit-rules" .}}
 
 When every slice passes and the full test suite is green, stop. Ralph will automatically mark the story complete and proceed to the next one.

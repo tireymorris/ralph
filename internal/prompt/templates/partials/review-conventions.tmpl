@@ -1,0 +1,10 @@
+{{define "review-conventions"}}
+REVIEW FOCUS:
+- Logic correctness, edge cases, error handling, security, and test quality — not formatting (linters own that).
+- Compare delivery against the PRD and observable behavior, not personal style preferences.
+- Flag scope creep: unrelated refactors, rename noise, or tests that duplicate the same proof.
+- Each finding must be specific and actionable: what is wrong, where, and what to do instead.
+- Prefer findings that would matter if the feature broke for users or operators, not cosmetic preferences.
+
+Use finding categories such as: missing-behavior, wrong-layer, test-gap, scope-creep, error-handling, security.
+{{end}}

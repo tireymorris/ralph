@@ -1,10 +1,12 @@
 {{define "commit-rules"}}
 Work in tight TDD cycles. Do NOT implement the whole story in one pass. Break it into the smallest independently testable slices you can, then for EACH slice:
 
-  a. RED — write one failing test for the next small piece of behavior. Use the project's actual test runner (see the codebase context if provided); do not invent a new framework. Run it. Confirm it fails for the right reason.
+  a. RED — write one failing test for the next small piece of behavior. Use the project's actual test runner (see the codebase context if provided); do not invent a new framework. Run it. Confirm it fails for the right reason (not a compile error, typo, or assertion on the wrong thing). If you already wrote production code before the test, delete it and implement fresh from the test — do not adapt existing code into the test after the fact.
   b. GREEN — write the minimum code needed to make that test pass. Run the new test. Run the rest of the existing tests to confirm no regressions.
   c. refactor (mandatory) — improve names/structure while tests stay green; use refactor_hint when present; no skipping refactor.
   d. COMMIT — commit just that slice on its own.
+
+Tests should assert observable behavior that users or systems depend on, not implementation details (internal state, private APIs, or cosmetic structure when a functional assertion exists).
 
 Ralph commits after each slice session and that commit is authoritative for history.
 Agent commits are optional fine-grained steps inside the slice, not required for progression.

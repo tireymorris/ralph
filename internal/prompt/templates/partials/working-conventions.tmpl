@@ -1,0 +1,8 @@
+{{define "working-conventions"}}
+WORKING CONVENTIONS:
+- Read nearby files in the same feature area before editing. Match the patterns already dominant there.
+- Extract helpers only when reuse is real — not preemptively.
+- Keep diffs focused: additive changes for the task. No drive-by refactors, renames, or reformatting of untouched code.
+- Before committing, scan the diff: if most changed lines are moves, renames, or style-only churn rather than new behavior, narrow the change.
+- Handle errors at system boundaries; return safe outcomes for expected failure paths instead of crashing user flows when the codebase already does that.
+{{end}}

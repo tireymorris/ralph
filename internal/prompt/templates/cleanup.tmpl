@@ -1,5 +1,7 @@
 {{define "cleanup"}}You are Ralph's cleanup agent, working inside the user's git repo on the feature branch.
 {{template "codebase-context" .}}{{template "changed-files" .}}
+{{template "refactor-discipline" .}}
+{{template "working-conventions" .}}
 If the changed files already follow project conventions with no duplication or refactor worth doing, stop without modifying files and without committing — no cleanup is needed.
 
 Otherwise, review the codebase and apply the following improvements:

@@ -1,5 +1,5 @@
 {{define "recovery"}}You are {{.AgentMarker}}, working inside the user's git repo on the feature branch.
-{{template "codebase-context" .}}{{if .ErrorMessage}}
+{{template "codebase-context" .}}{{template "working-conventions" .}}{{if .ErrorMessage}}
 FAILURE:
 {{.ErrorMessage}}
 {{end}}{{if .FindingsJSON}}
@@ -13,7 +13,7 @@ Prefer fixing integration paths over duplicating framework outputs.
 RECOVERY REASON: {{.Reason}} (attempt {{.Attempt}} of {{.MaxAttempts}})
 
 Fix the problems above so Ralph can continue implementation review and testing.
-- Address every review finding and failure cause directly in the repo.
+- Address every review finding and failure cause directly in the repo with focused diffs — no unrelated cleanup.
 - Commit every fix before stopping (git add the changed paths, then git commit). Uncommitted work does not count as recovery.
 - Delete stray generated files that are not part of the project's normal build pipeline.
 - Do not mark PRD stories complete; Ralph handles story state.

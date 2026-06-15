@@ -40,11 +40,12 @@ CRITICAL QUALITY REQUIREMENTS:
   * refactor_hint: optional guidance for the mandatory refactor step
 - slice quality: reject vague behaviors, missing red_hints, and slices that bundle multiple behaviors into one unit
 - description: Include concrete technical details (file paths, function names, API endpoints) where relevant
+- context: Record conventions you observed in nearby files (layering, test style, error-handling patterns) in plain language — enough for later agents to match local style without re-exploring the repo
 - Priority: based on dependencies (1 = first)
 
 Each story must be implementation-ready with specific, measurable slices that can be verified through testing or code inspection.
 
 Task:
-1. Analyze the codebase JUST enough to fill in "context" — tech stack, test runner command, top-level layout, and any patterns directly relevant to the user's request. Budget ~5–15 targeted file reads. Do NOT recursively read everything; do NOT grep broadly. Prefer the project manifest (go.mod/package.json/etc.), the README, and the handful of directories the request actually touches.
+1. Analyze the codebase JUST enough to fill in "context" — tech stack, test runner command, top-level layout, and conventions from files near the feature area. Budget ~5–15 targeted file reads. Do NOT recursively read everything; do NOT grep broadly. Prefer the project manifest, the README, and the handful of directories the request actually touches.
 2. Create and check out a new git branch named exactly the "branch_name" you chose (e.g., "git checkout -b {{.BranchPrefix}}/<your-branch-name>").
 3. Write the PRD file, then STOP.{{end}}

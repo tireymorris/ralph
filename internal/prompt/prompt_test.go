@@ -434,6 +434,8 @@ func TestCommitRulesRequireMandatoryRefactor(t *testing.T) {
 		"refactor (mandatory",
 		"no skipping refactor",
 		"use refactor_hint when present",
+		"delete it and implement fresh from the test",
+		"observable behavior",
 	} {
 		if !strings.Contains(result, want) {
 			t.Fatalf("commit-rules template missing %q in:\n%s", want, result)
@@ -456,6 +458,48 @@ func TestCommitRulesDescribeRalphPostSliceCommit(t *testing.T) {
 	} {
 		if !strings.Contains(result, want) {
 			t.Fatalf("commit-rules template missing %q in:\n%s", want, result)
+		}
+	}
+}
+
+func TestStoryImplementationIncludesWorkingConventions(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Title",
+		"Desc",
+		[]SliceData{{ID: "slice-1", Behavior: "B", RedHint: "R"}},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	if !strings.Contains(result, "WORKING CONVENTIONS") {
+		t.Fatalf("StoryImplementation() should include working conventions, got:\n%s", result)
+	}
+	if !strings.Contains(result, "drive-by refactors") {
+		t.Fatalf("StoryImplementation() should mention diff discipline, got:\n%s", result)
+	}
+}
+
+func TestCriticalDiffReviewIncludesReviewConventions(t *testing.T) {
+	got := CriticalDiffReview("stack", "prd.json", []string{"src/foo.ts"})
+
+	for _, want := range []string{"REVIEW FOCUS", "scope creep", "missing-behavior"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("CriticalDiffReview() missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestCleanupIncludesRefactorDiscipline(t *testing.T) {
+	got := Cleanup("", "prd.json", []string{"src/foo.ts"})
+
+	for _, want := range []string{"REFACTOR DISCIPLINE", "Preserve behavior", "backwards-compatibility"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("Cleanup() missing %q in:\n%s", want, got)
 		}
 	}
 }
