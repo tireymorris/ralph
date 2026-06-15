@@ -10,6 +10,7 @@ import (
 
 	promptpkg "ralph/internal/prompt"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 const mockQuestionsFile = ".ralph/questions.json"
@@ -83,9 +84,33 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 				}
 			}
 		}
+		return advanceMockSlice(m.cfg)
 	}
 
 	return nil
+}
+
+func advanceMockSlice(cfg *config.Config) error {
+	p, err := prd.Load(cfg)
+	if err != nil {
+		return err
+	}
+
+	story := p.NextPendingStory()
+	if story == nil {
+		return nil
+	}
+	slice := story.NextPendingSlice()
+	if slice == nil {
+		if !story.Passes {
+			story.Passes = story.AllSlicesPassed()
+		}
+		return prd.Save(cfg, p)
+	}
+
+	slice.Passes = true
+	story.Passes = story.AllSlicesPassed()
+	return prd.Save(cfg, p)
 }
 
 // writeStateFile mimics a real agent creating parent directories before writing.

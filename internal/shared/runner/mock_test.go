@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 )
 
 func TestMockRunnerWritesPRD(t *testing.T) {
@@ -77,5 +78,62 @@ func TestMockRunnerOutputsCleanReviewFindings(t *testing.T) {
 	}
 	if got := transcript.String(); !strings.Contains(got, "===ralph-findings===\n[]\n===/ralph-findings===") {
 		t.Fatalf("transcript missing clean findings block:\n%s", got)
+	}
+}
+
+func TestMockRunnerAdvancesOneSliceAtATime(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.Runner = "mock"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Mock",
+		Stories: []*prd.Story{{
+			ID:          "story-1",
+			Title:       "Story",
+			Description: "Desc",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test"},
+				{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test"},
+			},
+			Priority: 1,
+			Passes:   false,
+		}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	r := NewMock(cfg)
+	ch := make(chan OutputLine, 2)
+
+	if err := r.Run(context.Background(), "Implement story: story-1", ch); err != nil {
+		t.Fatalf("first Run() error = %v", err)
+	}
+	got, err := prd.Load(cfg)
+	if err != nil {
+		t.Fatalf("Load() after first run error = %v", err)
+	}
+	story := got.GetStory("story-1")
+	if story == nil {
+		t.Fatal("story missing after first run")
+	}
+	if !story.Slices[0].Passes || story.Slices[1].Passes || story.Passes {
+		t.Fatalf("after first run, slice/story passes = %v/%v/%v, want true/false/false", story.Slices[0].Passes, story.Slices[1].Passes, story.Passes)
+	}
+
+	if err := r.Run(context.Background(), "Implement story: story-1", ch); err != nil {
+		t.Fatalf("second Run() error = %v", err)
+	}
+	got, err = prd.Load(cfg)
+	if err != nil {
+		t.Fatalf("Load() after second run error = %v", err)
+	}
+	story = got.GetStory("story-1")
+	if story == nil {
+		t.Fatal("story missing after second run")
+	}
+	if !story.Slices[0].Passes || !story.Slices[1].Passes || !story.Passes {
+		t.Fatalf("after second run, slice/story passes = %v/%v/%v, want true/true/true", story.Slices[0].Passes, story.Slices[1].Passes, story.Passes)
 	}
 }
