@@ -15,6 +15,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/workflow/events"
 )
 
 func TestRunGenerateEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {
@@ -310,6 +311,70 @@ func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 	}
 	if !loaded.GetStory("story-1").Passes {
 		t.Fatal("expected story to be marked passed after final slice")
+	}
+}
+
+func TestRunImplementationResumesWithOnlyPendingSliceEvents(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepoInDir(t, tmpDir)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:          "story-1",
+			Title:       "Story",
+			Description: "Desc",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test", Passes: true},
+				{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test", RefactorHint: "extract helper"},
+			},
+			Priority: 1,
+			Passes:   false,
+		}},
+	}
+
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("failed to save test PRD: %v", err)
+	}
+	commitPRDFile(t, tmpDir, cfg.PRDFile)
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
+		if strings.Contains(promptText, "critical diff review") {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
+	}
+
+	sliceStarts := 0
+	sliceCompletes := 0
+	for len(ch) > 0 {
+		switch ev := (<-ch).(type) {
+		case events.EventSliceStarted:
+			if ev.StoryID != "story-1" || ev.SliceID != "slice-2" {
+				t.Fatalf("slice start = %s/%s, want story-1/slice-2", ev.StoryID, ev.SliceID)
+			}
+			sliceStarts++
+		case events.EventSliceCompleted:
+			if ev.StoryID != "story-1" || ev.SliceID != "slice-2" {
+				t.Fatalf("slice complete = %s/%s, want story-1/slice-2", ev.StoryID, ev.SliceID)
+			}
+			sliceCompletes++
+		}
+	}
+
+	if sliceStarts != 1 || sliceCompletes != 1 {
+		t.Fatalf("slice events = started:%d completed:%d, want 1/1 for the resumed slice", sliceStarts, sliceCompletes)
 	}
 }
 

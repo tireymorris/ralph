@@ -51,6 +51,7 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 			story.DependsOn,
 		)
 
+		e.emit(events.EventSliceStarted{StoryID: story.ID, SliceID: currentSlice.ID})
 		runErr := e.runWithForwardedOutput(ctx, storyPrompt)
 		if runErr != nil {
 			recovered, recErr := e.runRecovery(ctx, p, prompt.RecoveryReasonStoryFailure, runErr.Error(), nil)
@@ -98,6 +99,7 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 		if saveErr := e.store.Save(e.cfg, updatedPRD); saveErr != nil {
 			return nil, nil, fmt.Errorf("failed to save PRD after completing story %s slice %s: %w", story.ID, currentSlice.ID, saveErr)
 		}
+		e.emit(events.EventSliceCompleted{StoryID: story.ID, SliceID: currentSlice.ID})
 
 		p = updatedPRD
 		story = updatedStory
