@@ -1,0 +1,6 @@
+{{define "changed-files"}}{{if .ChangedFiles}}
+CHANGED FILES:
+{{range .ChangedFiles}}{{.}}
+{{end}}
+Only modify the files listed above. Do not touch unrelated code.
+{{end}}{{end}}

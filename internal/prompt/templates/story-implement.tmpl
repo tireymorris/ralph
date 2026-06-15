@@ -1,0 +1,19 @@
+{{define "story-implement"}}You are Ralph's implementation agent, working inside the user's git repo on the feature branch.
+
+Implement story: {{.Title}} (ID: {{.StoryID}})
+{{template "codebase-context" .}}{{if .FeatureTestSpec}}
+FEATURE TEST SPEC:
+{{.FeatureTestSpec}}
+{{end}}{{if .DependsOn}}
+DEPENDENCIES: This story depends on: {{join .DependsOn ", "}}
+Before starting, re-read {{.PRDFile}} and confirm each of those stories has "passes": true. If any dependency is not yet passing, stop and do not implement this story.{{end}}
+Description: {{.Description}}
+Done when: {{.AcceptanceCriteria}}
+
+{{template "commit-rules" .}}
+
+When every acceptance criterion passes and the full test suite is green, stop. Ralph will automatically mark the story complete and proceed to the next one.
+
+After completing this story, update the "context" field in {{.PRDFile}} ONLY if you established a new pattern, added a new module, or discovered a convention that future stories need to know. Skip the context update for routine stories.
+
+Progress: {{.Completed}}/{{.Total}} stories completed{{end}}

@@ -1,0 +1,43 @@
+{{define "prd-generate"}}You are Ralph's planning agent, working inside the user's git repo.
+
+Create a PRD for: {{.UserPrompt}}
+{{template "clarifications" .}}
+Write JSON to {{.PRDFile}}. Each field value below is a description of what to write — do not copy the descriptions literally.
+{
+  "version": 1,
+  "project_name": <a short descriptive name for the feature>,
+  "branch_name": "{{.BranchPrefix}}/<kebab-case-branch-name>",
+  "context": <tech stack, project structure, testing approach (including the exact test runner command), and key patterns — concrete, not placeholder text>,
+  "test_spec": <a single STRING (not an array) describing 3-5 holistic test scenarios for the whole feature>,
+  "stories": [
+    {
+      "id": "story-1",
+      "title": <short title>,
+      "description": <specific implementation task with concrete technical details>,
+      "acceptance_criteria": [<testable completion condition>],
+      "priority": 1,
+      "depends_on": [],
+      "passes": false
+    }
+  ]
+}
+
+CRITICAL QUALITY REQUIREMENTS:
+{{.ContextGuidance}}
+- test_spec: STRING with 3-5 holistic test scenarios (NOT an array)
+- stories: size each story small enough to complete in roughly 3-10 red/green/commit TDD cycles. If a story feels larger than that, split it. Prefer many small stories over a few big ones.
+- depends_on: ONLY include if this story genuinely cannot start until another is complete (e.g., "api-story" before "ui-story"). Most stories should have an empty array [].
+- acceptance_criteria: MUST be verifiable and specific. NEVER use vague terms without quantification:
+  * Avoid vague verbs without metrics: "simplify", "optimize", "reduce", "improve", "enhance", "streamline", "refactor"
+  * If using these verbs, add quantifiable metrics (e.g., "reduce from 650 to 200 words", "optimize query to <100ms")
+  * Avoid vague adjectives without specifics: "proper", "appropriate", "comprehensive", "good", "correct", "consistent", "clean", "robust"
+  * Replace vague criteria like "proper error handling" with testable conditions like "returns 400 status with error message for invalid input"
+- description: Include concrete technical details (file paths, function names, API endpoints) where relevant
+- Priority: based on dependencies (1 = first)
+
+Each story must be implementation-ready with specific, measurable requirements that can be verified through testing or code inspection.
+
+Task:
+1. Analyze the codebase JUST enough to fill in "context" — tech stack, test runner command, top-level layout, and any patterns directly relevant to the user's request. Budget ~5–15 targeted file reads. Do NOT recursively read everything; do NOT grep broadly. Prefer the project manifest (go.mod/package.json/etc.), the README, and the handful of directories the request actually touches.
+2. Create and check out a new git branch named exactly the "branch_name" you chose (e.g., "git checkout -b {{.BranchPrefix}}/<your-branch-name>").
+3. Write the PRD file, then STOP.{{end}}

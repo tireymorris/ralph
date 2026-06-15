@@ -123,6 +123,8 @@ cd e2e && npx playwright test
 go generate ./internal/web/...   # after web UI changes
 ```
 
+Agent prompts live in `internal/prompt/templates/` (embedded at build time). See `docs/prompts/` for the template index and editing workflow.
+
 ## Caveats
 
 - `passes: true` means the runner exited 0, not that tests passed

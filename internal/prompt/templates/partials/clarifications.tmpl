@@ -1,0 +1,5 @@
+{{define "clarifications"}}{{if .Clarifications}}
+USER CLARIFICATIONS:
+{{range $i, $qa := .Clarifications}}Q{{add $i 1}}: {{$qa.Question}}
+A{{add $i 1}}: {{$qa.Answer}}
+{{end}}{{end}}{{end}}

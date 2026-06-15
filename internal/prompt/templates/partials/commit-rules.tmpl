@@ -1,0 +1,16 @@
+{{define "commit-rules"}}
+Work in tight TDD cycles. Do NOT implement the whole story in one pass. Break it into the smallest independently testable slices you can, then for EACH slice:
+
+  a. RED — write one failing test for the next small piece of behavior. Use the project's actual test runner (see the codebase context if provided); do not invent a new framework. Run it. Confirm it fails for the right reason.
+  b. GREEN — write the minimum code needed to make that test pass. Run the new test. Run the rest of the existing tests to confirm no regressions.
+  c. (optional) REFACTOR — clean up while tests stay green.
+  d. COMMIT — commit just that slice on its own.
+
+Commit message rules:
+- One short sentence, lowercase, imperative mood, no trailing period.
+- NO conventional-commit prefixes. Do NOT start with "feat:", "fix:", "refactor:", "chore:", "test:", "docs:", etc.
+- Describe what this one slice does, not the whole story. Example: "parse empty input as zero-length token list", not "feat: add parser".
+- The commit message is ONLY the single subject line. Do NOT append a body, signature, trailer, or footer. In particular, do NOT add "Co-Authored-By:" lines, "Signed-off-by:" lines, "🤖 Generated with ..." footers, or any attribution trailer. If your tooling adds these by default, strip them before committing.
+
+Repeat the red → green → commit loop until every acceptance criterion is satisfied. Many small commits per story is expected and preferred over one large commit.
+{{end}}
