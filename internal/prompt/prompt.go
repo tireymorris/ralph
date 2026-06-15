@@ -64,11 +64,18 @@ func Cleanup(codebaseContext, prdFile string, changedFiles []string) string {
 }
 
 func StoryImplementation(storyID, title, description string, slices []SliceData, featureTestSpec, codebaseContext, prdFile string, completed, total int, dependsOn []string) string {
+	pending := make([]SliceData, 0, len(slices))
+	for _, slice := range slices {
+		if slice.Passes {
+			continue
+		}
+		pending = append(pending, slice)
+	}
 	return mustRender("story-implement", StoryImplementData{
 		StoryID:         storyID,
 		Title:           title,
 		Description:     description,
-		Slices:          slices,
+		Slices:          pending,
 		FeatureTestSpec: featureTestSpec,
 		Context:         codebaseContext,
 		PRDFile:         prdFile,

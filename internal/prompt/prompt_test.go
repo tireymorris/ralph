@@ -340,6 +340,57 @@ func TestStoryImplementationUsesSliceWording(t *testing.T) {
 	}
 }
 
+func TestStoryImplementationRequiresPendingSlicesAndPRDUpdates(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Title",
+		"Desc",
+		[]SliceData{
+			{ID: "slice-1", Behavior: "already done", RedHint: "red 1", Passes: true},
+			{ID: "slice-2", Behavior: "still pending", RedHint: "red 2", RefactorHint: "refactor 2"},
+		},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	for _, want := range []string{
+		"Pending slices:",
+		"still pending",
+		"red 2",
+		"refactor 2",
+		"update slice.passes in prd.json after each slice",
+		"do not invent ad hoc slices",
+	} {
+		if !strings.Contains(result, want) {
+			t.Fatalf("StoryImplementation() missing %q in:\n%s", want, result)
+		}
+	}
+	if strings.Contains(result, "already done") {
+		t.Fatalf("StoryImplementation() should omit passed slices, got:\n%s", result)
+	}
+}
+
+func TestCommitRulesRequireMandatoryRefactor(t *testing.T) {
+	result := render("commit-rules", nil)
+
+	for _, want := range []string{
+		"refactor (mandatory",
+		"no skipping refactor",
+		"use refactor_hint when present",
+	} {
+		if !strings.Contains(result, want) {
+			t.Fatalf("commit-rules template missing %q in:\n%s", want, result)
+		}
+	}
+	if strings.Contains(result, "optional REFACTOR") || strings.Contains(result, "(optional)") {
+		t.Fatalf("commit-rules template should not describe refactor as optional:\n%s", result)
+	}
+}
+
 func TestPRDCritiqueRevisionIncludesCritique(t *testing.T) {
 	result := PRDCritiqueRevision("add login", "prd.json", "Needs more tests")
 

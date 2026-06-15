@@ -8,12 +8,15 @@ FEATURE TEST SPEC:
 DEPENDENCIES: This story depends on: {{join .DependsOn ", "}}
 Before starting, re-read {{.PRDFile}} and confirm each of those stories has "passes": true. If any dependency is not yet passing, stop and do not implement this story.{{end}}
 Description: {{.Description}}
-SLICES:
-{{range $index, $slice := .Slices}}- Slice {{add $index 1}} ({{if $slice.Passes}}passed{{else}}pending{{end}})
+Pending slices:
+{{if .Slices}}{{range $index, $slice := .Slices}}- Slice {{add $index 1}}
   Behavior: {{$slice.Behavior}}
   Red hint: {{$slice.RedHint}}{{if $slice.RefactorHint}}
   Refactor hint: {{$slice.RefactorHint}}{{end}}
-{{end}}Done when: every slice passes, the PRD has been updated after each slice, and the story passes only after the final slice.
+{{end}}{{else}}- none{{end}}
+do not invent ad hoc slices; work only on the pending slices from {{.PRDFile}}.
+update slice.passes in {{.PRDFile}} after each slice before starting the next one.
+Done when: every slice passes, the PRD has been updated after each slice, and the story passes only after the final slice.
 
 {{template "commit-rules" .}}
 

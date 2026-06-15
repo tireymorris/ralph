@@ -3,7 +3,7 @@ Work in tight TDD cycles. Do NOT implement the whole story in one pass. Break it
 
   a. RED — write one failing test for the next small piece of behavior. Use the project's actual test runner (see the codebase context if provided); do not invent a new framework. Run it. Confirm it fails for the right reason.
   b. GREEN — write the minimum code needed to make that test pass. Run the new test. Run the rest of the existing tests to confirm no regressions.
-  c. (optional) REFACTOR — clean up while tests stay green.
+  c. refactor (mandatory) — improve names/structure while tests stay green; use refactor_hint when present; no skipping refactor.
   d. COMMIT — commit just that slice on its own.
 
 Commit message rules:
