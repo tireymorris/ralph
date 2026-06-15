@@ -1209,10 +1209,10 @@ func countRunnerPromptKinds(mock *mockRunner) (story, review, cleanup int) {
 		switch {
 		case strings.Contains(p, "critical diff review"):
 			review++
+		case prompt.IsRecoveryPrompt(p):
+			story++
 		case strings.Contains(p, "cleanup"):
 			cleanup++
-		case strings.Contains(p, "recovery agent"):
-			story++
 		default:
 			story++
 		}
