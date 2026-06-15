@@ -65,7 +65,7 @@
           "id": "slice-3",
           "behavior": "prompt tests assert single-slice output and no multi-slice \"implement everything\" wording",
           "red_hint": "add failing test for: prompt tests assert single-slice output and no multi-slice \"implement everything\" wording",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-4",

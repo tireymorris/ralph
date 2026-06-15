@@ -369,6 +369,30 @@ func TestStoryImplementationRendersOnlyOnePendingSlice(t *testing.T) {
 	}
 }
 
+func TestStoryImplementationUsesSingularSliceHeading(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Title",
+		"Desc",
+		[]SliceData{{ID: "slice-1", Behavior: "behavior", RedHint: "red"}},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	if !strings.Contains(result, "Pending slice:") {
+		t.Fatalf("StoryImplementation() should use a singular heading, got:\n%s", result)
+	}
+	for _, want := range []string{"Pending slices:", "implement everything"} {
+		if strings.Contains(result, want) {
+			t.Fatalf("StoryImplementation() should not contain %q, got:\n%s", want, result)
+		}
+	}
+}
+
 func TestStoryImplementationRequiresPendingSlicesAndPRDUpdates(t *testing.T) {
 	result := StoryImplementation(
 		"story-1",
@@ -387,7 +411,7 @@ func TestStoryImplementationRequiresPendingSlicesAndPRDUpdates(t *testing.T) {
 	)
 
 	for _, want := range []string{
-		"Pending slices:",
+		"Pending slice:",
 		"still pending",
 		"red 2",
 		"refactor 2",
