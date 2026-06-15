@@ -82,12 +82,6 @@ func (c *Coordinator) Run(opts *args.Options) int {
 		}
 		return c.runUpdate(opts)
 	}
-	repo := update.RepoFromEnv()
-	ref := opts.UpdateRef
-	if ref == "" {
-		ref = update.DefaultRef
-	}
-	_, _ = attemptUpdate(context.Background(), repo, ref)
 
 	logger.Init(opts.Verbose)
 	logger.Debug("starting ralph", "verbose", opts.Verbose)
@@ -135,7 +129,17 @@ func (c *Coordinator) Run(opts *args.Options) int {
 			return 1
 		}
 	}
+	attemptBootUpdate(opts)
 	return c.runTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
+}
+
+func attemptBootUpdate(opts *args.Options) {
+	repo := update.RepoFromEnv()
+	ref := opts.UpdateRef
+	if ref == "" {
+		ref = update.DefaultRef
+	}
+	_, _ = attemptUpdate(context.Background(), repo, ref)
 }
 
 func (c *Coordinator) withDefaults() *Coordinator {

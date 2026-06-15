@@ -350,12 +350,28 @@ func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("stderr = %q, want empty", stderr)
 	}
-	if len(calls) < 3 {
+	if len(calls) < 4 {
 		t.Fatalf("calls = %v, want update and TUI flow", calls)
 	}
-	if calls[0] != "update-check" || calls[1] != "update-install" || calls[len(calls)-1] != "run-tui" {
-		t.Fatalf("calls = %v, want boot update before prompt flow", calls)
+	updateCheckIdx := indexOf(calls, "update-check")
+	updateInstallIdx := indexOf(calls, "update-install")
+	runTUIIdx := indexOf(calls, "run-tui")
+	loadConfigIdx := indexOf(calls, "load-config")
+	if updateCheckIdx < 0 || updateInstallIdx < 0 || runTUIIdx < 0 || loadConfigIdx < 0 {
+		t.Fatalf("calls = %v, want load-config, update, and run-tui", calls)
 	}
+	if loadConfigIdx >= updateCheckIdx || updateCheckIdx >= updateInstallIdx || updateInstallIdx >= runTUIIdx {
+		t.Fatalf("calls = %v, want load-config before boot update before run-tui", calls)
+	}
+}
+
+func indexOf(items []string, target string) int {
+	for i, item := range items {
+		if item == target {
+			return i
+		}
+	}
+	return -1
 }
 
 func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
@@ -446,6 +462,77 @@ func TestCoordinatorExplicitUpdateSkipsBootUpdate(t *testing.T) {
 	}
 	if len(calls) != 1 || calls[0] != "run-update" {
 		t.Fatalf("calls = %v, want only run-update", calls)
+	}
+}
+
+func TestCoordinatorSubcommandsSkipBootUpdate(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+	}()
+
+	tests := []struct {
+		name string
+		opts *args.Options
+	}{
+		{
+			name: "clean",
+			opts: &args.Options{Clean: true},
+		},
+		{
+			name: "status",
+			opts: &args.Options{Status: true},
+		},
+		{
+			name: "web",
+			opts: &args.Options{Web: true, WebPort: 3333},
+		},
+		{
+			name: "headless",
+			opts: &args.Options{Headless: true, Prompt: "build a feature"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]string, 0, 2)
+			updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+				calls = append(calls, "boot-check")
+				return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+			}
+			updateInstall = func(context.Context, update.InstallOptions) error {
+				calls = append(calls, "boot-install")
+				return nil
+			}
+
+			c := &Coordinator{
+				loadConfig: func() (*config.Config, error) {
+					return &config.Config{WorkDir: t.TempDir(), PRDFile: "prd.json"}, nil
+				},
+				runClean: func(*config.Config) int { return 0 },
+				runStatus: func(*config.Config) int { return 0 },
+				runWeb: func(*config.Config, int) int { return 0 },
+				runHeadless: func(*config.Config, string, bool) int { return 0 },
+				validateGit: func(string) error { return nil },
+				validateResume: func(*config.Config, bool) error { return nil },
+				helpText:    func() string { return "help text" },
+				versionInfo: func() string { return "version text" },
+				isTerminal:  func(uintptr) bool { return true },
+			}
+
+			code, _, stderr := captureCoordinatorRun(t, c, tt.opts)
+			if code != 0 {
+				t.Fatalf("Run() = %d, want 0", code)
+			}
+			if stderr != "" {
+				t.Fatalf("stderr = %q, want empty", stderr)
+			}
+			if len(calls) != 0 {
+				t.Fatalf("calls = %v, want no boot update calls", calls)
+			}
+		})
 	}
 }
 
