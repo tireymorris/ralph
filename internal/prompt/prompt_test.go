@@ -240,11 +240,10 @@ func TestStoryImplementation(t *testing.T) {
 				"story-1",
 				"Implement login functionality",
 				"User can login",
-				"Error on bad credentials",
 				"0/3",
 				"prd.json",
 			},
-			mustNotInclude: []string{"CODEBASE CONTEXT", "FEATURE TEST SPEC", "CRITIQUE"},
+			mustNotInclude: []string{"Error on bad credentials", "CODEBASE CONTEXT", "FEATURE TEST SPEC", "CRITIQUE"},
 		},
 		{
 			name:        "story with context and feature test spec",
@@ -272,12 +271,12 @@ func TestStoryImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:        "multiple slices rendered",
+			name:        "single pending slice rendered",
 			storyID:     "story-3",
 			title:       "T",
 			description: "D",
 			slices: []SliceData{
-				{ID: "slice-1", Behavior: "A", RedHint: "red A"},
+				{ID: "slice-1", Behavior: "A", RedHint: "red A", RefactorHint: "refactor A"},
 				{ID: "slice-2", Behavior: "B", RedHint: "red B", RefactorHint: "refactor B"},
 				{ID: "slice-3", Behavior: "C", RedHint: "red C"},
 			},
@@ -286,7 +285,8 @@ func TestStoryImplementation(t *testing.T) {
 			prdFile:         "prd.json",
 			completed:       0,
 			total:           1,
-			mustInclude:     []string{"Slice 1", "Slice 2", "Slice 3", "refactor B"},
+			mustInclude:     []string{"Slice 1", "A", "red A", "refactor A"},
+			mustNotInclude:  []string{"Slice 2", "Slice 3", "red B", "refactor B", "red C"},
 		},
 	}
 
@@ -337,6 +337,35 @@ func TestStoryImplementationUsesSliceWording(t *testing.T) {
 	}
 	if !strings.Contains(result, "Refactor hint") {
 		t.Fatalf("StoryImplementation() should expose optional refactor hints, got:\n%s", result)
+	}
+}
+
+func TestStoryImplementationRendersOnlyOnePendingSlice(t *testing.T) {
+	result := StoryImplementation(
+		"story-1",
+		"Title",
+		"Desc",
+		[]SliceData{
+			{ID: "slice-1", Behavior: "first behavior", RedHint: "first red", RefactorHint: "first refactor"},
+			{ID: "slice-2", Behavior: "second behavior", RedHint: "second red", RefactorHint: "second refactor"},
+		},
+		"",
+		"",
+		"prd.json",
+		0,
+		1,
+		nil,
+	)
+
+	for _, want := range []string{"Slice 1", "first behavior", "first red", "first refactor"} {
+		if !strings.Contains(result, want) {
+			t.Fatalf("StoryImplementation() missing %q in:\n%s", want, result)
+		}
+	}
+	for _, want := range []string{"Slice 2", "second behavior", "second red", "second refactor"} {
+		if strings.Contains(result, want) {
+			t.Fatalf("StoryImplementation() should render only one pending slice, but found %q in:\n%s", want, result)
+		}
 	}
 }
 
