@@ -448,3 +448,84 @@ func TestCoordinatorExplicitUpdateSkipsBootUpdate(t *testing.T) {
 		t.Fatalf("calls = %v, want only run-update", calls)
 	}
 }
+
+func TestCoordinatorMetaCommandsSkipBootUpdate(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+	}()
+
+	tests := []struct {
+		name           string
+		opts           *args.Options
+		wantCode       int
+		wantStdout     string
+		wantRoute      bool
+		wantRouteName  string
+	}{
+		{
+			name:       "help",
+			opts:       &args.Options{Help: true},
+			wantCode:   0,
+			wantStdout: "help text",
+		},
+		{
+			name:       "version",
+			opts:       &args.Options{Version: true},
+			wantCode:   0,
+			wantStdout: "version text\n",
+		},
+		{
+			name:          "update check",
+			opts:          &args.Options{Update: true, UpdateCheck: true},
+			wantCode:      8,
+			wantRoute:     true,
+			wantRouteName: "run-update-check",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := make([]string, 0, 2)
+			updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+				calls = append(calls, "boot-check")
+				return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+			}
+			updateInstall = func(context.Context, update.InstallOptions) error {
+				calls = append(calls, "boot-install")
+				return nil
+			}
+
+			c := &Coordinator{
+				runUpdateCheck: func(*args.Options) int {
+					calls = append(calls, "run-update-check")
+					return 8
+				},
+				loadConfig: func() (*config.Config, error) {
+					t.Fatal("loadConfig should not run for meta commands")
+					return nil, nil
+				},
+				helpText:    func() string { return "help text" },
+				versionInfo: func() string { return "version text" },
+				isTerminal:  func(uintptr) bool { return true },
+			}
+
+			code, stdout, stderr := captureCoordinatorRun(t, c, tt.opts)
+			if code != tt.wantCode {
+				t.Fatalf("Run() = %d, want %d", code, tt.wantCode)
+			}
+			if stdout != tt.wantStdout || stderr != "" {
+				t.Fatalf("stdout/stderr = %q / %q, want %q / %q", stdout, stderr, tt.wantStdout, "")
+			}
+			if tt.wantRoute {
+				if len(calls) != 1 || calls[0] != tt.wantRouteName {
+					t.Fatalf("calls = %v, want only %s", calls, tt.wantRouteName)
+				}
+			} else if len(calls) != 0 {
+				t.Fatalf("calls = %v, want no boot update calls", calls)
+			}
+		})
+	}
+}
