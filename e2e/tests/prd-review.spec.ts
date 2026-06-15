@@ -18,8 +18,10 @@ test.describe("PRD review", () => {
     await expect(page.locator(".prd-review-version")).toContainText("v1");
     await expect(page.locator(".prd-review-stories > li")).toHaveCount(1);
     await expect(page.locator(".prd-review-stories > li").first()).toContainText("Mock story");
-    await expect(page.locator(".prd-review-slices li")).toHaveCount(1);
-    await expect(page.locator(".prd-review-slices li").first()).toContainText("ok");
+    await expect(page.locator(".prd-review-slices li")).toHaveCount(2);
+    await expect(page.locator(".prd-review-slices li").first()).toContainText("first behavior");
+    await expect(page.locator(".prd-review-slices li").nth(1)).toContainText("second behavior");
+    await expect(page.locator(".prd-review-slices li").nth(1)).toContainText("extract helper");
   });
 
   test("approving PRD completes the run", async ({ serverPage: page }) => {
