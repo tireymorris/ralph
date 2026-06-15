@@ -10,41 +10,17 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-func storyImplementationSlices(story *prd.Story) []prompt.SliceData {
-	slices := story.Slices
-	if len(slices) == 0 && len(story.AcceptanceCriteria) > 0 {
-		slices = make([]*prd.Slice, 0, len(story.AcceptanceCriteria))
-		for i, criterion := range story.AcceptanceCriteria {
-			slices = append(slices, &prd.Slice{
-				ID:       fmt.Sprintf("slice-%d", i+1),
-				Behavior: criterion,
-				RedHint:  fmt.Sprintf("add failing test for: %s", criterion),
-			})
-		}
+func storyImplementationSliceData(slice *prd.Slice) []prompt.SliceData {
+	if slice == nil {
+		return nil
 	}
-	result := make([]prompt.SliceData, 0, len(slices))
-	for _, slice := range slices {
-		if slice == nil {
-			continue
-		}
-		result = append(result, prompt.SliceData{
-			ID:           slice.ID,
-			Behavior:     slice.Behavior,
-			RedHint:      slice.RedHint,
-			RefactorHint: slice.RefactorHint,
-			Passes:       slice.Passes,
-		})
-	}
-	return result
-}
-
-func storySliceByID(story *prd.Story, id string) *prd.Slice {
-	for _, slice := range story.Slices {
-		if slice != nil && slice.ID == id {
-			return slice
-		}
-	}
-	return nil
+	return []prompt.SliceData{{
+		ID:           slice.ID,
+		Behavior:     slice.Behavior,
+		RedHint:      slice.RedHint,
+		RefactorHint: slice.RefactorHint,
+		Passes:       slice.Passes,
+	}}
 }
 
 func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.Story) (*prd.PRD, *prd.Story, error) {
@@ -64,7 +40,7 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 			story.ID,
 			story.Title,
 			story.Description,
-			storyImplementationSlices(story),
+			storyImplementationSliceData(currentSlice),
 			p.TestSpec,
 			p.Context,
 			e.cfg.PRDFile,
@@ -103,7 +79,13 @@ func (e *Executor) runStorySlices(ctx context.Context, p *prd.PRD, story *prd.St
 		if updatedStory == nil {
 			return nil, nil, fmt.Errorf("story %s disappeared after slice %s implementation", story.ID, currentSlice.ID)
 		}
-		updatedSlice := storySliceByID(updatedStory, currentSlice.ID)
+		var updatedSlice *prd.Slice
+		for _, slice := range updatedStory.Slices {
+			if slice != nil && slice.ID == currentSlice.ID {
+				updatedSlice = slice
+				break
+			}
+		}
 		if updatedSlice == nil {
 			return nil, nil, fmt.Errorf("story %s missing slice %s after implementation", story.ID, currentSlice.ID)
 		}
