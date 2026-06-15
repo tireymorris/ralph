@@ -38,7 +38,7 @@
           "id": "slice-5",
           "behavior": "go test ./internal/workflow/... ./internal/shared/gitdiff/... passes",
           "red_hint": "add failing test for: go test ./internal/workflow/... ./internal/shared/gitdiff/... passes",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 1,
