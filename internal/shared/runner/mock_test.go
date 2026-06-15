@@ -26,6 +26,19 @@ func TestMockRunnerWritesPRD(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(workDir, "prd.json")); err != nil {
 		t.Fatalf("prd.json not written: %v", err)
 	}
+	data, err := os.ReadFile(filepath.Join(workDir, "prd.json"))
+	if err != nil {
+		t.Fatalf("failed to read prd.json: %v", err)
+	}
+	got := string(data)
+	for _, want := range []string{`"slices"`, `"behavior"`, `"red_hint"`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("prd.json missing %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "acceptance_criteria") {
+		t.Fatalf("prd.json should not contain acceptance_criteria:\n%s", got)
+	}
 }
 
 func TestMockRunnerImplDelayDoesNotSlowSelfReview(t *testing.T) {

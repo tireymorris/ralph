@@ -59,7 +59,7 @@ func (m *Mock) Run(ctx context.Context, prompt string, outputCh chan<- OutputLin
 
 	if strings.Contains(prompt, "Write the PRD file") || strings.Contains(prompt, "Write the updated PRD file") {
 		prdPath := m.cfg.PRDPath()
-		data := `{"version":1,"project_name":"Mock","branch_name":"main","stories":[{"id":"story-1","title":"Mock story","description":"d","acceptance_criteria":["ok"],"priority":1}]}`
+		data := `{"version":1,"project_name":"Mock","branch_name":"main","stories":[{"id":"story-1","title":"Mock story","description":"d","slices":[{"id":"slice-1","behavior":"first behavior","red_hint":"write failing test for first behavior"},{"id":"slice-2","behavior":"second behavior","red_hint":"write failing test for second behavior","refactor_hint":"extract helper"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0o644)
 	}
 
