@@ -17,6 +17,7 @@ func TestParse(t *testing.T) {
 		{name: "dry run flag", args: []string{"--dry-run"}, expected: Options{DryRun: true}},
 		{name: "yolo flag", args: []string{"--yolo"}, expected: Options{AutoApprove: true}},
 		{name: "resume flag", args: []string{"--resume"}, expected: Options{Resume: true}},
+		{name: "headless flag", args: []string{"--headless", "build"}, expected: Options{Prompt: "build", Headless: true, AutoApprove: true}},
 		{name: "verbose flag short", args: []string{"-v"}, expected: Options{Verbose: true}},
 		{name: "verbose flag long", args: []string{"--verbose"}, expected: Options{Verbose: true}},
 		{name: "single prompt word", args: []string{"hello"}, expected: Options{Prompt: "hello"}},
@@ -134,7 +135,7 @@ func TestValidate(t *testing.T) {
 
 func TestHelpText(t *testing.T) {
 	text := HelpText()
-	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "copilot", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup", "--yolo"} {
+	for _, phrase := range []string{"Ralph", "Usage:", "Options:", "Environment:", "RALPH_RUNNER", "default: claude", "copilot", "--dry-run", "--resume", "--verbose", "-v", "--help", "status", "ralph clean", "ralph version", "ralph update", "--ref", "--check", "RALPH_REPO", "ralph web", "--port", "8080", "# TUI prompt screen (requires a terminal)", "ralph --dry-run", "--skip-cleanup", "--yolo", "--headless"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("HelpText() missing %q", phrase)
 		}
