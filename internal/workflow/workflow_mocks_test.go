@@ -4,10 +4,10 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 
+	promptpkg "ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
 )
@@ -52,7 +52,7 @@ func (m *mockRunner) Run(ctx context.Context, prompt string, outputCh chan<- run
 	if m.runFunc != nil {
 		return m.runFunc(ctx, prompt, outputCh)
 	}
-	if strings.Contains(prompt, "critical diff review") {
+	if promptpkg.HasKind(prompt, promptpkg.KindDiffReview) {
 		outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 	}
 	return nil

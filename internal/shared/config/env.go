@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,28 @@ func applyEnvOverrides(cfg *Config) error {
 		}
 		cfg.RunnerTimeout = timeout
 	}
+	if prefix := os.Getenv("RALPH_BRANCH_PREFIX"); prefix != "" {
+		cfg.BranchPrefix = prefix
+	}
+	if raw := os.Getenv("RALPH_DEFAULT_BRANCHES"); raw != "" {
+		cfg.DefaultBranches = splitCommaList(raw)
+	}
+	if cmd := os.Getenv("RALPH_TEST_COMMAND"); cmd != "" {
+		cfg.TestCommand = cmd
+	}
 
 	return cfg.Validate()
+}
+
+func splitCommaList(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		out = append(out, part)
+	}
+	return out
 }

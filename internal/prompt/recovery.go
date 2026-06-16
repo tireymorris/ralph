@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"encoding/json"
-	"strings"
 )
 
 const RecoveryAgentMarker = "Ralph's recovery agent"
@@ -51,5 +50,5 @@ func RecoverFromFailure(
 }
 
 func IsRecoveryPrompt(prompt string) bool {
-	return strings.Contains(prompt, RecoveryAgentMarker)
+	return HasKind(prompt, KindRecovery)
 }

@@ -53,6 +53,7 @@ func TestCurrentBranchNameFeatureBranch(t *testing.T) {
 }
 
 func TestIsDefaultBranch(t *testing.T) {
+	defaults := []string{"main", "master", "develop", "trunk"}
 	tests := []struct {
 		name       string
 		branchName string
@@ -60,13 +61,15 @@ func TestIsDefaultBranch(t *testing.T) {
 	}{
 		{name: "main", branchName: "main", want: true},
 		{name: "master", branchName: "master", want: true},
+		{name: "develop", branchName: "develop", want: true},
+		{name: "trunk", branchName: "trunk", want: true},
 		{name: "feature branch", branchName: "feature/test", want: false},
 		{name: "release branch", branchName: "release/1.0", want: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := workdir.IsDefaultBranch(tt.branchName); got != tt.want {
+			if got := workdir.IsDefaultBranch(tt.branchName, defaults); got != tt.want {
 				t.Fatalf("IsDefaultBranch(%q) = %v, want %v", tt.branchName, got, tt.want)
 			}
 		})

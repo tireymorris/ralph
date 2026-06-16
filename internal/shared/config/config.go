@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"ralph/internal/shared/workdir"
 )
 
 const DefaultRunner = "claude"
+const DefaultBranchPrefix = "feature"
 
 type RunnerKind string
 
@@ -42,24 +45,27 @@ func DetectRunner(runner string) RunnerKind {
 	}
 }
 
-const DefaultTestCommand = "go test ./..."
+const DefaultTestCommand = ""
 
 type Config struct {
-	Runner      string `json:"runner"`
-	PRDFile     string `json:"prd_file"`
-	WorkDir     string `json:"-"`
-	TestCommand   string        `json:"test_command"`
-	RunnerTimeout time.Duration `json:"-"`
-	SkipCleanup   bool          `json:"-"`
-	AutoApprove   bool          `json:"-"`
-	DryRun        bool          `json:"-"`
+	Runner          string   `json:"runner"`
+	PRDFile         string   `json:"prd_file"`
+	WorkDir         string   `json:"-"`
+	TestCommand     string   `json:"test_command"`
+	BranchPrefix    string   `json:"branch_prefix"`
+	DefaultBranches []string `json:"default_branches,omitempty"`
+	RunnerTimeout   time.Duration `json:"-"`
+	SkipCleanup     bool          `json:"-"`
+	AutoApprove     bool          `json:"-"`
+	DryRun          bool          `json:"-"`
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		Runner:      DefaultRunner,
-		PRDFile:     "prd.json",
-		TestCommand: DefaultTestCommand,
+		Runner:       DefaultRunner,
+		PRDFile:      "prd.json",
+		TestCommand:  DefaultTestCommand,
+		BranchPrefix: DefaultBranchPrefix,
 	}
 }
 
@@ -74,7 +80,21 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	applyWorkdirDefaults(cfg)
+
 	return cfg, nil
+}
+
+func applyWorkdirDefaults(cfg *Config) {
+	if cfg.WorkDir == "" {
+		return
+	}
+	if cfg.TestCommand == "" {
+		cfg.TestCommand = workdir.DetectTestCommand(cfg.WorkDir)
+	}
+	if len(cfg.DefaultBranches) == 0 {
+		cfg.DefaultBranches = workdir.DetectDefaultBranches(cfg.WorkDir)
+	}
 }
 
 func (c *Config) ConfigPath(filename string) string {
@@ -104,9 +124,6 @@ func (c *Config) Validate() error {
 	}
 	if c.PRDFile == "" {
 		return errors.New("prd_file cannot be empty")
-	}
-	if c.TestCommand == "" {
-		return errors.New("test_command cannot be empty")
 	}
 
 	// Prevent path traversal by requiring a simple filename.

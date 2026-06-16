@@ -10,7 +10,7 @@ func render(name string, data any) string {
 	if err := templates.ExecuteTemplate(&buf, name, data); err != nil {
 		panic(fmt.Sprintf("prompt template %q: %v", name, err))
 	}
-	return buf.String()
+	return wrapWithKind(name, buf.String())
 }
 
 func mustRender(name string, data any) string {

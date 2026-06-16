@@ -3,6 +3,7 @@ package prd
 import (
 	"errors"
 	"fmt"
+	"sort"
 )
 
 const (
@@ -52,6 +53,20 @@ func (p *PRD) NextPendingStory() *Story {
 		}
 	}
 	return best
+}
+
+func (p *PRD) NextReadyStory() *Story {
+	ready := p.ReadyStories()
+	if len(ready) == 0 {
+		return nil
+	}
+	sort.Slice(ready, func(i, j int) bool {
+		if ready[i].Priority != ready[j].Priority {
+			return ready[i].Priority < ready[j].Priority
+		}
+		return ready[i].ID < ready[j].ID
+	})
+	return ready[0]
 }
 
 func (p *PRD) ReadyStories() []*Story {

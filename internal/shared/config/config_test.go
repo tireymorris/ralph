@@ -241,8 +241,8 @@ func TestValidate(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "valid default config", config: DefaultConfig()},
-		{name: "invalid runner", config: &Config{Runner: "invalid-runner", PRDFile: "prd.json", TestCommand: DefaultTestCommand}, wantErr: true},
-		{name: "empty prd_file", config: &Config{Runner: DefaultRunner, PRDFile: "", TestCommand: DefaultTestCommand}, wantErr: true},
+		{name: "invalid runner", config: &Config{Runner: "invalid-runner", PRDFile: "prd.json"}, wantErr: true},
+		{name: "empty prd_file", config: &Config{Runner: DefaultRunner, PRDFile: ""}, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -273,8 +273,8 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 func TestDefaultConfigTestCommand(t *testing.T) {
 	cfg := DefaultConfig()
-	if cfg.TestCommand != "go test ./..." {
-		t.Errorf("TestCommand = %q, want %q", cfg.TestCommand, "go test ./...")
+	if cfg.TestCommand != "" {
+		t.Errorf("TestCommand = %q, want empty default", cfg.TestCommand)
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 )
@@ -21,7 +22,7 @@ func TestMockRunnerWritesPRD(t *testing.T) {
 
 	r := NewMock(cfg)
 	ch := make(chan OutputLine, 4)
-	if err := r.Run(context.Background(), "Generate a PRD.\n3. Write the PRD file, then STOP.", ch); err != nil {
+	if err := r.Run(context.Background(), prompt.PRDGeneration("build x", cfg.PRDFile, cfg.BranchPrefix, false), ch); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(workDir, "prd.json")); err != nil {
@@ -52,7 +53,7 @@ func TestMockRunnerImplDelayDoesNotSlowSelfReview(t *testing.T) {
 	r := NewMock(cfg)
 	ch := make(chan OutputLine, 4)
 	start := time.Now()
-	if err := r.Run(context.Background(), "Review prd and write .ralph/prd_review.json", ch); err != nil {
+	if err := r.Run(context.Background(), prompt.PRDSelfReview("build x", cfg.PRDFile, 1, 3), ch); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 	if elapsed := time.Since(start); elapsed > 100*time.Millisecond {
@@ -67,7 +68,7 @@ func TestMockRunnerOutputsCleanReviewFindings(t *testing.T) {
 
 	r := NewMock(cfg)
 	ch := make(chan OutputLine, 4)
-	if err := r.Run(context.Background(), "Review diff.\n===ralph-findings===\n[]\n===/ralph-findings===", ch); err != nil {
+	if err := r.Run(context.Background(), prompt.CriticalDiffReview("", cfg.PRDFile, nil), ch); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 
@@ -106,8 +107,11 @@ func TestMockRunnerAdvancesOneSliceAtATime(t *testing.T) {
 
 	r := NewMock(cfg)
 	ch := make(chan OutputLine, 2)
+	implPrompt := prompt.StoryImplementation("story-1", "Story", "Desc", []prompt.SliceData{
+		{ID: "slice-1", Behavior: "first behavior", RedHint: "write first failing test"},
+	}, "", "", cfg.PRDFile, 0, 1, nil)
 
-	if err := r.Run(context.Background(), "Implement story: story-1", ch); err != nil {
+	if err := r.Run(context.Background(), implPrompt, ch); err != nil {
 		t.Fatalf("first Run() error = %v", err)
 	}
 	got, err := prd.Load(cfg)
@@ -122,7 +126,10 @@ func TestMockRunnerAdvancesOneSliceAtATime(t *testing.T) {
 		t.Fatalf("after first run, slice/story passes = %v/%v/%v, want true/false/false", story.Slices[0].Passes, story.Slices[1].Passes, story.Passes)
 	}
 
-	if err := r.Run(context.Background(), "Implement story: story-1", ch); err != nil {
+	implPrompt = prompt.StoryImplementation("story-1", "Story", "Desc", []prompt.SliceData{
+		{ID: "slice-2", Behavior: "second behavior", RedHint: "write second failing test"},
+	}, "", "", cfg.PRDFile, 0, 1, nil)
+	if err := r.Run(context.Background(), implPrompt, ch); err != nil {
 		t.Fatalf("second Run() error = %v", err)
 	}
 	got, err = prd.Load(cfg)

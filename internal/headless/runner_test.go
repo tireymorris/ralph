@@ -114,13 +114,13 @@ type autoContinueRunner struct {
 
 func (r *autoContinueRunner) Run(_ context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
 	r.calls = append(r.calls, promptKind(promptText))
-	switch {
-	case strings.Contains(promptText, "Write the PRD file") || strings.Contains(promptText, "Write the updated PRD file"):
+	switch prompt.Kind(promptText) {
+	case prompt.KindPRDGenerate, prompt.KindPRDCritiqueRevision, prompt.KindPRDClarificationRevision, prompt.KindFollowUp:
 		data := `{"project_name":"Test","stories":[{"id":"story-1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
 		return os.WriteFile(filepath.Join(r.workDir, "prd.json"), []byte(data), 0o644)
-	case strings.Contains(promptText, prompt.PRDSelfReviewVerdictFile):
+	case prompt.KindPRDSelfReview:
 		return os.WriteFile(filepath.Join(r.workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0o644)
-	case strings.Contains(promptText, "critical diff review"):
+	case prompt.KindDiffReview:
 		r.reviewCalls++
 		if r.reviewCalls == 1 {
 			_, _ = os.Stat(filepath.Join(r.workDir, "delta.txt"))
@@ -129,7 +129,7 @@ func (r *autoContinueRunner) Run(_ context.Context, promptText string, outputCh 
 		}
 		outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 		return nil
-	case strings.Contains(promptText, "Recovery") || strings.Contains(promptText, "recover"):
+	case prompt.KindRecovery:
 		if err := os.WriteFile(filepath.Join(r.workDir, "main.go"), []byte("package main\n// fixed\n"), 0o644); err != nil {
 			return err
 		}
@@ -151,16 +151,16 @@ const (
 )
 
 func promptKind(promptText string) string {
-	switch {
-	case strings.Contains(promptText, "Write the PRD file") || strings.Contains(promptText, "Write the updated PRD file"):
+	switch prompt.Kind(promptText) {
+	case prompt.KindPRDGenerate, prompt.KindPRDCritiqueRevision, prompt.KindPRDClarificationRevision, prompt.KindFollowUp:
 		return "prd"
-	case strings.Contains(promptText, prompt.PRDSelfReviewVerdictFile):
+	case prompt.KindPRDSelfReview:
 		return "selfreview"
-	case strings.Contains(promptText, "critical diff review"):
+	case prompt.KindDiffReview:
 		return "impl-review"
-	case strings.Contains(promptText, "Recovery") || strings.Contains(promptText, "recover"):
+	case prompt.KindRecovery:
 		return "recover"
-	case strings.Contains(promptText, "Implement story:"):
+	case prompt.KindStoryImplement:
 		return "implement"
 	default:
 		return "other"

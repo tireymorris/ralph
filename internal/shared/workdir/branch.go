@@ -6,8 +6,55 @@ import (
 	"strings"
 )
 
-func IsDefaultBranch(branchName string) bool {
-	return branchName == "main" || branchName == "master"
+var fallbackDefaultBranches = []string{"main", "master", "develop", "trunk"}
+
+func IsDefaultBranch(branchName string, defaults []string) bool {
+	if branchName == "" {
+		return false
+	}
+	names := defaults
+	if len(names) == 0 {
+		names = fallbackDefaultBranches
+	}
+	for _, name := range names {
+		if branchName == name {
+			return true
+		}
+	}
+	return false
+}
+
+func DetectDefaultBranches(workDir string) []string {
+	seen := make(map[string]bool)
+	var out []string
+	add := func(name string) {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			return
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+
+	if name, err := gitOriginDefaultBranch(workDir); err == nil {
+		add(name)
+	}
+	for _, name := range fallbackDefaultBranches {
+		add(name)
+	}
+	return out
+}
+
+func gitOriginDefaultBranch(workDir string) (string, error) {
+	out, err := runGitCommand(workDir, "symbolic-ref", "refs/remotes/origin/HEAD")
+	if err != nil {
+		return "", err
+	}
+	const prefix = "refs/remotes/origin/"
+	if !strings.HasPrefix(out, prefix) {
+		return "", fmt.Errorf("unexpected origin HEAD ref %q", out)
+	}
+	return strings.TrimPrefix(out, prefix), nil
 }
 
 func CurrentBranchName(workDir string) (string, error) {

@@ -59,8 +59,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			return nil
 		}
 
-		ready := p.ReadyStories()
-		if len(ready) == 0 {
+		story := p.NextReadyStory()
+		if story == nil {
 			blocked := p.BlockedStories()
 			if len(blocked) > 0 {
 				logger.Error("no ready stories, all incomplete stories are dependency-blocked", "blocked_count", len(blocked))
@@ -70,8 +70,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			}
 			continue
 		}
-
-		story := ready[0]
 
 		logger.Debug("starting story",
 			"story_id", story.ID,

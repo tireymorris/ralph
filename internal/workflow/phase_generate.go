@@ -25,7 +25,7 @@ func (e *Executor) RunGenerateWithAnswers(ctx context.Context, userPrompt string
 
 	e.emit(EventOutput{Output: Output{Text: "Analyzing codebase and generating PRD..."}})
 
-	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, "feature", !hasSource, qas)
+	prdPrompt := prompt.PRDGenerationWithAnswers(userPrompt, e.cfg.PRDFile, e.cfg.BranchPrefix, !hasSource, qas)
 	err := e.runWithForwardedOutput(ctx, prdPrompt)
 
 	if err != nil {

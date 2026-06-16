@@ -35,7 +35,7 @@ func (d *Driver) prepareImplementationBranch(p *prd.PRD) error {
 	if err != nil {
 		return fmt.Errorf("detect active branch: %w", err)
 	}
-	if !isDefaultBranch(branchName) {
+	if !isDefaultBranch(branchName, d.cfg.DefaultBranches) {
 		if p.BranchName != branchName {
 			p.BranchName = branchName
 			if err := savePRD(d.cfg, p); err != nil {
