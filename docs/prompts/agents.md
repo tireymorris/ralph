@@ -10,7 +10,7 @@ Cross-cutting discipline (TDD, diff hygiene, review focus, refactor rules) is di
 User goal → clarify → PRD → review → implement (per story) → impl review → cleanup
 ```
 
-TUI and web share the same `workflow.Driver`. Templates define what the runner is told to do at each step.
+TUI and web share the same `workflow.Driver`. Templates define what the runner is told to do at each step. Each rendered prompt is prefixed with `===ralph-prompt-kind:…===` so Go and mocks route by kind, not prose (see [`README.md`](README.md)).
 
 ## Planning agent
 

@@ -2,6 +2,15 @@
 
 Editable prompt templates live in [`internal/prompt/templates/`](../../internal/prompt/templates/). They are embedded into the Ralph binary at compile time via `go:embed` and rendered with `text/template`.
 
+Each rendered prompt is prefixed with a kind marker:
+
+```text
+===ralph-prompt-kind:story-implement===
+You are Ralph's implementation agent...
+```
+
+Use `prompt.Kind()`, `prompt.HasKind()`, and the `Kind*` constants in Go — do not match prompt prose in production code or mocks. Kind names match template define names (`clarify`, `prd-generate`, `story-implement`, `diff-review`, `recovery`, etc.).
+
 ## Edit workflow
 
 1. Change the relevant `.tmpl` file under `internal/prompt/templates/`.
@@ -68,5 +77,6 @@ See [`types.go`](../../internal/prompt/types.go) for all data structs.
 
 ## Tests
 
-- Existing substring tests in `internal/prompt/*_test.go` are the behavioral contract.
+- Substring tests in `internal/prompt/*_test.go` assert template **content** (behavior users/agents see).
+- Kind-marker tests in `kind_test.go` and workflow `prompt_kinds_test.go` assert routing uses `HasKind`, not prose.
 - `embed_test.go` verifies templates parse and render without panicking.

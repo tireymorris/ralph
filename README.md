@@ -1,6 +1,6 @@
 # Ralph
 
-Turn a goal into `prd.json`, then implement it story-by-story via an AI coding CLI. Ralph orchestrates; the runner writes code.
+Turn a goal into `prd.json`, then implement it slice-by-slice via an AI coding CLI. Ralph orchestrates; the runner writes code.
 
 ## Install
 
@@ -34,6 +34,11 @@ Implementation requires a git repo in the working directory.
 | `--verbose` | Debug logging |
 | `RALPH_RUNNER` | `claude`, `opencode`, `pi`, `cursor`, or `copilot` |
 | `RALPH_RUNNER_TIMEOUT` | Per-session timeout, e.g. `30m` |
+| `RALPH_BRANCH_PREFIX` | Branch prefix for PRD `branch_name` (default: `feature`) |
+| `RALPH_DEFAULT_BRANCHES` | Comma-separated default branch names (default: detect from git, then `main`, `master`, `develop`, `trunk`) |
+| `RALPH_TEST_COMMAND` | Override auto-detected project test command |
+
+On startup, Ralph detects an existing codebase from project manifests (e.g. `go.mod`, `package.json`) or source files, and picks a test command when none is set (`go test ./...`, `npm test`, `cargo test`, etc.). PRD generation uses `RALPH_BRANCH_PREFIX` for suggested branch names. Implementation checks out the PRD branch only when the current branch is a configured default.
 
 `ralph clean` removes `prd.json`, its lock, and `.ralph/` (including temp files and run data).
 
@@ -43,8 +48,8 @@ Implementation requires a git repo in the working directory.
 2. **Generate/load PRD** — runner writes `prd.json`
 3. **PRD self-review** — `--yolo` runs only; failures keep the last revision
 4. **Review PRD** — approve or revise (skipped with `--yolo` / `auto_approve`)
-5. **Implement** — one runner session per ready story; marks `passes: true` on success
-6. **Implementation review** — critical diff review after each story; may block on findings (TUI: Enter; web: `POST .../implementation-review`)
+5. **Implement** — one runner session per pending slice; Ralph marks `slice.passes` and `story.passes` when the runner succeeds
+6. **Implementation review** — critical diff review after each story; findings trigger an automatic recovery loop (re-review until clean or limits hit). Web `POST .../implementation-review` and `--resume` continue stalled review checkpoints.
 7. **Cleanup** — optional final pass (skip with `--skip-cleanup`)
 
 TUI and web share `workflow.Driver` → `Executor`. Web adds registry + SSE via `RunController`; TUI uses `FileReviewLoop` under `.ralph/runs/prd-local/`.
@@ -109,9 +114,13 @@ Go CLI/TUI with optional embedded web UI (`web/` → `internal/web/static/dist/`
 | `internal/web` | HTTP server, handlers, `RunController`, registry |
 | `internal/shared/prd` | PRD model, locking, storage |
 | `internal/shared/runner` | Runner integrations + mock |
+| `internal/shared/workdir` | Git branch helpers, codebase/test-command detection |
 | `internal/shared/runpaths` | `.ralph/runs/<id>/` path helpers |
+| `internal/prompt` | Embedded templates, kind markers, render helpers |
 
 **Start reading:** `internal/app/coordinator.go`, `internal/workflow/phase_generate.go`, `internal/workflow/phase_implement.go`, `internal/workflow/phase_implement_review.go`.
+
+Rendered prompts include a machine-readable kind marker (`===ralph-prompt-kind:…===`) so runners and tests can identify prompt type without parsing prose. See [`docs/prompts/`](docs/prompts/).
 
 ## Development
 

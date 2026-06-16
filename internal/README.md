@@ -3,7 +3,7 @@
 Ralph keeps UI-specific code separate from shared workflow and domain behavior:
 
 - `internal/workflow` owns shared workflow orchestration, including driver behavior and workflow events used by both interfaces.
-- `internal/shared` owns shared domain, configuration, runner, run-state, workdir, and session facade code that is independent of any UI.
+- `internal/shared` owns shared domain, configuration, runner, run-state, workdir (codebase/test detection, default branches), and session facade code that is independent of any UI.
 - `internal/tui` owns Bubble Tea/Lip Gloss rendering, input handling, and TUI-only operation state.
 - `internal/web` owns the Go `net/http` API, run controllers, handlers, and web-only server state.
 - `web/src` owns the Vite React TypeScript frontend and its Vitest-covered client behavior.
