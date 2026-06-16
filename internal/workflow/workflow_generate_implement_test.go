@@ -104,6 +104,44 @@ func TestRunGenerateSuccess(t *testing.T) {
 	}
 }
 
+type inMemoryPRDStore struct {
+	p *prd.PRD
+}
+
+func (s inMemoryPRDStore) Load(cfg *config.Config) (*prd.PRD, error) { return s.p, nil }
+func (s inMemoryPRDStore) Save(cfg *config.Config, p *prd.PRD) error { return nil }
+func (s inMemoryPRDStore) Exists(cfg *config.Config) (bool, error)   { return true, nil }
+
+func TestRunGenerateWithAnswersLoadsFromInjectedStore(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = tmpDir
+	cfg.PRDFile = "prd.json"
+
+	loaded := &prd.PRD{
+		ProjectName: "Injected",
+		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}},
+	}
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		return nil
+	}
+
+	exec := NewExecutorWithRunnerAndStore(cfg, ch, mock, inMemoryPRDStore{p: loaded})
+
+	p, err := exec.RunGenerateWithAnswers(context.Background(), "test prompt", []prompt.QuestionAnswer{{Question: "q", Answer: "a"}})
+	if err != nil {
+		t.Fatalf("RunGenerateWithAnswers() error = %v", err)
+	}
+	if p == nil || p.ProjectName != "Injected" {
+		t.Fatalf("RunGenerateWithAnswers() PRD = %+v, want injected PRD", p)
+	}
+	if _, err := os.Stat(filepath.Join(tmpDir, "prd.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected no prd.json write, stat error = %v", err)
+	}
+}
+
 func TestRunGenerateRunnerError(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := config.DefaultConfig()
