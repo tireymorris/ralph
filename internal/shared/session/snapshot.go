@@ -6,9 +6,11 @@ import (
 )
 
 type RunSnapshot struct {
-	Prompt     string
-	Phase      string
-	CurrentPRD *prd.PRD
+	Prompt           string
+	Phase            string
+	CurrentPRD       *prd.PRD
+	CurrentStory     *prd.Story
+	NextPendingSlice *prd.Slice
 }
 
 func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
@@ -23,9 +25,20 @@ func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
 		phase = fallbackPhase
 	}
 
+	var currentStory *prd.Story
+	var nextPendingSlice *prd.Slice
+	if currentPRD != nil {
+		currentStory = currentPRD.NextReadyStory()
+		if currentStory != nil {
+			nextPendingSlice = currentStory.NextPendingSlice()
+		}
+	}
+
 	return RunSnapshot{
-		Prompt:     s.Prompt(),
-		Phase:      phase,
-		CurrentPRD: currentPRD,
+		Prompt:           s.Prompt(),
+		Phase:            phase,
+		CurrentPRD:       currentPRD,
+		CurrentStory:     currentStory,
+		NextPendingSlice: nextPendingSlice,
 	}
 }

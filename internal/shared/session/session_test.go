@@ -201,3 +201,42 @@ func TestRunSnapshotBeforePRDLoadUsesPromptAndFallbackPhase(t *testing.T) {
 		t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseFollowup)
 	}
 }
+
+func TestRunSnapshotIncludesCurrentStoryAndNextPendingSlice(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	s := New(cfg)
+	story := &prd.Story{
+		ID:    "active",
+		Title: "Active story",
+		Slices: []*prd.Slice{
+			{ID: "slice-1", Behavior: "first", RedHint: "write failing test", Passes: true},
+			{ID: "slice-2", Behavior: "second", RedHint: "write failing test", Passes: false},
+			{ID: "slice-3", Behavior: "third", RedHint: "write failing test", Passes: false},
+		},
+	}
+	currentPRD := &prd.PRD{
+		ProjectName: "Progress",
+		Stories: []*prd.Story{
+			{ID: "done", Title: "Done story", Passes: true},
+			story,
+		},
+	}
+	s.TrackEventState(events.EventPRDLoaded{PRD: currentPRD})
+
+	snap := s.RunSnapshot(runstate.PhaseImplement)
+
+	if snap.CurrentStory == nil {
+		t.Fatal("CurrentStory = nil, want active story")
+	}
+	if snap.CurrentStory.ID != "active" {
+		t.Fatalf("CurrentStory.ID = %q, want %q", snap.CurrentStory.ID, "active")
+	}
+	if snap.NextPendingSlice == nil {
+		t.Fatal("NextPendingSlice = nil, want pending slice")
+	}
+	if snap.NextPendingSlice.ID != "slice-2" {
+		t.Fatalf("NextPendingSlice.ID = %q, want %q", snap.NextPendingSlice.ID, "slice-2")
+	}
+}
