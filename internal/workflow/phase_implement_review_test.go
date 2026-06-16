@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/logger"
