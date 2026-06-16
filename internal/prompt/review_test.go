@@ -13,7 +13,7 @@ func TestCriticalDiffReviewIncludesChangedFilesAndPRD(t *testing.T) {
 		"internal/foo.go",
 		"web/bar.ts",
 		"CHANGED FILES:",
-		"critical diff review",
+		KindDiffReview,
 		"===ralph-findings===",
 		"===/ralph-findings===",
 		"category",

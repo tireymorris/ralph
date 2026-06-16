@@ -31,14 +31,14 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	reviewCalls := 0
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		switch {
-		case strings.Contains(p, "critical diff review"):
+		case isDiffReviewPrompt(p):
 			reviewCalls++
 			if reviewCalls == 1 {
 				outputCh <- runner.OutputLine{Text: findingsTranscript}
 				return nil
 			}
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
-		case prompt.IsRecoveryPrompt(p):
+		case isRecoveryPrompt(p):
 			return nil
 		}
 		return nil
@@ -71,7 +71,7 @@ func TestRunImplementationReviewRecoveryExhaustedOnDuplicateFindings(t *testing.
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			outputCh <- runner.OutputLine{Text: findingsTranscript}
 		}
 		return nil
@@ -108,7 +108,7 @@ func TestRunImplementationDuplicateFingerprintPersistsStopReason(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			outputCh <- runner.OutputLine{Text: findingsTranscript}
 		}
 		return nil

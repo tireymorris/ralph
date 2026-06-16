@@ -152,15 +152,11 @@ func TestDriverStartNewAutoApproveDryRunSkipsImplementation(t *testing.T) {
 		select {
 		case ev := <-d.EventsCh():
 			d.TrackEventState(ev)
-			switch e := ev.(type) {
+			switch ev.(type) {
 			case events.EventPRDReview:
 				seenReview = true
 			case events.EventStoryStarted:
 				t.Fatal("dry-run auto-approve should not start implementation")
-			case events.EventOutput:
-				if strings.Contains(e.Output.Text, "Implement story:") {
-					t.Fatal("dry-run auto-approve should not invoke story implementation")
-				}
 			}
 		default:
 		}
@@ -174,7 +170,7 @@ func TestDriverStartNewAutoApproveDryRunSkipsImplementation(t *testing.T) {
 		t.Fatal("expected EventPRDReview before confirming implementation was skipped")
 	}
 	for _, call := range mock.calls {
-		if strings.Contains(call, "Implement story:") {
+		if isStoryImplementPrompt(call) {
 			t.Fatalf("dry-run auto-approve invoked implementation prompt %q", call)
 		}
 	}
@@ -270,7 +266,7 @@ func TestDriverStartImplementationInheritsBranchOnNonMain(t *testing.T) {
 
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
-		if strings.Contains(p, "Implement story:") {
+		if isStoryImplementPrompt(p) {
 			<-ctx.Done()
 			return ctx.Err()
 		}
@@ -358,7 +354,7 @@ func TestDriverStartImplementationChecksOutPRDBranchOnMain(t *testing.T) {
 
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, prompt string, _ chan<- runner.OutputLine) error {
-		if strings.Contains(prompt, "Implement story:") {
+		if isStoryImplementPrompt(prompt) {
 			if checkoutCalls != 1 {
 				t.Fatalf("implementation started before checkout completed: calls=%d", checkoutCalls)
 			}

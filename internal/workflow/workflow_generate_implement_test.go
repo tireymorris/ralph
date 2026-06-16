@@ -169,7 +169,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 	mock := newMockRunner()
 
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(prompt, "critical diff review") {
+		if isDiffReviewPrompt(prompt) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 			return nil
 		}
@@ -234,7 +234,7 @@ func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 	mock := newMockRunner()
 	call := 0
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(promptText, "critical diff review") {
+		if isDiffReviewPrompt(promptText) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 			return nil
 		}
@@ -345,7 +345,7 @@ func TestRunImplementationResumesWithOnlyPendingSliceEvents(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(promptText, "critical diff review") {
+		if isDiffReviewPrompt(promptText) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 		}
 		return nil
@@ -416,7 +416,7 @@ func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 		return true, nil
 	}
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(promptText, "critical diff review") {
+		if isDiffReviewPrompt(promptText) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 			return nil
 		}
@@ -472,7 +472,7 @@ func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 
 	var prompts []string
 	for _, call := range mock.calls {
-		if strings.Contains(call, "critical diff review") {
+		if isDiffReviewPrompt(call) {
 			continue
 		}
 		prompts = append(prompts, call)
@@ -526,7 +526,7 @@ func TestRunImplementationCommitsEachSliceWithSliceScopedMessage(t *testing.T) {
 		return true, nil
 	}
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(promptText, "critical diff review") {
+		if isDiffReviewPrompt(promptText) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 			return nil
 		}
@@ -624,7 +624,7 @@ func TestRunImplementationOmitsPassedSlicesFromPrompt(t *testing.T) {
 	mock := newMockRunner()
 	calls := 0
 	mock.runFunc = func(ctx context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(promptText, "critical diff review") {
+		if isDiffReviewPrompt(promptText) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 			return nil
 		}
@@ -1107,7 +1107,7 @@ func TestRunImplementationCleanupFailureStopsCompleted(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "cleanup") {
+		if isCleanupPrompt(p) {
 			return errors.New("cleanup exploded")
 		}
 		return nil
@@ -1207,11 +1207,11 @@ func countRunnerPromptKinds(mock *mockRunner) (story, review, cleanup int) {
 	defer mock.mu.Unlock()
 	for _, p := range mock.calls {
 		switch {
-		case strings.Contains(p, "critical diff review"):
+		case isDiffReviewPrompt(p):
 			review++
-		case prompt.IsRecoveryPrompt(p):
+		case isRecoveryPrompt(p):
 			story++
-		case strings.Contains(p, "cleanup"):
+		case isCleanupPrompt(p):
 			cleanup++
 		default:
 			story++

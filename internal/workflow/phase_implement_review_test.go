@@ -189,7 +189,7 @@ func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
 	mock := newMockRunner()
 	inStory := false
 	mock.runFunc = func(_ context.Context, p string, _ chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") && inStory {
+		if isDiffReviewPrompt(p) && inStory {
 			t.Fatal("implementation review runner invoked between story start and complete")
 		}
 		return nil
@@ -225,7 +225,7 @@ func TestRunImplementationReviewOnceTimesOutReviewRunner(t *testing.T) {
 
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			<-ctx.Done()
 			return ctx.Err()
 		}
@@ -263,7 +263,7 @@ func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			outputCh <- runner.OutputLine{Text: findingsTranscript}
 		}
 		return nil
@@ -345,7 +345,7 @@ func TestRunImplementationReviewLogsApplyReviewLoopFailure(t *testing.T) {
 
 	mock := newMockRunner()
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
 		}
 		return nil
@@ -439,7 +439,7 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if strings.Contains(p, "critical diff review") {
+		if isDiffReviewPrompt(p) {
 			outputCh <- runner.OutputLine{Text: findingsTranscript}
 		}
 		return nil
@@ -508,14 +508,14 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 	reviewCalls := 0
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		switch {
-		case strings.Contains(p, "critical diff review"):
+		case isDiffReviewPrompt(p):
 			reviewCalls++
 			if reviewCalls == 1 {
 				outputCh <- runner.OutputLine{Text: findingsTranscript}
 				return nil
 			}
 			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
-		case prompt.IsRecoveryPrompt(p):
+		case isRecoveryPrompt(p):
 			if err := os.WriteFile(filepath.Join(workDir, "delta.txt"), []byte("fixed\n"), 0o644); err != nil {
 				return err
 			}
