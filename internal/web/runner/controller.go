@@ -24,10 +24,11 @@ type RunController struct {
 	lifecycle *runs.Lifecycle
 	runID     string
 
-	mu          sync.Mutex
-	subscribers map[chan events.Event]struct{}
-	onTerminal  func()
-	wg          sync.WaitGroup
+	mu               sync.Mutex
+	subscribers      map[chan events.Event]struct{}
+	onTerminal       func()
+	terminalNotified bool
+	wg               sync.WaitGroup
 }
 
 func (c *RunController) SetOnTerminal(fn func()) {
@@ -188,8 +189,12 @@ func (c *RunController) handleEvent(ev events.Event) {
 	if runs.IsTerminalStatus(status) {
 		c.mu.Lock()
 		fn := c.onTerminal
+		notify := fn != nil && !c.terminalNotified
+		if notify {
+			c.terminalNotified = true
+		}
 		c.mu.Unlock()
-		if fn != nil {
+		if notify {
 			fn()
 		}
 	}

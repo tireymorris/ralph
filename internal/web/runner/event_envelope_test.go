@@ -2,6 +2,7 @@ package runner
 
 import (
 	"encoding/json"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -147,4 +148,51 @@ func TestControllerHandlesCleanupEventsWithoutPanic(t *testing.T) {
 	}
 	got, _ := reg.Get(run.ID)
 	t.Fatalf("expected status=completed phase=complete, got status=%q phase=%q", got.Status, got.Phase)
+}
+
+func TestControllerInvokesTerminalCallbackOnce(t *testing.T) {
+	workDir := t.TempDir()
+	reg := runs.NewRegistry()
+	run := &runs.Run{
+		ID:        "run-terminal-once",
+		WorkDir:   workDir,
+		Prompt:    "test",
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	ctrl := NewControllerWithRunner(cfg, reg, run.ID, &testRunner{})
+	t.Cleanup(ctrl.Cancel)
+
+	var calls int32
+	ctrl.SetOnTerminal(func() {
+		atomic.AddInt32(&calls, 1)
+	})
+
+	ctrl.EmitEvent(events.EventCompleted{})
+	ctrl.EmitEvent(events.EventCompleted{})
+
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		if atomic.LoadInt32(&calls) > 0 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("terminal callback calls = %d, want 1", got)
+	}
+
+	time.Sleep(200 * time.Millisecond)
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("terminal callback calls = %d after settle, want 1", got)
+	}
 }

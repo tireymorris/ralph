@@ -15,14 +15,14 @@
           "behavior": "A shared snapshot can be built for a run before any PRD has been loaded.",
           "red_hint": "add a failing test that shared snapshot creation works before PRD load, uses the driver's prompt, and falls back to the checkpoint/registry phase",
           "refactor_hint": "Start with a minimal read-only snapshot shape and derive prompt and phase from shared driver state.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-2",
           "behavior": "A shared snapshot reports the active story and next pending slice during implementation.",
           "red_hint": "add a failing test that the shared snapshot exposes the current story and next pending slice for an in-progress PRD",
           "refactor_hint": "Use internal/shared/prd helpers for progress and next-pending selection instead of duplicating that logic in UI code.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-3",
@@ -98,14 +98,14 @@
           "id": "slice-3",
           "behavior": "Terminal events still invoke the web controller completion callback once.",
           "red_hint": "add a failing test that terminal event handling still triggers the onTerminal callback exactly once after shared translation",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 3,
       "depends_on": [
         "story-1"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

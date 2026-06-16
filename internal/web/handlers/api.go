@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"sync"
+	"time"
 
 	"ralph/internal/shared/config"
 	sharedrunner "ralph/internal/shared/runner"
@@ -20,6 +21,8 @@ type API struct {
 	controllerFactory controllerFactory
 	mu                sync.Mutex
 	controllers       map[string]*runctrl.RunController
+	releaseMu         sync.Mutex
+	releaseWG         sync.WaitGroup
 }
 
 func NewAPI(cfg *config.Config, registry *runs.Registry) *API {
@@ -62,12 +65,14 @@ func (a *API) registerController(id string, ctrl *runctrl.RunController) {
 func (a *API) releaseController(id string) {
 	a.mu.Lock()
 	ctrl := a.controllers[id]
-	delete(a.controllers, id)
 	a.mu.Unlock()
 	if ctrl != nil {
 		ctrl.Cancel()
 		ctrl.Wait()
 	}
+	a.mu.Lock()
+	delete(a.controllers, id)
+	a.mu.Unlock()
 }
 
 func (a *API) ensureController(id string) (*runctrl.RunController, error) {
@@ -95,7 +100,15 @@ func (a *API) ensureController(id string) (*runctrl.RunController, error) {
 }
 
 func (a *API) registerControllerLocked(id string, ctrl *runctrl.RunController) {
-	ctrl.SetOnTerminal(func() { go a.releaseController(id) })
+	ctrl.SetOnTerminal(func() {
+		a.releaseMu.Lock()
+		a.releaseWG.Add(1)
+		a.releaseMu.Unlock()
+		go func() {
+			defer a.releaseWG.Done()
+			a.releaseController(id)
+		}()
+	})
 	a.controllers[id] = ctrl
 }
 
@@ -109,4 +122,8 @@ func (a *API) ReleaseAllControllers() {
 	for _, id := range ids {
 		a.releaseController(id)
 	}
+	a.releaseMu.Lock()
+	a.releaseWG.Wait()
+	a.releaseMu.Unlock()
+	time.Sleep(25 * time.Millisecond)
 }
