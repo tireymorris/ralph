@@ -12,9 +12,12 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/web/handlers"
+	runctrl "ralph/internal/web/runner"
 	"ralph/internal/web/runs"
+	"ralph/internal/workflow/events"
 )
 
 var runIDPattern = regexp.MustCompile(`^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
@@ -160,6 +163,105 @@ func TestGetRunIncludesAutoApprove(t *testing.T) {
 	}
 }
 
+func TestGetRunUsesSharedSnapshotForStoryProgress(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	reg := runs.NewRegistry()
+	now := time.Now()
+	runID := "shared-snapshot-run"
+	if err := reg.Register(&runs.Run{
+		ID:        runID,
+		WorkDir:   workDir,
+		Prompt:    "goal",
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: now,
+		UpdatedAt: now,
+		PRDPath:   "prd.json",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	api := handlers.NewAPI(cfg, reg)
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+	t.Cleanup(func() {
+		ctrl.Cancel()
+		ctrl.Wait()
+	})
+	ctrl.TrackEventState(events.EventPRDLoaded{PRD: &prd.PRD{
+		ProjectName: "Shared",
+		Stories: []*prd.Story{
+			{
+				ID:     "done",
+				Title:  "Done story",
+				Passes: true,
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "done", RedHint: "make it fail", Passes: true},
+				},
+			},
+			{
+				ID:    "active",
+				Title: "Active story",
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "passed slice", RedHint: "make it fail", Passes: true},
+					{ID: "slice-2", Behavior: "current slice", RedHint: "make it fail", RefactorHint: "extract helper", Passes: false},
+				},
+			},
+		},
+	}})
+	api.SetController(runID, ctrl)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/"+runID, nil)
+	req.SetPathValue("id", runID)
+	rec := httptest.NewRecorder()
+	api.GetRun(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var body struct {
+		StoryProgress struct {
+			Completed int `json:"completed"`
+			Total     int `json:"total"`
+			Stories   []struct {
+				ID              string `json:"id"`
+				Title           string `json:"title"`
+				Passes          bool   `json:"passes"`
+				CompletedSlices int    `json:"completed_slices"`
+				TotalSlices     int    `json:"total_slices"`
+				Slices          []struct {
+					ID           string `json:"id"`
+					Behavior     string `json:"behavior"`
+					RedHint      string `json:"red_hint"`
+					RefactorHint string `json:"refactor_hint"`
+					Passes       bool   `json:"passes"`
+				} `json:"slices"`
+			} `json:"stories"`
+		} `json:"story_progress"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if body.StoryProgress.Completed != 1 {
+		t.Fatalf("completed = %d, want 1", body.StoryProgress.Completed)
+	}
+	if body.StoryProgress.Total != 2 {
+		t.Fatalf("total = %d, want 2", body.StoryProgress.Total)
+	}
+	if len(body.StoryProgress.Stories) != 2 {
+		t.Fatalf("stories = %d, want 2", len(body.StoryProgress.Stories))
+	}
+	active := body.StoryProgress.Stories[1]
+	if active.ID != "active" || active.CompletedSlices != 1 || active.TotalSlices != 2 {
+		t.Fatalf("active story = %#v, want shared snapshot counts", active)
+	}
+	if active.Slices[1].RefactorHint != "extract helper" {
+		t.Fatalf("refactor_hint = %q, want extract helper", active.Slices[1].RefactorHint)
+	}
+}
+
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
@@ -269,10 +371,10 @@ func TestGetRunStoryProgress(t *testing.T) {
 			Completed int `json:"completed"`
 			Total     int `json:"total"`
 			Stories   []struct {
-				ID       string `json:"id"`
-				Title    string `json:"title"`
-				Passes   bool   `json:"passes"`
-				Slices   []struct {
+				ID     string `json:"id"`
+				Title  string `json:"title"`
+				Passes bool   `json:"passes"`
+				Slices []struct {
 					ID           string `json:"id"`
 					Behavior     string `json:"behavior"`
 					RedHint      string `json:"red_hint"`

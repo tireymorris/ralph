@@ -184,6 +184,14 @@ func sortRunResponses(list []runResponse) {
 }
 
 func (a *API) runProgress(run *runs.Run) *sharedprd.RunProgress {
+	if ctrl, ok := a.controller(run.ID); ok {
+		snapshot := ctrl.RunSnapshot(run.Phase)
+		if snapshot.CurrentPRD != nil {
+			return snapshot.CurrentPRD.RunProgress()
+		}
+		return nil
+	}
+
 	runCfg := *a.cfg
 	if run.ID == runs.LocalPRDRunID {
 		runCfg.WorkDir = a.cfg.WorkDir

@@ -46,6 +46,13 @@ func (a *API) SetController(id string, ctrl *runctrl.RunController) {
 	a.registerController(id, ctrl)
 }
 
+func (a *API) controller(id string) (*runctrl.RunController, bool) {
+	a.mu.Lock()
+	ctrl, ok := a.controllers[id]
+	a.mu.Unlock()
+	return ctrl, ok
+}
+
 func (a *API) registerController(id string, ctrl *runctrl.RunController) {
 	a.mu.Lock()
 	a.registerControllerLocked(id, ctrl)
