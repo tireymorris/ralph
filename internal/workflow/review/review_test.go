@@ -79,6 +79,71 @@ func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
 	}
 }
 
+func TestRunRunnerConcatenatesAppendedOutput(t *testing.T) {
+	t.Parallel()
+
+	streaming := &streamingRunner{lines: []runner.OutputLine{
+		{Text: "Using tool: read"},
+		{Text: "===", Append: true},
+		{Text: "ral", Append: true},
+		{Text: "ph", Append: true},
+		{Text: "-find", Append: true},
+		{Text: "ings", Append: true},
+		{Text: "===", Append: true},
+		{Text: "\n[]\n===/ralph-findings===", Append: true},
+	}}
+
+	transcript, err := runRunner(context.Background(), streaming, "prompt")
+	if err != nil {
+		t.Fatalf("runRunner() err = %v", err)
+	}
+
+	want := "Using tool: read\n===ralph-findings===\n[]\n===/ralph-findings==="
+	if transcript != want {
+		t.Fatalf("transcript = %q, want %q", transcript, want)
+	}
+
+	findings, err := ParseFindings(transcript, true)
+	if err != nil {
+		t.Fatalf("ParseFindings() err = %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("findings = %v, want none", findings)
+	}
+}
+
+func TestReviewDiffParsesStreamedFindingsFromTranscript(t *testing.T) {
+	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	streaming := &streamingRunner{lines: []runner.OutputLine{
+		{Text: "Using tool: read"},
+		{Text: "===", Append: true},
+		{Text: "ral", Append: true},
+		{Text: "ph", Append: true},
+		{Text: "-find", Append: true},
+		{Text: "ings", Append: true},
+		{Text: "===", Append: true},
+		{Text: "\n[]\n===/ralph-findings===", Append: true},
+	}}
+
+	result, err := ReviewDiff(context.Background(), Params{
+		WorkDir:   workDir,
+		RunID:     "run-streamed",
+		Iteration: 1,
+		PRDFile:   "prd.json",
+		Context:   "ctx",
+		Runner:    streaming,
+	})
+	if err != nil {
+		t.Fatalf("ReviewDiff() err = %v", err)
+	}
+	if !result.Clean {
+		t.Fatal("Clean = false, want true for empty streamed findings block")
+	}
+	if len(result.Findings) != 0 {
+		t.Fatalf("Findings = %v, want none", result.Findings)
+	}
+}
+
 func TestReviewDiffParsesFindingsFromTranscript(t *testing.T) {
 	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
 	transcript := `===ralph-findings===
@@ -196,6 +261,23 @@ func (r *recordingRunner) Run(_ context.Context, prompt string, outputCh chan<- 
 func (r *recordingRunner) RunnerName() string  { return "recording" }
 func (r *recordingRunner) CommandName() string { return "recording" }
 func (r *recordingRunner) IsInternalLog(string) bool {
+	return false
+}
+
+type streamingRunner struct {
+	lines []runner.OutputLine
+}
+
+func (r *streamingRunner) Run(_ context.Context, _ string, outputCh chan<- runner.OutputLine) error {
+	for _, line := range r.lines {
+		outputCh <- line
+	}
+	return nil
+}
+
+func (r *streamingRunner) RunnerName() string  { return "streaming" }
+func (r *streamingRunner) CommandName() string { return "streaming" }
+func (r *streamingRunner) IsInternalLog(string) bool {
 	return false
 }
 

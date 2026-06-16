@@ -81,13 +81,7 @@ func runRunner(ctx context.Context, r runner.RunnerInterface, reviewPrompt strin
 	go func() {
 		defer close(done)
 		for line := range outputCh {
-			if line.IsErr {
-				buf.WriteString("STDERR: ")
-			}
-			buf.WriteString(line.Text)
-			if !strings.HasSuffix(line.Text, "\n") {
-				buf.WriteByte('\n')
-			}
+			appendTranscriptLine(&buf, line)
 		}
 	}()
 
@@ -98,6 +92,23 @@ func runRunner(ctx context.Context, r runner.RunnerInterface, reviewPrompt strin
 		return buf.String(), err
 	}
 	return buf.String(), nil
+}
+
+func appendTranscriptLine(buf *strings.Builder, line runner.OutputLine) {
+	if line.IsErr {
+		buf.WriteString("STDERR: ")
+	}
+	if line.Append {
+		buf.WriteString(line.Text)
+		return
+	}
+	if buf.Len() > 0 && !strings.HasSuffix(buf.String(), "\n") {
+		buf.WriteByte('\n')
+	}
+	buf.WriteString(line.Text)
+	if line.Text != "" && !strings.HasSuffix(line.Text, "\n") {
+		buf.WriteByte('\n')
+	}
 }
 
 func transcriptRelPath(iteration int) string {
