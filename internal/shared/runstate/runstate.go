@@ -42,24 +42,29 @@ const (
 
 const CheckpointCancelled = StatusCancelled
 
-func CheckpointPhase(checkpoint string, p *prd.PRD) string {
+func CheckpointStatusPhase(checkpoint string, p *prd.PRD) (status, phase string) {
 	switch checkpoint {
 	case CheckpointPRDReview:
-		return PhaseReview
+		return StatusWaitingReview, PhaseReview
 	case CheckpointImplReview:
-		return PhaseImplement
+		return StatusImplementing, PhaseImplement
 	case CheckpointFollowup:
-		return PhaseFollowup
+		return StatusImplementing, PhaseImplement
 	case CheckpointComplete:
-		return PhaseCompleted
+		return StatusCompleted, PhaseCompleted
 	case CheckpointCancelled:
-		return PhaseCancelled
+		return StatusCancelled, PhaseCancelled
 	default:
 		if p != nil && !p.AllCompleted() {
-			return PhaseImplement
+			return StatusImplementing, PhaseImplement
 		}
-		return PhaseReview
+		return StatusRunning, PhaseReview
 	}
+}
+
+func CheckpointPhase(checkpoint string, p *prd.PRD) string {
+	_, phase := CheckpointStatusPhase(checkpoint, p)
+	return phase
 }
 
 func LocalPRDStatusPhase(p *prd.PRD, checkpoint string) (status, phase string) {

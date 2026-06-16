@@ -197,8 +197,8 @@ func TestRunSnapshotBeforePRDLoadUsesPromptAndFallbackPhase(t *testing.T) {
 	if snap.CurrentPRD != nil {
 		t.Fatalf("CurrentPRD = %#v, want nil before PRD load", snap.CurrentPRD)
 	}
-	if snap.Phase != runstate.PhaseFollowup {
-		t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseFollowup)
+	if snap.Phase != runstate.PhaseImplement {
+		t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseImplement)
 	}
 }
 

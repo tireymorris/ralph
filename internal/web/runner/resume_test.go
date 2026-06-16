@@ -11,6 +11,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
 )
@@ -29,26 +30,36 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 		checkpoint  string
 		wantEvents  []string
 		wantNoEvent bool
+		wantStatus  string
+		wantPhase   string
 	}{
 		{
 			name:       "prd review reloads PRD for review",
 			checkpoint: runs.CheckpointPRDReview,
 			wantEvents: []string{"EventPRDLoaded", "EventPRDReview"},
+			wantStatus: runstate.StatusWaitingReview,
+			wantPhase:  runstate.PhaseReview,
 		},
 		{
 			name:       "implementation review resumes implementation",
 			checkpoint: runs.CheckpointImplReview,
 			wantEvents: []string{"EventStoryStarted"},
+			wantStatus: runstate.StatusImplementing,
+			wantPhase:  runstate.PhaseImplement,
 		},
 		{
 			name:       "followup resumes implementation",
 			checkpoint: runs.CheckpointFollowup,
 			wantEvents: []string{"EventStoryStarted"},
+			wantStatus: runstate.StatusImplementing,
+			wantPhase:  runstate.PhaseImplement,
 		},
 		{
 			name:        "complete starts no phase",
 			checkpoint:  runs.CheckpointComplete,
 			wantNoEvent: true,
+			wantStatus:  runstate.StatusCompleted,
+			wantPhase:   runstate.PhaseCompleted,
 		},
 	}
 
@@ -94,14 +105,24 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 
 			if tt.wantNoEvent {
 				assertNoForceResumeEvent(t, ch)
-				return
-			}
-			for _, want := range tt.wantEvents {
-				ev := nextForceResumeEvent(t, ch)
-				if forceResumeEventName(ev) != want {
-					t.Fatalf("event = %s, want %s", forceResumeEventName(ev), want)
+			} else {
+				for _, want := range tt.wantEvents {
+					ev := nextForceResumeEvent(t, ch)
+					if forceResumeEventName(ev) != want {
+						t.Fatalf("event = %s, want %s", forceResumeEventName(ev), want)
+					}
 				}
 			}
+			deadline := time.Now().Add(2 * time.Second)
+			for time.Now().Before(deadline) {
+				got, ok := reg.Get(run.ID)
+				if ok && got.Status == tt.wantStatus && got.Phase == tt.wantPhase {
+					return
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+			state, _ := reg.Get(run.ID)
+			t.Fatalf("run state = %q/%q, want %q/%q", state.Status, state.Phase, tt.wantStatus, tt.wantPhase)
 		})
 	}
 }

@@ -15,7 +15,7 @@ func TestCheckpointPhase(t *testing.T) {
 	}{
 		{name: "PRD review", checkpoint: CheckpointPRDReview, prd: completedPRD(), want: PhaseReview},
 		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), want: PhaseImplement},
-		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), want: PhaseFollowup},
+		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), want: PhaseImplement},
 		{name: "complete", checkpoint: CheckpointComplete, prd: incompletePRD(), want: PhaseCompleted},
 		{name: "incomplete PRD", prd: incompletePRD(), want: PhaseImplement},
 		{name: "cancelled", checkpoint: CheckpointCancelled, prd: incompletePRD(), want: PhaseCancelled},
@@ -25,6 +25,32 @@ func TestCheckpointPhase(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := CheckpointPhase(tc.checkpoint, tc.prd); got != tc.want {
 				t.Fatalf("CheckpointPhase() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCheckpointStatusPhase(t *testing.T) {
+	tests := []struct {
+		name       string
+		checkpoint string
+		prd        *prd.PRD
+		wantStatus string
+		wantPhase  string
+	}{
+		{name: "PRD review", checkpoint: CheckpointPRDReview, prd: completedPRD(), wantStatus: StatusWaitingReview, wantPhase: PhaseReview},
+		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
+		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
+		{name: "complete", checkpoint: CheckpointComplete, prd: incompletePRD(), wantStatus: StatusCompleted, wantPhase: PhaseCompleted},
+		{name: "incomplete PRD", prd: incompletePRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
+		{name: "cancelled", checkpoint: CheckpointCancelled, prd: incompletePRD(), wantStatus: StatusCancelled, wantPhase: PhaseCancelled},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotStatus, gotPhase := CheckpointStatusPhase(tc.checkpoint, tc.prd)
+			if gotStatus != tc.wantStatus || gotPhase != tc.wantPhase {
+				t.Fatalf("CheckpointStatusPhase() = (%q, %q), want (%q, %q)", gotStatus, gotPhase, tc.wantStatus, tc.wantPhase)
 			}
 		})
 	}

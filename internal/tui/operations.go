@@ -46,9 +46,10 @@ func (om *OperationManager) resumeStartMsg() tea.Msg {
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 	checkpoint := workflow.NewFileReviewLoop(om.cfg.WorkDir, runstate.LocalRunID).Checkpoint()
+	_, phase := runstate.CheckpointStatusPhase(checkpoint, p)
 	snapshot := session.RunSnapshot{
 		Prompt:           om.Session.Prompt(),
-		Phase:            runstate.CheckpointPhase(checkpoint, p),
+		Phase:            phase,
 		CurrentPRD:       p,
 		CurrentStory:     p.NextReadyStory(),
 		CompletedStories: p.CompletedCount(),
@@ -57,22 +58,17 @@ func (om *OperationManager) resumeStartMsg() tea.Msg {
 	if snapshot.CurrentStory != nil {
 		snapshot.NextPendingSlice = snapshot.CurrentStory.NextPendingSlice()
 	}
-	return resumeStartMsg{phase: resumePhase(checkpoint, p), prd: p, snapshot: snapshot}
+	return resumeStartMsg{phase: resumePhase(phase), prd: p, snapshot: snapshot}
 }
 
-func resumePhase(checkpoint string, p *prd.PRD) Phase {
-	switch runstate.CheckpointPhase(checkpoint, p) {
-	case runstate.PhaseReview:
-		return PhasePRDReview
-	case runstate.PhaseImplementationReview:
-		return PhaseImplementationReview
-	case runstate.PhaseFollowup, runstate.PhaseImplement:
-		return PhaseImplementation
-	case runstate.PhaseCompleted:
-		return PhaseCompleted
-	default:
+func resumePhase(phase string) Phase {
+	if phase == runstate.PhaseReview {
 		return PhasePRDReview
 	}
+	if phase == runstate.PhaseCompleted {
+		return PhaseCompleted
+	}
+	return PhaseImplementation
 }
 
 func (om *OperationManager) StartImplementation(p *prd.PRD) tea.Cmd {

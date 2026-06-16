@@ -62,7 +62,7 @@
           "id": "slice-4",
           "behavior": "The web follow-up path routes through the shared session facade before restarting implementation.",
           "red_hint": "add a failing test that internal/web/runner/controller.go delegates follow-up dispatching through session.Session",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-5",

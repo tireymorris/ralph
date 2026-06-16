@@ -7,7 +7,6 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
-	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
 )
 
@@ -37,14 +36,16 @@ func (c *RunController) ForceResume(ctx context.Context) {
 			c.StartImplementationFromPRD(ctx, p)
 			return
 		}
-		switch run.Checkpoint {
-		case runs.CheckpointPRDReview:
+		status, phase := runstate.CheckpointStatusPhase(run.Checkpoint, p)
+		switch phase {
+		case runstate.PhaseCompleted:
+			_ = c.registry.UpdateStatus(c.runID, status, phase)
+			return
+		case runstate.PhaseReview:
 			c.StartCheckpointResume(ctx)
 			return
-		case runs.CheckpointImplReview, runs.CheckpointFollowup:
+		case runstate.PhaseImplement:
 			c.StartImplementationFromPRD(ctx, p)
-			return
-		case runs.CheckpointComplete:
 			return
 		}
 		if !p.AllCompleted() && run.Status != runstate.StatusWaitingReview && run.Status != runstate.StatusWaitingImplReview {
