@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"ralph/internal/clean"
-	"ralph/internal/shared/prd"
+	sharedprd "ralph/internal/shared/prd"
 	"ralph/internal/shared/workdir"
 	"ralph/internal/web/runs"
 )
@@ -23,44 +23,21 @@ type createRunRequest struct {
 	AutoApprove bool   `json:"auto_approve"`
 }
 
-type storyProgress struct {
-	Completed int                  `json:"completed"`
-	Total     int                  `json:"total"`
-	Stories   []storyProgressStory `json:"stories,omitempty"`
-}
-
-type storyProgressStory struct {
-	ID              string                `json:"id"`
-	Title           string                `json:"title"`
-	Passes          bool                  `json:"passes"`
-	CompletedSlices  int                   `json:"completed_slices"`
-	TotalSlices      int                   `json:"total_slices"`
-	Slices          []storyProgressSlice  `json:"slices,omitempty"`
-}
-
-type storyProgressSlice struct {
-	ID           string `json:"id"`
-	Behavior     string `json:"behavior"`
-	RedHint      string `json:"red_hint"`
-	RefactorHint string `json:"refactor_hint,omitempty"`
-	Passes       bool   `json:"passes"`
-}
-
 type runResponse struct {
-	ID                string         `json:"id"`
-	Prompt            string         `json:"prompt"`
-	Status            string         `json:"status"`
-	Phase             string         `json:"phase"`
-	CreatedAt         time.Time      `json:"created_at"`
-	UpdatedAt         time.Time      `json:"updated_at"`
-	Source            string         `json:"source,omitempty"`
-	StoryProgress     *storyProgress `json:"story_progress,omitempty"`
-	Checkpoint        string         `json:"checkpoint,omitempty"`
-	ReviewIteration   int            `json:"review_iteration,omitempty"`
-	ReviewFingerprint string         `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs   int64          `json:"review_elapsed_ms,omitempty"`
-	StopReason        string         `json:"stop_reason,omitempty"`
-	AutoApprove       bool           `json:"auto_approve,omitempty"`
+	ID                string                 `json:"id"`
+	Prompt            string                 `json:"prompt"`
+	Status            string                 `json:"status"`
+	Phase             string                 `json:"phase"`
+	CreatedAt         time.Time              `json:"created_at"`
+	UpdatedAt         time.Time              `json:"updated_at"`
+	Source            string                 `json:"source,omitempty"`
+	StoryProgress     *sharedprd.RunProgress `json:"story_progress,omitempty"`
+	Checkpoint        string                 `json:"checkpoint,omitempty"`
+	ReviewIteration   int                    `json:"review_iteration,omitempty"`
+	ReviewFingerprint string                 `json:"review_fingerprint,omitempty"`
+	ReviewElapsedMs   int64                  `json:"review_elapsed_ms,omitempty"`
+	StopReason        string                 `json:"stop_reason,omitempty"`
+	AutoApprove       bool                   `json:"auto_approve,omitempty"`
 }
 
 func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
@@ -98,14 +75,14 @@ func (a *API) CreateRun(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	run := &runs.Run{
-		ID:        id,
-		WorkDir:   workDir,
-		Prompt:    prompt,
-		Status:    "running",
-		Phase:     "clarify",
-		CreatedAt: now,
-		UpdatedAt:    now,
-		PRDPath:      a.cfg.PRDFile,
+		ID:          id,
+		WorkDir:     workDir,
+		Prompt:      prompt,
+		Status:      "running",
+		Phase:       "clarify",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		PRDPath:     a.cfg.PRDFile,
 		AutoApprove: req.AutoApprove,
 	}
 	if err := a.registry.Register(run); err != nil {
@@ -194,7 +171,7 @@ func (a *API) runResponse(run *runs.Run) runResponse {
 	if run.ID == runs.LocalPRDRunID {
 		resp.Source = "local_prd"
 	}
-	if sp := a.storyProgress(run); sp != nil {
+	if sp := a.runProgress(run); sp != nil {
 		resp.StoryProgress = sp
 	}
 	return resp
@@ -206,7 +183,7 @@ func sortRunResponses(list []runResponse) {
 	})
 }
 
-func (a *API) storyProgress(run *runs.Run) *storyProgress {
+func (a *API) runProgress(run *runs.Run) *sharedprd.RunProgress {
 	runCfg := *a.cfg
 	if run.ID == runs.LocalPRDRunID {
 		runCfg.WorkDir = a.cfg.WorkDir
@@ -220,41 +197,9 @@ func (a *API) storyProgress(run *runs.Run) *storyProgress {
 	if _, err := os.Stat(prdPath); err != nil {
 		return nil
 	}
-	p, err := prd.Load(&runCfg)
+	p, err := sharedprd.Load(&runCfg)
 	if err != nil {
 		return nil
 	}
-	progress := &storyProgress{
-		Completed: p.CompletedCount(),
-		Total:     len(p.Stories),
-	}
-	progress.Stories = make([]storyProgressStory, 0, len(p.Stories))
-	for _, story := range p.Stories {
-		progress.Stories = append(progress.Stories, storyProgressStory{
-			ID:             story.ID,
-			Title:          story.Title,
-			Passes:         story.Passes,
-			CompletedSlices: story.CompletedSliceCount(),
-			TotalSlices:     len(story.Slices),
-			Slices:          toStoryProgressSlices(story.Slices),
-		})
-	}
-	return progress
-}
-
-func toStoryProgressSlices(slices []*prd.Slice) []storyProgressSlice {
-	out := make([]storyProgressSlice, 0, len(slices))
-	for _, slice := range slices {
-		if slice == nil {
-			continue
-		}
-		out = append(out, storyProgressSlice{
-			ID:           slice.ID,
-			Behavior:     slice.Behavior,
-			RedHint:      slice.RedHint,
-			RefactorHint: slice.RefactorHint,
-			Passes:       slice.Passes,
-		})
-	}
-	return out
+	return p.RunProgress()
 }

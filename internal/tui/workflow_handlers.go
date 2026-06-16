@@ -53,7 +53,8 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventPRDGenerated:
 		m.prd = e.PRD
-		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", e.PRD.ProjectName, len(e.PRD.Stories)))
+		progress := e.PRD.RunProgress()
+		m.logger.AddLog(fmt.Sprintf("PRD generated: %s (%d stories)", e.PRD.ProjectName, progress.Total))
 		if m.dryRun {
 			m.phase = PhaseCompleted
 			m.logger.AddLog("Dry run complete - PRD saved to " + m.cfg.PRDFile)
@@ -66,8 +67,9 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 
 	case events.EventPRDLoaded:
 		m.prd = e.PRD
+		progress := e.PRD.RunProgress()
 		m.logger.AddLog(fmt.Sprintf("Loaded PRD: %s (%d/%d completed)",
-			e.PRD.ProjectName, e.PRD.CompletedCount(), len(e.PRD.Stories)))
+			e.PRD.ProjectName, progress.Completed, progress.Total))
 		if m.dryRun {
 			m.phase = PhaseCompleted
 		} else if m.cfg.AutoApprove {

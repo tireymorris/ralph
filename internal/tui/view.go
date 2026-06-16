@@ -312,9 +312,16 @@ func (m *Model) renderBranchLine() string {
 }
 
 func (m *Model) renderProgressSection() string {
-	completed := m.prd.CompletedCount()
-	total := len(m.prd.Stories)
-	percent := float64(completed) / float64(total)
+	progress := m.prd.RunProgress()
+	if progress == nil {
+		return ""
+	}
+	completed := progress.Completed
+	total := progress.Total
+	percent := 1.0
+	if total > 0 {
+		percent = float64(completed) / float64(total)
+	}
 	var b strings.Builder
 	b.WriteString(infoStyle.Render(labelStyle.Render("Progress") + " " + mutedStyle.Render(fmt.Sprintf("%d/%d stories", completed, total))))
 	b.WriteString("\n")
@@ -366,15 +373,16 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	status := getStatusText(s.Passes, isCurrentStory)
 	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
 	var b strings.Builder
+	storyProgress := s.RunProgress()
 	if isCurrentStory {
 		b.WriteString(selectedStoryStyle.Render(line))
-		if len(s.Slices) > 0 {
-			completedSlices := s.CompletedSliceCount()
+		if len(storyProgress.Slices) > 0 {
+			completedSlices := storyProgress.CompletedSlices
 			nextPendingSlice := s.NextPendingSlice()
 			b.WriteString("\n")
-			for i, slice := range s.Slices {
+			for i, slice := range storyProgress.Slices {
 				b.WriteString(m.renderImplementationSlice(slice, i, completedSlices, nextPendingSlice))
-				if i < len(s.Slices)-1 {
+				if i < len(storyProgress.Slices)-1 {
 					b.WriteString("\n")
 				}
 			}
@@ -384,7 +392,7 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	return storyItemStyle.Render(line)
 }
 
-func (m *Model) renderImplementationSlice(slice *prd.Slice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {
+func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {
 	var passes bool
 	var inProgress bool
 	switch {
