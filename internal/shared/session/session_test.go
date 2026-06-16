@@ -2,7 +2,10 @@ package session
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +13,8 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
+	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
 )
 
@@ -157,5 +162,42 @@ func TestResetPRDForImplementationUnmarksAndReloadsPRD(t *testing.T) {
 	}
 	if reloaded.Stories[0].Passes {
 		t.Fatal("ResetPRDForImplementation() saved story with Passes=true")
+	}
+}
+
+func TestRunSnapshotBeforePRDLoadUsesPromptAndFallbackPhase(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	metaDir := filepath.Join(cfg.WorkDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0o750); err != nil {
+		t.Fatalf("mkdir meta dir: %v", err)
+	}
+	meta, err := json.Marshal(map[string]string{"checkpoint": runstate.CheckpointFollowup})
+	if err != nil {
+		t.Fatalf("marshal meta: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0o600); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	s := NewWithRunner(cfg, noopRunner{})
+	t.Cleanup(func() {
+		s.Cancel()
+		s.Wait()
+	})
+	s.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+	s.StartNew(context.Background(), "build something")
+
+	snap := s.RunSnapshot(runstate.PhaseImplement)
+
+	if snap.Prompt != "build something" {
+		t.Fatalf("Prompt = %q, want %q", snap.Prompt, "build something")
+	}
+	if snap.CurrentPRD != nil {
+		t.Fatalf("CurrentPRD = %#v, want nil before PRD load", snap.CurrentPRD)
+	}
+	if snap.Phase != runstate.PhaseFollowup {
+		t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseFollowup)
 	}
 }

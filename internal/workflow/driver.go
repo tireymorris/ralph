@@ -59,6 +59,7 @@ func (d *Driver) Ctx() context.Context          { return d.ctx }
 func (d *Driver) EventsCh() <-chan events.Event { return d.eventsCh }
 func (d *Driver) Cancel()                       { d.cancel() }
 func (d *Driver) Wait()                         { d.wg.Wait() }
+func (d *Driver) Checkpoint() string            { return d.reviewLoopCheckpoint() }
 
 func (d *Driver) CurrentPRD() *prd.PRD {
 	d.mu.Lock()
