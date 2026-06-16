@@ -6,9 +6,37 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/prompt"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/session"
 	"ralph/internal/workflow/events"
 )
+
+func (m *Model) syncPresentation(fallbackPhase string) {
+	snapshot, loaded, err := m.operationManager.refreshPresentation(fallbackPhase)
+	if err != nil {
+		return
+	}
+	snapshot.Activity = m.activity
+	m.prd = loaded
+	m.snapshot = snapshot
+	if snapshot.CurrentStory != nil {
+		m.currentStory = snapshot.CurrentStory
+	}
+}
+
+func (m *Model) activeStoryForActivity() (*prd.Story, string, string) {
+	if m.currentStory != nil {
+		return m.currentStory, m.currentStory.ID, m.currentStory.Title
+	}
+	if m.prd != nil {
+		if story := m.prd.NextReadyStory(); story != nil {
+			return story, story.ID, story.Title
+		}
+	}
+	return nil, "", ""
+}
 
 func (m *Model) buildAnswers() []prompt.QuestionAnswer {
 	if len(m.clarifyQuestions) == 0 {
@@ -99,34 +127,63 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 	case events.EventStoryStarted:
 		m.currentStory = e.Story
 		m.phase = PhaseImplementation
-		if m.prd == nil {
-			if p, err := m.operationManager.PRDForImplementation(m.cfg); err != nil {
-				m.logger.AddLog(fmt.Sprintf("Failed to load PRD: %v", err))
-			} else {
-				m.prd = p
-			}
+		_, storyID, storyTitle := m.activeStoryForActivity()
+		if e.Story != nil {
+			storyID = e.Story.ID
+			storyTitle = e.Story.Title
 		}
+		m.activity = session.RunActivity{
+			Kind:       session.ActivityImplementing,
+			StoryID:    storyID,
+			StoryTitle: storyTitle,
+		}
+		m.syncPresentation(runstate.PhaseImplement)
 		m.logger.AddLog(fmt.Sprintf("Starting: %s", e.Story.Title))
 		m.markMainScrollJump()
 
+	case events.EventSliceStarted, events.EventSliceCompleted:
+		m.syncPresentation(runstate.PhaseImplement)
+
 	case events.EventStoryCompleted:
 		m.logger.AddLog(fmt.Sprintf("Completed: %s", e.Story.Title))
-		if m.prd != nil {
-			if s := m.prd.GetStory(e.Story.ID); s != nil {
-				s.Passes = true
+		if e.Success {
+			_, storyID, storyTitle := m.activeStoryForActivity()
+			if e.Story != nil {
+				storyID = e.Story.ID
+				storyTitle = e.Story.Title
 			}
+			m.activity = session.RunActivity{
+				Kind:       session.ActivityReview,
+				StoryID:    storyID,
+				StoryTitle: storyTitle,
+			}
+			m.phase = PhaseImplementationReview
 		}
+		m.syncPresentation(runstate.PhaseImplement)
 
 	case events.EventImplementationReviewStarted:
+		_, storyID, storyTitle := m.activeStoryForActivity()
+		m.activity = session.RunActivity{
+			Kind:       session.ActivityReview,
+			StoryID:    storyID,
+			StoryTitle: storyTitle,
+			Iteration:  e.Iteration,
+		}
+		m.phase = PhaseImplementationReview
 		m.logger.AddLog(fmt.Sprintf("Implementation review started (iteration %d)", e.Iteration))
+		m.syncPresentation(runstate.PhaseImplementationReview)
 		m.markMainScrollJump()
 
 	case events.EventImplementationReview:
+		m.activity.Kind = session.ActivityReview
+		m.activity.FindingCount = len(e.Findings)
 		for _, f := range e.Findings {
 			if f.Summary != "" {
 				m.logger.AddLog(fmt.Sprintf("Review finding: %s", f.Summary))
 			}
 		}
+		m.phase = PhaseImplementationReview
+		m.syncPresentation(runstate.PhaseImplementationReview)
 		m.markMainScrollJump()
 
 	case events.EventImplementationReviewCompleted:
@@ -135,11 +192,25 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 			outcome = "findings"
 		}
 		m.logger.AddLog(fmt.Sprintf("Implementation review completed (iteration %d, %s)", e.Iteration, outcome))
+		if e.Clean {
+			m.activity = session.RunActivity{Kind: session.ActivityImplementing}
+			m.phase = PhaseImplementation
+			m.syncPresentation(runstate.PhaseImplement)
+		}
 		m.markMainScrollJump()
 
 	case events.EventRecoveryStarted:
+		_, storyID, storyTitle := m.activeStoryForActivity()
+		m.activity = session.RunActivity{
+			Kind:        session.ActivityRecovery,
+			StoryID:     storyID,
+			StoryTitle:  storyTitle,
+			Attempt:     e.Attempt,
+			MaxAttempts: e.Max,
+		}
 		m.phase = PhaseImplementation
 		m.logger.AddLog(fmt.Sprintf("Recovery started (%s, attempt %d/%d)", e.Reason, e.Attempt, e.Max))
+		m.syncPresentation(runstate.PhaseImplement)
 		m.markMainScrollJump()
 
 	case events.EventRecoveryCompleted:
@@ -148,9 +219,15 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 			outcome = "succeeded"
 		}
 		m.logger.AddLog(fmt.Sprintf("Recovery %s (%s, attempt %d)", outcome, e.Reason, e.Attempt))
+		if e.Success {
+			m.activity = session.RunActivity{Kind: session.ActivityReview}
+			m.phase = PhaseImplementationReview
+		}
+		m.syncPresentation(runstate.PhaseImplement)
 		m.markMainScrollJump()
 
 	case events.EventCleanupStarted:
+		m.activity = session.RunActivity{Kind: session.ActivityCleanup}
 		m.phase = PhaseCleanup
 		m.logger.AddLog("Running post-implementation cleanup...")
 		m.markMainScrollJump()
@@ -173,6 +250,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.markMainScrollJump()
 
 	case events.EventCompleted:
+		m.activity = session.RunActivity{}
 		m.retryImplementation = false
 		m.err = nil
 		m.phase = PhaseCompleted

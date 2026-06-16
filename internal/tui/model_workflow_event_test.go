@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/session"
 	"ralph/internal/workflow/events"
 )
 
@@ -62,15 +63,135 @@ func TestHandleWorkflowEventStoryStarted(t *testing.T) {
 }
 
 func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {
+	workDir := t.TempDir()
 	cfg := config.DefaultConfig()
-	m := NewModel(cfg, "test", false, false, false)
+	cfg.WorkDir = workDir
 
-	story := &prd.Story{ID: "1", Title: "Test", Passes: false}
-	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
+	story := &prd.Story{ID: "1", Title: "Test", Passes: true}
+	if err := prd.Save(cfg, &prd.PRD{Stories: []*prd.Story{story}}); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	m := NewModel(cfg, "test", false, false, false)
+	stale := &prd.Story{ID: "1", Title: "Test", Passes: false}
+	m.prd = &prd.PRD{Stories: []*prd.Story{stale}}
 	m.handleWorkflowEvent(events.EventStoryCompleted{Story: story, Success: true})
 
 	if !m.prd.Stories[0].Passes {
-		t.Error("story should be marked as passing")
+		t.Error("story should be marked as passing from disk reload")
+	}
+}
+
+func TestHandleWorkflowEventStoryCompletedReloadsFromDisk(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	onDisk := &prd.PRD{
+		ProjectName: "Disk",
+		Stories: []*prd.Story{{
+			ID:     "1",
+			Title:  "Story One",
+			Passes: true,
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: true},
+			},
+		}},
+	}
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	m := NewModel(cfg, "test", false, false, false)
+	story := &prd.Story{
+		ID:     "1",
+		Title:  "Story One",
+		Passes: false,
+		Slices: []*prd.Slice{
+			{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: false},
+			{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: false},
+		},
+	}
+	m.prd = &prd.PRD{Stories: []*prd.Story{story}}
+	m.currentStory = story
+	m.phase = PhaseImplementation
+
+	m.handleWorkflowEvent(events.EventStoryCompleted{Story: story, Success: true})
+
+	if !m.prd.Stories[0].Passes {
+		t.Fatal("story should reflect disk passes after reload")
+	}
+	if !m.prd.Stories[0].Slices[0].Passes || !m.prd.Stories[0].Slices[1].Passes {
+		t.Fatal("all slices should reflect disk passes after reload")
+	}
+}
+
+func TestHandleWorkflowEventSliceCompletedReloadsFromDisk(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	onDisk := &prd.PRD{
+		ProjectName: "Disk",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story One",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: false},
+			},
+		}},
+	}
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	m := NewModel(cfg, "test", false, false, false)
+	story := onDisk.Stories[0]
+	stale := &prd.Story{
+		ID:    "1",
+		Title: "Story One",
+		Slices: []*prd.Slice{
+			{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: false},
+			{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: false},
+		},
+	}
+	m.prd = &prd.PRD{Stories: []*prd.Story{stale}}
+	m.currentStory = stale
+	m.phase = PhaseImplementation
+
+	m.handleWorkflowEvent(events.EventSliceCompleted{StoryID: "1", SliceID: "slice-1"})
+
+	if !m.prd.Stories[0].Slices[0].Passes {
+		t.Fatal("completed slice should reflect disk after reload")
+	}
+	if m.snapshot.NextPendingSlice == nil || m.snapshot.NextPendingSlice.ID != "slice-2" {
+		t.Fatalf("NextPendingSlice = %#v, want slice-2", m.snapshot.NextPendingSlice)
+	}
+	_ = story
+}
+
+func TestHandleWorkflowEventImplementationReviewStartedSetsPhaseAndActivity(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.currentStory = &prd.Story{ID: "1", Title: "Story One"}
+	m.prd = &prd.PRD{Stories: []*prd.Story{m.currentStory}}
+
+	m.handleWorkflowEvent(events.EventImplementationReviewStarted{Iteration: 2})
+
+	if m.phase != PhaseImplementationReview {
+		t.Fatalf("phase = %v, want PhaseImplementationReview", m.phase)
+	}
+	if m.activity.Kind != session.ActivityReview {
+		t.Fatalf("activity.Kind = %q, want %q", m.activity.Kind, session.ActivityReview)
+	}
+	if m.activity.Iteration != 2 {
+		t.Fatalf("activity.Iteration = %d, want 2", m.activity.Iteration)
+	}
+	if m.activity.StoryTitle != "Story One" {
+		t.Fatalf("activity.StoryTitle = %q, want Story One", m.activity.StoryTitle)
 	}
 }
 

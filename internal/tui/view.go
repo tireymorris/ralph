@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/session"
 )
 
 func (m *Model) View() string {
@@ -168,6 +169,10 @@ func (m *Model) renderImplementation() string {
 	}
 
 	var b strings.Builder
+	if banner := m.renderActivityBanner(); banner != "" {
+		b.WriteString(banner)
+		b.WriteString("\n\n")
+	}
 	b.WriteString(m.renderProjectSection())
 	b.WriteString("\n")
 	b.WriteString(m.renderProgressSection())
@@ -205,6 +210,46 @@ func (m *Model) renderCompleted() string {
 	}
 
 	return infoStyle.Render(b.String())
+}
+
+func (m *Model) renderCleanup() string {
+	content := fmt.Sprintf("%s Running final polish pass on changed files…", m.spinner.View())
+	var b strings.Builder
+	b.WriteString(infoStyle.Render(inProgressStyle.Render(content)))
+	b.WriteString("\n\n")
+	b.WriteString(mutedStyle.Render("(check logs for runner output)"))
+	return b.String()
+}
+
+func (m *Model) renderActivityBanner() string {
+	activity := m.activity
+	if activity.Kind == "" {
+		activity = m.snapshot.Activity
+	}
+	switch activity.Kind {
+	case session.ActivityReview:
+		title := activity.StoryTitle
+		if title == "" {
+			title = "story"
+		}
+		suffix := ""
+		if activity.Iteration > 0 {
+			suffix = fmt.Sprintf(" (iteration %d)", activity.Iteration)
+		}
+		return infoStyle.Render(inProgressStyle.Render(fmt.Sprintf("◐ %s — reviewing diff%s", title, suffix)))
+	case session.ActivityRecovery:
+		title := activity.StoryTitle
+		if title == "" {
+			title = "story"
+		}
+		attempt := ""
+		if activity.MaxAttempts > 0 {
+			attempt = fmt.Sprintf(" (attempt %d/%d)", activity.Attempt, activity.MaxAttempts)
+		}
+		return infoStyle.Render(inProgressStyle.Render(fmt.Sprintf("◐ %s — fixing review findings%s", title, attempt)))
+	default:
+		return ""
+	}
 }
 
 func (m *Model) renderLogs() string {
@@ -292,6 +337,8 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderPRDReview())
 	case PhaseImplementationReview, PhaseImplementation:
 		b.WriteString(m.renderImplementation())
+	case PhaseCleanup:
+		b.WriteString(m.renderCleanup())
 	case PhaseCompleted:
 		b.WriteString(m.renderCompleted())
 	}
@@ -396,6 +443,13 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
 	var b strings.Builder
 	storyProgress := s.RunProgress()
+	activity := m.activity
+	if activity.Kind == "" {
+		activity = m.snapshot.Activity
+	}
+	if isCurrentStory && (activity.Kind == session.ActivityReview || activity.Kind == session.ActivityRecovery) {
+		return selectedStoryStyle.Render(line)
+	}
 	if isCurrentStory {
 		b.WriteString(selectedStoryStyle.Render(line))
 		if len(storyProgress.Slices) > 0 {

@@ -68,6 +68,7 @@ type Model struct {
 	prd          *prd.PRD
 	currentStory *prd.Story
 	snapshot     session.RunSnapshot
+	activity     session.RunActivity
 	err          error
 	quitting     bool
 	width        int

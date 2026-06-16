@@ -157,6 +157,91 @@ func TestResumeStartMsgImplementationPhase(t *testing.T) {
 	}
 }
 
+func TestResumeStartMsgImplReviewPhase(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	p := &prd.PRD{
+		ProjectName: "Review blocked",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false, Priority: 1}},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0755); err != nil {
+		t.Fatalf("mkdir meta: %v", err)
+	}
+	meta, _ := json.Marshal(map[string]string{"checkpoint": runstate.CheckpointImplReview})
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0644); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	om := NewOperationManager(cfg)
+	msg := om.resumeStartMsg()
+	rsm, ok := msg.(resumeStartMsg)
+	if !ok {
+		t.Fatalf("resumeStartMsg() = %T, want resumeStartMsg", msg)
+	}
+	if rsm.phase != PhaseImplementationReview {
+		t.Errorf("phase = %v, want PhaseImplementationReview", rsm.phase)
+	}
+	if rsm.snapshot.Phase != runstate.PhaseImplementationReview {
+		t.Errorf("snapshot.Phase = %q, want %q", rsm.snapshot.Phase, runstate.PhaseImplementationReview)
+	}
+}
+
+func TestRefreshPresentationLoadsDiskPRD(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	onDisk := &prd.PRD{
+		ProjectName: "Disk truth",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: false},
+			},
+		}},
+	}
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	om := NewOperationManager(cfg)
+	stale := &prd.PRD{
+		ProjectName: "Stale",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: false},
+				{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: false},
+			},
+		}},
+	}
+	om.TrackEventState(events.EventPRDLoaded{PRD: stale})
+
+	snap, loaded, err := om.refreshPresentation(runstate.PhaseImplement)
+	if err != nil {
+		t.Fatalf("refreshPresentation() error = %v", err)
+	}
+	if loaded.Stories[0].Slices[0].Passes != true {
+		t.Fatal("loaded PRD should reflect completed slice from disk")
+	}
+	if snap.CurrentPRD != loaded {
+		t.Fatal("snapshot CurrentPRD should use disk-loaded PRD")
+	}
+	if snap.NextPendingSlice == nil || snap.NextPendingSlice.ID != "slice-2" {
+		t.Fatalf("NextPendingSlice = %#v, want slice-2", snap.NextPendingSlice)
+	}
+}
+
 func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

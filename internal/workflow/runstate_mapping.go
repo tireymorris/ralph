@@ -15,7 +15,11 @@ func EventStatusPhase(ev events.Event) (status, phase string) {
 		return runstate.StatusWaitingReview, runstate.PhaseReview
 	case events.EventStoryStarted, events.EventStoryCompleted, events.EventSliceStarted, events.EventSliceCompleted, events.EventRecoveryStarted, events.EventRecoveryCompleted:
 		return runstate.StatusImplementing, runstate.PhaseImplement
-	case events.EventImplementationReview, events.EventImplementationReviewStarted, events.EventImplementationReviewCompleted:
+	case events.EventImplementationReviewStarted:
+		return runstate.StatusImplementing, runstate.PhaseImplementationReview
+	case events.EventImplementationReview:
+		return runstate.StatusWaitingImplReview, runstate.PhaseImplementationReview
+	case events.EventImplementationReviewCompleted:
 		return runstate.StatusImplementing, runstate.PhaseImplement
 	case events.EventCleanupStarted, events.EventCleanupCompleted:
 		return runstate.StatusImplementing, runstate.PhaseCleanup

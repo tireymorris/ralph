@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow"
 	"ralph/internal/workflow/events"
@@ -107,6 +108,42 @@ func TestMapEventToStatusPhase_CleanupEvents(t *testing.T) {
 			}
 			if runs.IsTerminalStatus(status) {
 				t.Errorf("cleanup event status %q must not be terminal", status)
+			}
+		})
+	}
+}
+
+func TestMapEventToStatusPhase_ImplementationReviewEvents(t *testing.T) {
+	cases := []struct {
+		name       string
+		ev         events.Event
+		wantStatus string
+		wantPhase  string
+	}{
+		{
+			name:       "started",
+			ev:         events.EventImplementationReviewStarted{Iteration: 1},
+			wantStatus: runstate.StatusImplementing,
+			wantPhase:  runstate.PhaseImplementationReview,
+		},
+		{
+			name:       "findings",
+			ev:         events.EventImplementationReview{Findings: []events.ImplementationFinding{{ID: "a", Summary: "s"}}},
+			wantStatus: runstate.StatusWaitingImplReview,
+			wantPhase:  runstate.PhaseImplementationReview,
+		},
+		{
+			name:       "completed",
+			ev:         events.EventImplementationReviewCompleted{Iteration: 1, Clean: true},
+			wantStatus: runstate.StatusImplementing,
+			wantPhase:  runstate.PhaseImplement,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			status, phase := workflow.EventStatusPhase(tc.ev)
+			if status != tc.wantStatus || phase != tc.wantPhase {
+				t.Errorf("got (%q, %q), want (%q, %q)", status, phase, tc.wantStatus, tc.wantPhase)
 			}
 		})
 	}

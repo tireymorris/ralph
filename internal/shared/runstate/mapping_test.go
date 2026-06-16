@@ -14,7 +14,7 @@ func TestCheckpointPhase(t *testing.T) {
 		want       string
 	}{
 		{name: "PRD review", checkpoint: CheckpointPRDReview, prd: completedPRD(), want: PhaseReview},
-		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), want: PhaseImplement},
+		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), want: PhaseImplementationReview},
 		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), want: PhaseImplement},
 		{name: "complete", checkpoint: CheckpointComplete, prd: incompletePRD(), want: PhaseCompleted},
 		{name: "incomplete PRD", prd: incompletePRD(), want: PhaseImplement},
@@ -39,7 +39,7 @@ func TestCheckpointStatusPhase(t *testing.T) {
 		wantPhase  string
 	}{
 		{name: "PRD review", checkpoint: CheckpointPRDReview, prd: completedPRD(), wantStatus: StatusWaitingReview, wantPhase: PhaseReview},
-		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
+		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), wantStatus: StatusWaitingImplReview, wantPhase: PhaseImplementationReview},
 		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
 		{name: "complete", checkpoint: CheckpointComplete, prd: incompletePRD(), wantStatus: StatusCompleted, wantPhase: PhaseCompleted},
 		{name: "incomplete PRD", prd: incompletePRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
@@ -65,7 +65,7 @@ func TestLocalPRDStatusPhase(t *testing.T) {
 		wantPhase  string
 	}{
 		{name: "incomplete PRD", prd: incompletePRD(), wantStatus: "implementing", wantPhase: PhaseImplement},
-		{name: "implementation review", checkpoint: CheckpointImplReview, prd: incompletePRD(), wantStatus: StatusImplementing, wantPhase: PhaseImplement},
+		{name: "implementation review", checkpoint: CheckpointImplReview, prd: incompletePRD(), wantStatus: StatusWaitingImplReview, wantPhase: PhaseImplementationReview},
 		{name: "generate missing stories", prd: &prd.PRD{}, wantStatus: "running", wantPhase: PhaseGenerate},
 	}
 

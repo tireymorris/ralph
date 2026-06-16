@@ -13,6 +13,26 @@ type RunSnapshot struct {
 	NextPendingSlice *prd.Slice
 	CompletedStories int
 	TotalStories     int
+	Activity         RunActivity
+}
+
+type RunActivityKind string
+
+const (
+	ActivityImplementing RunActivityKind = "implementing"
+	ActivityReview       RunActivityKind = "review"
+	ActivityRecovery     RunActivityKind = "recovery"
+	ActivityCleanup      RunActivityKind = "cleanup"
+)
+
+type RunActivity struct {
+	Kind         RunActivityKind
+	StoryID      string
+	StoryTitle   string
+	Iteration    int
+	Attempt      int
+	MaxAttempts  int
+	FindingCount int
 }
 
 func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {

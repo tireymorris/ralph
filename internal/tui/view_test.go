@@ -10,6 +10,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/session"
 )
 
 func prepMainView(m *Model) {
@@ -405,6 +406,88 @@ func TestViewPhaseCompletedWithPRD(t *testing.T) {
 	}
 	if !strings.Contains(view, "completed") {
 		t.Error("View() should mention completed")
+	}
+}
+
+func TestViewPhaseCleanupShowsContent(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseCleanup
+	m.width = 80
+	m.height = 24
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "Cleanup") {
+		t.Fatalf("View() should mention cleanup phase, got %q", view)
+	}
+	if !strings.Contains(view, "polish") {
+		t.Fatalf("View() should describe cleanup work, got %q", view)
+	}
+}
+
+func TestViewPhaseImplementationReviewShowsReviewBanner(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementationReview
+	m.prd = &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{{
+			ID:     "1",
+			Title:  "Story One",
+			Passes: true,
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first", RedHint: "test", Passes: true},
+				{ID: "slice-2", Behavior: "second", RedHint: "test", Passes: true},
+			},
+		}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.activity = session.RunActivity{
+		Kind:       session.ActivityReview,
+		StoryID:    "1",
+		StoryTitle: "Story One",
+		Iteration:  2,
+	}
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "reviewing diff") {
+		t.Fatalf("View() should show review banner, got %q", view)
+	}
+	if strings.Contains(view, "in progress") {
+		t.Fatalf("View() should not show stale slice progress during review, got %q", view)
+	}
+}
+
+func TestViewPhaseImplementationRecoveryShowsRecoveryBanner(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test Project",
+		Stories:     []*prd.Story{{ID: "1", Title: "Story One", Passes: false}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.activity = session.RunActivity{
+		Kind:        session.ActivityRecovery,
+		StoryID:     "1",
+		StoryTitle:  "Story One",
+		Attempt:     1,
+		MaxAttempts: 3,
+	}
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	view := m.View()
+	if !strings.Contains(view, "fixing review findings") {
+		t.Fatalf("View() should show recovery banner, got %q", view)
+	}
+	if !strings.Contains(view, "1/3") {
+		t.Fatalf("View() should show recovery attempt count, got %q", view)
 	}
 }
 

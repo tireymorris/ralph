@@ -133,11 +133,11 @@ func TestOngoingLocalPRD_implReviewCheckpoint(t *testing.T) {
 	if !ok {
 		t.Fatal("OngoingLocalPRD() = false, want true")
 	}
-	if run.Status != runstate.StatusImplementing {
-		t.Fatalf("Status = %q, want %q", run.Status, runstate.StatusImplementing)
+	if run.Status != runstate.StatusWaitingImplReview {
+		t.Fatalf("Status = %q, want %q", run.Status, runstate.StatusWaitingImplReview)
 	}
-	if run.Phase != runstate.PhaseImplement {
-		t.Fatalf("Phase = %q, want %q", run.Phase, runstate.PhaseImplement)
+	if run.Phase != runstate.PhaseImplementationReview {
+		t.Fatalf("Phase = %q, want %q", run.Phase, runstate.PhaseImplementationReview)
 	}
 	if run.ReviewIteration != 1 {
 		t.Fatalf("ReviewIteration = %d, want 1", run.ReviewIteration)

@@ -47,18 +47,31 @@ func (om *OperationManager) resumeStartMsg() tea.Msg {
 	}
 	checkpoint := workflow.NewFileReviewLoop(om.cfg.WorkDir, runstate.LocalRunID).Checkpoint()
 	_, phase := runstate.CheckpointStatusPhase(checkpoint, p)
-	snapshot := session.RunSnapshot{
-		Prompt:           om.Session.Prompt(),
-		Phase:            phase,
-		CurrentPRD:       p,
-		CurrentStory:     p.NextReadyStory(),
-		CompletedStories: p.CompletedCount(),
-		TotalStories:     len(p.Stories),
+	snapshot, loaded, err := om.refreshPresentation(phase)
+	if err != nil {
+		return phaseChangeMsg(PhasePRDGeneration)
 	}
+	return resumeStartMsg{phase: resumePhase(phase), prd: loaded, snapshot: snapshot}
+}
+
+func (om *OperationManager) refreshPresentation(fallbackPhase string) (session.RunSnapshot, *prd.PRD, error) {
+	loaded, err := prd.Load(om.cfg)
+	if err != nil {
+		return session.RunSnapshot{}, nil, err
+	}
+
+	snapshot := om.Session.RunSnapshot(fallbackPhase)
+	snapshot.CurrentPRD = loaded
+	if progress := loaded.RunProgress(); progress != nil {
+		snapshot.CompletedStories = progress.Completed
+		snapshot.TotalStories = progress.Total
+	}
+	snapshot.CurrentStory = loaded.NextReadyStory()
+	snapshot.NextPendingSlice = nil
 	if snapshot.CurrentStory != nil {
 		snapshot.NextPendingSlice = snapshot.CurrentStory.NextPendingSlice()
 	}
-	return resumeStartMsg{phase: resumePhase(phase), prd: p, snapshot: snapshot}
+	return snapshot, loaded, nil
 }
 
 func resumePhase(phase string) Phase {
@@ -67,6 +80,12 @@ func resumePhase(phase string) Phase {
 	}
 	if phase == runstate.PhaseCompleted {
 		return PhaseCompleted
+	}
+	if phase == runstate.PhaseImplementationReview {
+		return PhaseImplementationReview
+	}
+	if phase == runstate.PhaseCleanup {
+		return PhaseCleanup
 	}
 	return PhaseImplementation
 }
