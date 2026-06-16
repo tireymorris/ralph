@@ -28,11 +28,11 @@
           "id": "slice-3",
           "behavior": "A shared snapshot reports completed and total story counts consistently for mixed PRDs.",
           "red_hint": "add a failing test that the shared snapshot reports completed and total story counts from a PRD with both finished and unfinished stories",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 1,
-      "passes": false
+      "passes": true
     },
     {
       "id": "story-2",

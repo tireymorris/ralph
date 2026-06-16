@@ -240,3 +240,28 @@ func TestRunSnapshotIncludesCurrentStoryAndNextPendingSlice(t *testing.T) {
 		t.Fatalf("NextPendingSlice.ID = %q, want %q", snap.NextPendingSlice.ID, "slice-2")
 	}
 }
+
+func TestRunSnapshotIncludesStoryCounts(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+
+	s := New(cfg)
+	currentPRD := &prd.PRD{
+		ProjectName: "Counts",
+		Stories: []*prd.Story{
+			{ID: "done", Title: "Done story", Passes: true},
+			{ID: "active", Title: "Active story", Passes: false},
+			{ID: "blocked", Title: "Blocked story", Passes: false, DependsOn: []string{"active"}},
+		},
+	}
+	s.TrackEventState(events.EventPRDLoaded{PRD: currentPRD})
+
+	snap := s.RunSnapshot(runstate.PhaseImplement)
+
+	if snap.CompletedStories != 1 {
+		t.Fatalf("CompletedStories = %d, want 1", snap.CompletedStories)
+	}
+	if snap.TotalStories != 3 {
+		t.Fatalf("TotalStories = %d, want 3", snap.TotalStories)
+	}
+}

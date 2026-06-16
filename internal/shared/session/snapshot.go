@@ -11,6 +11,8 @@ type RunSnapshot struct {
 	CurrentPRD       *prd.PRD
 	CurrentStory     *prd.Story
 	NextPendingSlice *prd.Slice
+	CompletedStories int
+	TotalStories     int
 }
 
 func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
@@ -27,7 +29,13 @@ func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
 
 	var currentStory *prd.Story
 	var nextPendingSlice *prd.Slice
+	completedStories := 0
+	totalStories := 0
 	if currentPRD != nil {
+		if progress := currentPRD.RunProgress(); progress != nil {
+			completedStories = progress.Completed
+			totalStories = progress.Total
+		}
 		currentStory = currentPRD.NextReadyStory()
 		if currentStory != nil {
 			nextPendingSlice = currentStory.NextPendingSlice()
@@ -40,5 +48,7 @@ func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
 		CurrentPRD:       currentPRD,
 		CurrentStory:     currentStory,
 		NextPendingSlice: nextPendingSlice,
+		CompletedStories: completedStories,
+		TotalStories:     totalStories,
 	}
 }
