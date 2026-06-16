@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/events"
 )
 
 func TestStartCheckpointResumeRestartsExpectedPhase(t *testing.T) {
 	tests := []struct {
-		name       string
-		checkpoint string
-		wantEvents []string
+		name        string
+		checkpoint  string
+		wantEvents  []string
 		wantNoEvent bool
 	}{
 		{
@@ -76,6 +77,48 @@ func TestStartCheckpointResumeRestartsExpectedPhase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+
+	seeded := &prd.PRD{
+		ProjectName: "Injected",
+		Stories: []*prd.Story{
+			{
+				ID:                 "story-1",
+				Title:              "Story",
+				Description:        "Desc",
+				AcceptanceCriteria: []string{"AC"},
+				Priority:           1,
+			},
+		},
+	}
+
+	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)
+	if err := loop.Apply(ReviewLoopUpdate{Checkpoint: runstate.CheckpointImplReview}); err != nil {
+		t.Fatalf("seed checkpoint: %v", err)
+	}
+
+	d := NewDriverWithRunner(cfg, newMockRunner())
+	t.Cleanup(d.Cancel)
+	d.executor = NewExecutorWithRunnerAndStore(cfg, d.eventsCh, newMockRunner(), inMemoryPRDStore{p: seeded})
+	d.SetReviewLoop(runstate.LocalRunID, loop)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	d.StartCheckpointResume(ctx)
+
+	got := nextCheckpointResumeEvent(t, d.EventsCh())
+	if eventName(got) != "EventStoryStarted" {
+		t.Fatalf("event = %s, want EventStoryStarted", eventName(got))
+	}
+	cancel()
 }
 
 func writeCheckpointResumePRD(t *testing.T, workDir string) {

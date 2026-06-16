@@ -114,7 +114,7 @@ func (d *Driver) StartCheckpointResume(ctx context.Context) {
 		defer d.wg.Done()
 		d.runWithCtx(ctx, func(runCtx context.Context) {
 			checkpoint := d.reviewLoopCheckpoint()
-			p, err := prd.Load(d.cfg)
+			p, err := d.executor.store.Load(d.cfg)
 			if err != nil {
 				d.executor.RunLoad(runCtx)
 				return
