@@ -7,6 +7,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/logger"
+	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 )
 
@@ -52,6 +53,10 @@ func NewExecutorWithRunnerAndStore(cfg *config.Config, eventsCh chan Event, r ru
 		runner:   r,
 		store:    store,
 	}
+}
+
+func (e *Executor) LoadPRD(cfg *config.Config) (*prd.PRD, error) {
+	return e.store.Load(cfg)
 }
 
 func (e *Executor) emit(event Event) {

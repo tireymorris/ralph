@@ -10,6 +10,14 @@ import (
 	"ralph/internal/shared/prd"
 )
 
+type inMemoryPRDStore struct {
+	p *prd.PRD
+}
+
+func (s inMemoryPRDStore) Load(cfg *config.Config) (*prd.PRD, error) { return s.p, nil }
+func (s inMemoryPRDStore) Save(cfg *config.Config, p *prd.PRD) error { return nil }
+func (s inMemoryPRDStore) Exists(cfg *config.Config) (bool, error)   { return true, nil }
+
 func drainEvents(ch chan Event) []Event {
 	var evts []Event
 	for len(ch) > 0 {

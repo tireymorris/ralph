@@ -118,7 +118,11 @@ func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testin
 	if eventName(got) != "EventStoryStarted" {
 		t.Fatalf("event = %s, want EventStoryStarted", eventName(got))
 	}
+	if _, err := os.Stat(filepath.Join(workDir, cfg.PRDFile)); !os.IsNotExist(err) {
+		t.Fatalf("expected no prd.json on disk, stat error = %v", err)
+	}
 	cancel()
+	d.Wait()
 }
 
 func writeCheckpointResumePRD(t *testing.T, workDir string) {
