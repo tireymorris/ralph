@@ -210,9 +210,8 @@ func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
 	}
 
 	m := NewModel(cfg, "", false, true, false)
-	t.Cleanup(func() { waitSessionDone(t, m.operationManager) })
 
-	msg := m.operationManager.StartFullOperation(true, "")()
+	msg := m.operationManager.resumeStartMsg()
 	newModel, _ := m.Update(msg)
 	m = newModel.(*Model)
 
@@ -274,9 +273,8 @@ func TestResumeMainPaneShowsActiveStorySliceProgressFromSnapshot(t *testing.T) {
 	}
 
 	m := NewModel(cfg, "", false, true, false)
-	t.Cleanup(func() { waitSessionDone(t, m.operationManager) })
 
-	msg := m.operationManager.StartFullOperation(true, "")()
+	msg := m.operationManager.resumeStartMsg()
 	newModel, _ := m.Update(msg)
 	m = newModel.(*Model)
 
