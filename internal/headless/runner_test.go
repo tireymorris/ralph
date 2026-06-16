@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"path/filepath"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/session"
 )
 
 func TestRunCompletesUnattended(t *testing.T) {
@@ -106,10 +108,54 @@ func TestRunResumesFromCheckpoint(t *testing.T) {
 	}
 }
 
+func TestRunSharesSnapshotFromSession(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.PRDFile = "prd.json"
+	cfg.Runner = "mock"
+	cfg.SkipCleanup = true
+	initGitRepo(t, cfg.WorkDir)
+	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commitFile(t, cfg.WorkDir, "main.go", "init source file")
+
+	var stderr bytes.Buffer
+	r := New(cfg, runner.NewMock(cfg), &stderr)
+
+	code := r.Run("build a feature", false)
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0; stderr=%s", code, stderr.String())
+	}
+
+	snap := sharedSnapshot(t, r)
+	if snap.Prompt != "build a feature" {
+		t.Fatalf("Prompt = %q, want %q", snap.Prompt, "build a feature")
+	}
+	if snap.CurrentStory == nil {
+		t.Fatal("CurrentStory = nil, want shared story data")
+	}
+	if snap.CurrentStory.Title != "Mock story" {
+		t.Fatalf("CurrentStory.Title = %q, want %q", snap.CurrentStory.Title, "Mock story")
+	}
+	if snap.NextPendingSlice == nil {
+		t.Fatal("NextPendingSlice = nil, want shared slice data")
+	}
+	if snap.NextPendingSlice.ID != "slice-1" {
+		t.Fatalf("NextPendingSlice.ID = %q, want %q", snap.NextPendingSlice.ID, "slice-1")
+	}
+	if snap.CompletedStories != 0 {
+		t.Fatalf("CompletedStories = %d, want 0", snap.CompletedStories)
+	}
+	if snap.TotalStories != 1 {
+		t.Fatalf("TotalStories = %d, want 1", snap.TotalStories)
+	}
+}
+
 type autoContinueRunner struct {
-	workDir      string
-	reviewCalls  int
-	calls        []string
+	workDir     string
+	reviewCalls int
+	calls       []string
 }
 
 func (r *autoContinueRunner) Run(_ context.Context, promptText string, outputCh chan<- runner.OutputLine) error {
@@ -174,6 +220,24 @@ func containsKind(kinds []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func sharedSnapshot(t *testing.T, r *Runner) session.RunSnapshot {
+	t.Helper()
+
+	method := reflect.ValueOf(r).MethodByName("Snapshot")
+	if !method.IsValid() {
+		t.Fatal("Runner should expose a Snapshot method backed by the shared session snapshot")
+	}
+	results := method.Call(nil)
+	if len(results) != 1 {
+		t.Fatalf("Snapshot() returned %d values, want 1", len(results))
+	}
+	snap, ok := results[0].Interface().(session.RunSnapshot)
+	if !ok {
+		t.Fatalf("Snapshot() returned %T, want session.RunSnapshot", results[0].Interface())
+	}
+	return snap
 }
 
 func initGitRepo(t *testing.T, dir string) {

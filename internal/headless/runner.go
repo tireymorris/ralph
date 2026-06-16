@@ -21,9 +21,10 @@ import (
 
 type Runner struct {
 	*session.Session
-	cfg    *config.Config
-	stderr io.Writer
-	mu     sync.Mutex
+	cfg      *config.Config
+	stderr   io.Writer
+	mu       sync.Mutex
+	snapshot session.RunSnapshot
 }
 
 func New(cfg *config.Config, r runner.RunnerInterface, stderr io.Writer) *Runner {
@@ -53,6 +54,7 @@ func (r *Runner) Run(prompt string, resume bool) int {
 	} else {
 		r.StartCheckpointResume(ctx)
 	}
+	r.refreshSnapshot()
 
 	return r.loop()
 }
@@ -70,6 +72,7 @@ func (r *Runner) loop() int {
 			return 1
 		}
 		r.TrackEventState(ev)
+		r.refreshSnapshot()
 		switch ev.(type) {
 		case events.EventImplementationReview:
 			go r.autoContinueImplementationReview()
@@ -81,6 +84,12 @@ func (r *Runner) loop() int {
 			return 1
 		}
 	}
+}
+
+func (r *Runner) Snapshot() session.RunSnapshot {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.snapshot
 }
 
 func (r *Runner) autoContinueImplementationReview() {
@@ -114,6 +123,13 @@ func (r *Runner) writeLine(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (r *Runner) refreshSnapshot() {
+	snapshot := r.RunSnapshot(runstate.PhaseImplement)
+	r.mu.Lock()
+	r.snapshot = snapshot
+	r.mu.Unlock()
 }
 
 func appendRunEvent(workDir, runID string, data []byte) error {
