@@ -15,14 +15,14 @@
           "behavior": "A shared snapshot can be built for a run before any PRD has been loaded.",
           "red_hint": "add a failing test that shared snapshot creation works before PRD load, uses the driver's prompt, and falls back to the checkpoint/registry phase",
           "refactor_hint": "Start with a minimal read-only snapshot shape and derive prompt and phase from shared driver state.",
-          "passes": true
+          "passes": false
         },
         {
           "id": "slice-2",
           "behavior": "A shared snapshot reports the active story and next pending slice during implementation.",
           "red_hint": "add a failing test that the shared snapshot exposes the current story and next pending slice for an in-progress PRD",
           "refactor_hint": "Use internal/shared/prd helpers for progress and next-pending selection instead of duplicating that logic in UI code.",
-          "passes": true
+          "passes": false
         },
         {
           "id": "slice-3",
@@ -68,7 +68,7 @@
           "id": "slice-5",
           "behavior": "The synthetic local PRD run stays covered by the shared snapshot shape used by the web API.",
           "red_hint": "add a failing test that internal/web/runs/prd_local.go stays in sync with the shared read-only snapshot path",
-          "passes": false
+          "passes": true
         }
       ],
       "priority": 2,
@@ -86,13 +86,13 @@
           "id": "slice-1",
           "behavior": "Every supported checkpoint resolves to the same resume phase in both entry points.",
           "red_hint": "add a failing test for shared checkpoint-to-phase resolution across PRD review, implementation review, follow-up, completed, and impl_review checkpoints",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-2",
           "behavior": "Workflow events map to the same run status and phase updates for TUI and web callers.",
           "red_hint": "add a failing test that shared event translation updates running, failed, and completed state consistently",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-3",

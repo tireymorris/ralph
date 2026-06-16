@@ -89,11 +89,20 @@ func TestHandleWorkflowEventStoryCompletedFailure(t *testing.T) {
 func TestHandleWorkflowEventCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseFailed
+	m.retryImplementation = true
+	m.err = &testErrorType{msg: "stale"}
 
 	m.handleWorkflowEvent(events.EventCompleted{})
 
 	if m.phase != PhaseCompleted {
 		t.Errorf("phase = %v, want PhaseCompleted", m.phase)
+	}
+	if m.retryImplementation {
+		t.Error("retryImplementation should be cleared after completion")
+	}
+	if m.err != nil {
+		t.Errorf("err = %v, want nil after completion", m.err)
 	}
 }
 

@@ -173,6 +173,8 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		m.markMainScrollJump()
 
 	case events.EventCompleted:
+		m.retryImplementation = false
+		m.err = nil
 		m.phase = PhaseCompleted
 		m.logger.AddLog("All stories completed!")
 		m.markMainScrollJump()
