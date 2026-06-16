@@ -6,6 +6,7 @@ import (
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/workflow"
@@ -69,6 +70,36 @@ func (s *Session) ResetPRDForImplementation(cfg *config.Config) (*prd.PRD, error
 
 func (s *Session) ReviseReview(ctx context.Context, userPrompt, critique string) error {
 	s.StartCritiqueRevision(ctx, userPrompt, critique)
+	return nil
+}
+
+func (s *Session) RunFollowUp(ctx context.Context, cfg *config.Config, message, transcript string) error {
+	if _, err := s.PRDForImplementation(cfg); err != nil {
+		return err
+	}
+
+	revisionPrompt := prompt.FollowUpRevision(message, cfg.PRDFile, transcript)
+	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
+	done := make(chan struct{})
+	go func() {
+		workflow.NewOutputForwarder(s.EmitEvent).Forward(outputCh)
+		close(done)
+	}()
+
+	if err := s.RunPrompt(ctx, revisionPrompt, outputCh); err != nil {
+		close(outputCh)
+		<-done
+		return fmt.Errorf("follow-up revision: %w", err)
+	}
+
+	close(outputCh)
+	<-done
+
+	p, err := s.ResetPRDForImplementation(cfg)
+	if err != nil {
+		return err
+	}
+	s.StartImplementationFromPRD(ctx, p)
 	return nil
 }
 

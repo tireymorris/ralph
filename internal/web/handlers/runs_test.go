@@ -476,6 +476,27 @@ func TestGetRunLocalPRD(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
+	var body struct {
+		ID     string `json:"id"`
+		Source string `json:"source"`
+		Status string `json:"status"`
+		Phase  string `json:"phase"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if body.ID != runs.LocalPRDRunID {
+		t.Fatalf("id = %q, want %q", body.ID, runs.LocalPRDRunID)
+	}
+	if body.Source != "local_prd" {
+		t.Fatalf("source = %q, want local_prd", body.Source)
+	}
+	if body.Status != "implementing" {
+		t.Fatalf("status = %q, want implementing", body.Status)
+	}
+	if body.Phase != "implement" {
+		t.Fatalf("phase = %q, want implement", body.Phase)
+	}
 }
 
 func TestCreateRunConflictsWithLocalPRD(t *testing.T) {

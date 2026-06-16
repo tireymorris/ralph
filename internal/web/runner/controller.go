@@ -8,7 +8,6 @@ import (
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runpaths"
 	"ralph/internal/shared/runstate"
@@ -121,29 +120,10 @@ func (c *RunController) RunFollowUp(ctx context.Context, message string, cfg *co
 		runCfg.PRDFile = run.PRDPath
 	}
 
-	revisionPrompt := prompt.FollowUpRevision(message, runCfg.PRDFile, transcript)
-	outputCh := make(chan runner.OutputLine, constants.EventChannelBuffer)
-	done := make(chan struct{})
-	go func() {
-		workflow.NewOutputForwarder(c.EmitEvent).Forward(outputCh)
-		close(done)
-	}()
-	if err := c.RunPrompt(ctx, revisionPrompt, outputCh); err != nil {
-		close(outputCh)
-		<-done
-		fail(fmt.Errorf("follow-up revision: %w", err))
-		return
-	}
-	close(outputCh)
-	<-done
-
-	p, err := c.ResetPRDForImplementation(&runCfg)
-	if err != nil {
+	if err := c.Session.RunFollowUp(ctx, &runCfg, message, transcript); err != nil {
 		fail(err)
 		return
 	}
-
-	c.StartImplementationFromPRD(ctx, p)
 }
 
 func (c *RunController) processEvents() {
