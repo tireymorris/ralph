@@ -219,9 +219,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case resumeStartMsg:
 		m.phase = msg.phase
-		if msg.prd != nil {
-			m.prd = msg.prd
-		}
+		m.prd = msg.prd
+		m.snapshot = msg.snapshot
 		needsMainRebuild = true
 
 	case operationErrorMsg:

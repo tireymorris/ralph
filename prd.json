@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "project_name": "Shared UI Backend Consolidation",
   "branch_name": "feature/consolidate-web-ui-tui-backend",
   "context": "Ralph is a Go 1.24 CLI with an optional Bubble Tea/Lip Gloss TUI in internal/tui and a Vite + React + TypeScript frontend in web/src. Shared backend behavior lives in internal/workflow and internal/shared, including config, runner integrations, runstate, PRD storage, workdir helpers, the shared session facade in internal/shared/session, and the shared translation helpers for checkpoints, event status, and phase mapping. The web side uses internal/web for HTTP handlers, run controllers, SSE, and registry state. The current pattern is to keep presentation logic in the UI layer while workflow state, PRD validation/storage, runner orchestration, and shared read snapshots stay in shared Go packages. Public APIs and routes may change if that helps consolidate logic into shared packages. Tests are table-driven Go *_test.go files for backend code, Vitest for web client code via cd web \u0026\u0026 npm test, and Playwright e2e tests via cd e2e \u0026\u0026 npx playwright test. The full feature suite currently runs with go test ./... \u0026\u0026 cd web \u0026\u0026 npm test \u0026\u0026 cd ../e2e \u0026\u0026 npx playwright test. When web UI files change, embedded assets are regenerated with go generate ./internal/web/...",
@@ -44,7 +44,7 @@
           "behavior": "The TUI resume and implementation screens render from the shared backend snapshot.",
           "red_hint": "add a failing test that TUI resume rendering uses shared snapshot data instead of local PRD or checkpoint helpers",
           "refactor_hint": "Keep the Bubble Tea model focused on layout and input handling after the shared snapshot lands.",
-          "passes": false
+          "passes": true
         },
         {
           "id": "slice-2",

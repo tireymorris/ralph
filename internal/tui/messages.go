@@ -3,6 +3,7 @@ package tui
 import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/session"
 )
 
 type (
@@ -11,6 +12,7 @@ type (
 	resumeStartMsg struct {
 		phase Phase
 		prd   *prd.PRD
+		snapshot session.RunSnapshot
 	}
 
 	operationErrorMsg struct {

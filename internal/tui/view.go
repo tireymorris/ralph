@@ -134,7 +134,8 @@ func (m *Model) renderGenerating() string {
 }
 
 func (m *Model) renderPRDReview() string {
-	if m.prd == nil {
+	prd := m.activePRD()
+	if prd == nil {
 		return ""
 	}
 
@@ -145,7 +146,7 @@ func (m *Model) renderPRDReview() string {
 	b.WriteString("\n\n")
 	b.WriteString(titleStyle.Render("Stories"))
 	b.WriteString("\n")
-	for _, s := range m.prd.Stories {
+	for _, s := range prd.Stories {
 		b.WriteString(m.renderReviewStory(s))
 	}
 	b.WriteString("\n")
@@ -161,7 +162,8 @@ func (m *Model) renderPRDReview() string {
 }
 
 func (m *Model) renderImplementation() string {
-	if m.prd == nil {
+	prd := m.activePRD()
+	if prd == nil {
 		return ""
 	}
 
@@ -172,7 +174,7 @@ func (m *Model) renderImplementation() string {
 	b.WriteString("\n\n")
 	b.WriteString(titleStyle.Render("Stories"))
 	b.WriteString("\n")
-	for _, s := range m.prd.Stories {
+	for _, s := range prd.Stories {
 		b.WriteString(m.renderImplementationStory(s))
 		b.WriteString("\n")
 	}
@@ -190,13 +192,16 @@ func (m *Model) renderCompleted() string {
 		b.WriteString("\n")
 		b.WriteString(mutedStyle.Render("Run without --dry-run to implement, or use --resume."))
 		b.WriteString("\n")
-	} else if m.prd != nil {
-		b.WriteString(successStyle.Render(iconSuccess + " All stories completed!"))
-		b.WriteString("\n\n")
-		b.WriteString(labelStyle.Render("Project") + " " + valueStyle.Render(m.prd.ProjectName))
-		b.WriteString("\n")
-		b.WriteString(labelStyle.Render("Stories") + " " + valueStyle.Render(fmt.Sprintf("%d completed", len(m.prd.Stories))))
-		b.WriteString("\n")
+	} else {
+		prd := m.activePRD()
+		if prd != nil {
+			b.WriteString(successStyle.Render(iconSuccess + " All stories completed!"))
+			b.WriteString("\n\n")
+			b.WriteString(labelStyle.Render("Project") + " " + valueStyle.Render(prd.ProjectName))
+			b.WriteString("\n")
+			b.WriteString(labelStyle.Render("Stories") + " " + valueStyle.Render(fmt.Sprintf("%d completed", len(prd.Stories))))
+			b.WriteString("\n")
+		}
 	}
 
 	return infoStyle.Render(b.String())
@@ -294,9 +299,13 @@ func (m *Model) rebuildMainScrollContent() {
 }
 
 func (m *Model) renderProjectSection() string {
+	prd := m.activePRD()
+	if prd == nil {
+		return ""
+	}
 	var b strings.Builder
 	b.WriteString(m.renderProjectLine())
-	if m.prd.BranchName != "" {
+	if prd.BranchName != "" {
 		b.WriteString("\n")
 		b.WriteString(m.renderBranchLine())
 	}
@@ -304,15 +313,27 @@ func (m *Model) renderProjectSection() string {
 }
 
 func (m *Model) renderProjectLine() string {
-	return infoStyle.Render(labelStyle.Render("Project") + " " + valueStyle.Render(m.prd.ProjectName))
+	prd := m.activePRD()
+	if prd == nil {
+		return ""
+	}
+	return infoStyle.Render(labelStyle.Render("Project") + " " + valueStyle.Render(prd.ProjectName))
 }
 
 func (m *Model) renderBranchLine() string {
-	return infoStyle.Render(labelStyle.Render("Branch") + " " + valueStyle.Render(m.prd.BranchName))
+	prd := m.activePRD()
+	if prd == nil {
+		return ""
+	}
+	return infoStyle.Render(labelStyle.Render("Branch") + " " + valueStyle.Render(prd.BranchName))
 }
 
 func (m *Model) renderProgressSection() string {
-	progress := m.prd.RunProgress()
+	prd := m.activePRD()
+	if prd == nil {
+		return ""
+	}
+	progress := prd.RunProgress()
 	if progress == nil {
 		return ""
 	}
@@ -368,7 +389,8 @@ func (m *Model) renderReviewStory(s *prd.Story) string {
 }
 
 func (m *Model) renderImplementationStory(s *prd.Story) string {
-	isCurrentStory := m.currentStory != nil && s.ID == m.currentStory.ID
+	currentStory := m.activeStory()
+	isCurrentStory := currentStory != nil && s.ID == currentStory.ID
 	icon := getStatusIcon(s.Passes, isCurrentStory)
 	status := getStatusText(s.Passes, isCurrentStory)
 	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
@@ -379,6 +401,9 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 		if len(storyProgress.Slices) > 0 {
 			completedSlices := storyProgress.CompletedSlices
 			nextPendingSlice := s.NextPendingSlice()
+			if isCurrentStory && m.snapshot.NextPendingSlice != nil {
+				nextPendingSlice = m.snapshot.NextPendingSlice
+			}
 			b.WriteString("\n")
 			for i, slice := range storyProgress.Slices {
 				b.WriteString(m.renderImplementationSlice(slice, i, completedSlices, nextPendingSlice))
@@ -390,6 +415,20 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 		return b.String()
 	}
 	return storyItemStyle.Render(line)
+}
+
+func (m *Model) activePRD() *prd.PRD {
+	if m.snapshot.CurrentPRD != nil {
+		return m.snapshot.CurrentPRD
+	}
+	return m.prd
+}
+
+func (m *Model) activeStory() *prd.Story {
+	if m.snapshot.CurrentStory != nil {
+		return m.snapshot.CurrentStory
+	}
+	return m.currentStory
 }
 
 func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {

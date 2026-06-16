@@ -10,6 +10,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/session"
 )
 
 // Phase is the Bubble Tea UI phase, distinct from workflow.Executor phases.
@@ -66,6 +67,7 @@ type Model struct {
 	phase        Phase
 	prd          *prd.PRD
 	currentStory *prd.Story
+	snapshot     session.RunSnapshot
 	err          error
 	quitting     bool
 	width        int

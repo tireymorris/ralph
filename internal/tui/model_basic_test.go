@@ -238,6 +238,59 @@ func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
 	}
 }
 
+func TestResumeMainPaneShowsActiveStorySliceProgressFromSnapshot(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.Runner = "mock"
+
+	p := &prd.PRD{
+		ProjectName: "Resume Snapshot Test",
+		Stories: []*prd.Story{
+			{ID: "1", Title: "Done", Passes: true, Priority: 1},
+			{
+				ID:       "2",
+				Title:    "Active",
+				Passes:   false,
+				Priority: 2,
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "first slice", RedHint: "write failing test", Passes: true},
+					{ID: "slice-2", Behavior: "second slice", RedHint: "write failing test", Passes: false},
+				},
+			},
+		},
+	}
+	if err := prd.Save(cfg, p); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0755); err != nil {
+		t.Fatalf("mkdir meta: %v", err)
+	}
+	meta, _ := json.Marshal(map[string]string{"checkpoint": runstate.CheckpointFollowup})
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0644); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+
+	m := NewModel(cfg, "", false, true, false)
+	t.Cleanup(func() { waitSessionDone(t, m.operationManager) })
+
+	msg := m.operationManager.StartFullOperation(true, "")()
+	newModel, _ := m.Update(msg)
+	m = newModel.(*Model)
+
+	m.width, m.height = 80, 45
+	prepMainView(m)
+	view := m.View()
+
+	for _, want := range []string{"first slice", "second slice", "completed", "in progress"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("resume main pane should show %q from the shared snapshot, got %q", want, view)
+		}
+	}
+}
+
 func awaitingPromptModel(t *testing.T) *Model {
 	t.Helper()
 	cfg := config.DefaultConfig()
