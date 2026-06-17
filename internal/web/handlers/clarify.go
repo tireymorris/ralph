@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"ralph/internal/prompt"
+	"ralph/internal/shared/workdir"
+	"ralph/internal/web/runs"
 )
 
 type clarifyRequest struct {
@@ -23,18 +25,26 @@ func (a *API) ClarifyRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := workdir.ValidateGit(run.WorkDir); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	var req clarifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 
-	a.mu.Lock()
-	ctrl := a.controllers[id]
-	a.mu.Unlock()
-	if ctrl == nil {
-		writeJSONError(w, http.StatusConflict, "run controller unavailable")
+	ctrl, err := a.ensureController(id)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "runner unavailable")
 		return
+	}
+	if !ctrl.WaitingForClarify() {
+		if questions, qerr := runs.LastClarifyingQuestions(run.WorkDir, id); qerr == nil && len(questions) > 0 {
+			ctrl.ResumeWaitingClarify(r.Context(), run.Prompt, questions)
+		}
 	}
 	if err := ctrl.SubmitClarify(req.Answers); err != nil {
 		writeJSONError(w, http.StatusConflict, err.Error())

@@ -191,6 +191,12 @@ func (d *Driver) StartCritiqueRevision(ctx context.Context, userPrompt, critique
 	}()
 }
 
+func (d *Driver) WaitingForClarify() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.clarifyAnswersCh != nil
+}
+
 func (d *Driver) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	d.mu.Lock()
 	ch := d.clarifyAnswersCh
@@ -201,6 +207,49 @@ func (d *Driver) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	}
 	ch <- qas
 	return nil
+}
+
+func (d *Driver) ResumeWaitingClarify(ctx context.Context, userPrompt string, questions []string) {
+	if len(questions) == 0 {
+		return
+	}
+
+	d.mu.Lock()
+	if d.clarifyAnswersCh != nil {
+		d.mu.Unlock()
+		return
+	}
+	d.userPrompt = userPrompt
+	answersCh := make(chan []prompt.QuestionAnswer, 1)
+	d.clarifyAnswersCh = answersCh
+	d.mu.Unlock()
+
+	select {
+	case d.eventsCh <- events.EventClarifyingQuestions{Questions: questions, AnswersCh: answersCh}:
+	case <-d.ctx.Done():
+		return
+	}
+
+	d.wg.Add(1)
+	go func() {
+		defer d.wg.Done()
+		d.runWithCtx(ctx, func(runCtx context.Context) {
+			select {
+			case <-runCtx.Done():
+				return
+			case answers := <-answersCh:
+				p, err := d.executor.RunGenerateWithAnswers(runCtx, userPrompt, answers)
+				if err != nil {
+					d.EmitError(fmt.Errorf("PRD generation: %w", err))
+					return
+				}
+				if p == nil || !d.cfg.AutoApprove || d.cfg.DryRun {
+					return
+				}
+				d.executor.RunImplementation(runCtx, p)
+			}
+		})
+	}()
 }
 
 func (d *Driver) TrackEventState(ev events.Event) {

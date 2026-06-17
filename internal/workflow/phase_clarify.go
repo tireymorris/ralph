@@ -38,6 +38,13 @@ func (e *Executor) RunClarify(ctx context.Context, userPrompt string) ([]prompt.
 		return nil, nil
 	}
 
+	return e.WaitForClarifyAnswers(ctx, questions)
+}
+
+func (e *Executor) WaitForClarifyAnswers(ctx context.Context, questions []string) ([]prompt.QuestionAnswer, error) {
+	if len(questions) == 0 {
+		return nil, nil
+	}
 	if e.eventsCh == nil {
 		logger.Debug("no event channel, skipping clarifying questions")
 		return nil, nil

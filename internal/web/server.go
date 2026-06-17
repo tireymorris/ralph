@@ -28,6 +28,7 @@ func buildHandler(cfg *config.Config) (http.Handler, *handlers.API, error) {
 		return nil, nil, fmt.Errorf("load runs registry: %w", err)
 	}
 	api := handlers.NewAPI(cfg, registry)
+	api.ReattachInterruptedRuns()
 	mux.HandleFunc("POST /api/runs", api.CreateRun)
 	mux.HandleFunc("GET /api/runs", api.ListRuns)
 	mux.HandleFunc("GET /api/runs/{id}", api.GetRun)

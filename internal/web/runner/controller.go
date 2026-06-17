@@ -28,6 +28,7 @@ type RunController struct {
 	subscribers      map[chan events.Event]struct{}
 	onTerminal       func()
 	terminalNotified bool
+	reattaching      bool
 	wg               sync.WaitGroup
 }
 

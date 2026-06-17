@@ -118,5 +118,17 @@ func (s *Session) PRDForImplementation(cfg *config.Config) (*prd.PRD, error) {
 func (s *Session) SubmitClarify(qas []prompt.QuestionAnswer) error {
 	return s.Driver.SubmitClarify(qas)
 }
+
+func (s *Session) WaitingForClarify() bool {
+	return s.Driver.WaitingForClarify()
+}
+
+func (s *Session) ResumeWaitingClarify(ctx context.Context, userPrompt string, questions []string) {
+	s.Driver.ResumeWaitingClarify(ctx, userPrompt, questions)
+}
+
+func (s *Session) StartCheckpointResume(ctx context.Context) {
+	s.Driver.StartCheckpointResume(ctx)
+}
 func (s *Session) EventsCh() <-chan events.Event { return s.Driver.EventsCh() }
 func (s *Session) Wait()                         { s.Driver.Wait() }

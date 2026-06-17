@@ -31,6 +31,15 @@ func (a *API) RunEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if ctrl, ok := a.controller(id); !ok && runs.NeedsSessionReattach(run.Status) {
+		var err error
+		ctrl, err = a.ensureController(id)
+		if err != nil {
+			return
+		}
+		_ = ctrl
+	}
+
 	a.mu.Lock()
 	ctrl := a.controllers[id]
 	a.mu.Unlock()
