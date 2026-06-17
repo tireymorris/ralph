@@ -52,7 +52,7 @@ export default function ClarifyForm({
       <h2 className="content-heading">A few questions first</h2>
       {questions.map((question, i) => (
         <label key={question} className="field">
-          <span className="field-label">{question}</span>
+          <span className="clarify-question">{question}</span>
           <textarea
             className="composer-input"
             aria-label={question}

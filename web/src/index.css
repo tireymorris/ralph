@@ -677,6 +677,13 @@ textarea:focus-visible {
   gap: var(--space-5);
 }
 
+.clarify-question {
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+
 /* ---------- PRD review ---------- */
 
 .prd-review-panel {
