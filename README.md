@@ -70,16 +70,19 @@ Ralph does not handle runner auth.
 
 `ralph web` serves a local REST/SSE API (default `http://127.0.0.1:8080`). Prefer this for programmatic use (no TTY).
 
-| Endpoint | Purpose |
-|----------|---------|
-| `POST /api/runs` | Start run (`auto_approve: true` = `--yolo`) |
-| `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/prd` | List / status / PRD |
-| `GET /api/runs/{id}/events` | SSE replay + live stream |
-| `POST /api/runs/{id}/clarify` | Clarification answers |
-| `POST /api/runs/{id}/review` | Approve or revise PRD |
-| `POST /api/runs/{id}/implementation-review` | Continue after review findings |
-| `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume`, `POST /api/runs/{id}/followup` | Control |
-| `GET /api/version`, `POST /api/update`, `POST /api/clean` | Meta |
+| Endpoint | Purpose | Request body |
+|----------|---------|--------------|
+| `POST /api/runs` | Start run; returns `{"id":"..."}` | `{"prompt":"...","auto_approve":false}` (`auto_approve:true` = `--yolo`: skip clarify + PRD review) |
+| `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/prd` | List / status / PRD | — |
+| `GET /api/runs/{id}/events` | SSE replay + live stream (use `curl -N`) | — |
+| `POST /api/runs/{id}/clarify` | Clarification answers (when `waiting_clarify`) | `{"answers":[{"question":"...","answer":"..."}]}` |
+| `POST /api/runs/{id}/review` | Approve or revise PRD (when `waiting_review`) | `{"action":"approve"}` **or** `{"action":"revise","critique":"..."}` |
+| `POST /api/runs/{id}/implementation-review` | Continue after review findings (when `waiting_implementation_review`) | `{}` |
+| `POST /api/runs/{id}/followup` | Send a follow-up message | `{"message":"..."}` |
+| `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume` | Control | — |
+| `GET /api/version`, `POST /api/update`, `POST /api/clean` | Meta | — |
+
+`ralph web --port 3000` overrides the default port. The `review` body is strict: `action` must be exactly `approve` or `revise`, and `revise` **requires** a non-empty `critique` (not `feedback`) — wrong/missing fields return `{"error":"..."}` with the expected name. The SSE stream replays `.ralph/runs/{id}/events.ndjson` then streams live events, e.g. `EventOutput` (`{payload:{Text}}`), `EventClarifyingQuestions` (`{payload:{Questions}}`), `EventPRDReview`, `EventCompleted`.
 
 Statuses: `running`, `waiting_clarify`, `waiting_review`, `waiting_implementation_review`, `implementing`, `completed`, `failed`, `cancelled`. TUI runs use id `prd-local`.
 
