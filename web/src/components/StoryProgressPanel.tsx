@@ -93,21 +93,21 @@ export default function StoryProgressPanel({
                     {story.title}
                   </span>
                 </summary>
-                <p className="story-progress-item-description">
+                <p className="content-body story-progress-item-description">
                   {story.description}
                 </p>
-                <p className="story-progress-item-description">
+                <p className="content-meta story-progress-slice-count">
                   {story.slices.length > 0
                     ? `${completedSlices}/${story.slices.length} slices done`
                     : "0/0 slices done"}
                 </p>
-                <ul className="story-progress-slice-list">
+                <ul className="slice-list story-progress-slice-list">
                   {story.slices.map((slice, sliceIndex) => {
                     const status = sliceStatus(story, sliceIndex, isCurrent);
 
                     return (
-                      <li key={slice.id} className="story-progress-slice">
-                        <p className="story-progress-slice-status">
+                      <li key={slice.id} className="slice-item story-progress-slice">
+                        <p className="slice-item-status">
                           <strong>Status:</strong> {status}
                         </p>
                         <p>

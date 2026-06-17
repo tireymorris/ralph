@@ -59,6 +59,8 @@
   --duration-fast: 140ms;
   --duration-normal: 220ms;
 
+  --content-padding-x: clamp(var(--space-5), 4vw, var(--space-10));
+
   --status-running: #60a5fa;
   --status-waiting: #fbbf24;
   --status-completed: #4ade80;
@@ -229,12 +231,76 @@ textarea:focus-visible {
   user-select: none;
 }
 
+/* ---------- Shared content typography ---------- */
+
+.content-heading {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.content-body {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.content-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.content-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.slice-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.slice-item {
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.slice-item p {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.slice-item p + p {
+  margin-top: var(--space-2);
+}
+
+.slice-item strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.slice-item-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
 /* ---------- App shell ---------- */
 
 .app-main {
-  padding: var(--space-6) var(--space-5);
-  max-width: 48rem;
-  margin: 0 auto;
+  padding: var(--space-6) var(--content-padding-x);
   width: 100%;
   height: 100vh;
   overflow: hidden;
@@ -502,8 +568,8 @@ textarea:focus-visible {
   background: var(--bg-subtle);
   color: var(--text);
   font: inherit;
-  font-size: var(--text-sm);
-  line-height: 1.55;
+  font-size: var(--text-base);
+  line-height: 1.6;
   resize: vertical;
   min-height: 5.5rem;
   transition:
@@ -578,6 +644,19 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
+.new-run-auto-approve {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.new-run-auto-approve input {
+  accent-color: var(--accent);
+}
+
 /* ---------- Clarify form ---------- */
 
 .clarify-form {
@@ -592,10 +671,7 @@ textarea:focus-visible {
 }
 
 .clarify-form-heading {
-  font-size: var(--text-lg);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 0;
+  margin-bottom: var(--space-1);
 }
 
 /* ---------- PRD review ---------- */
@@ -619,9 +695,6 @@ textarea:focus-visible {
 
 .prd-review-header h2 {
   margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  letter-spacing: -0.02em;
 }
 
 .prd-review-version {
@@ -657,16 +730,15 @@ textarea:focus-visible {
   border-color: var(--border-strong);
 }
 
-.prd-review-stories li strong {
+.prd-review-story-title {
+  display: block;
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--text);
 }
 
-.prd-review-stories li p {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
+.prd-review-stories li .content-body {
+  margin-top: var(--space-2);
 }
 
 .prd-story-number {
@@ -947,9 +1019,38 @@ textarea:focus-visible {
 .story-progress-item-description {
   margin: 0;
   padding: 0 var(--space-4) var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
+}
+
+.story-progress-slice-count {
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.story-progress-slice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---------- Implementation review ---------- */
+
+.impl-review-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-panel);
+}
+
+.impl-review-panel .content-heading {
+  margin-bottom: var(--space-3);
+}
+
+.impl-review-panel .content-body {
+  margin-bottom: var(--space-5);
 }
 
 /* ---------- Timeline ---------- */
@@ -1021,7 +1122,7 @@ textarea:focus-visible {
 }
 
 .timeline-empty {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--muted);
   padding: var(--space-8) 0;
   text-align: center;
@@ -1052,7 +1153,7 @@ textarea:focus-visible {
 }
 
 .timeline-entry--system .timeline-entry-body {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--muted);
   padding: var(--space-1) var(--space-2);
 }
@@ -1074,10 +1175,10 @@ textarea:focus-visible {
 .timeline-entry-text {
   margin: 0;
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
 .timeline-show-more {
@@ -1107,7 +1208,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-5);
+  padding: var(--space-5) var(--content-padding-x);
   border-top: 1px solid var(--border);
   background: var(--composer-bar-bg);
   backdrop-filter: blur(20px);
@@ -1116,8 +1217,6 @@ textarea:focus-visible {
 
 .follow-up-composer .composer-input,
 .follow-up-composer-actions {
-  max-width: 48rem;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -1133,8 +1232,8 @@ textarea:focus-visible {
 }
 
 @media (max-width: 640px) {
-  .app-main {
-    padding: var(--space-4) var(--space-4);
+  :root {
+    --content-padding-x: var(--space-4);
   }
 
   .new-run-composer,

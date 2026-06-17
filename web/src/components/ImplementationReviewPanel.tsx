@@ -31,8 +31,8 @@ export default function ImplementationReviewPanel({
 
   return (
     <section className="impl-review-panel" aria-label="Implementation review">
-      <h2>Implementation review</h2>
-      <p>
+      <h2 className="content-heading">Implementation review</h2>
+      <p className="content-body">
         Critical diff review reported findings
         {iteration != null && iteration > 0 ? ` (iteration ${iteration})` : ""}.
         Check the timeline for details, then continue when ready.

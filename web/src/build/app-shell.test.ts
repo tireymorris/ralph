@@ -12,11 +12,11 @@ describe("index.css color scheme", () => {
 });
 
 describe("index.css app shell", () => {
-  it("fills viewport with a centered single-column main", () => {
+  it("fills viewport with a full-width single-column main", () => {
     const block = ruleBlock(readIndexCss(), ".app-main");
     expect(block).toMatch(/height:\s*100vh/);
-    expect(block).toMatch(/max-width:\s*48rem/);
-    expect(block).toMatch(/margin:\s*0\s+auto/);
+    expect(block).toMatch(/width:\s*100%/);
+    expect(block).not.toMatch(/max-width:/);
   });
 
   it("anchors follow-up composer to full viewport width", () => {

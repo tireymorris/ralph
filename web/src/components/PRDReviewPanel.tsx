@@ -58,7 +58,7 @@ export default function PRDReviewPanel({
   return (
     <section className="prd-review-panel" aria-label="PRD review">
       <div className="prd-review-header">
-        <h2>{prd.project_name}</h2>
+        <h2 className="content-heading">{prd.project_name}</h2>
         <span className="prd-review-version">v{prd.version}</span>
       </div>
 
@@ -67,11 +67,11 @@ export default function PRDReviewPanel({
           <li key={story.id}>
             <span className="prd-story-number">{i + 1}</span>
             <div>
-              <strong>{story.title}</strong>
-              <p>{story.description}</p>
-              <ul className="prd-review-slices">
+              <strong className="prd-review-story-title">{story.title}</strong>
+              <p className="content-body">{story.description}</p>
+              <ul className="slice-list prd-review-slices">
                 {story.slices.map((slice) => (
-                  <li key={slice.id}>
+                  <li key={slice.id} className="slice-item">
                     <p>
                       <strong>Behavior:</strong> {slice.behavior}
                     </p>
