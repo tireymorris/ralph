@@ -284,13 +284,13 @@ export default function RunDetail() {
           />
         )}
         {entries.length === 0 && run && !isTerminal && isLocalPRD && (
-          <p className="timeline-empty">
+          <p className="content-body content-muted timeline-empty">
             This run is in progress in the terminal (Ralph CLI or TUI). Continue
             there, or run <code>ralph clean</code> to reset.
           </p>
         )}
         {entries.length === 0 && run && !isTerminal && !isLocalPRD && (
-          <p className="timeline-empty">Waiting for events…</p>
+          <p className="content-body content-muted timeline-empty">Waiting for events…</p>
         )}
         {entries.length > 0 && <GroupedTimeline entries={entries} />}
       </div>

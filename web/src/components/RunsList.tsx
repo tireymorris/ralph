@@ -74,13 +74,13 @@ export default function RunsList({
     if (hideWhenEmpty) {
       return null;
     }
-    return <p className="runs-loading">Loading runs…</p>;
+    return <p className="content-body content-muted runs-loading">Loading runs…</p>;
   }
 
   if (visibleRuns.length === 0) {
     return (
       <div className="runs-empty-state">
-        <p className="runs-empty">No runs yet</p>
+        <p className="content-body content-muted runs-empty">No runs yet</p>
         <Link to="/" className="btn btn--primary btn--sm">
           Start your first run
         </Link>
@@ -98,7 +98,7 @@ export default function RunsList({
               to={`/runs/${run.id}`}
               aria-current={run.id === activeId ? "page" : undefined}
             >
-              <span className="run-prompt">
+              <span className="content-body run-prompt">
                 {run.prompt}
                 {run.source === "local_prd" ? (
                   <span className="run-source-tag">CLI</span>

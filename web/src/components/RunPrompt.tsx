@@ -13,7 +13,7 @@ export default function RunPrompt({ prompt }: RunPromptProps) {
     <div className={`run-detail-prompt-wrap${expanded ? " run-detail-prompt-wrap--expanded" : ""}`}>
       <p
         id={contentId}
-        className="run-detail-prompt"
+        className="content-body run-detail-prompt"
         title={!expanded ? prompt : undefined}
       >
         {prompt}

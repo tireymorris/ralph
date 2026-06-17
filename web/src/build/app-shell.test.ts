@@ -36,4 +36,12 @@ describe("index.css app shell", () => {
     expect(block).toMatch(/overflow-y:\s*auto/);
     expect(block).toMatch(/flex:\s*1/);
   });
+
+  it("uses shared panel and content typography utilities", () => {
+    const css = readIndexCss();
+    expect(css).toMatch(/\.panel\s*\{/);
+    expect(css).toMatch(/\.content-heading\s*\{/);
+    expect(css).toMatch(/\.content-body\s*\{/);
+    expect(css).toMatch(/\.slice-list\s*\{/);
+  });
 });

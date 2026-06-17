@@ -54,9 +54,11 @@ export default function NewRunPage() {
       <div className="new-run-main">
         <header className="new-run-header">
           <h1 className="app-wordmark">Ralph</h1>
-          <p className="app-tagline">Describe a goal. Ralph plans and implements it.</p>
+          <p className="content-body content-muted app-tagline">
+            Describe a goal. Ralph plans and implements it.
+          </p>
         </header>
-        <form className="new-run-composer" onSubmit={handleSubmit}>
+        <form className="panel new-run-composer" onSubmit={handleSubmit}>
           <textarea
             id="goal-prompt"
             aria-label="Goal prompt"
@@ -68,7 +70,7 @@ export default function NewRunPage() {
             disabled={submitting}
             placeholder="What do you want to build?"
           />
-          <label className="new-run-auto-approve">
+          <label className="content-body new-run-auto-approve">
             <input
               type="checkbox"
               checked={autoApprove}

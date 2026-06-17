@@ -248,6 +248,10 @@ textarea:focus-visible {
   line-height: 1.6;
 }
 
+.content-muted {
+  color: var(--muted);
+}
+
 .content-label {
   font-weight: 600;
   color: var(--text);
@@ -295,6 +299,27 @@ textarea:focus-visible {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   color: var(--muted);
+}
+
+.content-subheading {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-panel);
+}
+
+.panel--compact {
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: none;
 }
 
 /* ---------- App shell ---------- */
@@ -385,9 +410,6 @@ textarea:focus-visible {
 
 .app-tagline {
   margin: var(--space-2) 0 0;
-  font-size: var(--text-sm);
-  color: var(--muted);
-  line-height: 1.5;
 }
 
 /* ---------- Runs list (standalone) ---------- */
@@ -442,7 +464,6 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -553,8 +574,6 @@ textarea:focus-visible {
 
 .runs-empty,
 .runs-loading {
-  font-size: var(--text-sm);
-  color: var(--muted);
   margin: 0;
 }
 
@@ -598,7 +617,7 @@ textarea:focus-visible {
 .form-error {
   color: var(--status-failed);
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
 }
 
 /* ---------- New run page ---------- */
@@ -629,11 +648,6 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-6);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-panel);
 }
 
 .new-run-actions {
@@ -648,8 +662,6 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
   cursor: pointer;
 }
 
@@ -663,25 +675,13 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-panel);
-}
-
-.clarify-form-heading {
-  margin-bottom: var(--space-1);
 }
 
 /* ---------- PRD review ---------- */
 
 .prd-review-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-panel);
+  display: flex;
+  flex-direction: column;
 }
 
 .prd-review-header {
@@ -698,9 +698,6 @@ textarea:focus-visible {
 }
 
 .prd-review-version {
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -732,9 +729,6 @@ textarea:focus-visible {
 
 .prd-review-story-title {
   display: block;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--text);
 }
 
 .prd-review-stories li .content-body {
@@ -840,9 +834,6 @@ textarea:focus-visible {
 
 .run-detail-prompt {
   margin: 0;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.55;
   word-break: break-word;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -917,10 +908,8 @@ textarea:focus-visible {
 /* ---------- Story progress ---------- */
 
 .story-progress-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
 }
 
 .story-progress-summary {
@@ -930,7 +919,7 @@ textarea:focus-visible {
   gap: var(--space-3);
   cursor: pointer;
   font-weight: 600;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   list-style: none;
 }
 
@@ -950,10 +939,7 @@ textarea:focus-visible {
 }
 
 .story-progress-count {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
   font-weight: 500;
-  color: var(--muted);
 }
 
 .story-progress-list {
@@ -1005,15 +991,13 @@ textarea:focus-visible {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
   min-width: 0;
 }
 
 .story-progress-item-number {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--muted);
+  flex-shrink: 0;
 }
 
 .story-progress-item-description {
@@ -1038,11 +1022,8 @@ textarea:focus-visible {
 /* ---------- Implementation review ---------- */
 
 .impl-review-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-panel);
+  display: flex;
+  flex-direction: column;
 }
 
 .impl-review-panel .content-heading {
@@ -1076,7 +1057,7 @@ textarea:focus-visible {
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   list-style: none;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
 }
 
@@ -1122,8 +1103,6 @@ textarea:focus-visible {
 }
 
 .timeline-empty {
-  font-size: var(--text-base);
-  color: var(--muted);
   padding: var(--space-8) 0;
   text-align: center;
 }
@@ -1188,7 +1167,7 @@ textarea:focus-visible {
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 500;
   cursor: pointer;
   transition: color var(--duration-fast) var(--ease-out);
@@ -1236,9 +1215,7 @@ textarea:focus-visible {
     --content-padding-x: var(--space-4);
   }
 
-  .new-run-composer,
-  .clarify-form,
-  .prd-review-panel {
+  .panel {
     padding: var(--space-5);
   }
 

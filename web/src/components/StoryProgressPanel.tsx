@@ -65,10 +65,10 @@ export default function StoryProgressPanel({
   const currentIndex = prd.stories.findIndex((s) => !s.passes);
 
   return (
-    <details className="story-progress-panel" open={defaultOpen}>
+    <details className="panel panel--compact story-progress-panel" open={defaultOpen}>
       <summary className="story-progress-summary">
         <span className="story-progress-title">Stories</span>
-        <span className="story-progress-count">
+        <span className="content-meta story-progress-count">
           {completed}/{total} done
         </span>
       </summary>
@@ -88,8 +88,10 @@ export default function StoryProgressPanel({
                     className={`story-progress-status story-progress-status--${status}${isCurrent ? " story-progress-status--current" : ""}`}
                     aria-hidden
                   />
-                  <span className="story-progress-item-title">
-                    <span className="story-progress-item-number">{i + 1}</span>
+                  <span className="content-subheading story-progress-item-title">
+                    <span className="content-meta story-progress-item-number">
+                      {i + 1}
+                    </span>
                     {story.title}
                   </span>
                 </summary>

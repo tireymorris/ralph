@@ -48,10 +48,8 @@ export default function ClarifyForm({
   }
 
   return (
-    <form className="clarify-form" onSubmit={handleSubmit}>
-      <h2 className="content-heading clarify-form-heading">
-        A few questions first
-      </h2>
+    <form className="panel clarify-form" onSubmit={handleSubmit}>
+      <h2 className="content-heading">A few questions first</h2>
       {questions.map((question, i) => (
         <label key={question} className="field">
           <span className="field-label">{question}</span>
