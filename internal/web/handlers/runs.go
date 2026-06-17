@@ -184,14 +184,6 @@ func sortRunResponses(list []runResponse) {
 }
 
 func (a *API) runProgress(run *runs.Run) *sharedprd.RunProgress {
-	if ctrl, ok := a.controller(run.ID); ok {
-		snapshot := ctrl.RunSnapshot(run.Phase)
-		if snapshot.CurrentPRD != nil {
-			return snapshot.CurrentPRD.RunProgress()
-		}
-		return nil
-	}
-
 	runCfg := *a.cfg
 	if run.ID == runs.LocalPRDRunID {
 		runCfg.WorkDir = a.cfg.WorkDir
@@ -202,12 +194,17 @@ func (a *API) runProgress(run *runs.Run) *sharedprd.RunProgress {
 		runCfg.PRDFile = run.PRDPath
 	}
 	prdPath := runCfg.PRDPath()
-	if _, err := os.Stat(prdPath); err != nil {
-		return nil
+	if _, err := os.Stat(prdPath); err == nil {
+		if p, err := sharedprd.Load(&runCfg); err == nil {
+			return p.RunProgress()
+		}
 	}
-	p, err := sharedprd.Load(&runCfg)
-	if err != nil {
-		return nil
+
+	if ctrl, ok := a.controller(run.ID); ok {
+		snapshot := ctrl.RunSnapshot(run.Phase)
+		if snapshot.CurrentPRD != nil {
+			return snapshot.CurrentPRD.RunProgress()
+		}
 	}
-	return p.RunProgress()
+	return nil
 }

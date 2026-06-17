@@ -262,6 +262,87 @@ func TestGetRunUsesSharedSnapshotForStoryProgress(t *testing.T) {
 	}
 }
 
+func TestGetRunStoryProgressPrefersDiskOverStaleControllerPRD(t *testing.T) {
+	workDir := t.TempDir()
+	prdJSON := `{
+  "version": 1,
+  "project_name": "test",
+  "stories": [
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "first", "red_hint": "test it", "passes": true}], "priority": 1, "passes": true},
+    {"id": "s2", "title": "b", "description": "d", "slices": [{"id": "slice-1", "behavior": "second", "red_hint": "test it", "passes": true}], "priority": 2, "passes": true},
+    {"id": "s3", "title": "c", "description": "d", "slices": [{"id": "slice-1", "behavior": "third", "red_hint": "test it", "passes": false}], "priority": 3, "passes": false},
+    {"id": "s4", "title": "d", "description": "d", "slices": [{"id": "slice-1", "behavior": "fourth", "red_hint": "test it", "passes": false}], "priority": 4, "passes": false},
+    {"id": "s5", "title": "e", "description": "d", "slices": [{"id": "slice-1", "behavior": "fifth", "red_hint": "test it", "passes": false}], "priority": 5, "passes": false},
+    {"id": "s6", "title": "f", "description": "d", "slices": [{"id": "slice-1", "behavior": "sixth", "red_hint": "test it", "passes": false}], "priority": 6, "passes": false}
+  ]
+}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	reg := runs.NewRegistry()
+	now := time.Now()
+	runID := "stale-controller-run"
+	if err := reg.Register(&runs.Run{
+		ID:        runID,
+		WorkDir:   workDir,
+		Prompt:    "goal",
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: now,
+		UpdatedAt: now,
+		PRDPath:   "prd.json",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	api := handlers.NewAPI(cfg, reg)
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+	t.Cleanup(func() {
+		ctrl.Cancel()
+		ctrl.Wait()
+	})
+	ctrl.TrackEventState(events.EventPRDLoaded{PRD: &prd.PRD{
+		ProjectName: "Stale",
+		Stories: []*prd.Story{
+			{ID: "s1", Title: "a", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "first", RedHint: "test it", Passes: false}}},
+			{ID: "s2", Title: "b", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "second", RedHint: "test it", Passes: false}}},
+			{ID: "s3", Title: "c", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "third", RedHint: "test it", Passes: false}}},
+			{ID: "s4", Title: "d", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "fourth", RedHint: "test it", Passes: false}}},
+			{ID: "s5", Title: "e", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "fifth", RedHint: "test it", Passes: false}}},
+			{ID: "s6", Title: "f", Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "sixth", RedHint: "test it", Passes: false}}},
+		},
+	}})
+	api.SetController(runID, ctrl)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/runs/"+runID, nil)
+	req.SetPathValue("id", runID)
+	rec := httptest.NewRecorder()
+	api.GetRun(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var body struct {
+		StoryProgress struct {
+			Completed int `json:"completed"`
+			Total     int `json:"total"`
+		} `json:"story_progress"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if body.StoryProgress.Completed != 2 {
+		t.Fatalf("completed = %d, want 2 from disk PRD", body.StoryProgress.Completed)
+	}
+	if body.StoryProgress.Total != 6 {
+		t.Fatalf("total = %d, want 6", body.StoryProgress.Total)
+	}
+}
+
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
 	initGitRepoInDir(t, workDir)
