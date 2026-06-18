@@ -441,7 +441,6 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 			s.Title,
 			status,
 			m.contentWidth(4),
-			continuationAfterIcon(icon),
 		)
 	}
 	if isCurrentStory && (activity.Kind == session.ActivityReview || activity.Kind == session.ActivityRecovery) {
@@ -501,6 +500,5 @@ func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int,
 		slice.Behavior,
 		status,
 		m.contentWidth(8),
-		"    "+continuationAfterIcon(icon),
 	)
 }

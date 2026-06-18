@@ -3,8 +3,6 @@ package tui
 import (
 	"strings"
 	"testing"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 func TestTruncate(t *testing.T) {
@@ -132,15 +130,14 @@ func TestWrapText(t *testing.T) {
 	}
 }
 
-func TestRenderStatusWrappedKeepsContinuationIndent(t *testing.T) {
+func TestRenderStatusWrappedKeepsBulletIndent(t *testing.T) {
 	text := "Changelog#undoable? returns false when the changelog has entries but at least one associated copilot_action_required is still pending."
 	status := bodyStyle.Render("completed")
 	lineWidth := 60
 	icon := successStyle.Render(iconCompleted)
-	firstPrefix := "    " + icon + " "
-	continuationPrefix := "    " + continuationAfterIcon(icon)
+	prefix := "    " + icon + " "
 
-	got := renderStatusWrapped(storyItemStyle, firstPrefix, text, status, lineWidth, continuationPrefix)
+	got := renderStatusWrapped(storyItemStyle, prefix, text, status, lineWidth)
 	lines := strings.Split(got, "\n")
 	if len(lines) < 2 {
 		t.Fatalf("renderStatusWrapped() produced %d lines, want at least 2", len(lines))
@@ -154,16 +151,16 @@ func TestRenderStatusWrappedKeepsContinuationIndent(t *testing.T) {
 		t.Fatalf("status should not appear alone on the last line, got %q", lastLine)
 	}
 
-	for i, line := range lines[1 : len(lines)-1] {
-		if lipgloss.Width(continuationPrefix) > 0 && !strings.HasPrefix(stripANSI(line), "    ") {
-			t.Errorf("continuation line %d should keep slice indent, got %q", i+1, stripANSI(line))
+	for i, line := range lines[1:] {
+		if !strings.Contains(stripANSI(line), "●") {
+			t.Errorf("wrapped line %d should repeat bullet at same indent, got %q", i+1, stripANSI(line))
 		}
 	}
 }
 
 func TestFitStatusOnLastLineAppendsStatus(t *testing.T) {
 	lines := []string{"short text"}
-	got := fitStatusOnLastLine(lines, "◐ ", "   ", "  pending", 40)
+	got := fitStatusOnLastLine(lines, "◐ ", "  pending", 40)
 	if len(got) != 1 {
 		t.Fatalf("fitStatusOnLastLine() = %d lines, want 1", len(got))
 	}
