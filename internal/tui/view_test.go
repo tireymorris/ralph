@@ -267,7 +267,7 @@ func TestViewPhaseImplementationShowsSliceProgress(t *testing.T) {
 	}
 }
 
-func TestViewPhaseImplementationIgnoresPostGapSlicePasses(t *testing.T) {
+func TestViewPhaseImplementationShowsSlicePassesFromDisk(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
 	m.phase = PhaseImplementation
@@ -300,11 +300,68 @@ func TestViewPhaseImplementationIgnoresPostGapSlicePasses(t *testing.T) {
 	if gapPassedLine == "" {
 		t.Fatal("View() should contain the post-gap slice line")
 	}
-	if !strings.Contains(gapPassedLine, "pending") {
-		t.Fatalf("post-gap slice should show pending, got %q", gapPassedLine)
+	if !strings.Contains(gapPassedLine, iconCompleted) {
+		t.Fatalf("post-gap slice with passes true should show completed, got %q", gapPassedLine)
 	}
-	if strings.Contains(gapPassedLine, iconCompleted) {
-		t.Fatalf("post-gap slice should not show completed icon, got %q", gapPassedLine)
+}
+
+func TestViewPhaseImplementationReloadsSliceProgressFromDisk(t *testing.T) {
+	workDir := t.TempDir()
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+
+	onDisk := &prd.PRD{
+		ProjectName: "Test Project",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story One",
+			Slices: []*prd.Slice{
+				{ID: "slice-1", Behavior: "first slice", RedHint: "write failing test", Passes: false},
+				{ID: "slice-2", Behavior: "second slice", RedHint: "write failing test", Passes: false},
+				{ID: "slice-3", Behavior: "third slice", RedHint: "write failing test", Passes: false},
+			},
+		}},
+	}
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save PRD: %v", err)
+	}
+
+	m := NewModel(cfg, "test", false, false, false)
+	m.phase = PhaseImplementation
+	m.width = 80
+	m.height = 45
+	prepMainView(m)
+
+	secondLine := func(view string) string {
+		for _, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, "second slice") {
+				return line
+			}
+		}
+		return ""
+	}
+
+	view := m.View()
+	if line := secondLine(view); line == "" {
+		t.Fatal("View() should contain second slice line")
+	} else if strings.Contains(line, iconCompleted) {
+		t.Fatalf("second slice should start pending, got %q", line)
+	}
+
+	onDisk.Stories[0].Slices[0].Passes = true
+	onDisk.Stories[0].Slices[1].Passes = true
+	if err := prd.Save(cfg, onDisk); err != nil {
+		t.Fatalf("Save updated PRD: %v", err)
+	}
+
+	m.rebuildMainScrollContent()
+	view = m.mainPane.View()
+	line := secondLine(view)
+	if line == "" {
+		t.Fatal("View() should contain second slice line after disk update")
+	}
+	if !strings.Contains(line, iconCompleted) {
+		t.Fatalf("second slice should show completed after disk reload, got %q", line)
 	}
 }
 

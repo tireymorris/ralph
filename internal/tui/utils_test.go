@@ -130,14 +130,15 @@ func TestWrapText(t *testing.T) {
 	}
 }
 
-func TestRenderStatusWrappedKeepsBulletIndent(t *testing.T) {
+func TestRenderStatusWrappedOmitsBulletOnContinuationLines(t *testing.T) {
 	text := "Changelog#undoable? returns false when the changelog has entries but at least one associated copilot_action_required is still pending."
 	status := bodyStyle.Render("completed")
 	lineWidth := 60
 	icon := successStyle.Render(iconCompleted)
-	prefix := "    " + icon + " "
+	firstPrefix := "    " + icon + " "
+	continuationPrefix := "    " + continuationAfterIcon(icon)
 
-	got := renderStatusWrapped(storyItemStyle, prefix, text, status, lineWidth)
+	got := renderStatusWrapped(storyItemStyle, firstPrefix, text, status, lineWidth, continuationPrefix)
 	lines := strings.Split(got, "\n")
 	if len(lines) < 2 {
 		t.Fatalf("renderStatusWrapped() produced %d lines, want at least 2", len(lines))
@@ -151,16 +152,22 @@ func TestRenderStatusWrappedKeepsBulletIndent(t *testing.T) {
 		t.Fatalf("status should not appear alone on the last line, got %q", lastLine)
 	}
 
+	if !strings.Contains(stripANSI(lines[0]), "●") {
+		t.Fatalf("first line should include bullet, got %q", stripANSI(lines[0]))
+	}
 	for i, line := range lines[1:] {
-		if !strings.Contains(stripANSI(line), "●") {
-			t.Errorf("wrapped line %d should repeat bullet at same indent, got %q", i+1, stripANSI(line))
+		if strings.Contains(stripANSI(line), "●") {
+			t.Errorf("wrapped line %d should not repeat bullet, got %q", i+1, stripANSI(line))
+		}
+		if !strings.HasPrefix(stripANSI(line), "    ") {
+			t.Errorf("wrapped line %d should stay indented, got %q", i+1, stripANSI(line))
 		}
 	}
 }
 
 func TestFitStatusOnLastLineAppendsStatus(t *testing.T) {
 	lines := []string{"short text"}
-	got := fitStatusOnLastLine(lines, "◐ ", "  pending", 40)
+	got := fitStatusOnLastLine(lines, "◐ ", "   ", "  pending", 40)
 	if len(got) != 1 {
 		t.Fatalf("fitStatusOnLastLine() = %d lines, want 1", len(got))
 	}

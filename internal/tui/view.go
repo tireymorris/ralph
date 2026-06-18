@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/session"
 )
 
@@ -318,6 +319,7 @@ func (m *Model) rebuildMainScrollContent() {
 	if !m.mainScrollEnabled() {
 		return
 	}
+	m.refreshLiveProgress()
 	var b strings.Builder
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n")
@@ -338,6 +340,15 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderCompleted())
 	}
 	m.mainPane.SetContent(b.String())
+}
+
+func (m *Model) refreshLiveProgress() {
+	switch m.phase {
+	case PhaseImplementation:
+		m.syncPresentation(runstate.PhaseImplement)
+	case PhaseImplementationReview:
+		m.syncPresentation(runstate.PhaseImplementationReview)
+	}
 }
 
 func (m *Model) renderProjectSection() string {
@@ -441,6 +452,7 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 			s.Title,
 			status,
 			m.contentWidth(4),
+			continuationAfterIcon(icon),
 		)
 	}
 	if isCurrentStory && (activity.Kind == session.ActivityReview || activity.Kind == session.ActivityRecovery) {
@@ -449,14 +461,13 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	if isCurrentStory {
 		b.WriteString(renderLine(selectedStoryStyle))
 		if len(storyProgress.Slices) > 0 {
-			completedSlices := storyProgress.CompletedSlices
 			nextPendingSlice := s.NextPendingSlice()
 			if isCurrentStory && m.snapshot.NextPendingSlice != nil {
 				nextPendingSlice = m.snapshot.NextPendingSlice
 			}
 			b.WriteString("\n")
 			for i, slice := range storyProgress.Slices {
-				b.WriteString(m.renderImplementationSlice(slice, i, completedSlices, nextPendingSlice))
+				b.WriteString(m.renderImplementationSlice(slice, nextPendingSlice))
 				if i < len(storyProgress.Slices)-1 {
 					b.WriteString("\n")
 				}
@@ -481,15 +492,9 @@ func (m *Model) activeStory() *prd.Story {
 	return m.currentStory
 }
 
-func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int, completedSlices int, nextPendingSlice *prd.Slice) string {
-	var passes bool
-	var inProgress bool
-	switch {
-	case index < completedSlices:
-		passes = true
-	case nextPendingSlice != nil && slice.ID == nextPendingSlice.ID:
-		inProgress = true
-	}
+func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, nextPendingSlice *prd.Slice) string {
+	passes := slice.Passes
+	inProgress := !passes && nextPendingSlice != nil && slice.ID == nextPendingSlice.ID
 
 	icon := getStatusIcon(passes, inProgress)
 	status := getStatusText(passes, inProgress)
@@ -500,5 +505,6 @@ func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int,
 		slice.Behavior,
 		status,
 		m.contentWidth(8),
+		"    "+continuationAfterIcon(icon),
 	)
 }

@@ -31,12 +31,21 @@ func renderStyledWrapped(style lipgloss.Style, text string, width int) string {
 	return style.Render(wrapText(text, width))
 }
 
-func fitStatusOnLastLine(lines []string, prefix, statusSuffix string, lineWidth int) []string {
+func continuationAfterIcon(icon string) string {
+	return strings.Repeat(" ", lipgloss.Width(icon)+1)
+}
+
+func fitStatusOnLastLine(lines []string, firstPrefix, continuationPrefix, statusSuffix string, lineWidth int) []string {
 	if len(lines) == 0 {
 		return lines
 	}
 
 	lastIdx := len(lines) - 1
+	prefix := continuationPrefix
+	if lastIdx == 0 {
+		prefix = firstPrefix
+	}
+
 	lastLine := lines[lastIdx]
 	if lipgloss.Width(prefix+lastLine+statusSuffix) <= lineWidth {
 		lines[lastIdx] = lastLine + statusSuffix
@@ -62,16 +71,20 @@ func fitStatusOnLastLine(lines []string, prefix, statusSuffix string, lineWidth 
 	return result
 }
 
-func renderStatusWrapped(style lipgloss.Style, prefix, text, status string, lineWidth int) string {
+func renderStatusWrapped(style lipgloss.Style, firstPrefix, text, status string, lineWidth int, continuationPrefix string) string {
 	statusSuffix := "  " + status
-	textWidth := max(20, lineWidth-lipgloss.Width(prefix))
+	textWidth := max(20, lineWidth-lipgloss.Width(continuationPrefix))
 	lines := strings.Split(wrapText(text, textWidth), "\n")
-	lines = fitStatusOnLastLine(lines, prefix, statusSuffix, lineWidth)
+	lines = fitStatusOnLastLine(lines, firstPrefix, continuationPrefix, statusSuffix, lineWidth)
 
 	var b strings.Builder
 	for i, line := range lines {
 		if i > 0 {
 			b.WriteString("\n")
+		}
+		prefix := firstPrefix
+		if i > 0 {
+			prefix = continuationPrefix
 		}
 		b.WriteString(style.Render(prefix + line))
 	}
