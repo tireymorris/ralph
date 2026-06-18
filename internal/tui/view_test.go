@@ -178,11 +178,10 @@ func TestViewPhaseFailedLongError(t *testing.T) {
 		t.Errorf("View() should not truncate error with ellipsis, got %q", view)
 	}
 
-	wrapWidth := max(20, m.mainPane.Width-10)
-	wrapped := wrapText(errMsg, wrapWidth)
+	wrapped := wrapText(errMsg, m.contentWidth(4))
 	segments := strings.Split(wrapped, "\n")
 	if len(segments) < 2 {
-		t.Fatalf("sanity: error should wrap to at least 2 lines at width %d", wrapWidth)
+		t.Fatalf("sanity: error should wrap to at least 2 lines at width %d", m.contentWidth(4))
 	}
 	lineIndex := func(substr string) int {
 		for i, line := range strings.Split(view, "\n") {
@@ -775,5 +774,87 @@ func TestViewPRDReviewShowsCritiqueInputWhenActive(t *testing.T) {
 	}
 	if !strings.Contains(view, "Needs better tests") {
 		t.Errorf("View() should include critique input value when active, got %q", view)
+	}
+}
+
+func TestViewPhaseImplementationLongStoryTitle(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	title := "START_" + strings.Repeat("x", 108) + "_END__"
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: title,
+			Slices: []*prd.Slice{{
+				ID:       "slice-1",
+				Behavior: "short behavior",
+				RedHint:  "make it fail",
+			}},
+		}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(title[:20])
+	secondLine := lineIndex(title[len(title)-20:])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing story title text (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap story title across lines, both segments on line %d", firstLine)
+	}
+}
+
+func TestViewPhaseImplementationLongSliceBehavior(t *testing.T) {
+	cfg := config.DefaultConfig()
+	m := NewModel(cfg, "test", false, false, false)
+	behavior := "START_" + strings.Repeat("x", 108) + "_END__"
+	m.phase = PhaseImplementation
+	m.prd = &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID:    "1",
+			Title: "Story",
+			Slices: []*prd.Slice{{
+				ID:       "slice-1",
+				Behavior: behavior,
+				RedHint:  "make it fail",
+			}},
+		}},
+	}
+	m.currentStory = m.prd.Stories[0]
+	m.width = 80
+	m.height = 40
+	prepMainView(m)
+
+	view := m.View()
+	lineIndex := func(substr string) int {
+		for i, line := range strings.Split(view, "\n") {
+			if strings.Contains(line, substr) {
+				return i
+			}
+		}
+		return -1
+	}
+	firstLine := lineIndex(behavior[:20])
+	secondLine := lineIndex(behavior[len(behavior)-20:])
+	if firstLine < 0 || secondLine < 0 {
+		t.Fatalf("View() missing slice behavior text (first=%d second=%d)", firstLine, secondLine)
+	}
+	if firstLine == secondLine {
+		t.Errorf("View() should wrap slice behavior across lines, both segments on line %d", firstLine)
 	}
 }

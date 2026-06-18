@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/session"
 )
@@ -32,7 +33,7 @@ func (m *Model) View() string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render(m.helpText()))
+	b.WriteString(helpStyle.Render(wrapText(m.helpText(), m.terminalWidth(4))))
 
 	return b.String()
 }
@@ -55,7 +56,7 @@ func (m *Model) renderPhase() string {
 	case PhaseFailed:
 		icon = iconWarning
 	}
-	return phaseStyle.Render(fmt.Sprintf("%s %s", icon, m.phase.String()))
+	return renderStyledWrapped(phaseStyle, fmt.Sprintf("%s %s", icon, m.phase.String()), m.contentWidth(2))
 }
 
 func (m *Model) renderClarifying() string {
@@ -63,10 +64,7 @@ func (m *Model) renderClarifying() string {
 		return infoStyle.Render(mutedStyle.Render("Waiting for questions..."))
 	}
 
-	contentWidth := 76
-	if m.width > 0 {
-		contentWidth = max(20, m.width-4)
-	}
+	contentWidth := m.terminalWidth(4)
 
 	var b strings.Builder
 
@@ -101,10 +99,10 @@ func (m *Model) renderClarifying() string {
 
 	lastQ := len(m.clarifyQuestions) - 1
 	if m.clarifyFocused >= lastQ {
-		b.WriteString(infoStyle.Render(successStyle.Render("Press Enter to submit and generate PRD")))
+		b.WriteString(infoStyle.Render(successStyle.Render(wrapText("Press Enter to submit and generate PRD", contentWidth))))
 	} else {
 		remaining := lastQ - m.clarifyFocused
-		b.WriteString(infoStyle.Render(mutedStyle.Render(fmt.Sprintf("%d question(s) remaining", remaining))))
+		b.WriteString(infoStyle.Render(mutedStyle.Render(wrapText(fmt.Sprintf("%d question(s) remaining", remaining), contentWidth))))
 	}
 
 	return b.String()
@@ -113,15 +111,14 @@ func (m *Model) renderClarifying() string {
 func (m *Model) renderFailed() string {
 	msg := "Workflow stopped."
 	if m.err != nil {
-		wrapWidth := max(20, m.mainPane.Width-10)
-		msg = wrapText(m.err.Error(), wrapWidth)
+		msg = m.err.Error()
 	}
-	return errorStyle.Render(msg)
+	return renderStyledWrapped(errorStyle, msg, m.contentWidth(4))
 }
 
 func (m *Model) renderGenerating() string {
 	promptLabel := labelStyle.Render("Prompt")
-	wrapWidth := max(20, m.mainPane.Width-10)
+	wrapWidth := m.contentWidth(10)
 	promptText := bodyStyle.Render(wrapText(m.prompt, wrapWidth))
 	generatingText := inProgressStyle.Render("Generating PRD from your requirements...")
 	if m.revisingPRD {
@@ -139,7 +136,7 @@ func (m *Model) renderPRDReview() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(infoStyle.Render(inProgressStyle.Render("PRD ready for review")))
+	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText("PRD ready for review", m.contentWidth(4)))))
 	b.WriteString("\n\n")
 	b.WriteString(m.renderProjectSection())
 	b.WriteString("\n\n")
@@ -150,12 +147,12 @@ func (m *Model) renderPRDReview() string {
 	}
 	b.WriteString("\n")
 	if m.critiqueActive {
-		b.WriteString(helpStyle.Render("Critique (Enter submit • Esc cancel)"))
+		b.WriteString(helpStyle.Render(wrapText("Critique (Enter submit • Esc cancel)", m.contentWidth(4))))
 		b.WriteString("\n")
 		b.WriteString(selectedStoryStyle.Render(m.critiqueInput.View()))
 		b.WriteString("\n")
 	}
-	b.WriteString(helpStyle.Render("Press c to add critique or Enter to continue to implementation"))
+	b.WriteString(helpStyle.Render(wrapText("Press c to add critique or Enter to continue to implementation", m.contentWidth(4))))
 
 	return b.String()
 }
@@ -189,20 +186,20 @@ func (m *Model) renderCompleted() string {
 	var b strings.Builder
 
 	if m.dryRun {
-		b.WriteString(successStyle.Render(iconSuccess + " Dry run completed!"))
+		b.WriteString(successStyle.Render(wrapText(iconSuccess+" Dry run completed!", m.contentWidth(4))))
 		b.WriteString("\n\n")
-		b.WriteString(labelStyle.Render("PRD saved to") + " " + valueStyle.Render(m.cfg.PRDFile))
+		b.WriteString(infoStyle.Render(wrapText(labelStyle.Render("PRD saved to")+" "+valueStyle.Render(m.cfg.PRDFile), m.contentWidth(4))))
 		b.WriteString("\n")
-		b.WriteString(mutedStyle.Render("Run without --dry-run to implement, or use --resume."))
+		b.WriteString(mutedStyle.Render(wrapText("Run without --dry-run to implement, or use --resume.", m.contentWidth(4))))
 		b.WriteString("\n")
 	} else {
 		prd := m.activePRD()
 		if prd != nil {
-			b.WriteString(successStyle.Render(iconSuccess + " All stories completed!"))
+			b.WriteString(successStyle.Render(wrapText(iconSuccess+" All stories completed!", m.contentWidth(4))))
 			b.WriteString("\n\n")
-			b.WriteString(labelStyle.Render("Project") + " " + valueStyle.Render(prd.ProjectName))
+			b.WriteString(infoStyle.Render(wrapText(labelStyle.Render("Project")+" "+valueStyle.Render(prd.ProjectName), m.contentWidth(4))))
 			b.WriteString("\n")
-			b.WriteString(labelStyle.Render("Stories") + " " + valueStyle.Render(fmt.Sprintf("%d completed", len(prd.Stories))))
+			b.WriteString(infoStyle.Render(wrapText(labelStyle.Render("Stories")+" "+valueStyle.Render(fmt.Sprintf("%d completed", len(prd.Stories))), m.contentWidth(4))))
 			b.WriteString("\n")
 		}
 	}
@@ -213,9 +210,9 @@ func (m *Model) renderCompleted() string {
 func (m *Model) renderCleanup() string {
 	content := fmt.Sprintf("%s Running final polish pass on changed files…", m.spinner.View())
 	var b strings.Builder
-	b.WriteString(infoStyle.Render(inProgressStyle.Render(content)))
+	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText(content, m.contentWidth(4)))))
 	b.WriteString("\n\n")
-	b.WriteString(mutedStyle.Render("(check logs for runner output)"))
+	b.WriteString(mutedStyle.Render(wrapText("(check logs for runner output)", m.contentWidth(4))))
 	return b.String()
 }
 
@@ -234,7 +231,7 @@ func (m *Model) renderActivityBanner() string {
 		if activity.Iteration > 0 {
 			suffix = fmt.Sprintf(" (iteration %d)", activity.Iteration)
 		}
-		return infoStyle.Render(inProgressStyle.Render(fmt.Sprintf("◐ %s — reviewing diff%s", title, suffix)))
+		return infoStyle.Render(inProgressStyle.Render(wrapText(fmt.Sprintf("◐ %s — reviewing diff%s", title, suffix), m.contentWidth(4))))
 	case session.ActivityRecovery:
 		title := activity.StoryTitle
 		if title == "" {
@@ -244,7 +241,7 @@ func (m *Model) renderActivityBanner() string {
 		if activity.MaxAttempts > 0 {
 			attempt = fmt.Sprintf(" (attempt %d/%d)", activity.Attempt, activity.MaxAttempts)
 		}
-		return infoStyle.Render(inProgressStyle.Render(fmt.Sprintf("◐ %s — fixing review findings%s", title, attempt)))
+		return infoStyle.Render(inProgressStyle.Render(wrapText(fmt.Sprintf("◐ %s — fixing review findings%s", title, attempt), m.contentWidth(4))))
 	default:
 		return ""
 	}
@@ -272,7 +269,7 @@ func (m *Model) renderAwaitingPromptView() string {
 	input.Width = max(20, width-4)
 	b.WriteString(input.View())
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render(m.helpText()))
+	b.WriteString(helpStyle.Render(wrapText(m.helpText(), m.terminalWidth(4))))
 	return b.String()
 }
 
@@ -284,7 +281,7 @@ func (m *Model) renderClarifyingView() string {
 	b.WriteString("\n")
 	b.WriteString(m.renderClarifying())
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render(m.clarifyingHelpText()))
+	b.WriteString(helpStyle.Render(wrapText(m.clarifyingHelpText(), m.terminalWidth(4))))
 	return b.String()
 }
 
@@ -362,7 +359,7 @@ func (m *Model) renderProjectLine() string {
 	if prd == nil {
 		return ""
 	}
-	return infoStyle.Render(labelStyle.Render("Project") + " " + valueStyle.Render(prd.ProjectName))
+	return infoStyle.Render(wrapText(labelStyle.Render("Project")+" "+valueStyle.Render(prd.ProjectName), m.contentWidth(4)))
 }
 
 func (m *Model) renderBranchLine() string {
@@ -370,7 +367,7 @@ func (m *Model) renderBranchLine() string {
 	if prd == nil {
 		return ""
 	}
-	return infoStyle.Render(labelStyle.Render("Branch") + " " + valueStyle.Render(prd.BranchName))
+	return infoStyle.Render(wrapText(labelStyle.Render("Branch")+" "+valueStyle.Render(prd.BranchName), m.contentWidth(4)))
 }
 
 func (m *Model) renderProgressSection() string {
@@ -405,27 +402,20 @@ func (m *Model) renderReviewStory(s *prd.Story) string {
 	if len(s.DependsOn) > 0 {
 		deps = " (depends: " + strings.Join(s.DependsOn, ", ") + ")"
 	}
-	b.WriteString(storyItemStyle.Render(fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)))
+	storyLine := fmt.Sprintf("%s P%d %s%s", status, s.Priority, s.Title, deps)
+	b.WriteString(renderStyledWrapped(storyItemStyle, storyLine, m.contentWidth(4)))
 	b.WriteString("\n")
 	if len(s.Slices) > 0 {
 		b.WriteString(mutedStyle.Render("    Slices:"))
 		b.WriteString("\n")
-		wrapWidth := max(20, m.mainPane.Width-6)
+		lineWidth := m.contentWidth(4)
 		for _, slice := range s.Slices {
-			wrapped := wrapText(slice.Behavior, wrapWidth)
-			lines := strings.Split(wrapped, "\n")
-			for i, line := range lines {
-				if i == 0 {
-					b.WriteString(mutedStyle.Render("      - " + line))
-				} else {
-					b.WriteString(mutedStyle.Render("        " + line))
-				}
-				b.WriteString("\n")
-			}
-			b.WriteString(mutedStyle.Render("        Red hint: " + slice.RedHint))
+			b.WriteString(renderIndentedWrapped(mutedStyle, slice.Behavior, lineWidth, "      - ", "        "))
+			b.WriteString("\n")
+			b.WriteString(renderIndentedWrapped(mutedStyle, slice.RedHint, lineWidth, "        Red hint: ", "                  "))
 			b.WriteString("\n")
 			if slice.RefactorHint != "" {
-				b.WriteString(mutedStyle.Render("        Refactor hint: " + slice.RefactorHint))
+				b.WriteString(renderIndentedWrapped(mutedStyle, slice.RefactorHint, lineWidth, "        Refactor hint: ", "                      "))
 				b.WriteString("\n")
 			}
 		}
@@ -445,11 +435,14 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	if activity.Kind == "" {
 		activity = m.snapshot.Activity
 	}
+	renderLine := func(style lipgloss.Style) string {
+		return renderStyledWrapped(style, line, m.contentWidth(4))
+	}
 	if isCurrentStory && (activity.Kind == session.ActivityReview || activity.Kind == session.ActivityRecovery) {
-		return selectedStoryStyle.Render(line)
+		return renderLine(selectedStoryStyle)
 	}
 	if isCurrentStory {
-		b.WriteString(selectedStoryStyle.Render(line))
+		b.WriteString(renderLine(selectedStoryStyle))
 		if len(storyProgress.Slices) > 0 {
 			completedSlices := storyProgress.CompletedSlices
 			nextPendingSlice := s.NextPendingSlice()
@@ -466,7 +459,7 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 		}
 		return b.String()
 	}
-	return storyItemStyle.Render(line)
+	return renderLine(storyItemStyle)
 }
 
 func (m *Model) activePRD() *prd.PRD {
@@ -494,5 +487,5 @@ func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int,
 	}
 
 	sliceLine := fmt.Sprintf("    %s %s  %s", getStatusIcon(passes, inProgress), slice.Behavior, getStatusText(passes, inProgress))
-	return storyItemStyle.Render(sliceLine)
+	return renderStyledWrapped(storyItemStyle, sliceLine, m.contentWidth(8))
 }

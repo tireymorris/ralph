@@ -27,6 +27,8 @@ func (m *Model) applyLayout(width, height int) {
 			m.clarifyInputs[i].Width = inputWidth
 		}
 	}
+
+	m.critiqueInput.Width = max(20, width-8)
 }
 
 func (m *Model) markMainScrollJump() {
