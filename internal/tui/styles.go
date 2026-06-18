@@ -14,10 +14,8 @@ var (
 	highlightColor = lipgloss.Color("#3B82F6")
 	infoColor      = lipgloss.Color("#06B6D4")
 	accentColor    = lipgloss.Color("#C084FC")
-	surfaceColor   = lipgloss.Color("#111827")
 	borderColor    = lipgloss.Color("#4B5563")
 	textColor      = lipgloss.Color("#F9FAFB")
-	textSecondary  = lipgloss.Color("#D1D5DB")
 	subtleColor    = lipgloss.Color("#6B7280")
 
 	headerStyle = lipgloss.NewStyle().
@@ -42,14 +40,13 @@ var (
 			PaddingLeft(2)
 
 	infoStyle = lipgloss.NewStyle().
-			Foreground(textColor).
 			PaddingLeft(2)
 
 	labelStyle = lipgloss.NewStyle().
 			Foreground(mutedColor)
 
 	valueStyle = lipgloss.NewStyle().
-			Foreground(textColor).
+			Foreground(subtleColor).
 			Bold(true)
 
 	mutedStyle = lipgloss.NewStyle().
@@ -79,15 +76,15 @@ var (
 			Foreground(highlightColor).
 			Bold(true)
 
-	pendingStyle = lipgloss.NewStyle().
+	bodyStyle = lipgloss.NewStyle().
 			Foreground(subtleColor)
 
 	storyItemStyle = lipgloss.NewStyle().
 			PaddingLeft(4).
-			Foreground(textSecondary)
+			Foreground(subtleColor)
 
 	selectedStoryStyle = lipgloss.NewStyle().
-				Foreground(textColor).
+				Foreground(subtleColor).
 				Bold(true).
 				PaddingLeft(2).
 				Border(lipgloss.ThickBorder()).
@@ -100,31 +97,11 @@ var (
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(borderColor).
-			Foreground(textSecondary).
+			Foreground(subtleColor).
 			Padding(1, 2)
 
-	clarifyBodyStyle = lipgloss.NewStyle().
-				PaddingLeft(2)
-
-	clarifyQuestionStyle = lipgloss.NewStyle().
-				Foreground(subtleColor)
-
-	clarifyInputFocusedStyle = lipgloss.NewStyle().
-					Foreground(subtleColor).
-					PaddingLeft(2).
-					Border(lipgloss.ThickBorder()).
-					BorderForeground(primaryColor).
-					BorderTop(false).
-					BorderBottom(false).
-					BorderLeft(true).
-					BorderRight(false)
-
-	clarifyInputStyle = lipgloss.NewStyle().
-				Foreground(subtleColor).
-				PaddingLeft(4)
-
 	logLineStyle = lipgloss.NewStyle().
-			Foreground(textSecondary).
+			Foreground(subtleColor).
 			PaddingLeft(1)
 
 	logErrorStyle = lipgloss.NewStyle().
@@ -155,11 +132,11 @@ const (
 )
 
 func configureTextInput(ti textinput.Model) textinput.Model {
-	ti.PromptStyle = lipgloss.NewStyle().Foreground(subtleColor)
-	ti.TextStyle = lipgloss.NewStyle().Foreground(subtleColor)
-	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(mutedColor)
+	ti.PromptStyle = bodyStyle
+	ti.TextStyle = bodyStyle
+	ti.PlaceholderStyle = mutedStyle
 	ti.Cursor.Style = lipgloss.NewStyle().Foreground(primaryColor)
-	ti.Cursor.TextStyle = lipgloss.NewStyle().Foreground(subtleColor)
+	ti.Cursor.TextStyle = bodyStyle
 	return ti
 }
 
@@ -170,7 +147,7 @@ func getStatusIcon(passes bool, inProgress bool) string {
 	if inProgress {
 		return inProgressStyle.Render(iconInProgress)
 	}
-	return pendingStyle.Render(iconPending)
+	return bodyStyle.Render(iconPending)
 }
 
 func getStatusText(passes bool, inProgress bool) string {
@@ -180,5 +157,5 @@ func getStatusText(passes bool, inProgress bool) string {
 	if inProgress {
 		return inProgressStyle.Render("in progress")
 	}
-	return pendingStyle.Render("pending")
+	return bodyStyle.Render("pending")
 }

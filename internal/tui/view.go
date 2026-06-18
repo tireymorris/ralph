@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/session"
 )
@@ -61,7 +60,7 @@ func (m *Model) renderPhase() string {
 
 func (m *Model) renderClarifying() string {
 	if len(m.clarifyQuestions) == 0 {
-		return clarifyBodyStyle.Render(mutedStyle.Render("Waiting for questions..."))
+		return infoStyle.Render(mutedStyle.Render("Waiting for questions..."))
 	}
 
 	contentWidth := 76
@@ -72,7 +71,7 @@ func (m *Model) renderClarifying() string {
 	var b strings.Builder
 
 	instruction := "Please answer the following questions before we generate your PRD."
-	b.WriteString(clarifyBodyStyle.Render(inProgressStyle.Render(wrapText(instruction, contentWidth))))
+	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText(instruction, contentWidth))))
 	b.WriteString("\n")
 	navHint := "  Tab/↑/↓ to navigate  •  Enter to confirm  •  Esc to skip all questions"
 	b.WriteString(mutedStyle.Render(wrapText(navHint, contentWidth)))
@@ -82,19 +81,19 @@ func (m *Model) renderClarifying() string {
 		num := labelStyle.Render(fmt.Sprintf("Q%d.", i+1))
 		wrapped := wrapText(q, contentWidth)
 		lines := strings.Split(wrapped, "\n")
-		b.WriteString(clarifyBodyStyle.Render(fmt.Sprintf("%s %s", num, clarifyQuestionStyle.Render(lines[0]))))
+		b.WriteString(infoStyle.Render(fmt.Sprintf("%s %s", num, bodyStyle.Render(lines[0]))))
 		for _, line := range lines[1:] {
 			b.WriteString("\n")
-			b.WriteString(clarifyBodyStyle.Render(clarifyQuestionStyle.Render(line)))
+			b.WriteString(infoStyle.Render(bodyStyle.Render(line)))
 		}
 		b.WriteString("\n")
 
 		if i < len(m.clarifyInputs) {
 			inputView := m.clarifyInputs[i].View()
 			if i == m.clarifyFocused {
-				b.WriteString(clarifyInputFocusedStyle.Render(inputView))
+				b.WriteString(selectedStoryStyle.Render(inputView))
 			} else {
-				b.WriteString(clarifyInputStyle.Render(inputView))
+				b.WriteString(storyItemStyle.Render(inputView))
 			}
 		}
 		b.WriteString("\n\n")
@@ -102,10 +101,10 @@ func (m *Model) renderClarifying() string {
 
 	lastQ := len(m.clarifyQuestions) - 1
 	if m.clarifyFocused >= lastQ {
-		b.WriteString(clarifyBodyStyle.Render(successStyle.Render("Press Enter to submit and generate PRD")))
+		b.WriteString(infoStyle.Render(successStyle.Render("Press Enter to submit and generate PRD")))
 	} else {
 		remaining := lastQ - m.clarifyFocused
-		b.WriteString(clarifyBodyStyle.Render(mutedStyle.Render(fmt.Sprintf("%d question(s) remaining", remaining))))
+		b.WriteString(infoStyle.Render(mutedStyle.Render(fmt.Sprintf("%d question(s) remaining", remaining))))
 	}
 
 	return b.String()
@@ -122,9 +121,8 @@ func (m *Model) renderFailed() string {
 
 func (m *Model) renderGenerating() string {
 	promptLabel := labelStyle.Render("Prompt")
-	promptTextStyle := lipgloss.NewStyle().Foreground(textColor)
 	wrapWidth := max(20, m.mainPane.Width-10)
-	promptText := promptTextStyle.Render(wrapText(m.prompt, wrapWidth))
+	promptText := bodyStyle.Render(wrapText(m.prompt, wrapWidth))
 	generatingText := inProgressStyle.Render("Generating PRD from your requirements...")
 	if m.revisingPRD {
 		generatingText = inProgressStyle.Render("Revising PRD based on your critique...")
@@ -154,7 +152,7 @@ func (m *Model) renderPRDReview() string {
 	if m.critiqueActive {
 		b.WriteString(helpStyle.Render("Critique (Enter submit • Esc cancel)"))
 		b.WriteString("\n")
-		b.WriteString(infoStyle.Render(storyItemStyle.Render(m.critiqueInput.View())))
+		b.WriteString(selectedStoryStyle.Render(m.critiqueInput.View()))
 		b.WriteString("\n")
 	}
 	b.WriteString(helpStyle.Render("Press c to add critique or Enter to continue to implementation"))
