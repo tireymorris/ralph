@@ -3,6 +3,8 @@ package tui
 import (
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 func TestTruncate(t *testing.T) {
@@ -128,4 +130,63 @@ func TestWrapText(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRenderStatusWrappedKeepsContinuationIndent(t *testing.T) {
+	text := "Changelog#undoable? returns false when the changelog has entries but at least one associated copilot_action_required is still pending."
+	status := bodyStyle.Render("completed")
+	lineWidth := 60
+	icon := successStyle.Render(iconCompleted)
+	firstPrefix := "    " + icon + " "
+	continuationPrefix := "    " + continuationAfterIcon(icon)
+
+	got := renderStatusWrapped(storyItemStyle, firstPrefix, text, status, lineWidth, continuationPrefix)
+	lines := strings.Split(got, "\n")
+	if len(lines) < 2 {
+		t.Fatalf("renderStatusWrapped() produced %d lines, want at least 2", len(lines))
+	}
+
+	lastLine := lines[len(lines)-1]
+	if !strings.Contains(lastLine, "completed") {
+		t.Fatalf("last line should include status, got %q", lastLine)
+	}
+	if strings.TrimSpace(stripANSI(lastLine)) == "completed" {
+		t.Fatalf("status should not appear alone on the last line, got %q", lastLine)
+	}
+
+	for i, line := range lines[1 : len(lines)-1] {
+		if lipgloss.Width(continuationPrefix) > 0 && !strings.HasPrefix(stripANSI(line), "    ") {
+			t.Errorf("continuation line %d should keep slice indent, got %q", i+1, stripANSI(line))
+		}
+	}
+}
+
+func TestFitStatusOnLastLineAppendsStatus(t *testing.T) {
+	lines := []string{"short text"}
+	got := fitStatusOnLastLine(lines, "◐ ", "   ", "  pending", 40)
+	if len(got) != 1 {
+		t.Fatalf("fitStatusOnLastLine() = %d lines, want 1", len(got))
+	}
+	if !strings.HasSuffix(got[0], "pending") {
+		t.Errorf("fitStatusOnLastLine() = %q, want status appended", got[0])
+	}
+}
+
+func stripANSI(s string) string {
+	var b strings.Builder
+	skip := false
+	for _, r := range s {
+		if r == '\x1b' {
+			skip = true
+			continue
+		}
+		if skip {
+			if r == 'm' {
+				skip = false
+			}
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

@@ -31,6 +31,66 @@ func renderStyledWrapped(style lipgloss.Style, text string, width int) string {
 	return style.Render(wrapText(text, width))
 }
 
+func continuationAfterIcon(icon string) string {
+	return strings.Repeat(" ", lipgloss.Width(icon)+1)
+}
+
+func fitStatusOnLastLine(lines []string, firstPrefix, continuationPrefix, statusSuffix string, lineWidth int) []string {
+	if len(lines) == 0 {
+		return lines
+	}
+
+	lastIdx := len(lines) - 1
+	prefix := continuationPrefix
+	if lastIdx == 0 {
+		prefix = firstPrefix
+	}
+
+	lastLine := lines[lastIdx]
+	if lipgloss.Width(prefix+lastLine+statusSuffix) <= lineWidth {
+		lines[lastIdx] = lastLine + statusSuffix
+		return lines
+	}
+
+	available := max(20, lineWidth-lipgloss.Width(prefix)-lipgloss.Width(statusSuffix))
+	if lipgloss.Width(lastLine) <= available {
+		lines[lastIdx] = lastLine + statusSuffix
+		return lines
+	}
+
+	sublines := strings.Split(wrapText(lastLine, available), "\n")
+	if len(sublines) == 1 {
+		lines[lastIdx] = lastLine + statusSuffix
+		return lines
+	}
+
+	result := make([]string, 0, lastIdx+len(sublines))
+	result = append(result, lines[:lastIdx]...)
+	result = append(result, sublines[:len(sublines)-1]...)
+	result = append(result, sublines[len(sublines)-1]+statusSuffix)
+	return result
+}
+
+func renderStatusWrapped(style lipgloss.Style, firstPrefix, text, status string, lineWidth int, continuationPrefix string) string {
+	statusSuffix := "  " + status
+	textWidth := max(20, lineWidth-lipgloss.Width(continuationPrefix))
+	lines := strings.Split(wrapText(text, textWidth), "\n")
+	lines = fitStatusOnLastLine(lines, firstPrefix, continuationPrefix, statusSuffix, lineWidth)
+
+	var b strings.Builder
+	for i, line := range lines {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		prefix := firstPrefix
+		if i > 0 {
+			prefix = continuationPrefix
+		}
+		b.WriteString(style.Render(prefix + line))
+	}
+	return b.String()
+}
+
 func renderIndentedWrapped(style lipgloss.Style, text string, lineWidth int, firstPrefix, continuationPrefix string) string {
 	textWidth := max(20, lineWidth-lipgloss.Width(firstPrefix))
 	wrapped := wrapText(text, textWidth)

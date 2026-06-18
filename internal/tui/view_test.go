@@ -849,12 +849,31 @@ func TestViewPhaseImplementationLongSliceBehavior(t *testing.T) {
 		}
 		return -1
 	}
-	firstLine := lineIndex(behavior[:20])
-	secondLine := lineIndex(behavior[len(behavior)-20:])
-	if firstLine < 0 || secondLine < 0 {
-		t.Fatalf("View() missing slice behavior text (first=%d second=%d)", firstLine, secondLine)
+	firstLine := lineIndex("START_")
+	lastLine := lineIndex("_END__")
+	if firstLine < 0 {
+		t.Fatalf("View() missing slice behavior text at start")
 	}
-	if firstLine == secondLine {
-		t.Errorf("View() should wrap slice behavior across lines, both segments on line %d", firstLine)
+	if lastLine < 0 {
+		t.Fatalf("View() missing slice behavior text near end")
+	}
+	if firstLine == lastLine {
+		t.Errorf("View() should wrap slice behavior across lines, got start and end on line %d", firstLine)
+	}
+
+	behaviorLines := 0
+	for _, line := range strings.Split(view, "\n") {
+		if strings.Contains(line, "xxxx") {
+			behaviorLines++
+		}
+	}
+	if behaviorLines < 2 {
+		t.Fatalf("expected wrapped slice across multiple lines, got %d", behaviorLines)
+	}
+	for _, line := range strings.Split(view, "\n") {
+		plain := strings.TrimSpace(stripANSI(line))
+		if plain == "completed" || plain == "in progress" || plain == "pending" {
+			t.Fatalf("status should not appear alone on a wrapped line, got %q", plain)
+		}
 	}
 }

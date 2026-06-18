@@ -428,7 +428,6 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 	isCurrentStory := currentStory != nil && s.ID == currentStory.ID
 	icon := getStatusIcon(s.Passes, isCurrentStory)
 	status := getStatusText(s.Passes, isCurrentStory)
-	line := fmt.Sprintf("%s %s  %s", icon, s.Title, status)
 	var b strings.Builder
 	storyProgress := s.RunProgress()
 	activity := m.activity
@@ -436,7 +435,14 @@ func (m *Model) renderImplementationStory(s *prd.Story) string {
 		activity = m.snapshot.Activity
 	}
 	renderLine := func(style lipgloss.Style) string {
-		return renderStyledWrapped(style, line, m.contentWidth(4))
+		return renderStatusWrapped(
+			style,
+			icon+" ",
+			s.Title,
+			status,
+			m.contentWidth(4),
+			continuationAfterIcon(icon),
+		)
 	}
 	if isCurrentStory && (activity.Kind == session.ActivityReview || activity.Kind == session.ActivityRecovery) {
 		return renderLine(selectedStoryStyle)
@@ -486,6 +492,15 @@ func (m *Model) renderImplementationSlice(slice prd.RunProgressSlice, index int,
 		inProgress = true
 	}
 
-	sliceLine := fmt.Sprintf("    %s %s  %s", getStatusIcon(passes, inProgress), slice.Behavior, getStatusText(passes, inProgress))
-	return renderStyledWrapped(storyItemStyle, sliceLine, m.contentWidth(8))
+	icon := getStatusIcon(passes, inProgress)
+	status := getStatusText(passes, inProgress)
+	firstPrefix := "    " + icon + " "
+	return renderStatusWrapped(
+		storyItemStyle,
+		firstPrefix,
+		slice.Behavior,
+		status,
+		m.contentWidth(8),
+		"    "+continuationAfterIcon(icon),
+	)
 }
