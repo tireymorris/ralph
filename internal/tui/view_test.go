@@ -545,8 +545,8 @@ func TestRenderLogsStyling(t *testing.T) {
 		t.Error("renderLogs() output should contain rounded border characters")
 	}
 
-	if !strings.Contains(logs, "\x1b[48;2;17;24;39m") {
-		t.Error("renderLogs() output should contain surface color background ANSI sequence")
+	if strings.Contains(logs, "\x1b[48;2;17;24;39m") {
+		t.Error("renderLogs() output should not paint a log panel background")
 	}
 }
 

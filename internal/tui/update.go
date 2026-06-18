@@ -235,7 +235,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.clarifyFocused = 0
 		m.clarifyInputs = make([]textinput.Model, len(msg.questions))
 		for i := range m.clarifyInputs {
-			ti := textinput.New()
+			ti := configureTextInput(textinput.New())
 			ti.Placeholder = "Your answer (press Enter to continue, Esc to skip all)"
 			ti.CharLimit = 500
 			if i == 0 {

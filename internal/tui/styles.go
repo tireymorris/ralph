@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/lipgloss"
+)
 
 var (
 	primaryColor   = lipgloss.Color("#A855F7")
@@ -97,9 +100,28 @@ var (
 	logBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(borderColor).
-			Background(surfaceColor).
 			Foreground(textSecondary).
 			Padding(1, 2)
+
+	clarifyBodyStyle = lipgloss.NewStyle().
+				PaddingLeft(2)
+
+	clarifyQuestionStyle = lipgloss.NewStyle().
+				Foreground(subtleColor)
+
+	clarifyInputFocusedStyle = lipgloss.NewStyle().
+					Foreground(subtleColor).
+					PaddingLeft(2).
+					Border(lipgloss.ThickBorder()).
+					BorderForeground(primaryColor).
+					BorderTop(false).
+					BorderBottom(false).
+					BorderLeft(true).
+					BorderRight(false)
+
+	clarifyInputStyle = lipgloss.NewStyle().
+				Foreground(subtleColor).
+				PaddingLeft(4)
 
 	logLineStyle = lipgloss.NewStyle().
 			Foreground(textSecondary).
@@ -131,6 +153,15 @@ const (
 	iconSuccess    = "✓"
 	iconWarning    = "⚠"
 )
+
+func configureTextInput(ti textinput.Model) textinput.Model {
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(subtleColor)
+	ti.TextStyle = lipgloss.NewStyle().Foreground(subtleColor)
+	ti.PlaceholderStyle = lipgloss.NewStyle().Foreground(mutedColor)
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(primaryColor)
+	ti.Cursor.TextStyle = lipgloss.NewStyle().Foreground(subtleColor)
+	return ti
+}
 
 func getStatusIcon(passes bool, inProgress bool) string {
 	if passes {

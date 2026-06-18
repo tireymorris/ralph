@@ -118,11 +118,11 @@ func NewModel(cfg *config.Config, prompt string, dryRun, resume, verbose bool) *
 	logger := NewLogger(verbose)
 	operationManager := NewOperationManager(cfg)
 
-	critiqueInput := textinput.New()
+	critiqueInput := configureTextInput(textinput.New())
 	critiqueInput.Placeholder = "Add critique for the runner"
 	critiqueInput.CharLimit = 1000
 
-	promptInput := textinput.New()
+	promptInput := configureTextInput(textinput.New())
 	promptInput.Placeholder = "Describe what you want to build"
 	promptInput.CharLimit = 2000
 
