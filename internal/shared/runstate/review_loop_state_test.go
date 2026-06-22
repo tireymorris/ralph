@@ -126,6 +126,23 @@ func TestApplyReviewLoopUpdate_clearsStopReasonOnReviewProgressUpdate(t *testing
 	}
 }
 
+func TestApplyReviewLoopUpdate_reviewProgressPreservesTranscriptPath(t *testing.T) {
+	dst := ReviewLoopState{
+		ReviewIteration:          1,
+		ReviewFingerprint:        "old",
+		LastReviewTranscriptPath: "review-1.txt",
+	}
+	ApplyReviewLoopUpdate(&dst, ReviewLoopUpdate{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   2,
+		ReviewFingerprint: "new-fp",
+		ReviewElapsedMs:   100,
+	})
+	if dst.LastReviewTranscriptPath != "review-1.txt" {
+		t.Fatalf("LastReviewTranscriptPath = %q, want review-1.txt preserved on progress update", dst.LastReviewTranscriptPath)
+	}
+}
+
 func TestApplyReviewLoopUpdate_fullUpdateAppliesScalars(t *testing.T) {
 	dst := ReviewLoopState{
 		Checkpoint:       CheckpointImplReview,

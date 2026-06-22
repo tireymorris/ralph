@@ -27,7 +27,9 @@ func ApplyReviewLoopUpdate(dst *ReviewLoopState, u ReviewLoopUpdate) {
 		dst.ReviewIteration = u.ReviewIteration
 		dst.ReviewFingerprint = u.ReviewFingerprint
 		dst.ReviewElapsedMs = u.ReviewElapsedMs
-		dst.LastReviewTranscriptPath = u.LastReviewTranscriptPath
+		if u.LastReviewTranscriptPath != "" {
+			dst.LastReviewTranscriptPath = u.LastReviewTranscriptPath
+		}
 		dst.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
 		if u.StopReason != "" {
 			dst.StopReason = u.StopReason

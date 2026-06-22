@@ -33,3 +33,19 @@ func (r *registryReviewLoop) Snapshot() (iteration int, fingerprint string, elap
 func (r *registryReviewLoop) Apply(u workflow.ReviewLoopUpdate) error {
 	return r.registry.UpdateReviewLoop(r.runID, u)
 }
+
+func (r *registryReviewLoop) LastReviewTranscriptPath() string {
+	run, ok := r.registry.Get(r.runID)
+	if !ok {
+		return ""
+	}
+	return run.LastReviewTranscriptPath
+}
+
+func (r *registryReviewLoop) RecoveryAttempts() int {
+	run, ok := r.registry.Get(r.runID)
+	if !ok {
+		return 0
+	}
+	return run.RecoveryAttempts
+}
