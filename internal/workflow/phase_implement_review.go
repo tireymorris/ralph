@@ -28,7 +28,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 
 		blocked, err = e.runImplementationReviewOnce(ctx, p)
 		if err == nil && !blocked {
-			e.recoveryAttempts = 0
+			e.resetRecoveryAttempts()
 			return false, nil
 		}
 		if blocked && !e.cfg.AutoApprove {
@@ -44,7 +44,7 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 			findings, _ = e.loadPendingFindings()
 		} else if blocked {
 			findings = e.pendingReviewFindings
-			e.recoveryAttempts = 0
+			e.resetRecoveryAttempts()
 			e.applyReviewLoopBestEffort(e.implReviewLoopUpdate(e.reviewIteration, e.reviewFingerprint, e.reviewElapsedMs, e.reviewChangedFilesHash))
 		} else if err != nil {
 			return false, err

@@ -45,6 +45,7 @@ type ReviewLoopUpdate struct {
 	LastReviewTranscriptPath   string
 	LastReviewChangedFilesHash string
 	RecoveryAttempts           int
+	ClearRecoveryAttempts      bool
 }
 
 type LifecycleUpdate struct {
@@ -277,7 +278,9 @@ func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
 	}
 	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 	run.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.RecoveryAttempts > 0 {
+	if u.ClearRecoveryAttempts {
+		run.RecoveryAttempts = 0
+	} else if u.RecoveryAttempts > 0 {
 		run.RecoveryAttempts = u.RecoveryAttempts
 	}
 	run.UpdatedAt = time.Now()

@@ -13,6 +13,7 @@ type ReviewLoopUpdate struct {
 	LastReviewTranscriptPath   string
 	LastReviewChangedFilesHash string
 	RecoveryAttempts           int
+	ClearRecoveryAttempts      bool
 }
 
 type ReviewLoopUpdater interface {

@@ -43,3 +43,22 @@ func TestFileReviewLoopRoundTrip(t *testing.T) {
 		t.Fatalf("meta = %+v", m)
 	}
 }
+
+func TestFileReviewLoopClearRecoveryAttempts(t *testing.T) {
+	workDir := t.TempDir()
+	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)
+
+	if err := loop.Apply(ReviewLoopUpdate{RecoveryAttempts: 2}); err != nil {
+		t.Fatalf("Apply() err = %v", err)
+	}
+	if got := loop.RecoveryAttempts(); got != 2 {
+		t.Fatalf("RecoveryAttempts() = %d, want 2", got)
+	}
+
+	if err := loop.Apply(ReviewLoopUpdate{ClearRecoveryAttempts: true}); err != nil {
+		t.Fatalf("Apply(clear) err = %v", err)
+	}
+	if got := loop.RecoveryAttempts(); got != 0 {
+		t.Fatalf("RecoveryAttempts() after clear = %d, want 0", got)
+	}
+}

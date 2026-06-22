@@ -55,6 +55,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				}
 			}
 
+			e.resetRecoveryAttempts()
 			if err := e.runTestGateWithRecovery(ctx, p); err != nil {
 				return err
 			}
@@ -91,7 +92,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		logger.Debug("story completed", "story_id", story.ID)
 		e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
 
-		e.recoveryAttempts = 0
+		e.resetRecoveryAttempts()
 		blocked, reviewErr := e.runImplementationReview(ctx, updatedPRD)
 		if reviewErr != nil {
 			return reviewErr
@@ -100,7 +101,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 			return nil
 		}
 
-		e.recoveryAttempts = 0
+		e.resetRecoveryAttempts()
 		if err := e.runTestGateWithRecovery(ctx, updatedPRD); err != nil {
 			return err
 		}

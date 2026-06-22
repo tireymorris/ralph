@@ -60,6 +60,7 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 			return runErr
 		}
 
+		e.resetRecoveryAttempts()
 		if err := e.runTestGateWithRecovery(ctx, p); err != nil {
 			return err
 		}

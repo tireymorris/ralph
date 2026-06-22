@@ -8,9 +8,11 @@ import (
 	"testing"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/testgit"
 )
 
@@ -138,5 +140,58 @@ func TestRunCleanupFailsWhenTestsFail(t *testing.T) {
 	}
 	if counts.completed != 0 {
 		t.Errorf("EventCleanupCompleted count = %d, want 0 on test failure", counts.completed)
+	}
+}
+
+func TestRunCleanupResetsExhaustedRecoveryBudget(t *testing.T) {
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
+	cfg.TestCommand = finalGateTestCommand
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Context:     "ctx",
+		Stories: []*prd.Story{
+			{ID: "story-1", Title: "One", Description: "d", Slices: prdtest.Slices("a"), Priority: 1, Passes: true},
+		},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("save PRD: %v", err)
+	}
+
+	greetDir := filepath.Join(workDir, "pkg", "greet")
+	if err := os.MkdirAll(greetDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)
+	if err := loop.Apply(ReviewLoopUpdate{RecoveryAttempts: constants.MaxRecoveryAttempts}); err != nil {
+		t.Fatalf("Apply() err = %v", err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	recoveryCalls := 0
+	mock.runFunc = func(_ context.Context, p string, _ chan<- runner.OutputLine) error {
+		if isRecoveryPrompt(p) {
+			recoveryCalls++
+			return os.WriteFile(filepath.Join(greetDir, "greet.go"), []byte(`package greet
+
+func Hello() string { return "hello" }
+`), 0o644)
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec.SetReviewLoop(runstate.LocalRunID, loop)
+	if err := exec.RunCleanup(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunCleanup() error = %v", err)
+	}
+	if recoveryCalls != 1 {
+		t.Fatalf("recovery runner calls = %d, want 1", recoveryCalls)
 	}
 }

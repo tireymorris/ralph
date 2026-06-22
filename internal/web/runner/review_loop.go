@@ -40,5 +40,6 @@ func (r *registryReviewLoop) Apply(u workflow.ReviewLoopUpdate) error {
 		LastReviewTranscriptPath:   u.LastReviewTranscriptPath,
 		LastReviewChangedFilesHash: u.LastReviewChangedFilesHash,
 		RecoveryAttempts:           u.RecoveryAttempts,
+		ClearRecoveryAttempts:      u.ClearRecoveryAttempts,
 	})
 }

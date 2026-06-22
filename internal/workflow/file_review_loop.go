@@ -82,7 +82,9 @@ func (f *FileReviewLoop) Apply(u ReviewLoopUpdate) error {
 	}
 	m.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 	m.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.RecoveryAttempts > 0 {
+	if u.ClearRecoveryAttempts {
+		m.RecoveryAttempts = 0
+	} else if u.RecoveryAttempts > 0 {
 		m.RecoveryAttempts = u.RecoveryAttempts
 	}
 	m.UpdatedAt = time.Now()

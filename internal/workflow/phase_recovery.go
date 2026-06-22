@@ -38,6 +38,13 @@ func recoveryFindingsFromEvents(findings []ImplementationFinding) []prompt.Recov
 	return out
 }
 
+func (e *Executor) resetRecoveryAttempts() {
+	e.recoveryAttempts = 0
+	if e.reviewLoop != nil {
+		e.applyReviewLoopBestEffort(ReviewLoopUpdate{ClearRecoveryAttempts: true})
+	}
+}
+
 func (e *Executor) recoveryAttemptsSnapshot() int {
 	if e.reviewLoop == nil {
 		return e.recoveryAttempts
