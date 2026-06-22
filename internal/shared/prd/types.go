@@ -41,19 +41,6 @@ type PRD struct {
 	Stories     []*Story `json:"stories"`
 }
 
-func (p *PRD) NextPendingStory() *Story {
-	var best *Story
-	for _, story := range p.Stories {
-		if story.Passes {
-			continue
-		}
-		if best == nil || story.Priority < best.Priority {
-			best = story
-		}
-	}
-	return best
-}
-
 func (p *PRD) NextReadyStory() *Story {
 	ready := p.ReadyStories()
 	if len(ready) == 0 {
