@@ -31,15 +31,5 @@ func (r *registryReviewLoop) Snapshot() (iteration int, fingerprint string, elap
 }
 
 func (r *registryReviewLoop) Apply(u workflow.ReviewLoopUpdate) error {
-	return r.registry.UpdateReviewLoop(r.runID, runs.ReviewLoopUpdate{
-		Checkpoint:                 u.Checkpoint,
-		ReviewIteration:            u.ReviewIteration,
-		ReviewFingerprint:          u.ReviewFingerprint,
-		ReviewElapsedMs:            u.ReviewElapsedMs,
-		StopReason:                 u.StopReason,
-		LastReviewTranscriptPath:   u.LastReviewTranscriptPath,
-		LastReviewChangedFilesHash: u.LastReviewChangedFilesHash,
-		RecoveryAttempts:           u.RecoveryAttempts,
-		ClearRecoveryAttempts:      u.ClearRecoveryAttempts,
-	})
+	return r.registry.UpdateReviewLoop(r.runID, u)
 }

@@ -9,6 +9,13 @@ import (
 	"ralph/internal/shared/runstate"
 )
 
+func TestFileRunMetaEmbedsReviewLoopState(t *testing.T) {
+	var m fileRunMeta
+	if m.ReviewLoopState != (runstate.ReviewLoopState{}) {
+		t.Fatal("expected zero embedded review loop state")
+	}
+}
+
 func TestFileReviewLoopRoundTrip(t *testing.T) {
 	workDir := t.TempDir()
 	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)
@@ -48,7 +55,15 @@ func TestFileReviewLoopClearRecoveryAttempts(t *testing.T) {
 	workDir := t.TempDir()
 	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)
 
-	if err := loop.Apply(ReviewLoopUpdate{RecoveryAttempts: 2}); err != nil {
+	if err := loop.Apply(ReviewLoopUpdate{
+		Checkpoint:                 runstate.CheckpointImplReview,
+		ReviewIteration:            3,
+		ReviewFingerprint:          "fp-abc",
+		ReviewElapsedMs:            4200,
+		LastReviewTranscriptPath:   "review-3.txt",
+		LastReviewChangedFilesHash: "hash-xyz",
+		RecoveryAttempts:           2,
+	}); err != nil {
 		t.Fatalf("Apply() err = %v", err)
 	}
 	if got := loop.RecoveryAttempts(); got != 2 {
@@ -60,5 +75,15 @@ func TestFileReviewLoopClearRecoveryAttempts(t *testing.T) {
 	}
 	if got := loop.RecoveryAttempts(); got != 0 {
 		t.Fatalf("RecoveryAttempts() after clear = %d, want 0", got)
+	}
+	if loop.Checkpoint() != runstate.CheckpointImplReview {
+		t.Fatalf("Checkpoint() = %q, want %q", loop.Checkpoint(), runstate.CheckpointImplReview)
+	}
+	iter, fp, elapsed, hash := loop.Snapshot()
+	if iter != 3 || fp != "fp-abc" || elapsed != 4200 || hash != "hash-xyz" {
+		t.Fatalf("Snapshot() = (%d,%q,%d,%q)", iter, fp, elapsed, hash)
+	}
+	if got := loop.LastReviewTranscriptPath(); got != "review-3.txt" {
+		t.Fatalf("LastReviewTranscriptPath() = %q, want review-3.txt", got)
 	}
 }

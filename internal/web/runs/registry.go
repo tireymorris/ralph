@@ -17,35 +17,16 @@ import (
 const runDirPerm = 0o750
 
 type Run struct {
-	ID                         string    `json:"id"`
-	WorkDir                    string    `json:"work_dir"`
-	Prompt                     string    `json:"prompt"`
-	Status                     string    `json:"status"`
-	Phase                      string    `json:"phase"`
-	CreatedAt                  time.Time `json:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at"`
-	PRDPath                    string    `json:"prd_path"`
-	AutoApprove                bool      `json:"auto_approve,omitempty"`
-	Checkpoint                 string    `json:"checkpoint,omitempty"`
-	ReviewIteration            int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                 string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
-	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
-}
-
-type ReviewLoopUpdate struct {
-	Checkpoint                 string
-	ReviewIteration            int
-	ReviewFingerprint          string
-	ReviewElapsedMs            int64
-	StopReason                 string
-	LastReviewTranscriptPath   string
-	LastReviewChangedFilesHash string
-	RecoveryAttempts           int
-	ClearRecoveryAttempts      bool
+	ID          string    `json:"id"`
+	WorkDir     string    `json:"work_dir"`
+	Prompt      string    `json:"prompt"`
+	Status      string    `json:"status"`
+	Phase       string    `json:"phase"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	PRDPath     string    `json:"prd_path"`
+	AutoApprove bool      `json:"auto_approve,omitempty"`
+	runstate.ReviewLoopState
 }
 
 type LifecycleUpdate struct {
@@ -260,7 +241,7 @@ func (r *Registry) UpdateCheckpoint(id, checkpoint string) error {
 	return persistRun(run)
 }
 
-func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
+func (r *Registry) UpdateReviewLoop(id string, u runstate.ReviewLoopUpdate) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -269,20 +250,7 @@ func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
 		return fmt.Errorf("run %q not found", id)
 	}
 
-	run.Checkpoint = u.Checkpoint
-	run.ReviewIteration = u.ReviewIteration
-	run.ReviewFingerprint = u.ReviewFingerprint
-	run.ReviewElapsedMs = u.ReviewElapsedMs
-	if u.StopReason != "" {
-		run.StopReason = u.StopReason
-	}
-	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
-	run.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.ClearRecoveryAttempts {
-		run.RecoveryAttempts = 0
-	} else if u.RecoveryAttempts > 0 {
-		run.RecoveryAttempts = u.RecoveryAttempts
-	}
+	runstate.ApplyReviewLoopUpdate(&run.ReviewLoopState, u)
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)

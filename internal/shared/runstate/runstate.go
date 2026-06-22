@@ -42,6 +42,18 @@ const (
 
 const CheckpointCancelled = StatusCancelled
 
+type ReviewLoopUpdate struct {
+	Checkpoint                 string
+	ReviewIteration            int
+	ReviewFingerprint          string
+	ReviewElapsedMs            int64
+	StopReason                 string
+	LastReviewTranscriptPath   string
+	LastReviewChangedFilesHash string
+	RecoveryAttempts           int
+	ClearRecoveryAttempts      bool
+}
+
 func CheckpointStatusPhase(checkpoint string, p *prd.PRD) (status, phase string) {
 	switch checkpoint {
 	case CheckpointPRDReview:

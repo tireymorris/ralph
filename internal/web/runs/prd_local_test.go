@@ -144,6 +144,13 @@ func TestOngoingLocalPRD_implReviewCheckpoint(t *testing.T) {
 	}
 }
 
+func TestLocalPRDMetaEmbedsReviewLoopState(t *testing.T) {
+	var m localPRDMeta
+	if m.ReviewLoopState != (runstate.ReviewLoopState{}) {
+		t.Fatal("expected zero embedded review loop state")
+	}
+}
+
 func TestOngoingLocalPRD_missingFile(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

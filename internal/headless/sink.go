@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 
-	webrunner "ralph/internal/web/runner"
 	"ralph/internal/workflow/events"
 )
 
@@ -40,7 +39,7 @@ func (s *ndjsonSink) OnEvent(ev events.Event) (stop bool, exitCode int, err erro
 }
 
 func (s *ndjsonSink) writeEvent(ev events.Event) error {
-	data, err := webrunner.MarshalEventEnvelope(ev)
+	data, err := events.MarshalEventEnvelope(ev)
 	if err != nil {
 		return err
 	}

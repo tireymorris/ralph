@@ -1,7 +1,8 @@
 package runner
 
 import (
-	"encoding/json"
+	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,106 +14,27 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-func TestMarshalEventEnvelope_ImplementationReviewEvents(t *testing.T) {
-	cases := []struct {
-		name     string
-		ev       events.Event
-		wantType string
-	}{
-		{name: "started", ev: events.EventImplementationReviewStarted{Iteration: 1}, wantType: "EventImplementationReviewStarted"},
-		{name: "completed", ev: events.EventImplementationReviewCompleted{Iteration: 1, Clean: true}, wantType: "EventImplementationReviewCompleted"},
-		{name: "findings", ev: events.EventImplementationReview{Findings: []events.ImplementationFinding{{ID: "a", Summary: "s"}}}, wantType: "EventImplementationReview"},
+func TestMarshalEventEnvelope_DelegatesToWorkflowEvents(t *testing.T) {
+	cases := []events.Event{
+		events.EventOutput{Output: events.Output{Text: "hello"}},
+		events.EventImplementationReviewStarted{Iteration: 1},
+		events.EventRecoveryStarted{Reason: "test_gate", Attempt: 1, Max: 2},
+		events.EventSliceStarted{StoryID: "story-1", SliceID: "slice-1"},
+		events.EventCleanupStarted{},
+		events.EventError{Err: errors.New("boom")},
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			data, err := MarshalEventEnvelope(tc.ev)
+	for _, ev := range cases {
+		t.Run(fmt.Sprintf("%T", ev), func(t *testing.T) {
+			got, err := MarshalEventEnvelope(ev)
 			if err != nil {
 				t.Fatalf("MarshalEventEnvelope() error = %v", err)
 			}
-			var env eventEnvelope
-			if err := json.Unmarshal(data, &env); err != nil {
-				t.Fatalf("Unmarshal() error = %v", err)
-			}
-			if env.Type != tc.wantType {
-				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
-			}
-		})
-	}
-}
-
-func TestMarshalEventEnvelope_RecoveryEvents(t *testing.T) {
-	cases := []struct {
-		name     string
-		ev       events.Event
-		wantType string
-	}{
-		{name: "started", ev: events.EventRecoveryStarted{Reason: "test_gate", Attempt: 1, Max: 2}, wantType: "EventRecoveryStarted"},
-		{name: "completed", ev: events.EventRecoveryCompleted{Reason: "test_gate", Attempt: 1, Success: true}, wantType: "EventRecoveryCompleted"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			data, err := MarshalEventEnvelope(tc.ev)
+			want, err := events.MarshalEventEnvelope(ev)
 			if err != nil {
-				t.Fatalf("MarshalEventEnvelope() error = %v", err)
+				t.Fatalf("events.MarshalEventEnvelope() error = %v", err)
 			}
-			var env eventEnvelope
-			if err := json.Unmarshal(data, &env); err != nil {
-				t.Fatalf("Unmarshal() error = %v", err)
-			}
-			if env.Type != tc.wantType {
-				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
-			}
-		})
-	}
-}
-
-func TestMarshalEventEnvelope_CleanupEvents(t *testing.T) {
-	cases := []struct {
-		name     string
-		ev       events.Event
-		wantType string
-	}{
-		{name: "started", ev: events.EventCleanupStarted{}, wantType: "EventCleanupStarted"},
-		{name: "completed", ev: events.EventCleanupCompleted{}, wantType: "EventCleanupCompleted"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			data, err := MarshalEventEnvelope(tc.ev)
-			if err != nil {
-				t.Fatalf("MarshalEventEnvelope() error = %v", err)
-			}
-			var env eventEnvelope
-			if err := json.Unmarshal(data, &env); err != nil {
-				t.Fatalf("Unmarshal() error = %v", err)
-			}
-			if env.Type != tc.wantType {
-				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
-			}
-		})
-	}
-}
-
-func TestMarshalEventEnvelope_SliceEvents(t *testing.T) {
-	cases := []struct {
-		name     string
-		ev       events.Event
-		wantType string
-	}{
-		{name: "started", ev: events.EventSliceStarted{StoryID: "story-1", SliceID: "slice-1"}, wantType: "EventSliceStarted"},
-		{name: "completed", ev: events.EventSliceCompleted{StoryID: "story-1", SliceID: "slice-1"}, wantType: "EventSliceCompleted"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			data, err := MarshalEventEnvelope(tc.ev)
-			if err != nil {
-				t.Fatalf("MarshalEventEnvelope() error = %v", err)
-			}
-			var env eventEnvelope
-			if err := json.Unmarshal(data, &env); err != nil {
-				t.Fatalf("Unmarshal() error = %v", err)
-			}
-			if env.Type != tc.wantType {
-				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
+			if string(got) != string(want) {
+				t.Fatalf("MarshalEventEnvelope() = %s, events.MarshalEventEnvelope() = %s", got, want)
 			}
 		})
 	}

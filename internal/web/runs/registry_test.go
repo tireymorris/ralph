@@ -10,6 +10,13 @@ import (
 	"ralph/internal/workflow"
 )
 
+func TestRunEmbedsReviewLoopState(t *testing.T) {
+	var r Run
+	if r.ReviewLoopState != (runstate.ReviewLoopState{}) {
+		t.Fatal("expected zero embedded review loop state")
+	}
+}
+
 func TestRegisterGet(t *testing.T) {
 	reg := NewRegistry()
 	workDir := t.TempDir()
@@ -105,13 +112,15 @@ func TestUpdateCheckpoint(t *testing.T) {
 	workDir := t.TempDir()
 
 	run := &Run{
-		ID:         "run-ckpt",
-		WorkDir:    workDir,
-		Status:     "waiting_review",
-		Phase:      "review",
-		Checkpoint: runstate.CheckpointPRDReview,
-		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
-		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		ID:        "run-ckpt",
+		WorkDir:   workDir,
+		Status:    "waiting_review",
+		Phase:     "review",
+		ReviewLoopState: runstate.ReviewLoopState{
+			Checkpoint: runstate.CheckpointPRDReview,
+		},
+		CreatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
 	}
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
@@ -192,20 +201,22 @@ func TestReviewLoopFieldsRoundTrip(t *testing.T) {
 	reg := NewRegistry()
 
 	run := &Run{
-		ID:                       "run-review-loop",
-		WorkDir:                  workDir,
-		Prompt:                   "build feature",
-		Status:                   "implementing",
-		Phase:                    "implement",
-		CreatedAt:                time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC),
-		UpdatedAt:                time.Date(2026, 6, 4, 12, 30, 0, 0, time.UTC),
-		PRDPath:                  "prd.json",
-		Checkpoint:               runstate.CheckpointImplReview,
-		ReviewIteration:          2,
-		ReviewFingerprint:        "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
-		ReviewElapsedMs:          1500,
-		StopReason:               "duplicate_findings",
-		LastReviewTranscriptPath: "review-2.txt",
+		ID:        "run-review-loop",
+		WorkDir:   workDir,
+		Prompt:    "build feature",
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 6, 4, 12, 30, 0, 0, time.UTC),
+		PRDPath:   "prd.json",
+		ReviewLoopState: runstate.ReviewLoopState{
+			Checkpoint:               runstate.CheckpointImplReview,
+			ReviewIteration:          2,
+			ReviewFingerprint:        "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
+			ReviewElapsedMs:          1500,
+			StopReason:               "duplicate_findings",
+			LastReviewTranscriptPath: "review-2.txt",
+		},
 	}
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
@@ -240,6 +251,72 @@ func TestReviewLoopFieldsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestUpdateReviewLoopClearRecoveryAttemptsPreservesState(t *testing.T) {
+	reg := NewRegistry()
+	workDir := t.TempDir()
+
+	run := &Run{
+		ID:        "run-clear-recovery",
+		WorkDir:   workDir,
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+	}
+	if err := reg.Register(run); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	fp := "abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
+	if err := reg.UpdateReviewLoop("run-clear-recovery", runstate.ReviewLoopUpdate{
+		Checkpoint:                 runstate.CheckpointImplReview,
+		ReviewIteration:            3,
+		ReviewFingerprint:          fp,
+		ReviewElapsedMs:            4200,
+		StopReason:                 "guardrail",
+		LastReviewTranscriptPath:   "review-3.txt",
+		LastReviewChangedFilesHash: "hash-xyz",
+		RecoveryAttempts:           2,
+	}); err != nil {
+		t.Fatalf("UpdateReviewLoop(seed) error = %v", err)
+	}
+
+	if err := reg.UpdateReviewLoop("run-clear-recovery", runstate.ReviewLoopUpdate{
+		ClearRecoveryAttempts: true,
+	}); err != nil {
+		t.Fatalf("UpdateReviewLoop(clear) error = %v", err)
+	}
+
+	got, ok := reg.Get("run-clear-recovery")
+	if !ok {
+		t.Fatal("Get() ok = false")
+	}
+	if got.Checkpoint != runstate.CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, runstate.CheckpointImplReview)
+	}
+	if got.ReviewIteration != 3 {
+		t.Errorf("ReviewIteration = %d, want 3", got.ReviewIteration)
+	}
+	if got.ReviewFingerprint != fp {
+		t.Errorf("ReviewFingerprint = %q, want %q", got.ReviewFingerprint, fp)
+	}
+	if got.ReviewElapsedMs != 4200 {
+		t.Errorf("ReviewElapsedMs = %d, want 4200", got.ReviewElapsedMs)
+	}
+	if got.StopReason != "guardrail" {
+		t.Errorf("StopReason = %q, want guardrail", got.StopReason)
+	}
+	if got.LastReviewTranscriptPath != "review-3.txt" {
+		t.Errorf("LastReviewTranscriptPath = %q, want review-3.txt", got.LastReviewTranscriptPath)
+	}
+	if got.LastReviewChangedFilesHash != "hash-xyz" {
+		t.Errorf("LastReviewChangedFilesHash = %q, want hash-xyz", got.LastReviewChangedFilesHash)
+	}
+	if got.RecoveryAttempts != 0 {
+		t.Errorf("RecoveryAttempts = %d, want 0", got.RecoveryAttempts)
+	}
+}
+
 func TestUpdateReviewLoop(t *testing.T) {
 	reg := NewRegistry()
 	workDir := t.TempDir()
@@ -257,7 +334,7 @@ func TestUpdateReviewLoop(t *testing.T) {
 	}
 
 	fp := "abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
-	if err := reg.UpdateReviewLoop("run-review-upd", ReviewLoopUpdate{
+	if err := reg.UpdateReviewLoop("run-review-upd", runstate.ReviewLoopUpdate{
 		Checkpoint:               runstate.CheckpointImplReview,
 		ReviewIteration:          3,
 		ReviewFingerprint:        fp,
@@ -309,15 +386,17 @@ func TestResumeCheckpointFromReloadedMeta(t *testing.T) {
 	reg := NewRegistry()
 
 	run := &Run{
-		ID:         "run-resume-ckpt",
-		WorkDir:    workDir,
-		Prompt:     "build feature",
-		Status:     "implementing",
-		Phase:      "implement",
-		Checkpoint: runstate.CheckpointImplReview,
-		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
-		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
-		PRDPath:    "prd.json",
+		ID:        "run-resume-ckpt",
+		WorkDir:   workDir,
+		Prompt:    "build feature",
+		Status:    "implementing",
+		Phase:     "implement",
+		ReviewLoopState: runstate.ReviewLoopState{
+			Checkpoint: runstate.CheckpointImplReview,
+		},
+		CreatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
+		PRDPath:   "prd.json",
 	}
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)

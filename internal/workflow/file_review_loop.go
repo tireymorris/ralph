@@ -8,18 +8,12 @@ import (
 	"time"
 
 	"ralph/internal/shared/runpaths"
+	"ralph/internal/shared/runstate"
 )
 
 type fileRunMeta struct {
-	Checkpoint                 string    `json:"checkpoint,omitempty"`
-	ReviewIteration            int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                 string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
-	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
-	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
+	runstate.ReviewLoopState
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 type FileReviewLoop struct {
@@ -71,22 +65,7 @@ func (f *FileReviewLoop) Apply(u ReviewLoopUpdate) error {
 	if err != nil {
 		return err
 	}
-	if u.Checkpoint != "" {
-		m.Checkpoint = u.Checkpoint
-	}
-	m.ReviewIteration = u.ReviewIteration
-	m.ReviewFingerprint = u.ReviewFingerprint
-	m.ReviewElapsedMs = u.ReviewElapsedMs
-	if u.StopReason != "" {
-		m.StopReason = u.StopReason
-	}
-	m.LastReviewTranscriptPath = u.LastReviewTranscriptPath
-	m.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.ClearRecoveryAttempts {
-		m.RecoveryAttempts = 0
-	} else if u.RecoveryAttempts > 0 {
-		m.RecoveryAttempts = u.RecoveryAttempts
-	}
+	runstate.ApplyReviewLoopUpdate(&m.ReviewLoopState, u)
 	m.UpdatedAt = time.Now()
 
 	dir := filepath.Dir(f.metaPath())
