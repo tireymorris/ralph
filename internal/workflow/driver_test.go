@@ -25,7 +25,7 @@ func TestDriverStartNewEmitsClarifyThenGenerate(t *testing.T) {
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, _ chan<- runner.OutputLine) error {
 		prdPath := filepath.Join(workDir, "prd.json")
-		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -74,7 +74,7 @@ func TestDriverStartNewAutoApproveSkipsClarifyAndStartsImplementation(t *testing
 			return os.WriteFile(filepath.Join(workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0644)
 		}
 		prdPath := filepath.Join(workDir, "prd.json")
-		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -138,7 +138,7 @@ func TestDriverStartNewAutoApproveDryRunSkipsImplementation(t *testing.T) {
 			return os.WriteFile(filepath.Join(workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0644)
 		}
 		prdPath := filepath.Join(workDir, "prd.json")
-		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		data := `{"project_name":"Test","stories":[{"id":"1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -182,7 +182,7 @@ func TestDriverStartResumeEmitsLoadedEvent(t *testing.T) {
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 
-	prdData := `{"project_name":"Resumed","stories":[{"id":"1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+	prdData := `{"project_name":"Resumed","stories":[{"id":"1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdData), 0644); err != nil {
 		t.Fatal(err)
 	}

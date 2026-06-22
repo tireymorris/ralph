@@ -34,7 +34,7 @@ func TestRunGenerateEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {
 			t.Error("expected PRD prompt for empty workdir to mention no existing source code")
 		}
 		prdPath := filepath.Join(tmpDir, "prd.json")
-		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -65,7 +65,7 @@ func TestRunGenerateWithSourceWorkdirUsesExistingCodebasePrompt(t *testing.T) {
 			t.Error("expected PRD prompt for existing codebase to reference observed patterns")
 		}
 		prdPath := filepath.Join(tmpDir, "prd.json")
-		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -86,7 +86,7 @@ func TestRunGenerateSuccess(t *testing.T) {
 
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
 		prdPath := filepath.Join(tmpDir, "prd.json")
-		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(prdPath, []byte(data), 0644)
 	}
 
@@ -112,7 +112,7 @@ func TestRunGenerateWithAnswersLoadsFromInjectedStore(t *testing.T) {
 
 	loaded := &prd.PRD{
 		ProjectName: "Injected",
-		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}},
+		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
 	}
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -175,7 +175,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -703,7 +703,7 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -752,8 +752,8 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Story 1", Description: "Desc 1", AcceptanceCriteria: []string{"AC1"}, Priority: 1, Passes: false},
-			{ID: "2", Title: "Story 2", Description: "Desc 2", AcceptanceCriteria: []string{"AC2"}, Priority: 2, Passes: false},
+			{ID: "1", Title: "Story 1", Description: "Desc 1", Slices: testStorySlice("AC1"), Priority: 1, Passes: false},
+			{ID: "2", Title: "Story 2", Description: "Desc 2", Slices: testStorySlice("AC2"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -792,7 +792,7 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -825,7 +825,7 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	testPRD := &prd.PRD{
 		Version:     1,
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -909,7 +909,7 @@ func TestRunLoadEmitsEvent(t *testing.T) {
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
 
-	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}}}
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}}}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
@@ -943,7 +943,7 @@ func TestRunCritiqueRevisionUpdatesPRDAndReturnsToReview(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -960,7 +960,7 @@ func TestRunCritiqueRevisionUpdatesPRDAndReturnsToReview(t *testing.T) {
 			}
 			revised := &prd.PRD{
 				ProjectName: "Revised",
-				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Revised desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Revised desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 			}
 			return prd.Save(cfg, revised)
 		}
@@ -996,7 +996,7 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -1071,7 +1071,7 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
