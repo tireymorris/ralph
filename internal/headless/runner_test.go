@@ -73,6 +73,52 @@ func TestRunRecoversFromImplementationReviewFindings(t *testing.T) {
 	}
 }
 
+func TestRunRecoversFromFinalTestGateFailure(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
+	cfg.TestCommand = "test -f .gate-ok"
+	initGitRepo(t, cfg.WorkDir)
+	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commitFile(t, cfg.WorkDir, "main.go", "init source file")
+
+	prdJSON := `{"version":2,"project_name":"Final gate","branch_name":"main","stories":[{"id":"story-1","title":"S","description":"d","slices":[{"id":"slice-1","behavior":"b","red_hint":"r","passes":true}],"priority":1,"passes":true}]}`
+	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "prd.json"), []byte(prdJSON), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loopDir := filepath.Join(cfg.WorkDir, ".ralph", "runs", "prd-local")
+	if err := os.MkdirAll(loopDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(loopDir, "meta.json"), []byte(`{"checkpoint":"impl_review"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	gr := &gateRecoveryRunner{workDir: cfg.WorkDir}
+	var stderr bytes.Buffer
+	r := New(cfg, gr, &stderr)
+
+	code := r.Run("", true)
+	if gr.ctxErr != nil {
+		t.Fatalf("recovery runner ctx canceled before invoke: %v; stderr=%s", gr.ctxErr, stderr.String())
+	}
+	if !gr.called {
+		t.Fatalf("recovery runner never invoked; stderr=%s", stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0; stderr=%s", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(cfg.WorkDir, ".gate-ok")); err != nil {
+		t.Fatalf(".gate-ok not created: %v", err)
+	}
+	if !strings.Contains(stderr.String(), `"type":"EventCompleted"`) {
+		t.Fatalf("stderr = %q, want EventCompleted JSON", stderr.String())
+	}
+}
+
 func TestRunResumesFromCheckpoint(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
@@ -156,6 +202,30 @@ type autoContinueRunner struct {
 	workDir     string
 	reviewCalls int
 	calls       []string
+}
+
+type gateRecoveryRunner struct {
+	workDir string
+	ctxErr  error
+	called  bool
+}
+
+func (r *gateRecoveryRunner) Run(ctx context.Context, promptText string, _ chan<- runner.OutputLine) error {
+	if !prompt.IsRecoveryPrompt(promptText) {
+		return nil
+	}
+	r.called = true
+	r.ctxErr = ctx.Err()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	return os.WriteFile(filepath.Join(r.workDir, ".gate-ok"), []byte("ok"), 0o644)
+}
+
+func (r *gateRecoveryRunner) RunnerName() string  { return "test" }
+func (r *gateRecoveryRunner) CommandName() string { return "test" }
+func (r *gateRecoveryRunner) IsInternalLog(string) bool {
+	return false
 }
 
 func (r *autoContinueRunner) Run(_ context.Context, promptText string, outputCh chan<- runner.OutputLine) error {

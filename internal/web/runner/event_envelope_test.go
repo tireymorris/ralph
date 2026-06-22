@@ -40,6 +40,32 @@ func TestMarshalEventEnvelope_ImplementationReviewEvents(t *testing.T) {
 	}
 }
 
+func TestMarshalEventEnvelope_RecoveryEvents(t *testing.T) {
+	cases := []struct {
+		name     string
+		ev       events.Event
+		wantType string
+	}{
+		{name: "started", ev: events.EventRecoveryStarted{Reason: "test_gate", Attempt: 1, Max: 2}, wantType: "EventRecoveryStarted"},
+		{name: "completed", ev: events.EventRecoveryCompleted{Reason: "test_gate", Attempt: 1, Success: true}, wantType: "EventRecoveryCompleted"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := MarshalEventEnvelope(tc.ev)
+			if err != nil {
+				t.Fatalf("MarshalEventEnvelope() error = %v", err)
+			}
+			var env eventEnvelope
+			if err := json.Unmarshal(data, &env); err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
+			}
+			if env.Type != tc.wantType {
+				t.Errorf("Type = %q, want %q", env.Type, tc.wantType)
+			}
+		})
+	}
+}
+
 func TestMarshalEventEnvelope_CleanupEvents(t *testing.T) {
 	cases := []struct {
 		name     string

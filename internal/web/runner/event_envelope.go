@@ -51,6 +51,10 @@ func eventEnvelopeParts(ev events.Event) (string, any, error) {
 		return "EventImplementationReviewCompleted", e, nil
 	case events.EventImplementationReview:
 		return "EventImplementationReview", e, nil
+	case events.EventRecoveryStarted:
+		return "EventRecoveryStarted", e, nil
+	case events.EventRecoveryCompleted:
+		return "EventRecoveryCompleted", e, nil
 	case events.EventCleanupStarted:
 		return "EventCleanupStarted", e, nil
 	case events.EventCleanupCompleted:
