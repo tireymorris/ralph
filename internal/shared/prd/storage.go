@@ -47,9 +47,6 @@ func Load(cfg *config.Config) (*PRD, error) {
 func Save(cfg *config.Config, p *PRD) error {
 	prdPath := cfg.PRDPath()
 
-	if err := p.rejectLegacyAcceptanceCriteria(); err != nil {
-		return fmt.Errorf("PRD validation failed before saving %q: %w", prdPath, err)
-	}
 	if err := p.Validate(); err != nil {
 		return fmt.Errorf("PRD validation failed before saving %q: %w", prdPath, err)
 	}

@@ -1,6 +1,33 @@
 package prd
 
-import "testing"
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+func TestStorySchemaOmitsAcceptanceCriteria(t *testing.T) {
+	typ := reflect.TypeOf(Story{})
+	if _, ok := typ.FieldByName("AcceptanceCriteria"); ok {
+		t.Fatal("Story struct still has AcceptanceCriteria field")
+	}
+
+	story := &Story{
+		ID:          "story-1",
+		Title:       "Test",
+		Description: "Desc",
+		Slices:      []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}},
+		Priority:    1,
+	}
+	data, err := json.Marshal(story)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	if strings.Contains(string(data), "acceptance_criteria") {
+		t.Fatalf("marshaled Story JSON contains acceptance_criteria: %s", data)
+	}
+}
 
 func TestNextPendingStory(t *testing.T) {
 	tests := []struct {

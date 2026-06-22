@@ -8,10 +8,9 @@ import (
 )
 
 const (
-	MaxContextSize        = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
-	MaxStories            = 1000            // Maximum number of stories to prevent resource issues
-	MaxStoryDescSize      = 100 * 1024      // 100KB max story description
-	MaxAcceptanceCriteria = 50              // Maximum acceptance criteria per story
+	MaxContextSize   = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
+	MaxStories       = 1000            // Maximum number of stories to prevent resource issues
+	MaxStoryDescSize = 100 * 1024      // 100KB max story description
 )
 
 type Slice struct {
@@ -23,14 +22,13 @@ type Slice struct {
 }
 
 type Story struct {
-	ID                 string   `json:"id"`
-	Title              string   `json:"title"`
-	Description        string   `json:"description"`
-	AcceptanceCriteria []string `json:"acceptance_criteria,omitempty"`
-	Slices             []*Slice `json:"slices,omitempty"`
-	Priority           int      `json:"priority"`
-	DependsOn          []string `json:"depends_on,omitempty"` // Story IDs this story depends on
-	Passes             bool     `json:"passes"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Slices      []*Slice `json:"slices,omitempty"`
+	Priority    int      `json:"priority"`
+	DependsOn   []string `json:"depends_on,omitempty"` // Story IDs this story depends on
+	Passes      bool     `json:"passes"`
 }
 
 type PRD struct {
@@ -199,25 +197,6 @@ func errLegacyAcceptanceCriteria(storyID string) error {
 	return fmt.Errorf("story %q uses legacy acceptance_criteria; use slices instead", storyID)
 }
 
-func (s *Story) legacyAcceptanceCriteriaError() error {
-	if s.AcceptanceCriteria != nil && len(s.Slices) == 0 {
-		return errLegacyAcceptanceCriteria(s.ID)
-	}
-	if len(s.Slices) > 0 && len(s.AcceptanceCriteria) > 0 {
-		return errLegacyAcceptanceCriteria(s.ID)
-	}
-	return nil
-}
-
-func (p *PRD) rejectLegacyAcceptanceCriteria() error {
-	for _, story := range p.Stories {
-		if err := story.legacyAcceptanceCriteriaError(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func rejectLegacyAcceptanceCriteriaInJSON(data []byte) error {
 	var raw struct {
 		Stories []json.RawMessage `json:"stories"`
@@ -229,13 +208,11 @@ func rejectLegacyAcceptanceCriteriaInJSON(data []byte) error {
 		var story struct {
 			ID                 string          `json:"id"`
 			AcceptanceCriteria json.RawMessage `json:"acceptance_criteria"`
-			Slices             json.RawMessage `json:"slices"`
 		}
 		if err := json.Unmarshal(storyData, &story); err != nil {
 			continue
 		}
-		hasAC := len(story.AcceptanceCriteria) > 0 && string(story.AcceptanceCriteria) != "null"
-		if !hasAC {
+		if len(story.AcceptanceCriteria) == 0 || string(story.AcceptanceCriteria) == "null" {
 			continue
 		}
 		return errLegacyAcceptanceCriteria(story.ID)
@@ -258,12 +235,6 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	}
 	if s.Priority < 0 {
 		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
-	}
-	if len(s.AcceptanceCriteria) > MaxAcceptanceCriteria {
-		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
-	}
-	if err := s.legacyAcceptanceCriteriaError(); err != nil {
-		return err
 	}
 	sliceIDs := make(map[string]bool)
 	for i, sl := range s.Slices {

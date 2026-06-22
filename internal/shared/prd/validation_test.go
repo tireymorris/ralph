@@ -124,13 +124,6 @@ func TestStory_Validate(t *testing.T) {
 			errMsg:  "story priority",
 		},
 		{
-			name:    "too many acceptance criteria",
-			story:   &Story{ID: "story-1", Title: "Story 1", Description: "Description", AcceptanceCriteria: make([]string, MaxAcceptanceCriteria+1)},
-			seenIDs: make(map[string]bool),
-			wantErr: true,
-			errMsg:  "acceptance criteria",
-		},
-		{
 			name: "duplicate slice IDs",
 			story: &Story{
 				ID:          "story-1",
@@ -172,21 +165,6 @@ func TestStory_Validate(t *testing.T) {
 			seenIDs: make(map[string]bool),
 			wantErr: true,
 			errMsg:  "red hint cannot be empty",
-		},
-		{
-			name: "mixed legacy and slices",
-			story: &Story{
-				ID:                 "story-1",
-				Title:              "Story 1",
-				Description:        "Description",
-				AcceptanceCriteria: []string{"criterion"},
-				Slices: []*Slice{
-					{ID: "slice-1", Behavior: "first", RedHint: "red"},
-				},
-			},
-			seenIDs: make(map[string]bool),
-			wantErr: true,
-			errMsg:  "legacy acceptance_criteria",
 		},
 	}
 
