@@ -33,8 +33,8 @@ func TestDisplay(t *testing.T) {
 			ProjectName: "Test Project",
 			BranchName:  "main",
 			Stories: []*prd.Story{
-				{ID: "story-1", Title: "Completed story", Priority: 1, Passes: true},
-				{ID: "story-2", Title: "Pending story", Priority: 2, Passes: false},
+				{ID: "story-1", Title: "Completed story", Priority: 1, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "done", RedHint: "add failing test", Passes: true}}},
+				{ID: "story-2", Title: "Pending story", Priority: 2, Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "pending", RedHint: "add failing test"}}},
 			},
 		}
 		if err := prd.Save(cfg, testPRD); err != nil {
@@ -62,7 +62,7 @@ func TestDisplay(t *testing.T) {
 	t.Run("PRD without branch name", func(t *testing.T) {
 		testPRD := &prd.PRD{
 			ProjectName: "Simple Project",
-			Stories:     []*prd.Story{{ID: "story-1", Title: "Only story", Priority: 1, Passes: true}},
+			Stories:     []*prd.Story{{ID: "story-1", Title: "Only story", Priority: 1, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "only", RedHint: "add failing test", Passes: true}}}},
 		}
 		if err := prd.Save(cfg, testPRD); err != nil {
 			t.Fatalf("Failed to save test PRD: %v", err)
@@ -109,8 +109,8 @@ func TestDisplay_AllCompletedStories(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "All Completed",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "First", Priority: 1, Passes: true},
-			{ID: "story-2", Title: "Second", Priority: 2, Passes: true},
+			{ID: "story-1", Title: "First", Priority: 1, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "first", RedHint: "add failing test", Passes: true}}},
+			{ID: "story-2", Title: "Second", Priority: 2, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "second", RedHint: "add failing test", Passes: true}}},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {

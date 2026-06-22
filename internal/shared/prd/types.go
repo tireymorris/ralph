@@ -223,6 +223,9 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	if s.Priority < 0 {
 		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
 	}
+	if len(s.Slices) == 0 {
+		return fmt.Errorf("story %q must have at least one slice", s.ID)
+	}
 	sliceIDs := make(map[string]bool)
 	for i, sl := range s.Slices {
 		if sl == nil {

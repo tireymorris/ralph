@@ -67,7 +67,7 @@ func TestHandleWorkflowEventStoryCompletedSuccess(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 
-	story := &prd.Story{ID: "1", Title: "Test", Passes: true}
+	story := &prd.Story{ID: "1", Title: "Test", Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "test", RedHint: "add failing test", Passes: true}}}
 	if err := prd.Save(cfg, &prd.PRD{Stories: []*prd.Story{story}}); err != nil {
 		t.Fatalf("Save PRD: %v", err)
 	}

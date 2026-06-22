@@ -297,7 +297,7 @@ func TestConcurrentReads(t *testing.T) {
 
 	prd := &PRD{
 		ProjectName: "Concurrent Test",
-		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1}},
+		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1, Slices: testSlice("works")}},
 	}
 
 	if err := Save(cfg, prd); err != nil {
@@ -426,7 +426,7 @@ func BenchmarkSave(b *testing.B) {
 
 	prd := &PRD{
 		ProjectName: "Benchmark",
-		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1}},
+		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1, Slices: testSlice("works")}},
 	}
 
 	b.ResetTimer()
@@ -444,7 +444,7 @@ func BenchmarkLoad(b *testing.B) {
 
 	prd := &PRD{
 		ProjectName: "Benchmark",
-		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1}},
+		Stories:     []*Story{{ID: "story-1", Title: "Test", Priority: 1, Slices: testSlice("works")}},
 	}
 
 	Save(cfg, prd)

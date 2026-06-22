@@ -90,11 +90,11 @@ func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testin
 		ProjectName: "Injected",
 		Stories: []*prd.Story{
 			{
-				ID:                 "story-1",
-				Title:              "Story",
-				Description:        "Desc",
+				ID:          "story-1",
+				Title:       "Story",
+				Description: "Desc",
 				Slices:      testStorySlice("AC"),
-				Priority:           1,
+				Priority:    1,
 			},
 		},
 	}

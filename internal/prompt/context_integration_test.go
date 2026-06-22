@@ -68,7 +68,7 @@ func TestContextFieldOmittedWhenEmpty(t *testing.T) {
 		BranchName:  "feature/test",
 		Context:     "",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "Test", Priority: 1},
+			{ID: "story-1", Title: "Test", Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "works", RedHint: "add failing test"}}},
 		},
 	}
 
@@ -208,8 +208,8 @@ func TestContextPreservedThroughMultipleSaves(t *testing.T) {
 		ProjectName: "Test",
 		Context:     "Python 3.11 with pytest. Tests in tests/ directory.",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "S1", Priority: 1, Passes: false},
-			{ID: "story-2", Title: "S2", Priority: 2, Passes: false},
+			{ID: "story-1", Title: "S1", Priority: 1, Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "s1", RedHint: "add failing test"}}},
+			{ID: "story-2", Title: "S2", Priority: 2, Passes: false, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "s2", RedHint: "add failing test"}}},
 		},
 	}
 
@@ -249,7 +249,7 @@ func TestContextJSONFormatting(t *testing.T) {
 		ProjectName: "Test",
 		BranchName:  "feature/test",
 		Context:     "Line 1.\nLine 2.\nLine 3.",
-		Stories:     []*prd.Story{{ID: "s1", Title: "T", Priority: 1}},
+		Stories:     []*prd.Story{{ID: "s1", Title: "T", Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "works", RedHint: "add failing test"}}}},
 	}
 
 	if err := prd.Save(cfg, p); err != nil {

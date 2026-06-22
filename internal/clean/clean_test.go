@@ -131,7 +131,7 @@ func TestArchiveAndCleanStillRemoveModernRalphArtifacts(t *testing.T) {
 	assertNoPRDTempFiles(t, dir)
 }
 
-func TestCleanRemovesLegacyOrphanedPRDTemps(t *testing.T) {
+func TestSeedStateAndTempGlobOmitLegacyRootTempPaths(t *testing.T) {
 	cfg := testConfig(t, t.TempDir())
 	legacyPattern := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*")
 	for _, pattern := range prdTempGlobPatterns(cfg) {
@@ -151,7 +151,7 @@ func TestCleanRemovesLegacyOrphanedPRDTemps(t *testing.T) {
 	}
 }
 
-func TestCleanRemovesLegacyClarifyingQuestions(t *testing.T) {
+func TestStateFilePathsOmitsLegacyRootQuestionAndReviewFiles(t *testing.T) {
 	cfg := testConfig(t, t.TempDir())
 	for _, legacy := range []string{".ralph_questions.json", ".ralph_prd_review.json"} {
 		path := cfg.ConfigPath(legacy)
