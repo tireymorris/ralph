@@ -82,8 +82,8 @@ func TestRunImplementationReviewBeforeNextStory(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -422,8 +422,8 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -489,8 +489,8 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", AcceptanceCriteria: []string{"a"}, Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
