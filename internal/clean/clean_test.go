@@ -104,6 +104,33 @@ func stateArtifactCases() []stateArtifactCase {
 	}
 }
 
+func TestArchiveAndCleanStillRemoveModernRalphArtifacts(t *testing.T) {
+	dir := t.TempDir()
+	cfg := testConfig(t, dir)
+	questionsPath := cfg.ConfigPath(workflow.ClarifyingQuestionsFile)
+	tmpPath := filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.100.7")
+	writeSeedFile(t, questionsPath)
+	writeSeedFile(t, tmpPath)
+
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("RemoveState: %v", err)
+	}
+	assertNotExist(t, questionsPath)
+	assertNoPRDTempFiles(t, dir)
+
+	writeSeedFile(t, questionsPath)
+	writeSeedFile(t, tmpPath)
+	backupDir, err := ArchivePriorState(cfg)
+	if err != nil {
+		t.Fatalf("ArchivePriorState: %v", err)
+	}
+	if backupDir == "" {
+		t.Fatal("backupDir empty")
+	}
+	assertNotExist(t, questionsPath)
+	assertNoPRDTempFiles(t, dir)
+}
+
 func TestCleanRemovesLegacyOrphanedPRDTemps(t *testing.T) {
 	cfg := testConfig(t, t.TempDir())
 	legacyPattern := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*")
