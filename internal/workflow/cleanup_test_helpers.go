@@ -18,6 +18,14 @@ func (s inMemoryPRDStore) Load(cfg *config.Config) (*prd.PRD, error) { return s.
 func (s inMemoryPRDStore) Save(cfg *config.Config, p *prd.PRD) error { return nil }
 func (s inMemoryPRDStore) Exists(cfg *config.Config) (bool, error)   { return true, nil }
 
+func testStorySlice(behavior string) []*prd.Slice {
+	return []*prd.Slice{{
+		ID:       "slice-1",
+		Behavior: behavior,
+		RedHint:  "add failing test",
+	}}
+}
+
 func drainEvents(ch chan Event) []Event {
 	var evts []Event
 	for len(ch) > 0 {
@@ -42,12 +50,12 @@ func saveSingleStoryPRDInDir(t *testing.T, workDir string, skipCleanup bool) (*c
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{{
-			ID:                 "1",
-			Title:              "Story",
-			Description:        "Desc",
-			AcceptanceCriteria: []string{"AC"},
-			Priority:           1,
-			Passes:             false,
+			ID:          "1",
+			Title:       "Story",
+			Description: "Desc",
+			Slices:      testStorySlice("AC"),
+			Priority:    1,
+			Passes:      false,
 		}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
