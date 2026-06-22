@@ -18,9 +18,6 @@ func stateFilePaths(cfg *config.Config) []string {
 		prd.LockPath(cfg.PRDPath()),
 		cfg.ConfigPath(workflow.ClarifyingQuestionsFile),
 		cfg.ConfigPath(prompt.PRDSelfReviewVerdictFile),
-		// legacy root-level locations from before state moved under .ralph/
-		cfg.ConfigPath(".ralph_questions.json"),
-		cfg.ConfigPath(".ralph_prd_review.json"),
 	}
 }
 

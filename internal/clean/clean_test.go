@@ -83,20 +83,6 @@ func stateArtifactCases() []stateArtifactCase {
 			backupRel: "prd_review.json",
 		},
 		{
-			name: "legacy clarifying questions",
-			seed: func(cfg *config.Config) string {
-				return cfg.ConfigPath(".ralph_questions.json")
-			},
-			backupRel: ".ralph_questions.json",
-		},
-		{
-			name: "legacy self-review verdict",
-			seed: func(cfg *config.Config) string {
-				return cfg.ConfigPath(".ralph_prd_review.json")
-			},
-			backupRel: ".ralph_prd_review.json",
-		},
-		{
 			name: "orphaned PRD temps",
 			seed: func(cfg *config.Config) string {
 				return filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.100.7")
@@ -126,6 +112,18 @@ func stateArtifactCases() []stateArtifactCase {
 				assertNotExist(t, filepath.Join(cfg.WorkDir, ralphDataDir))
 			},
 		},
+	}
+}
+
+func TestCleanRemovesLegacyClarifyingQuestions(t *testing.T) {
+	cfg := testConfig(t, t.TempDir())
+	for _, legacy := range []string{".ralph_questions.json", ".ralph_prd_review.json"} {
+		path := cfg.ConfigPath(legacy)
+		for _, p := range stateFilePaths(cfg) {
+			if p == path {
+				t.Fatalf("stateFilePaths still includes legacy path %s", legacy)
+			}
+		}
 	}
 }
 
