@@ -124,8 +124,8 @@ func TestResumeStartMsgImplementationPhase(t *testing.T) {
 	p := &prd.PRD{
 		ProjectName: "Resume Test",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Done", Passes: true, Priority: 1},
-			{ID: "2", Title: "Next", Passes: false, Priority: 2},
+			{ID: "1", Title: "Done", Passes: true, Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "done", RedHint: "add failing test", Passes: true}}},
+			{ID: "2", Title: "Next", Passes: false, Priority: 2, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "next", RedHint: "add failing test"}}},
 		},
 	}
 	if err := prd.Save(cfg, p); err != nil {
@@ -164,7 +164,7 @@ func TestResumeStartMsgImplReviewPhase(t *testing.T) {
 
 	p := &prd.PRD{
 		ProjectName: "Review blocked",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false, Priority: 1}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Passes: false, Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "story", RedHint: "add failing test"}}}},
 	}
 	if err := prd.Save(cfg, p); err != nil {
 		t.Fatalf("Save PRD: %v", err)
@@ -250,7 +250,7 @@ func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 	onDisk := &prd.PRD{
 		ProjectName: "On disk",
 		Stories: []*prd.Story{
-			{ID: "disk", Title: "Disk story", Description: "from disk", Priority: 1},
+			{ID: "disk", Title: "Disk story", Description: "from disk", Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "disk", RedHint: "add failing test"}}},
 		},
 	}
 	if err := prd.Save(cfg, onDisk); err != nil {
@@ -325,7 +325,7 @@ func TestStartImplementationFromPRDUsesSuppliedPRD(t *testing.T) {
 	supplied := &prd.PRD{
 		ProjectName: "Supplied",
 		Stories: []*prd.Story{
-			{ID: "supplied", Title: "Use supplied story", Description: "implement supplied story", Priority: 1},
+			{ID: "supplied", Title: "Use supplied story", Description: "implement supplied story", Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "supplied", RedHint: "add failing test"}}},
 		},
 	}
 	if err := prd.Save(cfg, supplied); err != nil {

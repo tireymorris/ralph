@@ -24,7 +24,7 @@ func newAllBlockedPRD() *prd.PRD {
 	return &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-a", Title: "A", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, DependsOn: []string{"story-missing"}},
+			{ID: "story-a", Title: "A", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, DependsOn: []string{"story-missing"}},
 		},
 	}
 }
@@ -57,8 +57,8 @@ func TestRunImplementationBlockedErrorNamesStoriesAndDependencies(t *testing.T) 
 	blocked := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-a", Title: "A", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, DependsOn: []string{"story-missing"}},
-			{ID: "story-b", Title: "B", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 2, DependsOn: []string{"story-a"}},
+			{ID: "story-a", Title: "A", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, DependsOn: []string{"story-missing"}},
+			{ID: "story-b", Title: "B", Description: "Desc", Slices: testStorySlice("AC"), Priority: 2, DependsOn: []string{"story-a"}},
 		},
 	}
 	ch := make(chan Event, 100)

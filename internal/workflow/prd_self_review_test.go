@@ -24,7 +24,7 @@ func newSelfReviewConfig(t *testing.T) *config.Config {
 
 	seeded := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
 	}
 	if err := prd.Save(cfg, seeded); err != nil {
 		t.Fatalf("failed to seed PRD: %v", err)
@@ -302,7 +302,7 @@ func TestRunGenerateWithoutAutoApproveSkipsSelfReview(t *testing.T) {
 			t.Errorf("self-review should not run without auto-approve, got prompt:\n%s", p)
 			return nil
 		}
-		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+		data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
 	}
 
@@ -341,7 +341,7 @@ func TestRunGenerateRunsSelfReviewBeforePRDReview(t *testing.T) {
 	reviewCalls := 0
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
-			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
 		}
 		reviewCalls++
@@ -385,7 +385,7 @@ func TestRunGenerateSelfReviewNeverApprovedStillEmitsPRDReview(t *testing.T) {
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
-			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
 		}
 		return writeVerdictFile(t, tmpDir, false, "never satisfied")
@@ -425,7 +425,7 @@ func TestRunGenerateSelfReviewMissingVerdictProceedsToPRDReview(t *testing.T) {
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
-			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
 		}
 		return nil
@@ -470,7 +470,7 @@ func TestRunGenerateSelfReviewErrorSkipsPRDReview(t *testing.T) {
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, p string, outputCh chan<- runner.OutputLine) error {
 		if !strings.Contains(p, prompt.PRDSelfReviewVerdictFile) {
-			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","acceptance_criteria":["AC"],"priority":1}]}`
+			data := `{"project_name":"Generated","stories":[{"id":"1","title":"Test","description":"Desc","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test"}],"priority":1}]}`
 			return os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(data), 0644)
 		}
 		invalid := `{"project_name":"Broken","stories":[{"id":"","title":"No ID"}]}`

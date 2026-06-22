@@ -175,7 +175,7 @@ func TestRunLoadSuccess(t *testing.T) {
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
 
-	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1}}}
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}}}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
@@ -215,7 +215,7 @@ func TestRunImplementationAllCompleted(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: true}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: true}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -239,7 +239,7 @@ func TestRunImplementationContextCancelled(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -265,7 +265,7 @@ func TestRunImplementationNoNextStory(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", AcceptanceCriteria: []string{"AC"}, Priority: 1, Passes: true}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: true}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)

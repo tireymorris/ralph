@@ -53,7 +53,7 @@ func TestSnapshot_writesLoadableJSON(t *testing.T) {
 		ProjectName: "snap project",
 		Version:     3,
 		Stories: []*Story{
-			{ID: "story-1", Title: "One", Priority: 1, Passes: true},
+			{ID: "story-1", Title: "One", Priority: 1, Passes: true, Slices: testSlice("one")},
 		},
 	}
 	if err := original.Validate(); err != nil {

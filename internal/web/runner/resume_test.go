@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -129,10 +130,33 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 
 func writeForceResumePRD(t *testing.T, workDir string) {
 	t.Helper()
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
+	initGitRepoInDir(t, workDir)
+	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(data), 0o644); err != nil {
 		t.Fatalf("WriteFile prd: %v", err)
 	}
+}
+
+func initGitRepoInDir(t *testing.T, dir string) {
+	t.Helper()
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v failed: %v\n%s", args, err, out)
+		}
+	}
+	runGit("init")
+	runGit("checkout", "-b", "main")
+	runGit("config", "user.name", "Test User")
+	runGit("config", "user.email", "test@example.com")
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("ok\n"), 0o644); err != nil {
+		t.Fatalf("write README: %v", err)
+	}
+	runGit("add", "README.md")
+	runGit("commit", "-m", "initial")
 }
 
 func nextForceResumeEvent(t *testing.T, ch <-chan events.Event) events.Event {
@@ -189,12 +213,7 @@ func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-
-	prdPath := filepath.Join(workDir, "prd.json")
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
-	if err := os.WriteFile(prdPath, []byte(data), 0644); err != nil {
-		t.Fatalf("WriteFile prd: %v", err)
-	}
+	writeForceResumePRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -259,12 +278,7 @@ func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-
-	prdPath := filepath.Join(workDir, "prd.json")
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
-	if err := os.WriteFile(prdPath, []byte(data), 0644); err != nil {
-		t.Fatalf("WriteFile prd: %v", err)
-	}
+	writeForceResumePRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -328,12 +342,7 @@ func TestForceResumeContinuesImplementation(t *testing.T) {
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-
-	prdPath := filepath.Join(workDir, "prd.json")
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
-	if err := os.WriteFile(prdPath, []byte(data), 0644); err != nil {
-		t.Fatalf("WriteFile prd: %v", err)
-	}
+	writeForceResumePRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -383,12 +392,7 @@ func TestForceResumeReloadsPRDForWaitingReview(t *testing.T) {
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-
-	prdPath := filepath.Join(workDir, "prd.json")
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1,"passes":false}]}`
-	if err := os.WriteFile(prdPath, []byte(data), 0644); err != nil {
-		t.Fatalf("WriteFile prd: %v", err)
-	}
+	writeForceResumePRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -502,11 +506,16 @@ func testPRD(name string) *prd.PRD {
 		Version:     1,
 		ProjectName: name,
 		Stories: []*prd.Story{{
-			ID:                 "s1",
-			Title:              "Story",
-			Description:        "Do it",
-			AcceptanceCriteria: []string{"AC"},
-			Priority:           1,
+			ID:          "s1",
+			Title:       "Story",
+			Description: "Do it",
+			Slices: []*prd.Slice{{
+				ID:       "slice-1",
+				Behavior: "AC",
+				RedHint:  "add failing test",
+				Passes:   false,
+			}},
+			Priority: 1,
 		}},
 	}
 }

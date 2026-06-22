@@ -488,7 +488,7 @@ func TestListRunsIncludesOngoingLocalPRD(t *testing.T) {
   "version": 1,
   "project_name": "CLI goal",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -538,7 +538,7 @@ func TestGetRunLocalPRD(t *testing.T) {
   "version": 1,
   "project_name": "CLI goal",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -587,7 +587,7 @@ func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
   "version": 1,
   "project_name": "CLI goal",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {

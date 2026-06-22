@@ -37,7 +37,6 @@ func assertNoPRDTempFiles(t *testing.T, dir string) {
 	t.Helper()
 	for _, pattern := range []string{
 		filepath.Join(dir, ralphDataDir, "prd.tmp.*"),
-		filepath.Join(dir, ".prd.tmp.*"),
 	} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
@@ -83,35 +82,11 @@ func stateArtifactCases() []stateArtifactCase {
 			backupRel: "prd_review.json",
 		},
 		{
-			name: "legacy clarifying questions",
-			seed: func(cfg *config.Config) string {
-				return cfg.ConfigPath(".ralph_questions.json")
-			},
-			backupRel: ".ralph_questions.json",
-		},
-		{
-			name: "legacy self-review verdict",
-			seed: func(cfg *config.Config) string {
-				return cfg.ConfigPath(".ralph_prd_review.json")
-			},
-			backupRel: ".ralph_prd_review.json",
-		},
-		{
 			name: "orphaned PRD temps",
 			seed: func(cfg *config.Config) string {
 				return filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.100.7")
 			},
 			backupRel: "prd.tmp.100.7",
-			removeAssert: func(t *testing.T, dir string, _ *config.Config, _ string) {
-				assertNoPRDTempFiles(t, dir)
-			},
-		},
-		{
-			name: "legacy orphaned PRD temps",
-			seed: func(cfg *config.Config) string {
-				return filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.100.7")
-			},
-			backupRel: ".prd.tmp.100.7",
 			removeAssert: func(t *testing.T, dir string, _ *config.Config, _ string) {
 				assertNoPRDTempFiles(t, dir)
 			},
@@ -126,6 +101,65 @@ func stateArtifactCases() []stateArtifactCase {
 				assertNotExist(t, filepath.Join(cfg.WorkDir, ralphDataDir))
 			},
 		},
+	}
+}
+
+func TestArchiveAndCleanStillRemoveModernRalphArtifacts(t *testing.T) {
+	dir := t.TempDir()
+	cfg := testConfig(t, dir)
+	questionsPath := cfg.ConfigPath(workflow.ClarifyingQuestionsFile)
+	tmpPath := filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.100.7")
+	writeSeedFile(t, questionsPath)
+	writeSeedFile(t, tmpPath)
+
+	if err := RemoveState(cfg); err != nil {
+		t.Fatalf("RemoveState: %v", err)
+	}
+	assertNotExist(t, questionsPath)
+	assertNoPRDTempFiles(t, dir)
+
+	writeSeedFile(t, questionsPath)
+	writeSeedFile(t, tmpPath)
+	backupDir, err := ArchivePriorState(cfg)
+	if err != nil {
+		t.Fatalf("ArchivePriorState: %v", err)
+	}
+	if backupDir == "" {
+		t.Fatal("backupDir empty")
+	}
+	assertNotExist(t, questionsPath)
+	assertNoPRDTempFiles(t, dir)
+}
+
+func TestSeedStateAndTempGlobOmitLegacyRootTempPaths(t *testing.T) {
+	cfg := testConfig(t, t.TempDir())
+	legacyPattern := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*")
+	for _, pattern := range prdTempGlobPatterns(cfg) {
+		if pattern == legacyPattern {
+			t.Fatalf("prdTempGlobPatterns still includes legacy pattern %s", legacyPattern)
+		}
+	}
+	legacyTmpPath := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.1.999")
+	seeded, err := SeedStateArtifacts(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range seeded {
+		if path == legacyTmpPath {
+			t.Fatalf("SeedStateArtifacts still seeds legacy temp path %s", legacyTmpPath)
+		}
+	}
+}
+
+func TestStateFilePathsOmitsLegacyRootQuestionAndReviewFiles(t *testing.T) {
+	cfg := testConfig(t, t.TempDir())
+	for _, legacy := range []string{".ralph_questions.json", ".ralph_prd_review.json"} {
+		path := cfg.ConfigPath(legacy)
+		for _, p := range stateFilePaths(cfg) {
+			if p == path {
+				t.Fatalf("stateFilePaths still includes legacy path %s", legacy)
+			}
+		}
 	}
 }
 

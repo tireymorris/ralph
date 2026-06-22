@@ -50,7 +50,7 @@ func TestContinueImplementationReviewFromPRDDelegatesToDriver(t *testing.T) {
 	p := &prd.PRD{
 		ProjectName: "Done",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Only", Priority: 1, Passes: true},
+			{ID: "1", Title: "Only", Priority: 1, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "only", RedHint: "add failing test", Passes: true}}},
 		},
 	}
 	if err := prd.Save(cfg, p); err != nil {
@@ -83,7 +83,7 @@ func TestPRDForImplementationLoadsFromDiskWhenNotInMemory(t *testing.T) {
 	onDisk := &prd.PRD{
 		ProjectName: "On disk",
 		Stories: []*prd.Story{
-			{ID: "disk", Title: "Disk story", Priority: 1},
+			{ID: "disk", Title: "Disk story", Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "disk", RedHint: "add failing test"}}},
 		},
 	}
 	if err := prd.Save(cfg, onDisk); err != nil {
@@ -140,7 +140,7 @@ func TestResetPRDForImplementationUnmarksAndReloadsPRD(t *testing.T) {
 	original := &prd.PRD{
 		ProjectName: "Reset",
 		Stories: []*prd.Story{
-			{ID: "done", Title: "Done", Priority: 1, Passes: true},
+			{ID: "done", Title: "Done", Priority: 1, Passes: true, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "done", RedHint: "add failing test", Passes: true}}},
 		},
 	}
 	if err := prd.Save(cfg, original); err != nil {

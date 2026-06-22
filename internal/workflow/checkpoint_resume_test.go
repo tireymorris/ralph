@@ -90,11 +90,11 @@ func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testin
 		ProjectName: "Injected",
 		Stories: []*prd.Story{
 			{
-				ID:                 "story-1",
-				Title:              "Story",
-				Description:        "Desc",
-				AcceptanceCriteria: []string{"AC"},
-				Priority:           1,
+				ID:          "story-1",
+				Title:       "Story",
+				Description: "Desc",
+				Slices:      testStorySlice("AC"),
+				Priority:    1,
 			},
 		},
 	}
@@ -127,7 +127,7 @@ func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testin
 
 func writeCheckpointResumePRD(t *testing.T, workDir string) {
 	t.Helper()
-	data := `{"project_name":"Checkpoint","stories":[{"id":"story-1","title":"Story 1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+	data := `{"project_name":"Checkpoint","stories":[{"id":"story-1","title":"Story 1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(data), 0o644); err != nil {
 		t.Fatal(err)
 	}

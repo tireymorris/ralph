@@ -63,7 +63,7 @@ See [`skill-sources.md`](skill-sources.md) for how these map to `~/.agents/skill
 
 ### `story-implement.tmpl`
 
-- `StoryID`, `Title`, `Description`, `AcceptanceCriteria` (joined string)
+- `StoryID`, `Title`, `Description`, `Slices` (`[]SliceData` with id, behavior, red_hint, refactor_hint, passes)
 - `FeatureTestSpec`, `Context`, `PRDFile`
 - `Completed`, `Total`, `DependsOn`
 

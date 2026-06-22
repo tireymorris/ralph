@@ -192,8 +192,8 @@ func TestResumeMainPaneShowsImplementationProgress(t *testing.T) {
 	p := &prd.PRD{
 		ProjectName: "Resume Test",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Done", Passes: true, Priority: 1},
-			{ID: "2", Title: "Next", Passes: false, Priority: 2},
+			{ID: "1", Title: "Done", Passes: true, Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "done", RedHint: "add failing test", Passes: true}}},
+			{ID: "2", Title: "Next", Passes: false, Priority: 2, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "next", RedHint: "add failing test"}}},
 		},
 	}
 	if err := prd.Save(cfg, p); err != nil {
@@ -246,7 +246,7 @@ func TestResumeMainPaneShowsActiveStorySliceProgressFromSnapshot(t *testing.T) {
 	p := &prd.PRD{
 		ProjectName: "Resume Snapshot Test",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Done", Passes: true, Priority: 1},
+			{ID: "1", Title: "Done", Passes: true, Priority: 1, Slices: []*prd.Slice{{ID: "slice-1", Behavior: "done", RedHint: "add failing test", Passes: true}}},
 			{
 				ID:       "2",
 				Title:    "Active",

@@ -18,7 +18,7 @@ func TestPRD_Validate(t *testing.T) {
 				ProjectName: "Test Project",
 				Context:     "Valid context",
 				Stories: []*Story{
-					{ID: "story-1", Title: "Story 1", Description: "Description", Priority: 1},
+					{ID: "story-1", Title: "Story 1", Description: "Description", Priority: 1, Slices: []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}}},
 				},
 			},
 			wantErr: false,
@@ -47,8 +47,8 @@ func TestPRD_Validate(t *testing.T) {
 			prd: &PRD{
 				ProjectName: "Test Project",
 				Stories: []*Story{
-					{ID: "story-1", Title: "Story 1", Description: "Description", Priority: 1},
-					{ID: "story-1", Title: "Story 2", Description: "Description", Priority: 2},
+					{ID: "story-1", Title: "Story 1", Description: "Description", Priority: 1, Slices: []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}}},
+					{ID: "story-1", Title: "Story 2", Description: "Description", Priority: 2, Slices: []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}}},
 				},
 			},
 			wantErr: true,
@@ -84,9 +84,22 @@ func TestStory_Validate(t *testing.T) {
 				Title:       "Story 1",
 				Description: "Valid description",
 				Priority:    1,
+				Slices:      []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}},
 			},
 			seenIDs: make(map[string]bool),
 			wantErr: false,
+		},
+		{
+			name: "no slices",
+			story: &Story{
+				ID:          "story-1",
+				Title:       "Story 1",
+				Description: "Description",
+				Priority:    1,
+			},
+			seenIDs: make(map[string]bool),
+			wantErr: true,
+			errMsg:  "must have at least one slice",
 		},
 		{
 			name:    "empty ID",
@@ -122,13 +135,6 @@ func TestStory_Validate(t *testing.T) {
 			seenIDs: make(map[string]bool),
 			wantErr: true,
 			errMsg:  "story priority",
-		},
-		{
-			name:    "too many acceptance criteria",
-			story:   &Story{ID: "story-1", Title: "Story 1", Description: "Description", AcceptanceCriteria: make([]string, MaxAcceptanceCriteria+1)},
-			seenIDs: make(map[string]bool),
-			wantErr: true,
-			errMsg:  "acceptance criteria",
 		},
 		{
 			name: "duplicate slice IDs",
@@ -172,21 +178,6 @@ func TestStory_Validate(t *testing.T) {
 			seenIDs: make(map[string]bool),
 			wantErr: true,
 			errMsg:  "red hint cannot be empty",
-		},
-		{
-			name: "mixed legacy and slices",
-			story: &Story{
-				ID:                 "story-1",
-				Title:              "Story 1",
-				Description:        "Description",
-				AcceptanceCriteria: []string{"criterion"},
-				Slices: []*Slice{
-					{ID: "slice-1", Behavior: "first", RedHint: "red"},
-				},
-			},
-			seenIDs: make(map[string]bool),
-			wantErr: true,
-			errMsg:  "both acceptance criteria and slices",
 		},
 	}
 

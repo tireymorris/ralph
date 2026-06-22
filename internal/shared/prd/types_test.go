@@ -1,60 +1,38 @@
 package prd
 
-import "testing"
+import (
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+)
 
-func TestNextPendingStory(t *testing.T) {
-	tests := []struct {
-		name   string
-		prd    *PRD
-		wantID string
-	}{
-		{
-			name:   "empty stories",
-			prd:    &PRD{Stories: []*Story{}},
-			wantID: "",
-		},
-		{
-			name: "all completed",
-			prd: &PRD{Stories: []*Story{
-				{ID: "1", Passes: true, Priority: 1},
-				{ID: "2", Passes: true, Priority: 2},
-			}},
-			wantID: "",
-		},
-		{
-			name: "returns lowest priority pending",
-			prd: &PRD{Stories: []*Story{
-				{ID: "1", Passes: false, Priority: 3},
-				{ID: "2", Passes: false, Priority: 1},
-				{ID: "3", Passes: false, Priority: 2},
-			}},
-			wantID: "2",
-		},
-		{
-			name: "skips completed stories",
-			prd: &PRD{Stories: []*Story{
-				{ID: "1", Passes: true, Priority: 1},
-				{ID: "2", Passes: false, Priority: 2},
-			}},
-			wantID: "2",
-		},
+func TestStorySchemaOmitsAcceptanceCriteria(t *testing.T) {
+	typ := reflect.TypeOf(Story{})
+	if _, ok := typ.FieldByName("AcceptanceCriteria"); ok {
+		t.Fatal("Story struct still has AcceptanceCriteria field")
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.prd.NextPendingStory()
-			if tt.wantID == "" {
-				if got != nil {
-					t.Errorf("NextPendingStory() = %v, want nil", got)
-				}
-			} else {
-				if got == nil {
-					t.Errorf("NextPendingStory() = nil, want ID %q", tt.wantID)
-				} else if got.ID != tt.wantID {
-					t.Errorf("NextPendingStory().ID = %q, want %q", got.ID, tt.wantID)
-				}
-			}
-		})
+	story := &Story{
+		ID:          "story-1",
+		Title:       "Test",
+		Description: "Desc",
+		Slices:      []*Slice{{ID: "slice-1", Behavior: "works", RedHint: "add test"}},
+		Priority:    1,
+	}
+	data, err := json.Marshal(story)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+	if strings.Contains(string(data), "acceptance_criteria") {
+		t.Fatalf("marshaled Story JSON contains acceptance_criteria: %s", data)
+	}
+}
+
+func TestPRDOmitsNextPendingStory(t *testing.T) {
+	typ := reflect.TypeOf((*PRD)(nil))
+	if _, ok := typ.MethodByName("NextPendingStory"); ok {
+		t.Fatal("PRD still has NextPendingStory method")
 	}
 }
 

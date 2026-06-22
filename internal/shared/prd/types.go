@@ -1,16 +1,16 @@
 package prd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 )
 
 const (
-	MaxContextSize        = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
-	MaxStories            = 1000            // Maximum number of stories to prevent resource issues
-	MaxStoryDescSize      = 100 * 1024      // 100KB max story description
-	MaxAcceptanceCriteria = 50              // Maximum acceptance criteria per story
+	MaxContextSize   = 1 * 1024 * 1024 // 1MB max context to prevent memory exhaustion
+	MaxStories       = 1000            // Maximum number of stories to prevent resource issues
+	MaxStoryDescSize = 100 * 1024      // 100KB max story description
 )
 
 type Slice struct {
@@ -22,14 +22,13 @@ type Slice struct {
 }
 
 type Story struct {
-	ID                 string   `json:"id"`
-	Title              string   `json:"title"`
-	Description        string   `json:"description"`
-	AcceptanceCriteria []string `json:"acceptance_criteria,omitempty"`
-	Slices             []*Slice `json:"slices,omitempty"`
-	Priority           int      `json:"priority"`
-	DependsOn          []string `json:"depends_on,omitempty"` // Story IDs this story depends on
-	Passes             bool     `json:"passes"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Slices      []*Slice `json:"slices,omitempty"`
+	Priority    int      `json:"priority"`
+	DependsOn   []string `json:"depends_on,omitempty"` // Story IDs this story depends on
+	Passes      bool     `json:"passes"`
 }
 
 type PRD struct {
@@ -40,19 +39,6 @@ type PRD struct {
 	TestSpec    string   `json:"test_spec,omitempty"`    // Holistic test spec covering all stories
 	TestCommand string   `json:"test_command,omitempty"` // Project-specific test command (overrides config)
 	Stories     []*Story `json:"stories"`
-}
-
-func (p *PRD) NextPendingStory() *Story {
-	var best *Story
-	for _, story := range p.Stories {
-		if story.Passes {
-			continue
-		}
-		if best == nil || story.Priority < best.Priority {
-			best = story
-		}
-	}
-	return best
 }
 
 func (p *PRD) NextReadyStory() *Story {
@@ -191,23 +177,32 @@ func (p *PRD) Validate() error {
 	return nil
 }
 
-func (p *PRD) normalizeLegacyStories() error {
-	for _, story := range p.Stories {
-		if len(story.Slices) > 0 && len(story.AcceptanceCriteria) > 0 {
-			return fmt.Errorf("story %q cannot contain both acceptance criteria and slices", story.ID)
+func errLegacyAcceptanceCriteria(storyID string) error {
+	if storyID == "" {
+		storyID = "<unknown>"
+	}
+	return fmt.Errorf("story %q uses legacy acceptance_criteria; use slices instead", storyID)
+}
+
+func rejectLegacyAcceptanceCriteriaInJSON(data []byte) error {
+	var raw struct {
+		Stories []json.RawMessage `json:"stories"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	for _, storyData := range raw.Stories {
+		var story struct {
+			ID                 string          `json:"id"`
+			AcceptanceCriteria json.RawMessage `json:"acceptance_criteria"`
 		}
-		if len(story.Slices) == 0 && len(story.AcceptanceCriteria) > 0 {
-			story.Slices = make([]*Slice, 0, len(story.AcceptanceCriteria))
-			for i, criterion := range story.AcceptanceCriteria {
-				behavior := criterion
-				story.Slices = append(story.Slices, &Slice{
-					ID:       fmt.Sprintf("slice-%d", i+1),
-					Behavior: behavior,
-					RedHint:  fmt.Sprintf("add failing test for: %s", behavior),
-				})
-			}
-			story.AcceptanceCriteria = nil
+		if err := json.Unmarshal(storyData, &story); err != nil {
+			continue
 		}
+		if len(story.AcceptanceCriteria) == 0 || string(story.AcceptanceCriteria) == "null" {
+			continue
+		}
+		return errLegacyAcceptanceCriteria(story.ID)
 	}
 	return nil
 }
@@ -228,11 +223,8 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	if s.Priority < 0 {
 		return fmt.Errorf("story priority %d cannot be negative", s.Priority)
 	}
-	if len(s.AcceptanceCriteria) > MaxAcceptanceCriteria {
-		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
-	}
-	if len(s.Slices) > 0 && len(s.AcceptanceCriteria) > 0 {
-		return errors.New("story cannot use both acceptance criteria and slices")
+	if len(s.Slices) == 0 {
+		return fmt.Errorf("story %q must have at least one slice", s.ID)
 	}
 	sliceIDs := make(map[string]bool)
 	for i, sl := range s.Slices {
