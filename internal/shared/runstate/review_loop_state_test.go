@@ -73,6 +73,26 @@ func TestApplyReviewLoopUpdate_checkpointOnlyPreservesScalars(t *testing.T) {
 	}
 }
 
+func TestApplyReviewLoopUpdate_clearsFingerprintWhenScalarBatchPresent(t *testing.T) {
+	dst := ReviewLoopState{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   2,
+		ReviewFingerprint: "old-fp",
+		ReviewElapsedMs:   100,
+	}
+
+	ApplyReviewLoopUpdate(&dst, ReviewLoopUpdate{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   2,
+		ReviewFingerprint: "",
+		ReviewElapsedMs:   100,
+	})
+
+	if dst.ReviewFingerprint != "" {
+		t.Errorf("ReviewFingerprint = %q, want empty", dst.ReviewFingerprint)
+	}
+}
+
 func TestApplyReviewLoopUpdate_fullUpdateAppliesScalars(t *testing.T) {
 	dst := ReviewLoopState{
 		Checkpoint:       CheckpointImplReview,
