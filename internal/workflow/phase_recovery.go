@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
@@ -136,7 +137,7 @@ func (e *Executor) runRecovery(
 		changed,
 	)
 
-	runErr := e.runWithForwardedOutput(ctx, recoveryPrompt)
+	runErr := e.runRecoveryPrompt(ctx, recoveryPrompt)
 	success := runErr == nil
 	e.emit(EventRecoveryCompleted{
 		Reason:  string(reason),
@@ -160,6 +161,19 @@ func (e *Executor) runRecovery(
 		return false, runErr
 	}
 	return true, nil
+}
+
+func (e *Executor) runRecoveryPrompt(ctx context.Context, recoveryPrompt string) error {
+	time.Sleep(constants.RunnerRecoveryCooldown)
+
+	start := time.Now()
+	runErr := e.runWithForwardedOutput(ctx, recoveryPrompt)
+	if runErr == nil || time.Since(start) >= constants.MinRunnerInvokeDuration {
+		return runErr
+	}
+
+	time.Sleep(constants.RunnerFastFailRetryDelay)
+	return e.runWithForwardedOutput(ctx, recoveryPrompt)
 }
 
 func (e *Executor) recoverFromReviewFailure(

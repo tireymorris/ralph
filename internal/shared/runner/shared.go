@@ -42,3 +42,15 @@ func wrapRunnerError(runnerName string, err error) error {
 	}
 	return fmt.Errorf("%s failed: %w", runnerName, err)
 }
+
+func exitCode(err error) int {
+	var detailErr *ExitDetailError
+	if errors.As(err, &detailErr) {
+		return detailErr.ExitCode()
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode()
+	}
+	return -1
+}

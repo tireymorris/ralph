@@ -62,7 +62,8 @@ func (r *CursorAgentRunner) Run(ctx context.Context, prompt string, outputCh cha
 		logger.Debug("AI runner exited with code",
 			"runner", r.RunnerName(),
 			"command", r.CommandName(),
-			"runner", r.cfg.Runner)
+			"exit_code", exitCode(err),
+			"error", err)
 		return wrapRunnerError(r.RunnerName(), err)
 	}
 

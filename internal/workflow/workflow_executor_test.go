@@ -2,11 +2,13 @@ package workflow
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
@@ -167,6 +169,32 @@ func TestRunWithForwardedOutputDoesNotTimeoutWhenDisabled(t *testing.T) {
 
 	if err := exec.runWithForwardedOutput(context.Background(), "prompt"); err != nil {
 		t.Fatalf("runWithForwardedOutput() error = %v, want nil", err)
+	}
+}
+
+func TestRunRecoveryPromptRetriesFastFailure(t *testing.T) {
+	cfg := config.DefaultConfig()
+	mock := newMockRunner()
+	calls := 0
+	mock.runFunc = func(_ context.Context, _ string, _ chan<- runner.OutputLine) error {
+		calls++
+		if calls == 1 {
+			return fmt.Errorf("cursor-agent exited with code 1")
+		}
+		return nil
+	}
+	exec := NewExecutorWithRunner(cfg, make(chan Event, 10), mock)
+
+	start := time.Now()
+	if err := exec.runRecoveryPrompt(context.Background(), "recover"); err != nil {
+		t.Fatalf("runRecoveryPrompt() error = %v, want nil after retry", err)
+	}
+	if calls != 2 {
+		t.Fatalf("runner calls = %d, want 2", calls)
+	}
+	minElapsed := constants.RunnerRecoveryCooldown + constants.RunnerFastFailRetryDelay
+	if elapsed := time.Since(start); elapsed < minElapsed {
+		t.Fatalf("elapsed = %v, want at least cooldown plus backoff", elapsed)
 	}
 }
 
