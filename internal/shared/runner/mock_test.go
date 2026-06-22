@@ -82,6 +82,16 @@ func TestMockRunnerOutputsCleanReviewFindings(t *testing.T) {
 	}
 }
 
+func TestMockAdvanceSliceDoesNotReferenceNextPendingStory(t *testing.T) {
+	src, err := os.ReadFile("mock.go")
+	if err != nil {
+		t.Fatalf("ReadFile(mock.go) error = %v", err)
+	}
+	if strings.Contains(string(src), "NextPendingStory") {
+		t.Fatal("mock.go still references NextPendingStory; use NextReadyStory with explicit mock fallback")
+	}
+}
+
 func TestMockRunnerAdvancesOneSliceAtATime(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

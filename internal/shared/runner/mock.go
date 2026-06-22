@@ -94,7 +94,7 @@ func advanceMockSlice(cfg *config.Config) error {
 
 	story := p.NextReadyStory()
 	if story == nil {
-		story = p.NextPendingStory()
+		story = lowestPriorityIncompleteStory(p)
 	}
 	if story == nil {
 		return nil
@@ -110,6 +110,19 @@ func advanceMockSlice(cfg *config.Config) error {
 	slice.Passes = true
 	story.Passes = story.AllSlicesPassed()
 	return prd.Save(cfg, p)
+}
+
+func lowestPriorityIncompleteStory(p *prd.PRD) *prd.Story {
+	var best *prd.Story
+	for _, story := range p.Stories {
+		if story.Passes {
+			continue
+		}
+		if best == nil || story.Priority < best.Priority {
+			best = story
+		}
+	}
+	return best
 }
 
 // writeStateFile mimics a real agent creating parent directories before writing.
