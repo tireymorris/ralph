@@ -186,7 +186,7 @@ func TestStory_Validate(t *testing.T) {
 			},
 			seenIDs: make(map[string]bool),
 			wantErr: true,
-			errMsg:  "both acceptance criteria and slices",
+			errMsg:  "legacy acceptance_criteria",
 		},
 	}
 

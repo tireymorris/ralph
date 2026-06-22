@@ -199,10 +199,20 @@ func errLegacyAcceptanceCriteria(storyID string) error {
 	return fmt.Errorf("story %q uses legacy acceptance_criteria; use slices instead", storyID)
 }
 
+func (s *Story) legacyAcceptanceCriteriaError() error {
+	if s.AcceptanceCriteria != nil && len(s.Slices) == 0 {
+		return errLegacyAcceptanceCriteria(s.ID)
+	}
+	if len(s.Slices) > 0 && len(s.AcceptanceCriteria) > 0 {
+		return errLegacyAcceptanceCriteria(s.ID)
+	}
+	return nil
+}
+
 func (p *PRD) rejectLegacyAcceptanceCriteria() error {
 	for _, story := range p.Stories {
-		if len(story.Slices) == 0 && len(story.AcceptanceCriteria) > 0 {
-			return errLegacyAcceptanceCriteria(story.ID)
+		if err := story.legacyAcceptanceCriteriaError(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -224,35 +234,11 @@ func rejectLegacyAcceptanceCriteriaInJSON(data []byte) error {
 		if err := json.Unmarshal(storyData, &story); err != nil {
 			continue
 		}
-		if len(story.AcceptanceCriteria) == 0 || len(story.Slices) > 0 {
-			continue
-		}
-		var criteria []string
-		if err := json.Unmarshal(story.AcceptanceCriteria, &criteria); err != nil || len(criteria) == 0 {
+		hasAC := len(story.AcceptanceCriteria) > 0 && string(story.AcceptanceCriteria) != "null"
+		if !hasAC {
 			continue
 		}
 		return errLegacyAcceptanceCriteria(story.ID)
-	}
-	return nil
-}
-
-func (p *PRD) normalizeLegacyStories() error {
-	for _, story := range p.Stories {
-		if len(story.Slices) > 0 && len(story.AcceptanceCriteria) > 0 {
-			return fmt.Errorf("story %q cannot contain both acceptance criteria and slices", story.ID)
-		}
-		if len(story.Slices) == 0 && len(story.AcceptanceCriteria) > 0 {
-			story.Slices = make([]*Slice, 0, len(story.AcceptanceCriteria))
-			for i, criterion := range story.AcceptanceCriteria {
-				behavior := criterion
-				story.Slices = append(story.Slices, &Slice{
-					ID:       fmt.Sprintf("slice-%d", i+1),
-					Behavior: behavior,
-					RedHint:  fmt.Sprintf("add failing test for: %s", behavior),
-				})
-			}
-			story.AcceptanceCriteria = nil
-		}
 	}
 	return nil
 }
@@ -276,8 +262,8 @@ func (s *Story) Validate(seenIDs map[string]bool) error {
 	if len(s.AcceptanceCriteria) > MaxAcceptanceCriteria {
 		return fmt.Errorf("story has %d acceptance criteria, maximum %d", len(s.AcceptanceCriteria), MaxAcceptanceCriteria)
 	}
-	if len(s.Slices) > 0 && len(s.AcceptanceCriteria) > 0 {
-		return errors.New("story cannot use both acceptance criteria and slices")
+	if err := s.legacyAcceptanceCriteriaError(); err != nil {
+		return err
 	}
 	sliceIDs := make(map[string]bool)
 	for i, sl := range s.Slices {

@@ -20,12 +20,14 @@ func TestSaveAndLoad(t *testing.T) {
 		BranchName:  "feature/test",
 		Stories: []*Story{
 			{
-				ID:                 "story-1",
-				Title:              "Test Story",
-				Description:        "A test story",
-				AcceptanceCriteria: []string{"criterion 1"},
-				Priority:           1,
-				Passes:             false,
+				ID:          "story-1",
+				Title:       "Test Story",
+				Description: "A test story",
+				Slices: []*Slice{
+					{ID: "slice-1", Behavior: "criterion 1", RedHint: "add failing test"},
+				},
+				Priority: 1,
+				Passes:   false,
 			},
 		},
 	}
@@ -81,58 +83,34 @@ func TestLoadRejectsLegacyAcceptanceCriteria(t *testing.T) {
 	}
 }
 
-func TestLoadConvertsLegacyAcceptanceCriteriaToSlices(t *testing.T) {
+func TestLoadRejectsMixedAcceptanceCriteriaAndSlices(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := newTestConfig(t, tmpDir, "legacy.json")
+	cfg := newTestConfig(t, tmpDir, "mixed.json")
 
-	legacyJSON := `{
-  "project_name": "Legacy Project",
+	mixedJSON := `{
+  "project_name": "Mixed Project",
   "stories": [
     {
       "id": "story-1",
-      "title": "Legacy Story",
-      "description": "A legacy story",
+      "title": "Mixed Story",
+      "description": "Has both formats",
       "acceptance_criteria": ["criterion 1"],
+      "slices": [{"id": "slice-1", "behavior": "b", "red_hint": "r"}],
       "priority": 1,
       "passes": false
     }
   ]
 }`
-	if err := os.WriteFile(cfg.PRDPath(), []byte(legacyJSON), 0600); err != nil {
-		t.Fatalf("write legacy PRD: %v", err)
+	if err := os.WriteFile(cfg.PRDPath(), []byte(mixedJSON), 0600); err != nil {
+		t.Fatalf("write mixed PRD: %v", err)
 	}
 
-	loaded, err := Load(cfg)
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
+	_, err := Load(cfg)
+	if err == nil {
+		t.Fatal("Load() expected error for mixed acceptance_criteria and slices")
 	}
-
-	if got := len(loaded.Stories); got != 1 {
-		t.Fatalf("len(stories) = %d, want 1", got)
-	}
-	story := loaded.Stories[0]
-	if got := len(story.Slices); got != 1 {
-		t.Fatalf("len(slices) = %d, want 1", got)
-	}
-	if story.Slices[0].Behavior != "criterion 1" {
-		t.Fatalf("slice behavior = %q, want %q", story.Slices[0].Behavior, "criterion 1")
-	}
-	if story.Slices[0].RedHint == "" {
-		t.Fatal("slice red_hint = empty, want legacy conversion hint")
-	}
-
-	if err := Save(cfg, loaded); err != nil {
-		t.Fatalf("Save() error = %v", err)
-	}
-	data, err := os.ReadFile(cfg.PRDPath())
-	if err != nil {
-		t.Fatalf("read saved PRD: %v", err)
-	}
-	if strings.Contains(string(data), "acceptance_criteria") {
-		t.Fatalf("saved PRD still contains acceptance_criteria: %s", string(data))
-	}
-	if !strings.Contains(string(data), `"slices"`) {
-		t.Fatalf("saved PRD does not contain slices: %s", string(data))
+	if !strings.Contains(strings.ToLower(err.Error()), "acceptance") {
+		t.Fatalf("Load() error = %q, want message mentioning acceptance criteria", err)
 	}
 }
 
@@ -226,7 +204,7 @@ func TestVersionIncrement(t *testing.T) {
 	}
 }
 
-func TestBackwardsCompatibilityNoVersion(t *testing.T) {
+func TestLoadRejectsEmptyAcceptanceCriteriaWithoutSlices(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "old.json")
 
@@ -248,17 +226,12 @@ func TestBackwardsCompatibilityNoVersion(t *testing.T) {
 		t.Fatalf("failed to write old format PRD: %v", err)
 	}
 
-	loaded, err := Load(cfg)
-	if err != nil {
-		t.Fatalf("Load failed for old format PRD: %v", err)
+	_, err := Load(cfg)
+	if err == nil {
+		t.Fatal("Load() expected error for empty acceptance_criteria without slices")
 	}
-
-	if loaded.Version != 0 {
-		t.Errorf("expected version 0 for old format PRD, got %d", loaded.Version)
-	}
-
-	if loaded.ProjectName != "Old Project" {
-		t.Errorf("expected project name %q, got %q", "Old Project", loaded.ProjectName)
+	if !strings.Contains(strings.ToLower(err.Error()), "acceptance") {
+		t.Fatalf("Load() error = %q, want message mentioning acceptance criteria", err)
 	}
 }
 
