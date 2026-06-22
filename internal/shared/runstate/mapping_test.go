@@ -6,30 +6,6 @@ import (
 	"ralph/internal/shared/prd"
 )
 
-func TestCheckpointPhase(t *testing.T) {
-	tests := []struct {
-		name       string
-		checkpoint string
-		prd        *prd.PRD
-		want       string
-	}{
-		{name: "PRD review", checkpoint: CheckpointPRDReview, prd: completedPRD(), want: PhaseReview},
-		{name: "implementation review", checkpoint: CheckpointImplReview, prd: completedPRD(), want: PhaseImplementationReview},
-		{name: "followup", checkpoint: CheckpointFollowup, prd: completedPRD(), want: PhaseImplement},
-		{name: "complete", checkpoint: CheckpointComplete, prd: incompletePRD(), want: PhaseCompleted},
-		{name: "incomplete PRD", prd: incompletePRD(), want: PhaseImplement},
-		{name: "cancelled", checkpoint: CheckpointCancelled, prd: incompletePRD(), want: PhaseCancelled},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := CheckpointPhase(tc.checkpoint, tc.prd); got != tc.want {
-				t.Fatalf("CheckpointPhase() = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestCheckpointStatusPhase(t *testing.T) {
 	tests := []struct {
 		name       string

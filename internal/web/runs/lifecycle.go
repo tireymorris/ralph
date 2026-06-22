@@ -35,6 +35,6 @@ func (l *Lifecycle) FollowUp(id string) error {
 	return l.registry.UpdateLifecycle(id, LifecycleUpdate{
 		Status:     runstate.StatusRunning,
 		Phase:      runstate.PhaseFollowup,
-		Checkpoint: CheckpointFollowup,
+		Checkpoint: runstate.CheckpointFollowup,
 	})
 }

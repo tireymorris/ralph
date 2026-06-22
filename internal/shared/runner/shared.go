@@ -14,18 +14,6 @@ func newStartingOutputLine(runnerName string) OutputLine {
 	return OutputLine{Text: fmt.Sprintf("Starting %s...", runnerName), Time: time.Now()}
 }
 
-func runWithPipedCommand(
-	ctx context.Context,
-	cmdName string,
-	cmdFactory func(context.Context, string, ...string) CmdInterface,
-	args []string,
-	outputCh chan<- OutputLine,
-	stdoutTransform, stderrTransform LineTransformer,
-) error {
-	cmd := cmdFactory(ctx, cmdName, args...)
-	return runPipedCommand(cmdName, cmd, outputCh, stdoutTransform, stderrTransform)
-}
-
 func runWithPipedCommandAndStdin(
 	ctx context.Context,
 	cmdName string,

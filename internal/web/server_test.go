@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,17 +13,9 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/web/runs"
 )
-
-func initGitRepoInDir(t *testing.T, dir string) {
-	t.Helper()
-	cmd := exec.Command("git", "init")
-	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("git init: %v\n%s", err, out)
-	}
-}
 
 func TestHealthEndpoint(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
@@ -64,7 +55,7 @@ func (noopRunner) IsInternalLog(string) bool                                   {
 
 func TestCreateRunRouteRegistered(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,23 +12,15 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/web/handlers"
 	"ralph/internal/web/runs"
 )
 
-func initGitRepoInDir(t *testing.T, dir string) {
-	t.Helper()
-	cmd := exec.Command("git", "init")
-	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("git init: %v\n%s", err, out)
-	}
-}
-
 func setupTestAPI(t *testing.T, seed ...*runs.Run) (*handlers.API, *runs.Registry) {
 	t.Helper()
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	reg := runs.NewRegistry()

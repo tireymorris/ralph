@@ -15,6 +15,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/workflow/events"
 )
 
@@ -168,7 +169,7 @@ func TestRunGenerateRunnerError(t *testing.T) {
 
 func TestRunImplementationStorySuccess(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -234,7 +235,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 
 func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -346,7 +347,7 @@ func TestRunImplementationIteratesSlicesBeforeMarkingStoryDone(t *testing.T) {
 
 func TestRunImplementationResumesWithOnlyPendingSliceEvents(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -410,7 +411,7 @@ func TestRunImplementationResumesWithOnlyPendingSliceEvents(t *testing.T) {
 
 func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -520,7 +521,7 @@ func TestRunImplementationPromptsOnlyCurrentSlice(t *testing.T) {
 
 func TestRunImplementationCommitsEachSliceWithSliceScopedMessage(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -625,7 +626,7 @@ func TestRunImplementationCommitsEachSliceWithSliceScopedMessage(t *testing.T) {
 
 func TestRunImplementationOmitsPassedSlicesFromPrompt(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -696,7 +697,7 @@ func TestRunImplementationOmitsPassedSlicesFromPrompt(t *testing.T) {
 
 func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -744,7 +745,7 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 
 func TestRunImplementationMultipleStories(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -785,7 +786,7 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 
 func TestRunImplementationPRDReloadError(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -816,7 +817,7 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 
 func TestRunImplementationVersionConflict(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
@@ -1064,7 +1065,7 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 
 func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"

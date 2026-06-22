@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
 )
@@ -36,28 +36,28 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 	}{
 		{
 			name:       "prd review reloads PRD for review",
-			checkpoint: runs.CheckpointPRDReview,
+			checkpoint: runstate.CheckpointPRDReview,
 			wantEvents: []string{"EventPRDLoaded", "EventPRDReview"},
 			wantStatus: runstate.StatusWaitingReview,
 			wantPhase:  runstate.PhaseReview,
 		},
 		{
 			name:       "implementation review resumes implementation",
-			checkpoint: runs.CheckpointImplReview,
+			checkpoint: runstate.CheckpointImplReview,
 			wantEvents: []string{"EventStoryStarted"},
 			wantStatus: runstate.StatusImplementing,
 			wantPhase:  runstate.PhaseImplement,
 		},
 		{
 			name:       "followup resumes implementation",
-			checkpoint: runs.CheckpointFollowup,
+			checkpoint: runstate.CheckpointFollowup,
 			wantEvents: []string{"EventStoryStarted"},
 			wantStatus: runstate.StatusImplementing,
 			wantPhase:  runstate.PhaseImplement,
 		},
 		{
 			name:        "complete starts no phase",
-			checkpoint:  runs.CheckpointComplete,
+			checkpoint:  runstate.CheckpointComplete,
 			wantNoEvent: true,
 			wantStatus:  runstate.StatusCompleted,
 			wantPhase:   runstate.PhaseCompleted,
@@ -130,33 +130,11 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 
 func writeForceResumePRD(t *testing.T, workDir string) {
 	t.Helper()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(data), 0o644); err != nil {
 		t.Fatalf("WriteFile prd: %v", err)
 	}
-}
-
-func initGitRepoInDir(t *testing.T, dir string) {
-	t.Helper()
-	runGit := func(args ...string) {
-		t.Helper()
-		cmd := exec.Command("git", args...)
-		cmd.Dir = dir
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("git %v failed: %v\n%s", args, err, out)
-		}
-	}
-	runGit("init")
-	runGit("checkout", "-b", "main")
-	runGit("config", "user.name", "Test User")
-	runGit("config", "user.email", "test@example.com")
-	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("ok\n"), 0o644); err != nil {
-		t.Fatalf("write README: %v", err)
-	}
-	runGit("add", "README.md")
-	runGit("commit", "-m", "initial")
 }
 
 func nextForceResumeEvent(t *testing.T, ch <-chan events.Event) events.Event {
@@ -205,7 +183,7 @@ func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.
 		Prompt:     "build feature",
 		Status:     "waiting_review",
 		Phase:      "review",
-		Checkpoint: runs.CheckpointImplReview,
+		Checkpoint: runstate.CheckpointImplReview,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		PRDPath:    "prd.json",
@@ -270,7 +248,7 @@ func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
 		Prompt:     "build feature",
 		Status:     "implementing",
 		Phase:      "implement",
-		Checkpoint: runs.CheckpointImplReview,
+		Checkpoint: runstate.CheckpointImplReview,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 		PRDPath:    "prd.json",

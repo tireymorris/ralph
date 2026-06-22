@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 )
 
@@ -16,7 +17,7 @@ func TestGetRunIncludesReviewLoopFields(t *testing.T) {
 		Status:            "implementing",
 		Phase:             "implement",
 		PRDPath:           "prd.json",
-		Checkpoint:        runs.CheckpointImplReview,
+		Checkpoint:        runstate.CheckpointImplReview,
 		ReviewIteration:   2,
 		ReviewFingerprint: "abc123",
 		ReviewElapsedMs:   1500,
@@ -41,8 +42,8 @@ func TestGetRunIncludesReviewLoopFields(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
-	if body.Checkpoint != runs.CheckpointImplReview {
-		t.Fatalf("checkpoint = %q, want %q", body.Checkpoint, runs.CheckpointImplReview)
+	if body.Checkpoint != runstate.CheckpointImplReview {
+		t.Fatalf("checkpoint = %q, want %q", body.Checkpoint, runstate.CheckpointImplReview)
 	}
 	if body.ReviewIteration != 2 {
 		t.Fatalf("review_iteration = %d, want 2", body.ReviewIteration)

@@ -267,20 +267,8 @@ func validateResume(cfg *config.Config, resume bool) error {
 	return nil
 }
 
-func RunTUI(cfg *config.Config, prompt string, dryRun, resume, verbose bool) int {
-	return runTUI(cfg, prompt, dryRun, resume, verbose)
-}
-
 func RunWeb(cfg *config.Config, port int) int {
 	return runWeb(cfg, port)
-}
-
-func RunStatus(cfg *config.Config) int {
-	return runStatus(cfg)
-}
-
-func RunClean(cfg *config.Config) int {
-	return runClean(cfg)
 }
 
 func ValidateResume(cfg *config.Config, resume bool) error {

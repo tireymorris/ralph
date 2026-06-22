@@ -14,6 +14,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/web/handlers"
 	runctrl "ralph/internal/web/runner"
 	"ralph/internal/web/runs"
@@ -24,7 +25,7 @@ var runIDPattern = regexp.MustCompile(`^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[
 
 func TestCreateRunTable(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	reg := runs.NewRegistry()
@@ -90,7 +91,7 @@ func TestCreateRunTable(t *testing.T) {
 
 func TestCreateRunPropagatesAutoApprove(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.AutoApprove = false
@@ -122,7 +123,7 @@ func TestCreateRunPropagatesAutoApprove(t *testing.T) {
 
 func TestGetRunIncludesAutoApprove(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 
@@ -345,7 +346,7 @@ func TestGetRunStoryProgressPrefersDiskOverStaleControllerPRD(t *testing.T) {
 
 func TestCreateRunValidPrompt(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 
@@ -582,7 +583,7 @@ func TestGetRunLocalPRD(t *testing.T) {
 
 func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	prdJSON := `{
   "version": 1,
   "project_name": "CLI goal",

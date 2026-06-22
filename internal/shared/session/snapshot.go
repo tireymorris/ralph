@@ -42,7 +42,7 @@ func (s *Session) RunSnapshot(fallbackPhase string) RunSnapshot {
 
 	currentPRD := s.CurrentPRD()
 	checkpoint := s.Checkpoint()
-	phase := runstate.CheckpointPhase(checkpoint, currentPRD)
+	_, phase := runstate.CheckpointStatusPhase(checkpoint, currentPRD)
 	if phase == runstate.PhaseReview && currentPRD == nil && checkpoint == "" && fallbackPhase != "" {
 		phase = fallbackPhase
 	}

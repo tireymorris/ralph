@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"ralph/internal/shared/runstate"
 )
 
 func TestLifecycleClarifyUpdatesStatusAndPhase(t *testing.T) {
@@ -69,7 +71,7 @@ func TestLifecycleTransitionsUpdateExpectedFields(t *testing.T) {
 			},
 			wantStatus: "running",
 			wantPhase:  "followup",
-			wantCkpt:   CheckpointFollowup,
+			wantCkpt:   runstate.CheckpointFollowup,
 		},
 	}
 

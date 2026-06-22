@@ -165,6 +165,51 @@ func TestResetPRDForImplementationUnmarksAndReloadsPRD(t *testing.T) {
 	}
 }
 
+func writeRunCheckpointMeta(t *testing.T, workDir, checkpoint string) {
+	t.Helper()
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0o750); err != nil {
+		t.Fatalf("mkdir meta dir: %v", err)
+	}
+	meta, err := json.Marshal(map[string]string{"checkpoint": checkpoint})
+	if err != nil {
+		t.Fatalf("marshal meta: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), meta, 0o600); err != nil {
+		t.Fatalf("write meta: %v", err)
+	}
+}
+
+func TestRunSnapshotResolvesPhaseFromCheckpoint(t *testing.T) {
+	completedPRD := &prd.PRD{Stories: []*prd.Story{{ID: "story-1", Title: "one", Passes: true}}}
+
+	t.Run("implementation review checkpoint", func(t *testing.T) {
+		cfg := config.DefaultConfig()
+		cfg.WorkDir = t.TempDir()
+		writeRunCheckpointMeta(t, cfg.WorkDir, runstate.CheckpointImplReview)
+
+		s := NewWithRunner(cfg, noopRunner{})
+		s.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+		s.TrackEventState(events.EventPRDLoaded{PRD: completedPRD})
+
+		snap := s.RunSnapshot(runstate.PhaseImplement)
+		if snap.Phase != runstate.PhaseImplementationReview {
+			t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseImplementationReview)
+		}
+	})
+
+	t.Run("fallback without PRD", func(t *testing.T) {
+		cfg := config.DefaultConfig()
+		cfg.WorkDir = t.TempDir()
+
+		s := NewWithRunner(cfg, noopRunner{})
+		snap := s.RunSnapshot(runstate.PhaseGenerate)
+		if snap.Phase != runstate.PhaseGenerate {
+			t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseGenerate)
+		}
+	})
+}
+
 func TestRunSnapshotBeforePRDLoadUsesPromptAndFallbackPhase(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

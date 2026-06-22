@@ -13,6 +13,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/workflow/events"
 )
 
@@ -218,7 +219,7 @@ func TestDriverStartResumeEmitsLoadedEvent(t *testing.T) {
 
 func TestDriverStartImplementationInheritsBranchOnNonMain(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 
 	cmd := func(args ...string) {
 		t.Helper()
@@ -315,7 +316,7 @@ func TestDriverStartImplementationInheritsBranchOnNonMain(t *testing.T) {
 
 func TestDriverStartImplementationChecksOutPRDBranchOnMain(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir

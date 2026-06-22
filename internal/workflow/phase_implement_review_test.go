@@ -16,6 +16,7 @@ import (
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/workflow/review"
 )
 
@@ -73,7 +74,7 @@ func (e errEventOrder) Error() string { return e.msg }
 
 func TestRunImplementationReviewBeforeNextStory(t *testing.T) {
 	tmpDir := t.TempDir()
-	initGitRepoInDir(t, tmpDir)
+	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow"
 )
 
@@ -108,7 +109,7 @@ func TestUpdateCheckpoint(t *testing.T) {
 		WorkDir:    workDir,
 		Status:     "waiting_review",
 		Phase:      "review",
-		Checkpoint: CheckpointPRDReview,
+		Checkpoint: runstate.CheckpointPRDReview,
 		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
 	}
@@ -116,7 +117,7 @@ func TestUpdateCheckpoint(t *testing.T) {
 		t.Fatalf("Register() error = %v", err)
 	}
 
-	if err := reg.UpdateCheckpoint("run-ckpt", CheckpointImplReview); err != nil {
+	if err := reg.UpdateCheckpoint("run-ckpt", runstate.CheckpointImplReview); err != nil {
 		t.Fatalf("UpdateCheckpoint() error = %v", err)
 	}
 
@@ -124,8 +125,8 @@ func TestUpdateCheckpoint(t *testing.T) {
 	if !ok {
 		t.Fatal("Get() ok = false")
 	}
-	if got.Checkpoint != CheckpointImplReview {
-		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	if got.Checkpoint != runstate.CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, runstate.CheckpointImplReview)
 	}
 	if !got.UpdatedAt.After(run.UpdatedAt) {
 		t.Errorf("UpdatedAt = %v, want after %v", got.UpdatedAt, run.UpdatedAt)
@@ -139,8 +140,8 @@ func TestUpdateCheckpoint(t *testing.T) {
 	if !ok {
 		t.Fatal("Get() ok = false after reload")
 	}
-	if got.Checkpoint != CheckpointImplReview {
-		t.Errorf("reloaded Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	if got.Checkpoint != runstate.CheckpointImplReview {
+		t.Errorf("reloaded Checkpoint = %q, want %q", got.Checkpoint, runstate.CheckpointImplReview)
 	}
 }
 
@@ -149,7 +150,7 @@ func TestFileReviewLoopMetaRoundTripsThroughWebRegistry(t *testing.T) {
 	runID := "prd-local"
 
 	want := workflow.ReviewLoopUpdate{
-		Checkpoint:                 CheckpointImplReview,
+		Checkpoint:                 runstate.CheckpointImplReview,
 		ReviewIteration:            2,
 		ReviewFingerprint:          "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
 		ReviewElapsedMs:            1500,
@@ -199,7 +200,7 @@ func TestReviewLoopFieldsRoundTrip(t *testing.T) {
 		CreatedAt:                time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:                time.Date(2026, 6, 4, 12, 30, 0, 0, time.UTC),
 		PRDPath:                  "prd.json",
-		Checkpoint:               CheckpointImplReview,
+		Checkpoint:               runstate.CheckpointImplReview,
 		ReviewIteration:          2,
 		ReviewFingerprint:        "abc123def4567890abc123def4567890abc123def4567890abc123def4567890",
 		ReviewElapsedMs:          1500,
@@ -257,7 +258,7 @@ func TestUpdateReviewLoop(t *testing.T) {
 
 	fp := "abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
 	if err := reg.UpdateReviewLoop("run-review-upd", ReviewLoopUpdate{
-		Checkpoint:               CheckpointImplReview,
+		Checkpoint:               runstate.CheckpointImplReview,
 		ReviewIteration:          3,
 		ReviewFingerprint:        fp,
 		ReviewElapsedMs:          4200,
@@ -271,8 +272,8 @@ func TestUpdateReviewLoop(t *testing.T) {
 	if !ok {
 		t.Fatal("Get() ok = false")
 	}
-	if got.Checkpoint != CheckpointImplReview {
-		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, CheckpointImplReview)
+	if got.Checkpoint != runstate.CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q", got.Checkpoint, runstate.CheckpointImplReview)
 	}
 	if got.ReviewIteration != 3 {
 		t.Errorf("ReviewIteration = %d, want 3", got.ReviewIteration)
@@ -313,7 +314,7 @@ func TestResumeCheckpointFromReloadedMeta(t *testing.T) {
 		Prompt:     "build feature",
 		Status:     "implementing",
 		Phase:      "implement",
-		Checkpoint: CheckpointImplReview,
+		Checkpoint: runstate.CheckpointImplReview,
 		CreatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:  time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC),
 		PRDPath:    "prd.json",
@@ -331,8 +332,8 @@ func TestResumeCheckpointFromReloadedMeta(t *testing.T) {
 	if !ok {
 		t.Fatal("Get() ok = false after reload")
 	}
-	if got.Checkpoint != CheckpointImplReview {
-		t.Errorf("Checkpoint = %q, want %q for resume", got.Checkpoint, CheckpointImplReview)
+	if got.Checkpoint != runstate.CheckpointImplReview {
+		t.Errorf("Checkpoint = %q, want %q for resume", got.Checkpoint, runstate.CheckpointImplReview)
 	}
 }
 

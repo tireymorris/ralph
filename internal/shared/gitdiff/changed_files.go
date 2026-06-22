@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -81,21 +80,6 @@ func ensureGitRepo(workDir string) error {
 			Command: "git " + strings.Join(args, " "),
 			Output:  strings.TrimSpace(string(out)),
 		}
-	}
-	return nil
-}
-
-func IsGitError(err error) (*GitError, bool) {
-	var ge *GitError
-	if errors.As(err, &ge) {
-		return ge, true
-	}
-	return nil, false
-}
-
-func EnsureGitRepo(workDir string) error {
-	if err := ensureGitRepo(workDir); err != nil {
-		return fmt.Errorf("%w", err)
 	}
 	return nil
 }

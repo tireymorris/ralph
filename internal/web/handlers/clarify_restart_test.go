@@ -14,6 +14,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 	"ralph/internal/web/handlers"
 	webrunner "ralph/internal/web/runner"
 	"ralph/internal/web/runs"
@@ -22,7 +23,7 @@ import (
 
 func TestClarifySubmitRecreatesControllerAfterRestart(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	reg := runs.NewRegistry()

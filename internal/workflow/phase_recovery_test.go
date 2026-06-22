@@ -14,6 +14,7 @@ import (
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 )
 
 func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
@@ -155,7 +156,7 @@ func (p panicSnapshotRecoveryLoop) RecoveryAttempts() int        { return p.atte
 
 func TestRecoverFromReviewFailureDoesNotRetrackUntrackedFile(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	helloPath := filepath.Join(workDir, "hello.txt")
 	if err := os.WriteFile(helloPath, []byte("hello world"), 0o644); err != nil {
 		t.Fatal(err)
@@ -209,7 +210,7 @@ func TestRecoverFromReviewFailureDoesNotRetrackUntrackedFile(t *testing.T) {
 
 func TestApplyMechanicalCleanupRemovesUntrackedArtifact(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	artifact := filepath.Join(workDir, "generated.js")
 	if err := os.WriteFile(artifact, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)

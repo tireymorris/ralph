@@ -16,13 +16,6 @@ import (
 
 const runDirPerm = 0o750
 
-const (
-	CheckpointPRDReview  = runstate.CheckpointPRDReview
-	CheckpointImplReview = runstate.CheckpointImplReview
-	CheckpointFollowup   = runstate.CheckpointFollowup
-	CheckpointComplete   = runstate.CheckpointComplete
-)
-
 type Run struct {
 	ID                         string    `json:"id"`
 	WorkDir                    string    `json:"work_dir"`

@@ -10,6 +10,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
 )
@@ -54,13 +55,13 @@ func TestEventPRDReviewSetsCheckpoint(t *testing.T) {
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
 		got, ok := reg.Get(run.ID)
-		if ok && got.Checkpoint == runs.CheckpointPRDReview {
+		if ok && got.Checkpoint == runstate.CheckpointPRDReview {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 	got, _ := reg.Get(run.ID)
-	t.Fatalf("Checkpoint = %q, want %q", got.Checkpoint, runs.CheckpointPRDReview)
+	t.Fatalf("Checkpoint = %q, want %q", got.Checkpoint, runstate.CheckpointPRDReview)
 }
 
 func TestEventPRDGeneratedUpdatesRegistryPhase(t *testing.T) {

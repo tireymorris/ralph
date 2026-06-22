@@ -12,6 +12,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 )
 
 func TestRunCleanupContextCancelled(t *testing.T) {
@@ -49,7 +50,7 @@ func TestRunCleanupContextCancelled(t *testing.T) {
 
 func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 	workDir := t.TempDir()
-	initGitRepoInDir(t, workDir)
+	testgit.InitRepo(t, workDir)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"

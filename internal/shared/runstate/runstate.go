@@ -62,11 +62,6 @@ func CheckpointStatusPhase(checkpoint string, p *prd.PRD) (status, phase string)
 	}
 }
 
-func CheckpointPhase(checkpoint string, p *prd.PRD) string {
-	_, phase := CheckpointStatusPhase(checkpoint, p)
-	return phase
-}
-
 func LocalPRDStatusPhase(p *prd.PRD, checkpoint string) (status, phase string) {
 	if checkpoint != "" {
 		return CheckpointStatusPhase(checkpoint, p)
