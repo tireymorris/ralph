@@ -17,7 +17,7 @@ func TestOngoingLocalPRD_incompletePRD(t *testing.T) {
   "version": 1,
   "project_name": "My CLI project",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -49,7 +49,7 @@ func TestOngoingLocalPRD_skipsWhenActiveWebRun(t *testing.T) {
   "version": 1,
   "project_name": "x",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -84,7 +84,7 @@ func TestOngoingLocalPRD_skipsCompleted(t *testing.T) {
   "version": 1,
   "project_name": "done",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": true}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": true}], "priority": 1, "passes": true}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
@@ -105,7 +105,7 @@ func TestOngoingLocalPRD_implReviewCheckpoint(t *testing.T) {
   "version": 1,
   "project_name": "Review blocked",
   "stories": [
-    {"id": "s1", "title": "a", "description": "d", "acceptance_criteria": ["c"], "priority": 1, "passes": false}
+    {"id": "s1", "title": "a", "description": "d", "slices": [{"id": "slice-1", "behavior": "c", "red_hint": "add failing test", "passes": false}], "priority": 1, "passes": false}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(prdJSON), 0600); err != nil {
