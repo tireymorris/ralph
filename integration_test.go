@@ -84,7 +84,6 @@ func assertNoPRDTempFiles(t *testing.T, dir string) {
 	t.Helper()
 	for _, pattern := range []string{
 		filepath.Join(dir, ".ralph", "prd.tmp.*"),
-		filepath.Join(dir, ".prd.tmp.*"),
 	} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {

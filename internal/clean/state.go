@@ -24,8 +24,6 @@ func stateFilePaths(cfg *config.Config) []string {
 func prdTempGlobPatterns(cfg *config.Config) []string {
 	return []string{
 		filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.*"),
-		// legacy location next to prd.json from before state moved under .ralph/
-		filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*"),
 	}
 }
 
@@ -37,9 +35,8 @@ func runsDir(cfg *config.Config) string {
 // Returned paths are the seeded files (not the .ralph directory itself).
 func SeedStateArtifacts(cfg *config.Config) ([]string, error) {
 	tmpPath := filepath.Join(cfg.WorkDir, ralphDataDir, "prd.tmp.1.999")
-	legacyTmpPath := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.1.999")
 	metaPath := filepath.Join(runsDir(cfg), "test-run", "meta.json")
-	paths := append(stateFilePaths(cfg), tmpPath, legacyTmpPath, metaPath)
+	paths := append(stateFilePaths(cfg), tmpPath, metaPath)
 	for _, p := range paths {
 		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
 			return nil, err

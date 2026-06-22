@@ -37,7 +37,6 @@ func assertNoPRDTempFiles(t *testing.T, dir string) {
 	t.Helper()
 	for _, pattern := range []string{
 		filepath.Join(dir, ralphDataDir, "prd.tmp.*"),
-		filepath.Join(dir, ".prd.tmp.*"),
 	} {
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
@@ -93,16 +92,6 @@ func stateArtifactCases() []stateArtifactCase {
 			},
 		},
 		{
-			name: "legacy orphaned PRD temps",
-			seed: func(cfg *config.Config) string {
-				return filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.100.7")
-			},
-			backupRel: ".prd.tmp.100.7",
-			removeAssert: func(t *testing.T, dir string, _ *config.Config, _ string) {
-				assertNoPRDTempFiles(t, dir)
-			},
-		},
-		{
 			name: "runs",
 			seed: func(cfg *config.Config) string {
 				return filepath.Join(runsDir(cfg), "test-run", "meta.json")
@@ -112,6 +101,26 @@ func stateArtifactCases() []stateArtifactCase {
 				assertNotExist(t, filepath.Join(cfg.WorkDir, ralphDataDir))
 			},
 		},
+	}
+}
+
+func TestCleanRemovesLegacyOrphanedPRDTemps(t *testing.T) {
+	cfg := testConfig(t, t.TempDir())
+	legacyPattern := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.*")
+	for _, pattern := range prdTempGlobPatterns(cfg) {
+		if pattern == legacyPattern {
+			t.Fatalf("prdTempGlobPatterns still includes legacy pattern %s", legacyPattern)
+		}
+	}
+	legacyTmpPath := filepath.Join(filepath.Dir(cfg.PRDPath()), ".prd.tmp.1.999")
+	seeded, err := SeedStateArtifacts(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range seeded {
+		if path == legacyTmpPath {
+			t.Fatalf("SeedStateArtifacts still seeds legacy temp path %s", legacyTmpPath)
+		}
 	}
 }
 
