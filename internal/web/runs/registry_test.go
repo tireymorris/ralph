@@ -257,7 +257,7 @@ func TestUpdateReviewLoop(t *testing.T) {
 	}
 
 	fp := "abc123def4567890abc123def4567890abc123def4567890abc123def4567890"
-	if err := reg.UpdateReviewLoop("run-review-upd", ReviewLoopUpdate{
+	if err := reg.UpdateReviewLoop("run-review-upd", runstate.ReviewLoopUpdate{
 		Checkpoint:               runstate.CheckpointImplReview,
 		ReviewIteration:          3,
 		ReviewFingerprint:        fp,

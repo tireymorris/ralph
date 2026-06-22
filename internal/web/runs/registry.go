@@ -36,18 +36,6 @@ type Run struct {
 	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
 }
 
-type ReviewLoopUpdate struct {
-	Checkpoint                 string
-	ReviewIteration            int
-	ReviewFingerprint          string
-	ReviewElapsedMs            int64
-	StopReason                 string
-	LastReviewTranscriptPath   string
-	LastReviewChangedFilesHash string
-	RecoveryAttempts           int
-	ClearRecoveryAttempts      bool
-}
-
 type LifecycleUpdate struct {
 	Status     string
 	Phase      string
@@ -260,7 +248,7 @@ func (r *Registry) UpdateCheckpoint(id, checkpoint string) error {
 	return persistRun(run)
 }
 
-func (r *Registry) UpdateReviewLoop(id string, u ReviewLoopUpdate) error {
+func (r *Registry) UpdateReviewLoop(id string, u runstate.ReviewLoopUpdate) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
