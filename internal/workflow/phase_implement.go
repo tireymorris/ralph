@@ -55,6 +55,10 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				}
 			}
 
+			if err := e.runTestGate(p); err != nil {
+				return err
+			}
+
 			e.emit(EventCompleted{})
 			return nil
 		}
@@ -87,8 +91,18 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		logger.Debug("story completed", "story_id", story.ID)
 		e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
 
-		if _, reviewErr := e.runImplementationReview(ctx, updatedPRD); reviewErr != nil {
+		e.recoveryAttempts = 0
+		blocked, reviewErr := e.runImplementationReview(ctx, updatedPRD)
+		if reviewErr != nil {
 			return reviewErr
+		}
+		if blocked {
+			return nil
+		}
+
+		e.recoveryAttempts = 0
+		if err := e.runTestGateWithRecovery(ctx, updatedPRD); err != nil {
+			return err
 		}
 	}
 }

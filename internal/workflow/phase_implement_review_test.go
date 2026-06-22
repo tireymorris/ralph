@@ -420,6 +420,7 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 	cfg.SkipCleanup = true
+	cfg.AutoApprove = true
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -487,6 +488,7 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
 	cfg.SkipCleanup = true
+	cfg.AutoApprove = true
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",

@@ -22,6 +22,7 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = true
 
 	findingsTranscript := `===ralph-findings===
 [{"category":"bug","path":"delta.txt","summary":"fix me"}]
@@ -56,6 +57,39 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	}
 	if reviewCalls < 1 {
 		t.Fatalf("review calls = %d, want at least 1", reviewCalls)
+	}
+}
+
+func TestRunImplementationReviewPausesWhenNotAutoApprove(t *testing.T) {
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+	cfg.AutoApprove = false
+
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"fix me"}]
+===/ralph-findings===`
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		if isDiffReviewPrompt(p) {
+			outputCh <- runner.OutputLine{Text: findingsTranscript}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunner(cfg, ch, mock)
+	blocked, err := exec.runImplementationReview(context.Background(), &prd.PRD{Context: "ctx"})
+	if err != nil {
+		t.Fatalf("runImplementationReview() error = %v", err)
+	}
+	if !blocked {
+		t.Fatal("runImplementationReview() blocked = false, want true when AutoApprove is false")
+	}
+	if mock.CallCount() != 1 {
+		t.Fatalf("runner call count = %d, want 1 review without recovery", mock.CallCount())
 	}
 }
 

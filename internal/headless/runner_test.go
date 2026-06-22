@@ -40,7 +40,7 @@ func TestRunCompletesUnattended(t *testing.T) {
 	}
 }
 
-func TestRunAutoContinuesImplementationReview(t *testing.T) {
+func TestRunRecoversFromImplementationReviewFindings(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()
 	cfg.PRDFile = "prd.json"

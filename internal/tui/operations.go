@@ -2,11 +2,9 @@ package tui
 
 import (
 	"context"
-	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/clean"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
@@ -21,21 +19,18 @@ type OperationManager struct {
 }
 
 func NewOperationManager(cfg *config.Config) *OperationManager {
-	s := session.New(cfg)
-	s.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
-	return &OperationManager{Session: s, cfg: cfg}
+	return &OperationManager{Session: session.New(cfg), cfg: cfg}
 }
 
 func (om *OperationManager) StartFullOperation(resume bool, userPrompt string) tea.Cmd {
 	return func() tea.Msg {
+		opts := session.UnattendedOptions{Prompt: userPrompt, Resume: resume}
+		if err := om.StartUnattended(context.Background(), om.cfg, opts); err != nil {
+			return operationErrorMsg{err: err}
+		}
 		if resume {
-			om.StartCheckpointResume(context.Background())
 			return om.resumeStartMsg()
 		}
-		if _, err := clean.ArchivePriorState(om.cfg); err != nil {
-			return operationErrorMsg{err: fmt.Errorf("archive prior state: %w", err)}
-		}
-		om.StartNew(context.Background(), userPrompt)
 		return phaseChangeMsg(PhasePRDGeneration)
 	}
 }

@@ -31,6 +31,9 @@ func (e *Executor) runImplementationReview(ctx context.Context, p *prd.PRD) (blo
 			e.recoveryAttempts = 0
 			return false, nil
 		}
+		if blocked && !e.cfg.AutoApprove {
+			return true, nil
+		}
 
 		reason := prompt.RecoveryReasonReviewFindings
 		errMsg := ""
