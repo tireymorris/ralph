@@ -306,28 +306,16 @@ func reviewFingerprintFromTranscript(t *testing.T, transcript string) string {
 }
 
 type recordingReviewLoop struct {
-	iteration        int
-	fingerprint      string
-	elapsedMs        int64
-	changedFilesHash string
-	stopReason       string
-	updates          []ReviewLoopUpdate
+	runstate.ReviewLoopState
+	updates []ReviewLoopUpdate
 }
 
 func (r *recordingReviewLoop) Snapshot() (int, string, int64, string) {
-	return r.iteration, r.fingerprint, r.elapsedMs, r.changedFilesHash
+	return r.ReviewIteration, r.ReviewFingerprint, r.ReviewElapsedMs, r.LastReviewChangedFilesHash
 }
 
 func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
-	r.iteration = u.ReviewIteration
-	r.fingerprint = u.ReviewFingerprint
-	r.elapsedMs = u.ReviewElapsedMs
-	if u.LastReviewChangedFilesHash != "" {
-		r.changedFilesHash = u.LastReviewChangedFilesHash
-	}
-	if u.StopReason != "" {
-		r.stopReason = u.StopReason
-	}
+	runstate.ApplyReviewLoopUpdate(&r.ReviewLoopState, u)
 	r.updates = append(r.updates, u)
 	return nil
 }

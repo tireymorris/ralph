@@ -29,8 +29,14 @@ func ApplyReviewLoopUpdate(dst *ReviewLoopState, u ReviewLoopUpdate) {
 		dst.ReviewElapsedMs = u.ReviewElapsedMs
 		dst.LastReviewTranscriptPath = u.LastReviewTranscriptPath
 		dst.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	}
-	if u.StopReason != "" {
+		if u.StopReason != "" {
+			dst.StopReason = u.StopReason
+		} else {
+			dst.StopReason = ""
+		}
+	} else if u.Checkpoint == CheckpointImplReview && u.ReviewFingerprint == "" && dst.ReviewFingerprint != "" {
+		dst.ReviewFingerprint = ""
+	} else if u.StopReason != "" {
 		dst.StopReason = u.StopReason
 	}
 	if u.ClearRecoveryAttempts {

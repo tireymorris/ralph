@@ -93,6 +93,39 @@ func TestApplyReviewLoopUpdate_clearsFingerprintWhenScalarBatchPresent(t *testin
 	}
 }
 
+func TestApplyReviewLoopUpdate_clearsFingerprintAtIterationZeroWithCheckpoint(t *testing.T) {
+	dst := ReviewLoopState{
+		Checkpoint:        CheckpointImplReview,
+		ReviewFingerprint: "stale-fp",
+	}
+	ApplyReviewLoopUpdate(&dst, ReviewLoopUpdate{
+		Checkpoint:                 CheckpointImplReview,
+		ReviewFingerprint:          "",
+		LastReviewChangedFilesHash: "",
+	})
+	if dst.ReviewFingerprint != "" {
+		t.Fatalf("ReviewFingerprint = %q, want empty after clearReviewFingerprint-shaped update", dst.ReviewFingerprint)
+	}
+}
+
+func TestApplyReviewLoopUpdate_clearsStopReasonOnReviewProgressUpdate(t *testing.T) {
+	dst := ReviewLoopState{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   1,
+		ReviewFingerprint: "old",
+		StopReason:        StopReasonDuplicateFindings,
+	}
+	ApplyReviewLoopUpdate(&dst, ReviewLoopUpdate{
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   2,
+		ReviewFingerprint: "new-fp",
+		ReviewElapsedMs:   100,
+	})
+	if dst.StopReason != "" {
+		t.Fatalf("StopReason = %q, want empty after successful review progress update", dst.StopReason)
+	}
+}
+
 func TestApplyReviewLoopUpdate_fullUpdateAppliesScalars(t *testing.T) {
 	dst := ReviewLoopState{
 		Checkpoint:       CheckpointImplReview,

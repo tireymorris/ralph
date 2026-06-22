@@ -166,15 +166,15 @@ func TestRunImplementationDuplicateFingerprintPersistsStopReason(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ChangedFiles() err = %v", err)
 	}
-	updater.fingerprint = reviewFingerprintFromTranscript(t, findingsTranscript)
-	updater.changedFilesHash = gitdiff.HashFiles(changed)
+	updater.ReviewFingerprint = reviewFingerprintFromTranscript(t, findingsTranscript)
+	updater.LastReviewChangedFilesHash = gitdiff.HashFiles(changed)
 
 	_, err = exec.runImplementationReview(context.Background(), &prd.PRD{Context: "ctx"})
 	if err == nil {
 		t.Fatal("expected recovery_exhausted error")
 	}
-	if updater.stopReason != runstate.StopReasonRecoveryExhausted {
-		t.Fatalf("stop_reason = %q, want %q", updater.stopReason, runstate.StopReasonRecoveryExhausted)
+	if updater.StopReason != runstate.StopReasonRecoveryExhausted {
+		t.Fatalf("stop_reason = %q, want %q", updater.StopReason, runstate.StopReasonRecoveryExhausted)
 	}
 }
 
