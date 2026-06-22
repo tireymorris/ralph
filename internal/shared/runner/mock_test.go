@@ -92,6 +92,43 @@ func TestMockAdvanceSliceDoesNotReferenceNextPendingStory(t *testing.T) {
 	}
 }
 
+func TestMockRunnerDoesNotAdvanceDependencyBlockedStory(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	cfg.Runner = "mock"
+
+	blockedPRD := &prd.PRD{
+		ProjectName: "Mock",
+		Stories: []*prd.Story{
+			{
+				ID:          "story-2",
+				Title:       "Blocked story",
+				Description: "Depends on story-1",
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "blocked behavior", RedHint: "must not run yet"},
+				},
+				Priority:  1,
+				DependsOn: []string{"story-1"},
+				Passes:    false,
+			},
+		},
+	}
+	if blockedPRD.NextReadyStory() != nil {
+		t.Fatal("test setup: NextReadyStory() should be nil when story-1 is incomplete")
+	}
+
+	if err := advanceMockSliceOnPRD(cfg, blockedPRD); err != nil {
+		t.Fatalf("advanceMockSliceOnPRD() error = %v, want nil when no story is ready", err)
+	}
+	if story2 := blockedPRD.GetStory("story-2"); story2.Slices[0].Passes {
+		t.Fatal("mock implement marked story-2 slice passed while story-1 is incomplete")
+	}
+
+	if _, err := os.Stat(cfg.PRDPath()); err == nil {
+		t.Fatal("dependency-blocked PRD should not be written to disk")
+	}
+}
+
 func TestMockRunnerAdvancesOneSliceAtATime(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = t.TempDir()

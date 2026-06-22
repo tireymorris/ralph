@@ -55,7 +55,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				}
 			}
 
-			if err := e.runTestGate(p); err != nil {
+			if err := e.runTestGateWithRecovery(ctx, p); err != nil {
 				return err
 			}
 
