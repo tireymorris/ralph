@@ -33,7 +33,7 @@ func TestApproveReviewTransitionsToImplementing(t *testing.T) {
 	}
 
 	prdPath := filepath.Join(workDir, "prd.json")
-	data := `{"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1}]}`
+	data := `{"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`
 	if err := os.WriteFile(prdPath, []byte(data), 0644); err != nil {
 		t.Fatalf("WriteFile prd: %v", err)
 	}

@@ -33,7 +33,7 @@ func TestRunResumeRejectsNonGitWorkdir(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-	prd := `{"version":1,"project_name":"p","branch_name":"b","stories":[{"id":"s1","title":"t","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+	prd := `{"version":1,"project_name":"p","branch_name":"b","stories":[{"id":"s1","title":"t","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`
 	if err := os.WriteFile(filepath.Join(tmpDir, "prd.json"), []byte(prd), 0644); err != nil {
 		t.Fatal(err)
 	}

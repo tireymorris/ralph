@@ -85,7 +85,7 @@ func TestRunResumesFromCheckpoint(t *testing.T) {
 	}
 	commitFile(t, cfg.WorkDir, "main.go", "init source file")
 
-	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "prd.json"), []byte(`{"project_name":"Resume","stories":[{"id":"story-1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1,"passes":false}]}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "prd.json"), []byte(`{"project_name":"Resume","stories":[{"id":"story-1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	loopDir := filepath.Join(cfg.WorkDir, ".ralph", "runs", "prd-local")
@@ -162,7 +162,7 @@ func (r *autoContinueRunner) Run(_ context.Context, promptText string, outputCh 
 	r.calls = append(r.calls, promptKind(promptText))
 	switch prompt.Kind(promptText) {
 	case prompt.KindPRDGenerate, prompt.KindPRDCritiqueRevision, prompt.KindPRDClarificationRevision, prompt.KindFollowUp:
-		data := `{"project_name":"Test","stories":[{"id":"story-1","title":"S1","description":"d","acceptance_criteria":["a"],"priority":1}]}`
+		data := `{"project_name":"Test","stories":[{"id":"story-1","title":"S1","description":"d","slices":[{"id":"slice-1","behavior":"a","red_hint":"add failing test"}],"priority":1}]}`
 		return os.WriteFile(filepath.Join(r.workDir, "prd.json"), []byte(data), 0o644)
 	case prompt.KindPRDSelfReview:
 		return os.WriteFile(filepath.Join(r.workDir, prompt.PRDSelfReviewVerdictFile), []byte(`{"approved":true,"summary":"ok"}`), 0o644)
