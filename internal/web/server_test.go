@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -46,13 +45,6 @@ func TestHealthEndpoint(t *testing.T) {
 	}
 }
 
-type noopRunner struct{}
-
-func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
-func (noopRunner) RunnerName() string                                          { return "mock" }
-func (noopRunner) CommandName() string                                         { return "mock" }
-func (noopRunner) IsInternalLog(string) bool                                   { return false }
-
 func TestCreateRunRouteRegistered(t *testing.T) {
 	workDir := t.TempDir()
 	testgit.InitRepo(t, workDir)
@@ -68,7 +60,7 @@ func TestCreateRunRouteRegistered(t *testing.T) {
 		t.Fatalf("buildHandler: %v", err)
 	}
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return noopRunner{}, nil
+		return runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(func() {
 		api.ReleaseAllControllers()

@@ -107,4 +107,26 @@ describe("RunDetail stall recovery", () => {
     );
     vi.unstubAllGlobals();
   });
+
+  it("shows force resume failure in load error and re-enables force resume", async () => {
+    const { useRunStall } = await import("../hooks/useRunStall");
+    vi.mocked(useRunStall).mockReturnValue(true);
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    vi.mocked(getRun).mockResolvedValue(baseRun);
+    vi.mocked(postResume).mockRejectedValue(new Error("force resume failed"));
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /force resume/i })).toBeEnabled();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /force resume/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("force resume failed")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /force resume/i })).toBeEnabled();
+    vi.unstubAllGlobals();
+  });
 });

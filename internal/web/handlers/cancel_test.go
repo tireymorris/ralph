@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"ralph/internal/shared/runner"
 	runctrl "ralph/internal/web/runner"
 	"ralph/internal/web/runs"
 	"ralph/internal/workflow/events"
@@ -40,7 +41,7 @@ func TestCancelRunTable(t *testing.T) {
 
 			if tt.withCtrl {
 				cfg := api.Cfg()
-				ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+				ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 				api.SetController(runID, ctrl)
 			}
 
@@ -72,7 +73,7 @@ func TestCancelStopsSSELiveEventsWithin500ms(t *testing.T) {
 		Phase:  "clarify",
 	})
 
-	ctrl := runctrl.NewControllerWithRunner(api.Cfg(), reg, runID, &noopRunner{})
+	ctrl := runctrl.NewControllerWithRunner(api.Cfg(), reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 	api.SetController(runID, ctrl)
 
 	ctx, cancel := context.WithCancel(context.Background())

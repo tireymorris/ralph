@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { continueImplementationReview } from "../api/client";
+import { useAsyncSubmit } from "../hooks/useAsyncSubmit";
 
 interface ImplementationReviewPanelProps {
   runId: string;
@@ -12,21 +12,16 @@ export default function ImplementationReviewPanel({
   iteration,
   onContinued,
 }: ImplementationReviewPanelProps) {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { submitting, error, run } = useAsyncSubmit({
+    fallback: "continue failed",
+    onSuccess: onContinued,
+  });
 
   async function handleContinue() {
     if (submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
+    await run(async () => {
       await continueImplementationReview(runId);
-      onContinued?.();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "continue failed");
-    } finally {
-      setSubmitting(false);
-    }
+    }).catch(() => {});
   }
 
   return (

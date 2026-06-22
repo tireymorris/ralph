@@ -21,7 +21,7 @@ func TestResumeRunOnRunningReturnsAccepted(t *testing.T) {
 		PRDPath: "prd.json",
 	})
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return noopRunner{}, nil
+		return runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(func() {
 		api.ReleaseAllControllers()

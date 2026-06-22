@@ -82,4 +82,62 @@ describe("PRDReviewPanel", () => {
     expect(screen.getByText("make it fail")).toBeInTheDocument();
     expect(screen.getByText("extract helper")).toBeInTheDocument();
   });
+
+  it("shows an error alert when approve fails", async () => {
+    vi.mocked(submitReview).mockRejectedValue(new Error("approve blew up"));
+
+    render(<PRDReviewPanel runId="run-1" prd={samplePRD} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /approve/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("approve blew up");
+    });
+    expect(screen.getByRole("button", { name: /approve/i })).toBeEnabled();
+  });
+
+  it("shows an error alert when revise fails", async () => {
+    vi.mocked(submitReview).mockRejectedValue(new Error("revise blew up"));
+
+    render(<PRDReviewPanel runId="run-1" prd={samplePRD} />);
+
+    await userEvent.type(
+      screen.getByLabelText(/request changes/i, { selector: "textarea" }),
+      "needs work",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /send revision/i }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("revise blew up");
+    });
+  });
+
+  it("disables actions while approve is in flight", async () => {
+    let resolveApprove!: () => void;
+    vi.mocked(submitReview).mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveApprove = resolve;
+        }),
+    );
+
+    render(<PRDReviewPanel runId="run-1" prd={samplePRD} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /approve/i }));
+
+    expect(screen.getByRole("button", { name: /approve/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /send revision/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByLabelText(/request changes/i, { selector: "textarea" }),
+    ).toBeDisabled();
+
+    resolveApprove();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /approve/i })).toBeEnabled();
+    });
+  });
 });

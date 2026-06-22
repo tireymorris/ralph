@@ -73,13 +73,6 @@ func postJSON(t *testing.T, handler http.HandlerFunc, path, pathVal, body string
 	return rec
 }
 
-type noopRunner struct{}
-
-func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
-func (noopRunner) RunnerName() string                                         { return "mock" }
-func (noopRunner) CommandName() string                                        { return "mock" }
-func (noopRunner) IsInternalLog(string) bool                                  { return false }
-
 type blockingImplRunner struct{}
 
 func (blockingImplRunner) Run(ctx context.Context, prompt string, _ chan<- runner.OutputLine) error {

@@ -18,7 +18,7 @@ import (
 )
 
 func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -60,7 +60,7 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 }
 
 func TestRunImplementationReviewRecoveryExhaustedOnDuplicateFindings(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -97,7 +97,7 @@ func TestRunImplementationReviewRecoveryExhaustedOnDuplicateFindings(t *testing.
 }
 
 func TestRunImplementationDuplicateFingerprintPersistsStopReason(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"

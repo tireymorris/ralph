@@ -19,7 +19,7 @@ func TestCreateRunRejectsNonGitWorkdir(t *testing.T) {
 	reg := runs.NewRegistry()
 	api := handlers.NewAPI(cfg, reg)
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/runs", strings.NewReader(`{"prompt":"goal"}`))

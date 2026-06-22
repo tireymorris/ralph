@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -31,7 +30,7 @@ func TestReleaseControllerOnCompleted(t *testing.T) {
 	}
 
 	api := NewAPI(cfg, reg)
-	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &lifecycleNoopRunner{})
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 	api.registerController(runID, ctrl)
 
 	ctrl.EmitEvent(events.EventCompleted{})
@@ -48,12 +47,3 @@ func TestReleaseControllerOnCompleted(t *testing.T) {
 	}
 	t.Fatal("controller still registered after EventCompleted")
 }
-
-type lifecycleNoopRunner struct{}
-
-func (lifecycleNoopRunner) Run(context.Context, string, chan<- runner.OutputLine) error {
-	return nil
-}
-func (lifecycleNoopRunner) RunnerName() string        { return "mock" }
-func (lifecycleNoopRunner) CommandName() string       { return "mock" }
-func (lifecycleNoopRunner) IsInternalLog(string) bool { return false }

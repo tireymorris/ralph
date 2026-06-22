@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -20,13 +19,6 @@ import (
 	"ralph/internal/shared/session"
 	"ralph/internal/workflow/events"
 )
-
-type noopRunner struct{}
-
-func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
-func (noopRunner) RunnerName() string                                          { return "noop" }
-func (noopRunner) CommandName() string                                         { return "noop" }
-func (noopRunner) IsInternalLog(string) bool                                   { return false }
 
 func waitSessionDone(t *testing.T, om *OperationManager) {
 	t.Helper()
@@ -258,7 +250,7 @@ func TestPRDReviewEnterApprovesWithoutInMemoryPRD(t *testing.T) {
 	}
 
 	m := NewModel(cfg, "goal", false, false, false)
-	m.operationManager = &OperationManager{Session: session.NewWithRunner(cfg, noopRunner{}), cfg: cfg}
+	m.operationManager = &OperationManager{Session: session.NewWithRunner(cfg, runner.NoopRunner{}), cfg: cfg}
 	m.phase = PhasePRDReview
 	m.prd = nil
 
@@ -339,7 +331,7 @@ func TestStartImplementationFromPRDUsesSuppliedPRD(t *testing.T) {
 		},
 	}
 
-	om := &OperationManager{Session: session.NewWithRunner(cfg, noopRunner{}), cfg: cfg}
+	om := &OperationManager{Session: session.NewWithRunner(cfg, runner.NoopRunner{}), cfg: cfg}
 	om.TrackEventState(events.EventPRDGenerated{PRD: current})
 
 	msg := om.StartImplementation(supplied)()

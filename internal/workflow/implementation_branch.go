@@ -2,8 +2,6 @@ package workflow
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
@@ -12,19 +10,9 @@ import (
 
 var currentBranchName = workdir.CurrentBranchName
 var isDefaultBranch = workdir.IsDefaultBranch
-var checkoutBranch = runGitCheckout
+var checkoutBranch = workdir.CheckoutBranch
 var savePRD = func(cfg *config.Config, p *prd.PRD) error {
 	return prd.Save(cfg, p)
-}
-
-func runGitCheckout(workDir, branchName string) error {
-	cmd := exec.Command("git", "checkout", "-B", branchName)
-	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("git checkout %s in %s: %w: %s", branchName, workDir, err, strings.TrimSpace(string(out)))
-	}
-	return nil
 }
 
 func (d *Driver) prepareImplementationBranch(p *prd.PRD) error {

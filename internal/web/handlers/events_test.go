@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/runner"
 	"ralph/internal/web/handlers"
 	runctrl "ralph/internal/web/runner"
 	"ralph/internal/web/runs"
@@ -74,7 +75,7 @@ func TestRunEventsReplayAndLive(t *testing.T) {
 	}
 
 	api := handlers.NewAPI(cfg, reg)
-	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 	api.SetController(runID, ctrl)
 
 	ctx, cancel := context.WithCancel(context.Background())

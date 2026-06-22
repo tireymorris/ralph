@@ -32,7 +32,7 @@ func TestCreateRunTable(t *testing.T) {
 
 	api := handlers.NewAPI(cfg, reg)
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 
 	if err := reg.Register(&runs.Run{
@@ -100,7 +100,7 @@ func TestCreateRunPropagatesAutoApprove(t *testing.T) {
 	var runnerCfgAutoApprove bool
 	api.SetRunnerFactory(func(c *config.Config) (runner.RunnerInterface, error) {
 		runnerCfgAutoApprove = c.AutoApprove
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(api.ReleaseAllControllers)
 
@@ -129,7 +129,7 @@ func TestGetRunIncludesAutoApprove(t *testing.T) {
 
 	api := handlers.NewAPI(cfg, runs.NewRegistry())
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(api.ReleaseAllControllers)
 
@@ -185,7 +185,7 @@ func TestGetRunUsesSharedSnapshotForStoryProgress(t *testing.T) {
 	}
 
 	api := handlers.NewAPI(cfg, reg)
-	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 	t.Cleanup(func() {
 		ctrl.Cancel()
 		ctrl.Wait()
@@ -300,7 +300,7 @@ func TestGetRunStoryProgressPrefersDiskOverStaleControllerPRD(t *testing.T) {
 	}
 
 	api := handlers.NewAPI(cfg, reg)
-	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &noopRunner{})
+	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, &runner.NoopRunner{Runner: "mock", Command: "mock"})
 	t.Cleanup(func() {
 		ctrl.Cancel()
 		ctrl.Wait()
@@ -352,7 +352,7 @@ func TestCreateRunValidPrompt(t *testing.T) {
 
 	api := handlers.NewAPI(cfg, runs.NewRegistry())
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(api.ReleaseAllControllers)
 
@@ -599,7 +599,7 @@ func TestCreateRunConflictsWithLocalPRD(t *testing.T) {
 	cfg.WorkDir = workDir
 	api := handlers.NewAPI(cfg, runs.NewRegistry())
 	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
-		return &noopRunner{}, nil
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
 	})
 	t.Cleanup(api.ReleaseAllControllers)
 

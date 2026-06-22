@@ -13,6 +13,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
 )
 
@@ -24,7 +25,7 @@ func newSelfReviewConfig(t *testing.T) *config.Config {
 
 	seeded := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}},
 	}
 	if err := prd.Save(cfg, seeded); err != nil {
 		t.Fatalf("failed to seed PRD: %v", err)

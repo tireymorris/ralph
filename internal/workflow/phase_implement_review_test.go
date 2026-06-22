@@ -14,6 +14,7 @@ import (
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/testgit"
@@ -83,8 +84,8 @@ func TestRunImplementationReviewBeforeNextStory(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: prdtest.Slices("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: prdtest.Slices("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -217,7 +218,7 @@ func TestRunImplementationNoReviewBetweenStoryStartAndComplete(t *testing.T) {
 }
 
 func TestRunImplementationReviewOnceTimesOutReviewRunner(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -249,7 +250,7 @@ func TestRunImplementationReviewOnceTimesOutReviewRunner(t *testing.T) {
 }
 
 func TestRunImplementationDuplicateFingerprintSkipsThirdReviewRunner(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -332,7 +333,7 @@ func (r *recordingReviewLoop) Apply(u ReviewLoopUpdate) error {
 }
 
 func TestRunImplementationReviewLogsApplyReviewLoopFailure(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -414,7 +415,7 @@ func (h *capturingSlogHandler) containsWarn(substr string) bool {
 }
 
 func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -423,8 +424,8 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: prdtest.Slices("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: prdtest.Slices("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -481,7 +482,7 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 }
 
 func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -490,8 +491,8 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "story-1", Title: "One", Description: "d", Slices: testStorySlice("a"), Priority: 1, Passes: false},
-			{ID: "story-2", Title: "Two", Description: "d", Slices: testStorySlice("a"), Priority: 2, Passes: false},
+			{ID: "story-1", Title: "One", Description: "d", Slices: prdtest.Slices("a"), Priority: 1, Passes: false},
+			{ID: "story-2", Title: "Two", Description: "d", Slices: prdtest.Slices("a"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {

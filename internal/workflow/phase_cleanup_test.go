@@ -88,7 +88,7 @@ func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 }
 
 func TestRunCleanupSuccess(t *testing.T) {
-	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, changedFile := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
@@ -201,7 +201,7 @@ func runCleanupChangedFilesErrorLogHelper(t *testing.T) {
 }
 
 func TestRunCleanupRunnerError(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"

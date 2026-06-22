@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { submitReview } from "../api/client";
 import type { PRDDocument } from "../api/types";
+import { useAsyncSubmit } from "../hooks/useAsyncSubmit";
 
 interface PRDReviewPanelProps {
   runId: string;
@@ -14,37 +15,33 @@ export default function PRDReviewPanel({
   onApproved,
 }: PRDReviewPanelProps) {
   const [critique, setCritique] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const approveSubmit = useAsyncSubmit({
+    fallback: "approve failed",
+    onSuccess: onApproved,
+  });
+  const reviseSubmit = useAsyncSubmit({ fallback: "revise failed" });
+  const submitting = approveSubmit.submitting || reviseSubmit.submitting;
+  const error = approveSubmit.error ?? reviseSubmit.error;
 
   async function handleApprove() {
     if (submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await submitReview(runId, "approve");
-      onApproved?.();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "approve failed");
-    } finally {
-      setSubmitting(false);
-    }
+    await approveSubmit
+      .run(async () => {
+        await submitReview(runId, "approve");
+      })
+      .catch(() => {});
   }
 
   async function handleRevise(e: React.FormEvent) {
     e.preventDefault();
     const text = critique.trim();
     if (!text || submitting) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await submitReview(runId, "revise", text);
-      setCritique("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "revise failed");
-    } finally {
-      setSubmitting(false);
-    }
+    await reviseSubmit
+      .run(async () => {
+        await submitReview(runId, "revise", text);
+        setCritique("");
+      })
+      .catch(() => {});
   }
 
   function handleCritiqueKeyDown(e: React.KeyboardEvent) {

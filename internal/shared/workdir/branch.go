@@ -65,6 +65,11 @@ func CurrentBranchName(workDir string) (string, error) {
 	return strings.TrimSpace(out), nil
 }
 
+func CheckoutBranch(workDir, branchName string) error {
+	_, err := runGitCommand(workDir, "checkout", "-B", branchName)
+	return err
+}
+
 func runGitCommand(workDir string, args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = workDir

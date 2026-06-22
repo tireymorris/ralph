@@ -10,6 +10,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
 )
 
@@ -21,7 +22,7 @@ func newCritiqueConfig(t *testing.T) *config.Config {
 
 	seeded := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}},
 	}
 	if err := prd.Save(cfg, seeded); err != nil {
 		t.Fatalf("failed to seed PRD: %v", err)
@@ -46,7 +47,7 @@ func TestRunCritiqueRevisionRunsSelfReviewBeforePRDReview(t *testing.T) {
 		}
 		revised := &prd.PRD{
 			ProjectName: "PostReview",
-			Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
+			Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}},
 		}
 		if err := prd.Save(cfg, revised); err != nil {
 			return err
@@ -90,7 +91,7 @@ func TestRunCritiqueRevisionWithoutAutoApproveSkipsSelfReview(t *testing.T) {
 		if strings.Contains(p, "needs more tests") {
 			revised := &prd.PRD{
 				ProjectName: "Revised",
-				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
+				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}},
 			}
 			return prd.Save(cfg, revised)
 		}

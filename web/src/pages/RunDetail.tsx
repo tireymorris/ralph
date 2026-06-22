@@ -20,6 +20,7 @@ import {
   statusBadgeClass,
 } from "../lib/format";
 import { makeSystemEntry, type TimelineEntry } from "../lib/timeline";
+import { useAsyncSubmit } from "../hooks/useAsyncSubmit";
 import { usePRDLoader } from "../hooks/usePRDLoader";
 import { useRunEventStream } from "../hooks/useRunEventStream";
 import { useRunPolling } from "../hooks/useRunPolling";
@@ -43,13 +44,28 @@ export default function RunDetail() {
 
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [clarifyQuestions, setClarifyQuestions] = useState<string[]>([]);
-  const [clarifySubmitting, setClarifySubmitting] = useState(false);
-  const [clarifyError, setClarifyError] = useState<string | null>(null);
-  const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
-  const [followUpError, setFollowUpError] = useState<string | null>(null);
-  const [cancelSubmitting, setCancelSubmitting] = useState(false);
-  const [retrySubmitting, setRetrySubmitting] = useState(false);
-  const [resumeSubmitting, setResumeSubmitting] = useState(false);
+  const clarifySubmit = useAsyncSubmit({
+    fallback: "failed to submit answers",
+    onSuccess: () => setClarifyQuestions([]),
+  });
+  const followUpSubmit = useAsyncSubmit({
+    fallback: "follow-up request failed",
+  });
+  const cancelSubmit = useAsyncSubmit({
+    fallback: "cancel failed",
+    onSuccess: () => setLoadError(null),
+    onError: setLoadError,
+  });
+  const retrySubmit = useAsyncSubmit({
+    fallback: "retry failed",
+    onSuccess: () => setLoadError(null),
+    onError: setLoadError,
+  });
+  const resumeSubmit = useAsyncSubmit({
+    fallback: "force resume failed",
+    onSuccess: () => setLoadError(null),
+    onError: setLoadError,
+  });
   const [streamGeneration, setStreamGeneration] = useState(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -80,10 +96,20 @@ export default function RunDetail() {
   useEffect(() => {
     setEntries([]);
     setClarifyQuestions([]);
-    setClarifyError(null);
-    setFollowUpError(null);
+    clarifySubmit.reset();
+    followUpSubmit.reset();
+    cancelSubmit.reset();
+    retrySubmit.reset();
+    resumeSubmit.reset();
     setStreamGeneration(0);
-  }, [id]);
+  }, [
+    id,
+    clarifySubmit.reset,
+    followUpSubmit.reset,
+    cancelSubmit.reset,
+    retrySubmit.reset,
+    resumeSubmit.reset,
+  ]);
 
   useRunEventStream(
     isLocalPRD ? undefined : id,
@@ -94,10 +120,8 @@ export default function RunDetail() {
   );
 
   async function handleFollowUpSubmit(message: string) {
-    if (!id || followUpSubmitting) return;
-    setFollowUpSubmitting(true);
-    setFollowUpError(null);
-    try {
+    if (!id || followUpSubmit.submitting) return;
+    await followUpSubmit.run(async () => {
       await submitFollowUp(id, message);
       setEntries((prev) => [...prev, makeSystemEntry("Follow-up accepted")]);
       setStreamGeneration((n) => n + 1);
@@ -106,57 +130,37 @@ export default function RunDetail() {
       } catch {
         // polling will refresh
       }
-    } catch (e) {
-      setFollowUpError(e instanceof Error ? e.message : "follow-up request failed");
-      throw e;
-    } finally {
-      setFollowUpSubmitting(false);
-    }
+    });
   }
 
   async function handleCancel() {
-    if (!id || cancelSubmitting || !run) return;
+    if (!id || cancelSubmit.submitting || !run) return;
     if (isTerminalRunStatus(run.status)) return;
-    setCancelSubmitting(true);
     setLoadError(null);
-    try {
+    await cancelSubmit.run(async () => {
       await cancelRun(id);
       setRun(await getRun(id));
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "cancel failed");
-    } finally {
-      setCancelSubmitting(false);
-    }
+    }).catch(() => {});
   }
 
   async function handleRetry() {
-    if (!run || retrySubmitting) return;
-    setRetrySubmitting(true);
+    if (!run || retrySubmit.submitting) return;
     setLoadError(null);
-    try {
+    await retrySubmit.run(async () => {
       const { id: newId } = await createRun(run.prompt);
       navigate(`/runs/${newId}`);
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "retry failed");
-    } finally {
-      setRetrySubmitting(false);
-    }
+    }).catch(() => {});
   }
 
   async function handleClarifySubmit(
     answers: { question: string; answer: string }[],
   ) {
-    if (!id || clarifySubmitting) return;
-    setClarifySubmitting(true);
-    setClarifyError(null);
-    try {
-      await submitClarify(id, answers);
-      setClarifyQuestions([]);
-    } catch (e) {
-      setClarifyError(e instanceof Error ? e.message : "failed to submit answers");
-    } finally {
-      setClarifySubmitting(false);
-    }
+    if (!id || clarifySubmit.submitting) return;
+    await clarifySubmit
+      .run(async () => {
+        await submitClarify(id, answers);
+      })
+      .catch(() => {});
   }
 
   const progress = run?.story_progress;
@@ -171,13 +175,12 @@ export default function RunDetail() {
   );
 
   async function handleForceResume() {
-    if (!id || resumeSubmitting || !run) return;
+    if (!id || resumeSubmit.submitting || !run) return;
     if (!window.confirm(FORCE_RESUME_CONFIRM_MESSAGE)) {
       return;
     }
-    setResumeSubmitting(true);
     setLoadError(null);
-    try {
+    await resumeSubmit.run(async () => {
       await postResume(id);
       setEntries((prev) => [...prev, makeSystemEntry("Force resume requested")]);
       setStreamGeneration((n) => n + 1);
@@ -186,11 +189,7 @@ export default function RunDetail() {
       } catch {
         // polling will refresh
       }
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "force resume failed");
-    } finally {
-      setResumeSubmitting(false);
-    }
+    }).catch(() => {});
   }
 
   const showStoryProgress =
@@ -228,10 +227,10 @@ export default function RunDetail() {
                 type="button"
                 className="btn btn--secondary btn--sm run-detail-force-resume"
                 onClick={() => void handleForceResume()}
-                disabled={resumeSubmitting}
+                disabled={resumeSubmit.submitting}
                 title="Stop the stuck step and continue from saved progress"
               >
-                {resumeSubmitting ? "Resuming…" : "Force resume"}
+                {resumeSubmit.submitting ? "Resuming…" : "Force resume"}
               </button>
             )}
             {!isTerminal && !isLocalPRD && (
@@ -239,7 +238,7 @@ export default function RunDetail() {
                 type="button"
                 className="btn btn--secondary btn--sm run-detail-cancel"
                 onClick={() => void handleCancel()}
-                disabled={cancelSubmitting}
+                disabled={cancelSubmit.submitting}
               >
                 Cancel
               </button>
@@ -249,7 +248,7 @@ export default function RunDetail() {
                 type="button"
                 className="btn btn--primary btn--sm"
                 onClick={() => void handleRetry()}
-                disabled={retrySubmitting}
+                disabled={retrySubmit.submitting}
               >
                 Retry
               </button>
@@ -262,12 +261,14 @@ export default function RunDetail() {
         {showStoryProgress && <StoryProgressPanel prd={prd} />}
         {run?.status === "waiting_clarify" && clarifyQuestions.length > 0 && (
           <>
-            {clarifyError && <p className="form-error">{clarifyError}</p>}
+            {clarifySubmit.error && (
+              <p className="form-error">{clarifySubmit.error}</p>
+            )}
             <ClarifyForm
               key={clarifyQuestions.join("\0")}
               questions={clarifyQuestions}
               onSubmit={(answers) => void handleClarifySubmit(answers)}
-              submitting={clarifySubmitting}
+              submitting={clarifySubmit.submitting}
             />
           </>
         )}
@@ -297,8 +298,8 @@ export default function RunDetail() {
       {run && isTerminal && (
         <FollowUpComposer
           onSubmit={(message) => handleFollowUpSubmit(message)}
-          submitting={followUpSubmitting}
-          error={followUpError}
+          submitting={followUpSubmit.submitting}
+          error={followUpSubmit.error}
         />
       )}
     </div>

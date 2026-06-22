@@ -11,9 +11,12 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
+  cancelRun,
+  createRun,
   getRun,
   getRunPRD,
   openEventStream,
+  submitClarify,
   submitFollowUp,
 } from "../api/client";
 import RunDetail from "./RunDetail";
@@ -33,6 +36,9 @@ vi.mock("../api/client", async (importOriginal) => {
     ...actual,
     getRun: vi.fn(),
     getRunPRD: vi.fn(),
+    cancelRun: vi.fn().mockResolvedValue(undefined),
+    createRun: vi.fn().mockResolvedValue({ id: "run-2" }),
+    submitClarify: vi.fn().mockResolvedValue(undefined),
     submitFollowUp: vi.fn().mockResolvedValue(undefined),
     openEventStream: vi.fn(() => {
       mockEventSource = {
@@ -128,6 +134,9 @@ afterEach(() => {
     return mockEventSource as unknown as EventSource;
   });
   vi.mocked(getRunPRD).mockReset();
+  vi.mocked(cancelRun).mockResolvedValue(undefined);
+  vi.mocked(createRun).mockResolvedValue({ id: "run-2" });
+  vi.mocked(submitClarify).mockResolvedValue(undefined);
   vi.mocked(submitFollowUp).mockResolvedValue(undefined);
 });
 
@@ -344,6 +353,66 @@ describe("RunDetail", () => {
     expect(screen.getByRole("button", { name: /^send$/i })).toBeInTheDocument();
   });
 
+  it("clears clarify questions after successful submitClarify", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "waiting_clarify",
+      phase: "clarify",
+    });
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(openEventStream).toHaveBeenCalledWith("run-1");
+    });
+
+    emitSSE({
+      type: "EventClarifyingQuestions",
+      payload: { Questions: ["What is the goal?"] },
+    });
+
+    expect(screen.getByText("What is the goal?")).toBeInTheDocument();
+
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "What is the goal?" }),
+      "ship faster",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /submit answers/i }),
+    );
+
+    await waitFor(() => {
+      expect(submitClarify).toHaveBeenCalledWith("run-1", [
+        { question: "What is the goal?", answer: "ship faster" },
+      ]);
+    });
+    expect(screen.queryByText("What is the goal?")).not.toBeInTheDocument();
+  });
+
+  it("appends Follow-up accepted to the timeline on successful submitFollowUp", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "completed",
+      phase: "complete",
+    });
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("textbox", { name: /follow-up/i }),
+      ).toBeInTheDocument();
+    });
+
+    const textarea = screen.getByRole("textbox", { name: /follow-up/i });
+    await userEvent.type(textarea, "add dark mode");
+    await userEvent.click(screen.getByRole("button", { name: /^send$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Follow-up accepted")).toBeInTheDocument();
+    });
+  });
+
   it("clears follow-up textarea after successful submitFollowUp", async () => {
     vi.mocked(getRun).mockResolvedValue({
       ...baseRun,
@@ -414,6 +483,49 @@ describe("RunDetail", () => {
     expect(
       screen.queryByRole("button", { name: /^send$/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows cancel failure in load error and re-enables cancel", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "running",
+    });
+    vi.mocked(cancelRun).mockRejectedValue(new Error("cancel failed"));
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeEnabled();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("cancel failed")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /^cancel$/i })).toBeEnabled();
+  });
+
+  it("shows retry failure in load error and re-enables retry", async () => {
+    vi.mocked(getRun).mockResolvedValue({
+      ...baseRun,
+      status: "cancelled",
+      phase: "complete",
+    });
+    vi.mocked(createRun).mockRejectedValue(new Error("retry failed"));
+
+    renderRunDetail();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^retry$/i })).toBeEnabled();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /^retry$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("retry failed")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /^retry$/i })).toBeEnabled();
   });
 
   it("keeps the current story expanded while slice labels render", async () => {

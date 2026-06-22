@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/testgit"
 )
 
 func TestReviewDiffRespectsContextCancellation(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -32,7 +33,7 @@ func TestReviewDiffRespectsContextCancellation(t *testing.T) {
 }
 
 func TestReviewDiffInvokesRunnerOnceAndWritesTranscript(t *testing.T) {
-	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, changedFile := testgit.RepoWithWorkingTreeDiff(t)
 	runner := &recordingRunner{
 		t:          t,
 		transcript: "critical review transcript\n===ralph-findings===\n[]\n===/ralph-findings===\n",
@@ -113,7 +114,7 @@ func TestRunRunnerConcatenatesAppendedOutput(t *testing.T) {
 }
 
 func TestReviewDiffParsesStreamedFindingsFromTranscript(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	streaming := &streamingRunner{lines: []runner.OutputLine{
 		{Text: "Using tool: read"},
 		{Text: "===", Append: true},
@@ -145,7 +146,7 @@ func TestReviewDiffParsesStreamedFindingsFromTranscript(t *testing.T) {
 }
 
 func TestReviewDiffParsesFindingsFromTranscript(t *testing.T) {
-	workDir, changedFile := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, changedFile := testgit.RepoWithWorkingTreeDiff(t)
 	transcript := `===ralph-findings===
 [{"category":"bug","path":"` + changedFile + `","summary":"missing test"}]
 ===/ralph-findings===`
@@ -181,7 +182,8 @@ func TestReviewDiffParsesFindingsFromTranscript(t *testing.T) {
 }
 
 func TestReviewDiffEmptyChangedFilesSkipsRunner(t *testing.T) {
-	workDir := setupCleanGitRepo(t)
+	workDir := t.TempDir()
+	testgit.InitRepo(t, workDir)
 	runner := &recordingRunner{t: t}
 
 	result, err := ReviewDiff(context.Background(), Params{
@@ -298,7 +300,7 @@ func (b *blockingRunner) IsInternalLog(string) bool {
 }
 
 func TestReviewDiffCancelsDuringRunner(t *testing.T) {
-	workDir, _ := setupGitRepoWithWorkingTreeDiff(t)
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	br := &blockingRunner{started: make(chan struct{})}
 

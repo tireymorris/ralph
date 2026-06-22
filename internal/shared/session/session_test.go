@@ -18,13 +18,6 @@ import (
 	"ralph/internal/workflow/events"
 )
 
-type noopRunner struct{}
-
-func (noopRunner) Run(context.Context, string, chan<- runner.OutputLine) error { return nil }
-func (noopRunner) RunnerName() string                                          { return "noop" }
-func (noopRunner) CommandName() string                                         { return "noop" }
-func (noopRunner) IsInternalLog(string) bool                                   { return false }
-
 func initGitRepo(t *testing.T, dir string) {
 	t.Helper()
 	for _, args := range [][]string{
@@ -57,7 +50,7 @@ func TestContinueImplementationReviewFromPRDDelegatesToDriver(t *testing.T) {
 		t.Fatalf("Save() error = %v", err)
 	}
 
-	s := NewWithRunner(cfg, noopRunner{})
+	s := NewWithRunner(cfg, runner.NoopRunner{})
 	s.ContinueImplementationReviewFromPRD(context.Background(), p)
 
 	deadline := time.After(2 * time.Second)
@@ -188,7 +181,7 @@ func TestRunSnapshotResolvesPhaseFromCheckpoint(t *testing.T) {
 		cfg.WorkDir = t.TempDir()
 		writeRunCheckpointMeta(t, cfg.WorkDir, runstate.CheckpointImplReview)
 
-		s := NewWithRunner(cfg, noopRunner{})
+		s := NewWithRunner(cfg, runner.NoopRunner{})
 		s.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
 		s.TrackEventState(events.EventPRDLoaded{PRD: completedPRD})
 
@@ -202,7 +195,7 @@ func TestRunSnapshotResolvesPhaseFromCheckpoint(t *testing.T) {
 		cfg := config.DefaultConfig()
 		cfg.WorkDir = t.TempDir()
 
-		s := NewWithRunner(cfg, noopRunner{})
+		s := NewWithRunner(cfg, runner.NoopRunner{})
 		snap := s.RunSnapshot(runstate.PhaseGenerate)
 		if snap.Phase != runstate.PhaseGenerate {
 			t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseGenerate)
@@ -226,7 +219,7 @@ func TestRunSnapshotBeforePRDLoadUsesPromptAndFallbackPhase(t *testing.T) {
 		t.Fatalf("write meta: %v", err)
 	}
 
-	s := NewWithRunner(cfg, noopRunner{})
+	s := NewWithRunner(cfg, runner.NoopRunner{})
 	t.Cleanup(func() {
 		s.Cancel()
 		s.Wait()

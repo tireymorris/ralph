@@ -8,6 +8,22 @@ import (
 	"ralph/internal/shared/gitdiff"
 )
 
+func TestCleanupBranchUpstreamDiffDetectable(t *testing.T) {
+	workDir := setupCleanupBranchWithUpstreamDiff(t)
+
+	got, err := gitdiff.ChangedFiles(workDir)
+	if err != nil {
+		t.Fatalf("ChangedFiles() err = %v", err)
+	}
+	const upstreamFile = "existing-change.txt"
+	for _, name := range got {
+		if name == upstreamFile {
+			return
+		}
+	}
+	t.Fatalf("ChangedFiles() = %v, want to include upstream diff %q", got, upstreamFile)
+}
+
 func TestBranchChangedFilesIncludesWorktreeChanges(t *testing.T) {
 	workDir := setupCleanupBranchWithUpstreamDiff(t)
 	created := "worktree-added.txt"

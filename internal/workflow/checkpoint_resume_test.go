@@ -9,6 +9,7 @@ import (
 
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/events"
 )
@@ -93,7 +94,7 @@ func TestStartCheckpointResumeUsesInjectedStoreForImplementationResume(t *testin
 				ID:          "story-1",
 				Title:       "Story",
 				Description: "Desc",
-				Slices:      testStorySlice("AC"),
+				Slices:      prdtest.Slices("AC"),
 				Priority:    1,
 			},
 		},

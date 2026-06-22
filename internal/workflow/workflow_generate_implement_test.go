@@ -14,6 +14,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/testgit"
 	"ralph/internal/workflow/events"
@@ -113,7 +114,7 @@ func TestRunGenerateWithAnswersLoadsFromInjectedStore(t *testing.T) {
 
 	loaded := &prd.PRD{
 		ProjectName: "Injected",
-		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}},
+		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}},
 	}
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -176,7 +177,7 @@ func TestRunImplementationStorySuccess(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -704,7 +705,7 @@ func TestRunImplementationRunnerFailureReturnsError(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -753,8 +754,8 @@ func TestRunImplementationMultipleStories(t *testing.T) {
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
 		Stories: []*prd.Story{
-			{ID: "1", Title: "Story 1", Description: "Desc 1", Slices: testStorySlice("AC1"), Priority: 1, Passes: false},
-			{ID: "2", Title: "Story 2", Description: "Desc 2", Slices: testStorySlice("AC2"), Priority: 2, Passes: false},
+			{ID: "1", Title: "Story 1", Description: "Desc 1", Slices: prdtest.Slices("AC1"), Priority: 1, Passes: false},
+			{ID: "2", Title: "Story 2", Description: "Desc 2", Slices: prdtest.Slices("AC2"), Priority: 2, Passes: false},
 		},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
@@ -793,7 +794,7 @@ func TestRunImplementationPRDReloadError(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -826,7 +827,7 @@ func TestRunImplementationVersionConflict(t *testing.T) {
 	testPRD := &prd.PRD{
 		Version:     1,
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -910,7 +911,7 @@ func TestRunLoadEmitsEvent(t *testing.T) {
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
 
-	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1}}}
+	testPRD := &prd.PRD{ProjectName: "Test", Stories: []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1}}}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
 	}
@@ -944,7 +945,7 @@ func TestRunCritiqueRevisionUpdatesPRDAndReturnsToReview(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -961,7 +962,7 @@ func TestRunCritiqueRevisionUpdatesPRDAndReturnsToReview(t *testing.T) {
 			}
 			revised := &prd.PRD{
 				ProjectName: "Revised",
-				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Revised desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+				Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Revised desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 			}
 			return prd.Save(cfg, revised)
 		}
@@ -997,7 +998,7 @@ func TestRunCritiqueRevisionAppliesClarificationsAfterClarify(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
@@ -1072,7 +1073,7 @@ func TestRunImplementationEmitsStoryEvents(t *testing.T) {
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
-		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: testStorySlice("AC"), Priority: 1, Passes: false}},
+		Stories:     []*prd.Story{{ID: "story-1", Title: "Story", Description: "Desc", Slices: prdtest.Slices("AC"), Priority: 1, Passes: false}},
 	}
 	if err := prd.Save(cfg, testPRD); err != nil {
 		t.Fatalf("failed to save test PRD: %v", err)
