@@ -81,11 +81,6 @@ func (e *Executor) runTestGateWithRecovery(ctx context.Context, p *prd.PRD) erro
 		}
 		return nil
 	}
-	if !e.cfg.AutoApprove {
-		testErr := testFailureError(output, err)
-		e.emit(EventError{Err: testErr})
-		return testErr
-	}
 
 	testErr := testFailureError(output, err)
 	for {

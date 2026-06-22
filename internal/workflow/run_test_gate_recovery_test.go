@@ -137,9 +137,14 @@ func Hello() string { return "hello" }
 	}
 }
 
-func TestRunImplementationFinalGateFailsWithoutRecoveryWhenNotAutoApprove(t *testing.T) {
+func TestRunImplementationFinalGateRecoversWhenNotAutoApprove(t *testing.T) {
 	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg, testPRD := setupRunImplementationFinalGateTest(t, workDir, false)
+
+	greetDir := filepath.Join(workDir, "pkg", "greet")
+	if err := os.MkdirAll(greetDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
@@ -147,20 +152,23 @@ func TestRunImplementationFinalGateFailsWithoutRecoveryWhenNotAutoApprove(t *tes
 	mock.runFunc = func(_ context.Context, p string, _ chan<- runner.OutputLine) error {
 		if isRecoveryPrompt(p) {
 			recoveryCalls++
+			return os.WriteFile(filepath.Join(greetDir, "greet.go"), []byte(`package greet
+
+func Hello() string { return "hello" }
+`), 0o644)
 		}
 		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	err := exec.RunImplementation(context.Background(), testPRD)
-	if err == nil {
-		t.Fatal("RunImplementation() error = nil, want test gate failure")
+	if err := exec.RunImplementation(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementation() error = %v", err)
 	}
-	if recoveryCalls != 0 {
-		t.Fatalf("recovery runner calls = %d, want 0", recoveryCalls)
+	if recoveryCalls != 1 {
+		t.Fatalf("recovery runner calls = %d, want 1", recoveryCalls)
 	}
-	if drainedEventCompleted(ch) {
-		t.Fatal("EventCompleted should not be emitted when final test gate fails")
+	if !drainedEventCompleted(ch) {
+		t.Fatal("expected EventCompleted to be emitted")
 	}
 }
 

@@ -104,7 +104,7 @@ func Hello() string { return "hello" }
 	}
 }
 
-func TestRunCleanupFailsWhenTestsFail(t *testing.T) {
+func TestRunCleanupFailsWhenRecoveryDoesNotFixTests(t *testing.T) {
 	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -129,8 +129,8 @@ func TestRunCleanupFailsWhenTestsFail(t *testing.T) {
 	if err == nil {
 		t.Fatal("RunCleanup() error = nil, want test gate failure")
 	}
-	if recoveryCalls != 0 {
-		t.Fatalf("recovery runner calls = %d, want 0", recoveryCalls)
+	if recoveryCalls == 0 {
+		t.Fatalf("recovery runner calls = %d, want at least 1", recoveryCalls)
 	}
 
 	evts := drainEvents(ch)

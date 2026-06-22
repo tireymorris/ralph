@@ -60,7 +60,7 @@ func TestRunImplementationReviewRecoversFromFindings(t *testing.T) {
 	}
 }
 
-func TestRunImplementationReviewPausesWhenNotAutoApprove(t *testing.T) {
+func TestRunImplementationReviewRecoversWhenNotAutoApprove(t *testing.T) {
 	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -73,23 +73,33 @@ func TestRunImplementationReviewPausesWhenNotAutoApprove(t *testing.T) {
 
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
+	reviewCalls := 0
 	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
-		if isDiffReviewPrompt(p) {
-			outputCh <- runner.OutputLine{Text: findingsTranscript}
+		switch {
+		case isDiffReviewPrompt(p):
+			reviewCalls++
+			if reviewCalls == 1 {
+				outputCh <- runner.OutputLine{Text: findingsTranscript}
+				return nil
+			}
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+		case isRecoveryPrompt(p):
+			return nil
 		}
 		return nil
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
+	exec.runID = "run-recover"
 	blocked, err := exec.runImplementationReview(context.Background(), &prd.PRD{Context: "ctx"})
 	if err != nil {
 		t.Fatalf("runImplementationReview() error = %v", err)
 	}
-	if !blocked {
-		t.Fatal("runImplementationReview() blocked = false, want true when AutoApprove is false")
+	if blocked {
+		t.Fatal("expected review to recover and pass")
 	}
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1 review without recovery", mock.CallCount())
+	if reviewCalls < 1 {
+		t.Fatalf("review calls = %d, want at least 1", reviewCalls)
 	}
 }
 
