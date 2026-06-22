@@ -257,21 +257,34 @@ func (r *Registry) UpdateReviewLoop(id string, u runstate.ReviewLoopUpdate) erro
 		return fmt.Errorf("run %q not found", id)
 	}
 
-	run.Checkpoint = u.Checkpoint
-	run.ReviewIteration = u.ReviewIteration
-	run.ReviewFingerprint = u.ReviewFingerprint
-	run.ReviewElapsedMs = u.ReviewElapsedMs
-	if u.StopReason != "" {
-		run.StopReason = u.StopReason
-	}
-	run.LastReviewTranscriptPath = u.LastReviewTranscriptPath
-	run.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.ClearRecoveryAttempts {
-		run.RecoveryAttempts = 0
-	} else if u.RecoveryAttempts > 0 {
-		run.RecoveryAttempts = u.RecoveryAttempts
-	}
+	state := reviewLoopStateFromRun(run)
+	runstate.ApplyReviewLoopUpdate(&state, u)
+	applyReviewLoopStateToRun(run, state)
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)
+}
+
+func reviewLoopStateFromRun(run *Run) runstate.ReviewLoopState {
+	return runstate.ReviewLoopState{
+		Checkpoint:                 run.Checkpoint,
+		ReviewIteration:            run.ReviewIteration,
+		ReviewFingerprint:          run.ReviewFingerprint,
+		ReviewElapsedMs:            run.ReviewElapsedMs,
+		StopReason:                 run.StopReason,
+		LastReviewTranscriptPath:   run.LastReviewTranscriptPath,
+		LastReviewChangedFilesHash: run.LastReviewChangedFilesHash,
+		RecoveryAttempts:           run.RecoveryAttempts,
+	}
+}
+
+func applyReviewLoopStateToRun(run *Run, state runstate.ReviewLoopState) {
+	run.Checkpoint = state.Checkpoint
+	run.ReviewIteration = state.ReviewIteration
+	run.ReviewFingerprint = state.ReviewFingerprint
+	run.ReviewElapsedMs = state.ReviewElapsedMs
+	run.StopReason = state.StopReason
+	run.LastReviewTranscriptPath = state.LastReviewTranscriptPath
+	run.LastReviewChangedFilesHash = state.LastReviewChangedFilesHash
+	run.RecoveryAttempts = state.RecoveryAttempts
 }

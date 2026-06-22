@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"ralph/internal/shared/runpaths"
+	"ralph/internal/shared/runstate"
 )
 
 type fileRunMeta struct {
@@ -71,22 +72,9 @@ func (f *FileReviewLoop) Apply(u ReviewLoopUpdate) error {
 	if err != nil {
 		return err
 	}
-	if u.Checkpoint != "" {
-		m.Checkpoint = u.Checkpoint
-	}
-	m.ReviewIteration = u.ReviewIteration
-	m.ReviewFingerprint = u.ReviewFingerprint
-	m.ReviewElapsedMs = u.ReviewElapsedMs
-	if u.StopReason != "" {
-		m.StopReason = u.StopReason
-	}
-	m.LastReviewTranscriptPath = u.LastReviewTranscriptPath
-	m.LastReviewChangedFilesHash = u.LastReviewChangedFilesHash
-	if u.ClearRecoveryAttempts {
-		m.RecoveryAttempts = 0
-	} else if u.RecoveryAttempts > 0 {
-		m.RecoveryAttempts = u.RecoveryAttempts
-	}
+	state := reviewLoopStateFromMeta(m)
+	runstate.ApplyReviewLoopUpdate(&state, u)
+	applyReviewLoopStateToMeta(&m, state)
 	m.UpdatedAt = time.Now()
 
 	dir := filepath.Dir(f.metaPath())
@@ -138,6 +126,30 @@ func (f *FileReviewLoop) LastReviewTranscriptPath() string {
 		return ""
 	}
 	return m.LastReviewTranscriptPath
+}
+
+func reviewLoopStateFromMeta(m fileRunMeta) runstate.ReviewLoopState {
+	return runstate.ReviewLoopState{
+		Checkpoint:                 m.Checkpoint,
+		ReviewIteration:            m.ReviewIteration,
+		ReviewFingerprint:          m.ReviewFingerprint,
+		ReviewElapsedMs:            m.ReviewElapsedMs,
+		StopReason:                 m.StopReason,
+		LastReviewTranscriptPath:   m.LastReviewTranscriptPath,
+		LastReviewChangedFilesHash: m.LastReviewChangedFilesHash,
+		RecoveryAttempts:           m.RecoveryAttempts,
+	}
+}
+
+func applyReviewLoopStateToMeta(m *fileRunMeta, state runstate.ReviewLoopState) {
+	m.Checkpoint = state.Checkpoint
+	m.ReviewIteration = state.ReviewIteration
+	m.ReviewFingerprint = state.ReviewFingerprint
+	m.ReviewElapsedMs = state.ReviewElapsedMs
+	m.StopReason = state.StopReason
+	m.LastReviewTranscriptPath = state.LastReviewTranscriptPath
+	m.LastReviewChangedFilesHash = state.LastReviewChangedFilesHash
+	m.RecoveryAttempts = state.RecoveryAttempts
 }
 
 var _ ReviewLoopUpdater = (*FileReviewLoop)(nil)
