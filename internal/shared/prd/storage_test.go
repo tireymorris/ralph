@@ -51,6 +51,14 @@ func TestSaveAndLoad(t *testing.T) {
 	if len(loaded.Stories) != len(original.Stories) {
 		t.Errorf("Stories count = %d, want %d", len(loaded.Stories), len(original.Stories))
 	}
+
+	data, err := os.ReadFile(cfg.PRDPath())
+	if err != nil {
+		t.Fatalf("ReadFile() error = %v", err)
+	}
+	if strings.Contains(string(data), "acceptance_criteria") {
+		t.Fatalf("saved PRD should not contain acceptance_criteria: %s", data)
+	}
 }
 
 func TestLoadRejectsLegacyAcceptanceCriteria(t *testing.T) {

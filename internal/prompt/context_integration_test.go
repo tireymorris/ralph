@@ -21,12 +21,14 @@ func TestContextFieldRoundTrip(t *testing.T) {
 		TestSpec:    "Test end-to-end that the feature works correctly",
 		Stories: []*prd.Story{
 			{
-				ID:                 "story-1",
-				Title:              "Add feature",
-				Description:        "Implement the feature",
-				AcceptanceCriteria: []string{"Works correctly"},
-				Priority:           1,
-				Passes:             false,
+				ID:          "story-1",
+				Title:       "Add feature",
+				Description: "Implement the feature",
+				Slices: []*prd.Slice{
+					{ID: "slice-1", Behavior: "Works correctly", RedHint: "add failing test"},
+				},
+				Priority: 1,
+				Passes:   false,
 			},
 		},
 	}
@@ -171,7 +173,7 @@ func TestBackwardsCompatibilityWithoutContext(t *testing.T) {
 				"id": "story-1",
 				"title": "Old Story",
 				"description": "Desc",
-				"acceptance_criteria": ["AC"],
+				"slices": [{"id": "slice-1", "behavior": "AC", "red_hint": "add test"}],
 				"priority": 1,
 				"passes": false
 			}
