@@ -51,6 +51,36 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsLegacyAcceptanceCriteria(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := newTestConfig(t, tmpDir, "legacy-reject.json")
+
+	legacyJSON := `{
+  "project_name": "Legacy Project",
+  "stories": [
+    {
+      "id": "story-1",
+      "title": "Legacy Story",
+      "description": "A legacy story",
+      "acceptance_criteria": ["criterion 1"],
+      "priority": 1,
+      "passes": false
+    }
+  ]
+}`
+	if err := os.WriteFile(cfg.PRDPath(), []byte(legacyJSON), 0600); err != nil {
+		t.Fatalf("write legacy PRD: %v", err)
+	}
+
+	_, err := Load(cfg)
+	if err == nil {
+		t.Fatal("Load() expected error for legacy acceptance_criteria")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "acceptance") {
+		t.Fatalf("Load() error = %q, want message mentioning acceptance criteria", err)
+	}
+}
+
 func TestLoadConvertsLegacyAcceptanceCriteriaToSlices(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newTestConfig(t, tmpDir, "legacy.json")

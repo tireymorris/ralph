@@ -1,6 +1,7 @@
 package prd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -187,6 +188,50 @@ func (p *PRD) Validate() error {
 	}
 	if err := p.ValidateDependencies(); err != nil {
 		return fmt.Errorf("invalid dependencies: %w", err)
+	}
+	return nil
+}
+
+func errLegacyAcceptanceCriteria(storyID string) error {
+	if storyID == "" {
+		storyID = "<unknown>"
+	}
+	return fmt.Errorf("story %q uses legacy acceptance_criteria; use slices instead", storyID)
+}
+
+func (p *PRD) rejectLegacyAcceptanceCriteria() error {
+	for _, story := range p.Stories {
+		if len(story.Slices) == 0 && len(story.AcceptanceCriteria) > 0 {
+			return errLegacyAcceptanceCriteria(story.ID)
+		}
+	}
+	return nil
+}
+
+func rejectLegacyAcceptanceCriteriaInJSON(data []byte) error {
+	var raw struct {
+		Stories []json.RawMessage `json:"stories"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+	for _, storyData := range raw.Stories {
+		var story struct {
+			ID                 string          `json:"id"`
+			AcceptanceCriteria json.RawMessage `json:"acceptance_criteria"`
+			Slices             json.RawMessage `json:"slices"`
+		}
+		if err := json.Unmarshal(storyData, &story); err != nil {
+			continue
+		}
+		if len(story.AcceptanceCriteria) == 0 || len(story.Slices) > 0 {
+			continue
+		}
+		var criteria []string
+		if err := json.Unmarshal(story.AcceptanceCriteria, &criteria); err != nil || len(criteria) == 0 {
+			continue
+		}
+		return errLegacyAcceptanceCriteria(story.ID)
 	}
 	return nil
 }
