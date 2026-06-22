@@ -48,8 +48,8 @@ func TestFollowUpCompletedUnmarksStoriesAndIncrementsVersion(t *testing.T) {
   "project_name": "Test",
   "branch_name": "feature/x",
   "stories": [
-    {"id": "story-1", "title": "One", "description": "d", "acceptance_criteria": ["a"], "priority": 1, "passes": true},
-    {"id": "story-2", "title": "Two", "description": "d", "acceptance_criteria": ["a"], "priority": 2, "passes": true}
+    {"id": "story-1", "title": "One", "description": "d", "slices": [{"id": "slice-1", "behavior": "a", "red_hint": "add failing test", "passes": true}], "priority": 1, "passes": true},
+    {"id": "story-2", "title": "Two", "description": "d", "slices": [{"id": "slice-1", "behavior": "a", "red_hint": "add failing test", "passes": true}], "priority": 2, "passes": true}
   ]
 }`
 	if err := os.WriteFile(filepath.Join(run.WorkDir, "prd.json"), []byte(prdData), 0644); err != nil {

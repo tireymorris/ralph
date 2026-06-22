@@ -89,7 +89,7 @@ func (r *reattachRunner) Run(ctx context.Context, prompt string, _ chan<- runner
 		return ctx.Err()
 	}
 	prdPath := filepath.Join(r.workDir, "prd.json")
-	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","acceptance_criteria":["AC"],"priority":1}]}`
+	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test","passes":false}],"priority":1,"passes":false}]}`
 	return os.WriteFile(prdPath, []byte(data), 0644)
 }
 
