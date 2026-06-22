@@ -12,15 +12,8 @@ import (
 )
 
 type fileRunMeta struct {
-	Checkpoint                 string    `json:"checkpoint,omitempty"`
-	ReviewIteration            int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                 string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
-	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
-	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
+	runstate.ReviewLoopState
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 type FileReviewLoop struct {
@@ -72,9 +65,7 @@ func (f *FileReviewLoop) Apply(u ReviewLoopUpdate) error {
 	if err != nil {
 		return err
 	}
-	state := reviewLoopStateFromMeta(m)
-	runstate.ApplyReviewLoopUpdate(&state, u)
-	applyReviewLoopStateToMeta(&m, state)
+	runstate.ApplyReviewLoopUpdate(&m.ReviewLoopState, u)
 	m.UpdatedAt = time.Now()
 
 	dir := filepath.Dir(f.metaPath())
@@ -126,30 +117,6 @@ func (f *FileReviewLoop) LastReviewTranscriptPath() string {
 		return ""
 	}
 	return m.LastReviewTranscriptPath
-}
-
-func reviewLoopStateFromMeta(m fileRunMeta) runstate.ReviewLoopState {
-	return runstate.ReviewLoopState{
-		Checkpoint:                 m.Checkpoint,
-		ReviewIteration:            m.ReviewIteration,
-		ReviewFingerprint:          m.ReviewFingerprint,
-		ReviewElapsedMs:            m.ReviewElapsedMs,
-		StopReason:                 m.StopReason,
-		LastReviewTranscriptPath:   m.LastReviewTranscriptPath,
-		LastReviewChangedFilesHash: m.LastReviewChangedFilesHash,
-		RecoveryAttempts:           m.RecoveryAttempts,
-	}
-}
-
-func applyReviewLoopStateToMeta(m *fileRunMeta, state runstate.ReviewLoopState) {
-	m.Checkpoint = state.Checkpoint
-	m.ReviewIteration = state.ReviewIteration
-	m.ReviewFingerprint = state.ReviewFingerprint
-	m.ReviewElapsedMs = state.ReviewElapsedMs
-	m.StopReason = state.StopReason
-	m.LastReviewTranscriptPath = state.LastReviewTranscriptPath
-	m.LastReviewChangedFilesHash = state.LastReviewChangedFilesHash
-	m.RecoveryAttempts = state.RecoveryAttempts
 }
 
 var _ ReviewLoopUpdater = (*FileReviewLoop)(nil)

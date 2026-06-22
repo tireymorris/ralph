@@ -9,6 +9,13 @@ import (
 	"ralph/internal/shared/runstate"
 )
 
+func TestFileRunMetaEmbedsReviewLoopState(t *testing.T) {
+	var m fileRunMeta
+	if m.ReviewLoopState != (runstate.ReviewLoopState{}) {
+		t.Fatal("expected zero embedded review loop state")
+	}
+}
+
 func TestFileReviewLoopRoundTrip(t *testing.T) {
 	workDir := t.TempDir()
 	loop := NewFileReviewLoop(workDir, runstate.LocalRunID)

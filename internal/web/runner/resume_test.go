@@ -69,16 +69,16 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 			workDir := t.TempDir()
 			reg := runs.NewRegistry()
 			run := &runs.Run{
-				ID:         "run-" + strings.ReplaceAll(tt.checkpoint, "_", "-"),
-				WorkDir:    workDir,
-				Prompt:     "build feature",
-				Status:     "running",
-				Phase:      "resume",
-				Checkpoint: tt.checkpoint,
-				CreatedAt:  time.Now(),
-				UpdatedAt:  time.Now(),
-				PRDPath:    "prd.json",
+				ID:        "run-" + strings.ReplaceAll(tt.checkpoint, "_", "-"),
+				WorkDir:   workDir,
+				Prompt:    "build feature",
+				Status:    "running",
+				Phase:     "resume",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				PRDPath:   "prd.json",
 			}
+			run.Checkpoint = tt.checkpoint
 			if err := reg.Register(run); err != nil {
 				t.Fatalf("Register() error = %v", err)
 			}
@@ -178,16 +178,16 @@ func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.
 	workDir := t.TempDir()
 	reg := runs.NewRegistry()
 	run := &runs.Run{
-		ID:         "run-impl-stale-status",
-		WorkDir:    workDir,
-		Prompt:     "build feature",
-		Status:     "waiting_review",
-		Phase:      "review",
-		Checkpoint: runstate.CheckpointImplReview,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		PRDPath:    "prd.json",
+		ID:        "run-impl-stale-status",
+		WorkDir:   workDir,
+		Prompt:    "build feature",
+		Status:    "waiting_review",
+		Phase:     "review",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		PRDPath:   "prd.json",
 	}
+	run.Checkpoint = runstate.CheckpointImplReview
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
@@ -243,16 +243,16 @@ func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
 	workDir := t.TempDir()
 	reg := runs.NewRegistry()
 	run := &runs.Run{
-		ID:         "run-impl-ckpt",
-		WorkDir:    workDir,
-		Prompt:     "build feature",
-		Status:     "implementing",
-		Phase:      "implement",
-		Checkpoint: runstate.CheckpointImplReview,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		PRDPath:    "prd.json",
+		ID:        "run-impl-ckpt",
+		WorkDir:   workDir,
+		Prompt:    "build feature",
+		Status:    "implementing",
+		Phase:     "implement",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		PRDPath:   "prd.json",
 	}
+	run.Checkpoint = runstate.CheckpointImplReview
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}

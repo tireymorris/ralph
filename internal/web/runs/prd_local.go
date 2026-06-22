@@ -45,22 +45,15 @@ func OngoingLocalPRD(cfg *config.Config, registry *Registry) (*Run, bool) {
 	meta := loadLocalPRDMeta(cfg.WorkDir)
 	status, phase := localPRDStatus(p, meta.Checkpoint)
 	run := &Run{
-		ID:                         LocalPRDRunID,
-		WorkDir:                    cfg.WorkDir,
-		Prompt:                     localPRDPrompt(p),
-		Status:                     status,
-		Phase:                      phase,
-		CreatedAt:                  mod,
-		UpdatedAt:                  mod,
-		PRDPath:                    cfg.PRDFile,
-		Checkpoint:                 meta.Checkpoint,
-		ReviewIteration:            meta.ReviewIteration,
-		ReviewFingerprint:          meta.ReviewFingerprint,
-		ReviewElapsedMs:            meta.ReviewElapsedMs,
-		StopReason:                 meta.StopReason,
-		LastReviewTranscriptPath:   meta.LastReviewTranscriptPath,
-		LastReviewChangedFilesHash: meta.LastReviewChangedFilesHash,
-		RecoveryAttempts:           meta.RecoveryAttempts,
+		ID:                LocalPRDRunID,
+		WorkDir:           cfg.WorkDir,
+		Prompt:            localPRDPrompt(p),
+		Status:            status,
+		Phase:             phase,
+		CreatedAt:         mod,
+		UpdatedAt:         mod,
+		PRDPath:           cfg.PRDFile,
+		ReviewLoopState:   meta.ReviewLoopState,
 	}
 	if !meta.UpdatedAt.IsZero() {
 		run.UpdatedAt = meta.UpdatedAt
@@ -69,15 +62,8 @@ func OngoingLocalPRD(cfg *config.Config, registry *Registry) (*Run, bool) {
 }
 
 type localPRDMeta struct {
-	Checkpoint                 string    `json:"checkpoint,omitempty"`
-	ReviewIteration            int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                 string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
-	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
-	UpdatedAt                  time.Time `json:"updated_at,omitempty"`
+	runstate.ReviewLoopState
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 func loadLocalPRDMeta(workDir string) localPRDMeta {

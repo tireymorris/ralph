@@ -11,18 +11,19 @@ import (
 )
 
 func TestGetRunIncludesReviewLoopFields(t *testing.T) {
-	api, _ := setupTestAPI(t, &runs.Run{
-		ID:                "run-loop",
-		Prompt:            "goal",
-		Status:            "implementing",
-		Phase:             "implement",
-		PRDPath:           "prd.json",
-		Checkpoint:        runstate.CheckpointImplReview,
-		ReviewIteration:   2,
-		ReviewFingerprint: "abc123",
-		ReviewElapsedMs:   1500,
-		StopReason:        "duplicate_findings",
-	})
+	run := &runs.Run{
+		ID:      "run-loop",
+		Prompt:  "goal",
+		Status:  "implementing",
+		Phase:   "implement",
+		PRDPath: "prd.json",
+	}
+	run.Checkpoint = runstate.CheckpointImplReview
+	run.ReviewIteration = 2
+	run.ReviewFingerprint = "abc123"
+	run.ReviewElapsedMs = 1500
+	run.StopReason = "duplicate_findings"
+	api, _ := setupTestAPI(t, run)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/runs/run-loop", nil)
 	req.SetPathValue("id", "run-loop")

@@ -17,23 +17,16 @@ import (
 const runDirPerm = 0o750
 
 type Run struct {
-	ID                         string    `json:"id"`
-	WorkDir                    string    `json:"work_dir"`
-	Prompt                     string    `json:"prompt"`
-	Status                     string    `json:"status"`
-	Phase                      string    `json:"phase"`
-	CreatedAt                  time.Time `json:"created_at"`
-	UpdatedAt                  time.Time `json:"updated_at"`
-	PRDPath                    string    `json:"prd_path"`
-	AutoApprove                bool      `json:"auto_approve,omitempty"`
-	Checkpoint                 string    `json:"checkpoint,omitempty"`
-	ReviewIteration            int       `json:"review_iteration,omitempty"`
-	ReviewFingerprint          string    `json:"review_fingerprint,omitempty"`
-	ReviewElapsedMs            int64     `json:"review_elapsed_ms,omitempty"`
-	StopReason                 string    `json:"stop_reason,omitempty"`
-	LastReviewTranscriptPath   string    `json:"last_review_transcript_path,omitempty"`
-	LastReviewChangedFilesHash string    `json:"last_review_changed_files_hash,omitempty"`
-	RecoveryAttempts           int       `json:"recovery_attempts,omitempty"`
+	ID          string    `json:"id"`
+	WorkDir     string    `json:"work_dir"`
+	Prompt      string    `json:"prompt"`
+	Status      string    `json:"status"`
+	Phase       string    `json:"phase"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	PRDPath     string    `json:"prd_path"`
+	AutoApprove bool      `json:"auto_approve,omitempty"`
+	runstate.ReviewLoopState
 }
 
 type LifecycleUpdate struct {
@@ -257,34 +250,8 @@ func (r *Registry) UpdateReviewLoop(id string, u runstate.ReviewLoopUpdate) erro
 		return fmt.Errorf("run %q not found", id)
 	}
 
-	state := reviewLoopStateFromRun(run)
-	runstate.ApplyReviewLoopUpdate(&state, u)
-	applyReviewLoopStateToRun(run, state)
+	runstate.ApplyReviewLoopUpdate(&run.ReviewLoopState, u)
 	run.UpdatedAt = time.Now()
 
 	return persistRun(run)
-}
-
-func reviewLoopStateFromRun(run *Run) runstate.ReviewLoopState {
-	return runstate.ReviewLoopState{
-		Checkpoint:                 run.Checkpoint,
-		ReviewIteration:            run.ReviewIteration,
-		ReviewFingerprint:          run.ReviewFingerprint,
-		ReviewElapsedMs:            run.ReviewElapsedMs,
-		StopReason:                 run.StopReason,
-		LastReviewTranscriptPath:   run.LastReviewTranscriptPath,
-		LastReviewChangedFilesHash: run.LastReviewChangedFilesHash,
-		RecoveryAttempts:           run.RecoveryAttempts,
-	}
-}
-
-func applyReviewLoopStateToRun(run *Run, state runstate.ReviewLoopState) {
-	run.Checkpoint = state.Checkpoint
-	run.ReviewIteration = state.ReviewIteration
-	run.ReviewFingerprint = state.ReviewFingerprint
-	run.ReviewElapsedMs = state.ReviewElapsedMs
-	run.StopReason = state.StopReason
-	run.LastReviewTranscriptPath = state.LastReviewTranscriptPath
-	run.LastReviewChangedFilesHash = state.LastReviewChangedFilesHash
-	run.RecoveryAttempts = state.RecoveryAttempts
 }
