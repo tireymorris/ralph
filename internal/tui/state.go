@@ -10,6 +10,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/session"
 )
 
@@ -146,4 +147,19 @@ func (m *Model) ExitCode() int {
 		return 0
 	}
 	return 1
+}
+
+func (m *Model) waitingCleanupReview() bool {
+	if m.phase != PhaseCleanup {
+		return false
+	}
+	if m.activity.FindingCount > 0 {
+		return true
+	}
+	if m.operationManager == nil || m.operationManager.Session == nil {
+		return false
+	}
+	checkpoint := m.operationManager.Checkpoint()
+	status, _ := runstate.CheckpointStatusPhase(checkpoint, m.activePRD())
+	return status == runstate.StatusWaitingImplReview
 }

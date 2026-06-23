@@ -171,6 +171,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		if m.phase == PhaseCleanup && m.waitingCleanupReview() && msg.String() == "enter" {
+			return m, tea.Batch(
+				m.operationManager.ContinueImplementationReview(),
+				m.operationManager.ListenForEvents(),
+			)
+		}
+
 		if m.phase == PhaseFailed && msg.String() == "r" {
 			useImpl := m.retryImplementation
 			m.retryImplementation = false
