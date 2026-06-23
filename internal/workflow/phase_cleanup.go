@@ -37,8 +37,13 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, er
 		return true, nil
 	}
 
+	blocked, err = e.runCleanupRoundsAfterReview(ctx, p, changedFiles)
+	return blocked, err
+}
+
+func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, changedFiles []string) (bool, error) {
 	if len(changedFiles) == 0 {
-		changedFiles, changedFilesErr = gitdiff.ChangedFiles(e.cfg.WorkDir)
+		changedFiles, changedFilesErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
 		if changedFilesErr != nil {
 			logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
 			e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})

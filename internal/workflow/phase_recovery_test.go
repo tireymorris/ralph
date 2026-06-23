@@ -12,6 +12,7 @@ import (
 	"ralph/internal/shared/config"
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
+	"ralph/internal/shared/prd/prdtest"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/runner"
 	"ralph/internal/shared/testgit"
@@ -250,6 +251,95 @@ func TestRecoverFromReviewFailureDoesNotRetrackUntrackedFile(t *testing.T) {
 	if !untracked {
 		t.Fatal("hello.txt should remain untracked after Ralph recovery commit")
 	}
+}
+
+func TestRunImplementationAfterReviewRecoveryContinuesCleanupWithoutStoryRestart(t *testing.T) {
+	workDir, _ := testgit.RepoWithWorkingTreeDiff(t)
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = workDir
+	cfg.PRDFile = "prd.json"
+
+	testPRD := &prd.PRD{
+		ProjectName: "Test",
+		Stories: []*prd.Story{{
+			ID: "story-1", Title: "One", Description: "d",
+			Slices: prdtest.Slices("AC"), Priority: 1, Passes: true,
+		}},
+	}
+	if err := prd.Save(cfg, testPRD); err != nil {
+		t.Fatalf("save PRD: %v", err)
+	}
+
+	runID := "run-continue-cleanup"
+	findingsTranscript := `===ralph-findings===
+[{"category":"bug","path":"delta.txt","summary":"fix me"}]
+===/ralph-findings===`
+	transcriptRel := "review-1.txt"
+	if err := os.MkdirAll(filepath.Join(workDir, ".ralph", "runs", runID), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(workDir, ".ralph", "runs", runID, transcriptRel), []byte(findingsTranscript), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	ch := make(chan Event, 100)
+	mock := newMockRunner()
+	mock.runFunc = func(_ context.Context, p string, outputCh chan<- runner.OutputLine) error {
+		switch {
+		case isRecoveryPrompt(p):
+			return nil
+		case isDiffReviewPrompt(p):
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+		case isCleanupPrompt(p):
+			outputCh <- runner.OutputLine{Text: "cleanup done"}
+		}
+		return nil
+	}
+
+	exec := NewExecutorWithRunnerAndStore(cfg, ch, mock, inMemoryPRDStore{p: testPRD})
+	exec.runID = runID
+	exec.lastReviewTranscriptPath = transcriptRel
+
+	if err := exec.RunImplementationAfterReviewRecovery(context.Background(), testPRD); err != nil {
+		t.Fatalf("RunImplementationAfterReviewRecovery() error = %v", err)
+	}
+
+	if err := assertContinueCleanupWithoutStoryRestart(drainEvents(ch)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertContinueCleanupWithoutStoryRestart(evts []Event) error {
+	for _, e := range evts {
+		if _, ok := e.(EventStoryStarted); ok {
+			return errEventOrder{"unexpected EventStoryStarted during cleanup continue"}
+		}
+	}
+
+	cleanupStarted := -1
+	firstReviewStarted := -1
+	for i, e := range evts {
+		switch e.(type) {
+		case EventCleanupStarted:
+			if cleanupStarted < 0 {
+				cleanupStarted = i
+			}
+		case EventImplementationReviewStarted:
+			if firstReviewStarted < 0 {
+				firstReviewStarted = i
+			}
+		}
+	}
+	if cleanupStarted < 0 {
+		return errEventOrder{"missing EventCleanupStarted"}
+	}
+	if firstReviewStarted < 0 {
+		return errEventOrder{"missing EventImplementationReviewStarted"}
+	}
+	if firstReviewStarted <= cleanupStarted {
+		return errEventOrder{"first review must follow cleanup start"}
+	}
+	return assertReviewWithinCleanup(evts)
 }
 
 func TestApplyMechanicalCleanupRemovesUntrackedArtifact(t *testing.T) {

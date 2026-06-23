@@ -11,6 +11,7 @@ import (
 	"ralph/internal/prompt"
 	"ralph/internal/shared/constants"
 	"ralph/internal/shared/gitdiff"
+	"ralph/internal/shared/logger"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/runstate"
 	"ralph/internal/workflow/events"
@@ -251,6 +252,9 @@ func (e *Executor) RunImplementationAfterReviewRecovery(ctx context.Context, p *
 		e.emit(EventError{Err: recErr})
 		return recErr
 	}
+	if p.AllCompleted() {
+		return e.continueCleanupAfterReview(ctx, p)
+	}
 	if recovered {
 		blocked, reviewErr := e.runImplementationReview(ctx, p)
 		if reviewErr != nil {
@@ -261,6 +265,42 @@ func (e *Executor) RunImplementationAfterReviewRecovery(ctx context.Context, p *
 		}
 	}
 	return e.RunImplementation(ctx, p)
+}
+
+func (e *Executor) continueCleanupAfterReview(ctx context.Context, p *prd.PRD) error {
+	e.emit(EventCleanupStarted{})
+	e.resetRecoveryAttempts()
+
+	blocked, err := e.runImplementationReview(ctx, p)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return nil
+	}
+
+	changedFiles, changedFilesErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
+	if changedFilesErr != nil {
+		logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
+		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})
+		return nil
+	}
+	changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
+
+	blocked, err = e.runCleanupRoundsAfterReview(ctx, p, changedFiles)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return nil
+	}
+
+	e.resetRecoveryAttempts()
+	if err := e.runTestGateWithRecovery(ctx, p); err != nil {
+		return err
+	}
+	e.emit(EventCompleted{})
+	return nil
 }
 
 type recoveryAttemptsReader interface {
