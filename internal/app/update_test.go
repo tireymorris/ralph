@@ -160,7 +160,7 @@ func TestMaybePromptedUpdateUpToDate(t *testing.T) {
 		t.Fatal("Install should not run when up to date")
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool {
+	promptUpdateConfirm = func() bool {
 		t.Fatal("Prompt should not run when up to date")
 		return false
 	}
@@ -187,7 +187,7 @@ func TestMaybePromptedUpdateNonInteractiveSkipsInstall(t *testing.T) {
 		t.Fatal("Install should not run when non-interactive")
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool {
+	promptUpdateConfirm = func() bool {
 		t.Fatal("Prompt should not run when non-interactive")
 		return false
 	}
@@ -214,7 +214,7 @@ func TestMaybePromptedUpdateDeclined(t *testing.T) {
 		t.Fatal("Install should not run when update declined")
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool { return false }
+	promptUpdateConfirm = func() bool { return false }
 
 	if err := maybePromptedUpdate(context.Background(), "repo", "main", true); err != nil {
 		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)
@@ -239,7 +239,7 @@ func TestMaybePromptedUpdateAccepted(t *testing.T) {
 		installCalled = true
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool { return true }
+	promptUpdateConfirm = func() bool { return true }
 
 	if err := maybePromptedUpdate(context.Background(), "repo", "main", true); err != nil {
 		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)

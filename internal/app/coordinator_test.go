@@ -324,7 +324,7 @@ func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
 		calls = append(calls, "update-install")
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool {
+	promptUpdateConfirm = func() bool {
 		calls = append(calls, "update-prompt")
 		return true
 	}
@@ -400,7 +400,7 @@ func TestCoordinatorBootUpdateDeclinedSkipsInstall(t *testing.T) {
 		calls = append(calls, "update-install")
 		return nil
 	}
-	promptUpdateConfirm = func(string, string, bool) bool {
+	promptUpdateConfirm = func() bool {
 		calls = append(calls, "update-prompt")
 		return false
 	}
@@ -451,7 +451,7 @@ func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
 	updateInstall = func(context.Context, update.InstallOptions) error {
 		return context.Canceled
 	}
-	promptUpdateConfirm = func(string, string, bool) bool { return true }
+	promptUpdateConfirm = func() bool { return true }
 
 	runTUICalled := false
 	c := &Coordinator{

@@ -17,12 +17,8 @@ var (
 	promptUpdateConfirm = defaultPromptUpdateConfirm
 )
 
-func defaultPromptUpdateConfirm(local, remote string, metadataUnavailable bool) bool {
-	if metadataUnavailable {
-		fmt.Fprint(os.Stdout, "Install ralph from remote? [y/N]: ")
-	} else {
-		fmt.Fprintf(os.Stdout, "Update available (local=%s remote=%s). Update now? [y/N]: ", local, remote)
-	}
+func defaultPromptUpdateConfirm() bool {
+	fmt.Fprint(os.Stdout, "An update is available, install now? [y/N]: ")
 	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
 		return false
@@ -39,7 +35,7 @@ type updateAttemptResult struct {
 }
 
 func maybePromptedUpdate(ctx context.Context, repo, ref string, interactive bool) error {
-	up, local, remote, checkErr := updateCheck(ctx, repo, ref)
+	up, _, _, checkErr := updateCheck(ctx, repo, ref)
 	if checkErr == nil && up {
 		return nil
 	}
@@ -49,7 +45,7 @@ func maybePromptedUpdate(ctx context.Context, repo, ref string, interactive bool
 	if !interactive {
 		return nil
 	}
-	if !promptUpdateConfirm(local, remote, checkErr != nil) {
+	if !promptUpdateConfirm() {
 		return nil
 	}
 	return updateInstall(ctx, update.InstallOptions{Repo: repo, Ref: ref})
