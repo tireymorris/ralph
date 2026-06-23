@@ -59,13 +59,7 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 				}
 			}
 
-			e.resetRecoveryAttempts()
-			if err := e.runTestGateWithRecovery(ctx, p); err != nil {
-				return err
-			}
-
-			e.emit(EventCompleted{})
-			return nil
+			return e.completeRunAfterCleanup(ctx, p)
 		}
 
 		story := p.NextReadyStory()

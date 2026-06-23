@@ -104,3 +104,12 @@ func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, 
 	e.emit(EventCleanupCompleted{})
 	return false, nil
 }
+
+func (e *Executor) completeRunAfterCleanup(ctx context.Context, p *prd.PRD) error {
+	e.resetRecoveryAttempts()
+	if err := e.runTestGateWithRecovery(ctx, p); err != nil {
+		return err
+	}
+	e.emit(EventCompleted{})
+	return nil
+}

@@ -295,12 +295,7 @@ func (e *Executor) continueCleanupAfterReview(ctx context.Context, p *prd.PRD) e
 		return nil
 	}
 
-	e.resetRecoveryAttempts()
-	if err := e.runTestGateWithRecovery(ctx, p); err != nil {
-		return err
-	}
-	e.emit(EventCompleted{})
-	return nil
+	return e.completeRunAfterCleanup(ctx, p)
 }
 
 type recoveryAttemptsReader interface {

@@ -339,7 +339,49 @@ func assertContinueCleanupWithoutStoryRestart(evts []Event) error {
 	if firstReviewStarted <= cleanupStarted {
 		return errEventOrder{"first review must follow cleanup start"}
 	}
+	if err := assertCleanupContinueCompletesRun(evts); err != nil {
+		return err
+	}
 	return assertReviewWithinCleanup(evts)
+}
+
+func assertCleanupContinueCompletesRun(evts []Event) error {
+	lastReviewCompleted := -1
+	cleanupCompleted := -1
+	workflowCompleted := -1
+	for i, e := range evts {
+		switch e.(type) {
+		case EventImplementationReviewCompleted:
+			lastReviewCompleted = i
+		case EventCleanupCompleted:
+			cleanupCompleted = i
+		case EventCompleted:
+			workflowCompleted = i
+		case EventStoryStarted:
+			return errEventOrder{"unexpected EventStoryStarted before run completed"}
+		}
+	}
+	if lastReviewCompleted < 0 {
+		return errEventOrder{"missing EventImplementationReviewCompleted"}
+	}
+	if cleanupCompleted < 0 {
+		return errEventOrder{"missing EventCleanupCompleted"}
+	}
+	if workflowCompleted < 0 {
+		return errEventOrder{"missing EventCompleted"}
+	}
+	if cleanupCompleted <= lastReviewCompleted {
+		return errEventOrder{"EventCleanupCompleted must follow review completion"}
+	}
+	if workflowCompleted <= cleanupCompleted {
+		return errEventOrder{"EventCompleted must follow EventCleanupCompleted"}
+	}
+	for i := lastReviewCompleted + 1; i < workflowCompleted; i++ {
+		if _, ok := evts[i].(EventStoryStarted); ok {
+			return errEventOrder{"EventStoryStarted between review complete and run complete"}
+		}
+	}
+	return nil
 }
 
 func TestApplyMechanicalCleanupRemovesUntrackedArtifact(t *testing.T) {
