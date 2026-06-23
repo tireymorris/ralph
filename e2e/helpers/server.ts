@@ -15,7 +15,7 @@ let built = false;
 
 export function buildBinary() {
   if (built && existsSync(BIN_PATH)) return;
-  execSync("go build -o .ralph-e2e-bin .", { cwd: ROOT, stdio: "pipe" });
+  execSync("./scripts/build.sh -o .ralph-e2e-bin", { cwd: ROOT, stdio: "pipe" });
   built = true;
 }
 
