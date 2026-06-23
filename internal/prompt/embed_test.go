@@ -29,6 +29,8 @@ func TestTemplatesParseAtInit(t *testing.T) {
 		"working-conventions",
 		"review-conventions",
 		"refactor-discipline",
+		"cleanup-style-guide",
+		"planning-style-guide",
 	}
 	for _, name := range names {
 		if templates.Lookup(name) == nil {

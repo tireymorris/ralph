@@ -2,12 +2,13 @@
 
 Create a PRD for: {{.UserPrompt}}
 {{template "clarifications" .}}
+{{template "planning-style-guide" .}}
 Write JSON to {{.PRDFile}}. Each field value below is a description of what to write — do not copy the descriptions literally.
 {
   "version": 1,
   "project_name": <a short descriptive name for the feature>,
   "branch_name": "{{.BranchPrefix}}/<kebab-case-branch-name>",
-  "context": <tech stack, project structure, testing approach (including the exact test runner command), and key patterns — concrete, not placeholder text>,
+  "context": <plain-text summary per the planning style guide — stack, exact test commands, layout, conventions, code style, test style, diff discipline>,
   "test_spec": <a single STRING (not an array) describing 3-5 holistic test scenarios for the whole feature>,
   "stories": [
     {
@@ -39,13 +40,14 @@ CRITICAL QUALITY REQUIREMENTS:
   * red_hint: a non-empty failing-test intent that names the behavior, not a guessed file path
   * refactor_hint: optional guidance for the mandatory refactor step
 - slice quality: reject vague behaviors, missing red_hints, and slices that bundle multiple behaviors into one unit
-- description: Include concrete technical details (file paths, function names, API endpoints) where relevant
-- context: Record conventions you observed in nearby files (layering, test style, error-handling patterns) in plain language — enough for later agents to match local style without re-exploring the repo
+- description: Include concrete technical details (real file paths, modules, APIs) aligned with repo layout and naming
+- context: Must follow the planning style guide sections you could verify — enough for implementers to match local style without re-exploring
 - Priority: based on dependencies (1 = first)
 
 Each story must be implementation-ready with specific, measurable slices that can be verified through testing or code inspection.
 
 Task:
-1. Analyze the codebase JUST enough to fill in "context" — tech stack, test runner command, top-level layout, and conventions from files near the feature area. Budget ~5–15 targeted file reads. Do NOT recursively read everything; do NOT grep broadly. Prefer the project manifest, the README, and the handful of directories the request actually touches.
+1. Explore the codebase per the planning style guide and fill "context" from what you actually observe.
 2. Create and check out a new git branch named exactly the "branch_name" you chose (e.g., "git checkout -b {{.BranchPrefix}}/<your-branch-name>").
-3. Write the PRD file, then STOP.{{end}}
+3. Write stories and slices that fit the conventions recorded in "context".
+4. Write the PRD file, then STOP.{{end}}

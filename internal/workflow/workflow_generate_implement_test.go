@@ -1226,8 +1226,8 @@ func TestRunImplementationSkipsCleanupWhenConfigured(t *testing.T) {
 	if storyCalls != 1 {
 		t.Errorf("story runner calls = %d, want 1", storyCalls)
 	}
-	if reviewCalls != 1 {
-		t.Errorf("review runner calls = %d, want 1", reviewCalls)
+	if reviewCalls != 0 {
+		t.Errorf("review runner calls = %d, want 0 when SkipCleanup skips cleanup phase", reviewCalls)
 	}
 	if cleanupCalls != 0 {
 		t.Errorf("cleanup runner calls = %d, want 0", cleanupCalls)

@@ -11,10 +11,10 @@ import (
 	"ralph/internal/shared/prd"
 )
 
-func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
+func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return false, ctx.Err()
 	default:
 	}
 
@@ -22,12 +22,31 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	if changedFilesErr != nil {
 		logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
 		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})
-		return nil
+		return false, nil
 	}
 	changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
+
+	e.resetRecoveryAttempts()
+	blocked, err = e.runImplementationReview(ctx, p)
+	if err != nil {
+		return false, err
+	}
+	if blocked {
+		return true, nil
+	}
+
+	if len(changedFiles) == 0 {
+		changedFiles, changedFilesErr = gitdiff.ChangedFiles(e.cfg.WorkDir)
+		if changedFilesErr != nil {
+			logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
+			e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})
+			return false, nil
+		}
+		changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
+	}
 	if len(changedFiles) == 0 {
 		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: no changed files"}})
-		return nil
+		return false, nil
 	}
 
 	e.emit(EventCleanupStarted{})
@@ -35,7 +54,7 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	for round := 1; round <= constants.MaxCleanupRounds; round++ {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return false, ctx.Err()
 		default:
 		}
 
@@ -57,12 +76,12 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
 		if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
 			e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
-			return runErr
+			return false, runErr
 		}
 
 		e.resetRecoveryAttempts()
 		if err := e.runTestGateWithRecovery(ctx, p); err != nil {
-			return err
+			return false, err
 		}
 
 		afterChanged, afterErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
@@ -77,5 +96,5 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	}
 
 	e.emit(EventCleanupCompleted{})
-	return nil
+	return false, nil
 }

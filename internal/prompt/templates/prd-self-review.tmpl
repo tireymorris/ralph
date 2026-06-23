@@ -3,14 +3,15 @@
 The user's original request was: {{.UserPrompt}}
 
 This is PRD self-review round {{.Round}} of {{.MaxRounds}}.
-
+{{template "planning-style-guide" .}}
 Critically review the PRD in {{.PRDFile}} against the actual codebase and revise it in place wherever it falls short of this rubric:
 - Every acceptance criterion must be objectively verifiable: an exact command, file path, event name, or observable behavior — never subjective adjectives like "proper", "clean", or "robust".
 - Every file, function, and symbol a story references must exist in the repo unless the story itself creates it. Check the repo — do not trust the PRD.
 - Each story must be sized for one focused, additive diff with no drive-by refactors and no scope creep.
 - Every acceptance criterion must be writable as failing tests first (TDD).
 - "depends_on" must be minimal and correct — only dependencies a story genuinely cannot start without.
-- "context" must let an implementer start without re-discovering the architecture.
+- "context" must let an implementer start without re-discovering the architecture — stack, test commands, layout, conventions, code style, test style, and diff discipline per the planning style guide.
+- Story descriptions and slice plans must reference real repo paths and patterns, not invented structure.
 - Prefer the approach with the fewest touched lines.
 - Every story must have 1-10 slices. If a story bundles multiple behaviors into one slice or needs more than 10 slices, split it.
 - Every slice must have verifiable behaviors.
@@ -20,7 +21,7 @@ Critically review the PRD in {{.PRDFile}} against the actual codebase and revise
 - Reject vague behaviors, guessed file paths in red_hint, and slices that combine multiple behaviors.
 
 Task:
-1. Read {{.PRDFile}} and inspect the codebase enough to verify every file, function, and symbol the stories reference.
+1. Read {{.PRDFile}} and inspect the codebase enough to verify every file, function, and symbol the stories reference, and to refresh "context" against what you observe.
 2. Revise {{.PRDFile}} in place wherever it falls short of the rubric. Preserve existing story IDs and "passes" values for stories that are unchanged.
 3. Write your verdict as JSON to {{.VerdictFile}}:
 {"approved": <true only if the PRD now fully satisfies the rubric>, "summary": "<one or two sentences describing what you changed, or why you approved>"}

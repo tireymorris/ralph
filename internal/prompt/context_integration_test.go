@@ -136,6 +136,12 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 	if !strings.Contains(result, `"context"`) {
 		t.Error("PRD generation prompt should mention context field")
 	}
+	if !strings.Contains(result, "PLANNING STYLE GUIDE") {
+		t.Error("PRD generation prompt should include planning style guide")
+	}
+	if !strings.Contains(result, "Test style") {
+		t.Error("PRD generation prompt should guide capturing test style in context")
+	}
 	if !strings.Contains(result, "slices") {
 		t.Error("PRD generation prompt should mention slices")
 	}
@@ -145,8 +151,8 @@ func TestPRDGenerationPromptMentionsContext(t *testing.T) {
 	if !strings.Contains(result, "refactor_hint") {
 		t.Error("PRD generation prompt should mention refactor_hint")
 	}
-	if !strings.Contains(result, "tech stack") {
-		t.Error("PRD generation prompt should mention capturing context")
+	if !strings.Contains(result, "Stack & test runner") {
+		t.Error("PRD generation prompt should guide capturing stack and test runner in context")
 	}
 	if !strings.Contains(result, "3-5 holistic test scenarios") {
 		t.Error("PRD generation prompt should mention test scenarios")

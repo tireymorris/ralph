@@ -1,0 +1,25 @@
+{{define "planning-style-guide"}}
+PLANNING STYLE GUIDE:
+
+Repo exploration (budget ~5–15 targeted reads):
+- Start with the project manifest, README, and directories the request actually touches.
+- Read a few representative files per layer you will modify — entry points, similar features, and their tests.
+- Note what you observe. Do not grep broadly or read the whole repo.
+
+Write "context" as plain text concrete enough that later agents can match local style without re-exploring. Cover every section you can verify from the reads above:
+1. Stack & test runner — language/runtime if visible, exact test command(s), lint/format tools if obvious
+2. Layout — where source, tests, configs, and feature code live
+3. Conventions — naming, file organization, module boundaries, and layering patterns used nearby
+4. Code style — control flow, error handling, typing strictness, comment level as observed locally
+5. Test style — frameworks, file placement, assertion style, factories/fixtures, which layer owns which behaviors
+6. Diff discipline — additive patterns, commit message shape if visible in recent history
+
+Shape stories and slices to fit what you observed:
+- Reference real paths, modules, and patterns from the repo — not invented structure
+- Descriptions should say where new code belongs using the same layout conventions
+- Slice behaviors must be objectively verifiable the way this repo already tests similar work
+- red_hints name behavior and failing-test intent — not guessed file paths
+- refactor_hints call out local refactor patterns when helpful (extract helper, guard clause, etc.)
+- Prefer the approach with fewer touched lines that still fits existing architecture
+- Do not plan drive-by refactors, renames, framework migrations, or compatibility shims unless the request requires them
+{{end}}

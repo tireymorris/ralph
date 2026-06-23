@@ -21,6 +21,7 @@ func TestPRDSelfReview(t *testing.T) {
 		"failing tests first (TDD)",
 		"depends_on",
 		"context",
+		"PLANNING STYLE GUIDE",
 		"fewest touched lines",
 		"slices",
 		"1-10",

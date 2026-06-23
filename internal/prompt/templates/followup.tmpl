@@ -2,13 +2,13 @@
 
 The user completed a prior run and requested a follow-up change:
 {{.UserMessage}}
-
+{{template "planning-style-guide" .}}
 Read {{.PRDFile}} and update the PRD JSON to incorporate this follow-up. Preserve existing story IDs where stories remain relevant; add or adjust stories as needed. Increment planning detail in descriptions and acceptance criteria where the change requires it.
 
 Run transcript (recent events from the prior run):
 {{.RunTranscript}}
 
 Task:
-1. Read {{.PRDFile}} and analyze the codebase enough to address the follow-up — budget ~5–15 targeted file reads.
-2. Update {{.PRDFile}} to reflect the follow-up request.
+1. Read {{.PRDFile}} and analyze the codebase per the planning style guide to address the follow-up.
+2. Update {{.PRDFile}} to reflect the follow-up request. Refresh "context" when the follow-up touches new areas or reveals missing conventions.
 3. Write the updated PRD file, then STOP — do not implement anything.{{end}}

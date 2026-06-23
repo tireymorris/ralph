@@ -10,7 +10,9 @@ When you refine personal skills under `~/.agents/skills`, update the correspondi
 | `partials/working-conventions.tmpl` | style-guide (process + diff hygiene) | Read nearby files, additive diffs, no drive-by refactors, scan diff before commit |
 | `partials/review-conventions.tmpl` | code-review-excellence, style-guide (testing antipatterns) | Review focus, scope creep, actionable findings, category hints |
 | `partials/refactor-discipline.tmpl` | refactor, style-guide (cross-cutting) | Behavior preserved, changed-files scope, no compat shims without rollout reason |
-| `prd-generate.tmpl` (context bullets) | style-guide, ralph | Record observed conventions in `context` for later agents |
+| `partials/cleanup-style-guide.tmpl` | style-guide (generic), refactor, test-driven-development (refactor step), code-review-excellence (scope) | Full cleanup style guide: diff hygiene, code style, refactor discipline, test cleanup |
+| `partials/planning-style-guide.tmpl` | style-guide (generic), refactor, test-driven-development, code-review-excellence | Repo exploration checklist, context sections, story/slice shaping to match local conventions |
+| `prd-generate.tmpl` (context bullets) | style-guide, ralph, planning-style-guide | Record observed conventions in `context` for later agents |
 | `recovery.tmpl` | working-conventions + recovery flow | Focused fixes only |
 
 Skills that stay **outside** runner prompts (Cursor/human workflow): `pr-description`, `gh-cli`, `TODO`, `ralph` (CLI docs), `demo-recorder`, `cleanup-local-repo`, `honeybadger-cli`, `golang-patterns` (framework-specific — capture in `context` when relevant).

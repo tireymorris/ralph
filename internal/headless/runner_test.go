@@ -45,7 +45,6 @@ func TestRunRecoversFromImplementationReviewFindings(t *testing.T) {
 	cfg.WorkDir = t.TempDir()
 	cfg.PRDFile = "prd.json"
 	cfg.Runner = "mock"
-	cfg.SkipCleanup = true
 	initGitRepo(t, cfg.WorkDir)
 	if err := os.WriteFile(filepath.Join(cfg.WorkDir, "main.go"), []byte("package main\n"), 0o644); err != nil {
 		t.Fatal(err)

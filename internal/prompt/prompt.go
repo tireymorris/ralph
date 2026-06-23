@@ -24,10 +24,10 @@ func PRDGeneration(userPrompt, prdFile, branchPrefix string, isEmptyCodebase boo
 }
 
 func PRDGenerationWithAnswers(userPrompt, prdFile, branchPrefix string, isEmptyCodebase bool, qas []QuestionAnswer) string {
-	contextGuidance := "- context: describe ONLY the tech stack and patterns you ACTUALLY observe in the codebase"
+	contextGuidance := "- context: follow the planning style guide — record ONLY stack, layout, conventions, and test commands you ACTUALLY observe in the codebase"
 	if isEmptyCodebase {
 		contextGuidance = `Note: The working directory has no existing source code. This is a new project.
-- context: describe ONLY the tech stack specified in the user's request, or state "New project - no existing codebase"
+- context: describe ONLY the tech stack specified in the user's request, or state "New project - no existing codebase". Skip convention sections that require an existing repo to observe.
 - Do NOT assume or invent a tech stack the user did not mention`
 	}
 	return mustRender("prd-generate", PRDGenerateData{

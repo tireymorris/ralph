@@ -4,8 +4,8 @@ The user's original request was: {{.UserPrompt}}
 
 The user reviewed the PRD in {{.PRDFile}} and provided this critique:
 {{.Critique}}
-
+{{template "planning-style-guide" .}}
 Task:
-1. Read {{.PRDFile}} and analyze the codebase enough to address the critique — budget ~5–15 targeted file reads.
-2. Update {{.PRDFile}} to incorporate the critique. Preserve existing story IDs and "passes" values for stories that are unchanged.
+1. Read {{.PRDFile}} and analyze the codebase enough to address the critique — per the planning style guide.
+2. Update {{.PRDFile}} to incorporate the critique. Refresh "context" if conventions or layout were wrong or incomplete. Preserve existing story IDs and "passes" values for stories that are unchanged.
 3. Write the updated PRD file, then STOP — do not implement anything.{{end}}

@@ -49,8 +49,7 @@ On startup, Ralph detects an existing codebase from project manifests (e.g. `go.
 3. **PRD self-review** — `--yolo` runs only; failures keep the last revision
 4. **Review PRD** — approve or revise (skipped with `--yolo` / `auto_approve`)
 5. **Implement** — one runner session per pending slice; Ralph marks `slice.passes` and `story.passes` when the runner succeeds
-6. **Implementation review** — critical diff review after each story; findings trigger an automatic recovery loop (re-review until clean or limits hit). Web `POST .../implementation-review` and `--resume` continue stalled review checkpoints.
-7. **Cleanup** — optional final pass (skip with `--skip-cleanup`)
+6. **Cleanup** — once all stories pass: critical diff review, then an optional refactor pass (skip both with `--skip-cleanup`). Review findings trigger an automatic recovery loop (re-review until clean or limits hit). Web `POST .../implementation-review` and `--resume` continue stalled review checkpoints.
 
 TUI and web share `workflow.Driver` → `Executor`. Web adds registry + SSE via `RunController`; TUI uses `FileReviewLoop` under `.ralph/runs/prd-local/`.
 

@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ import (
 	"ralph/internal/workflow/review"
 )
 
-func TestRunImplementationReviewEventsAfterStoryCompleted(t *testing.T) {
+func TestRunImplementationReviewOnceAtEnd(t *testing.T) {
 	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
@@ -32,15 +33,17 @@ func TestRunImplementationReviewEventsAfterStoryCompleted(t *testing.T) {
 	}
 
 	evts := drainEvents(ch)
-	if err := assertReviewAfterStoryCompleted(evts); err != nil {
+	if err := assertReviewOnceBeforeCleanup(evts); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func assertReviewAfterStoryCompleted(evts []Event) error {
+func assertReviewOnceBeforeCleanup(evts []Event) error {
 	seenStoryCompleted := false
 	seenReviewStarted := false
 	seenReviewCompleted := false
+	seenCleanupStarted := false
+	reviewCount := 0
 	for _, e := range evts {
 		switch e.(type) {
 		case EventStoryCompleted:
@@ -50,21 +53,30 @@ func assertReviewAfterStoryCompleted(evts []Event) error {
 				return errEventOrder{"implementation review started before story completed"}
 			}
 			seenReviewStarted = true
+			reviewCount++
 		case EventImplementationReviewCompleted:
 			if !seenReviewStarted {
 				return errEventOrder{"implementation review completed before started"}
 			}
 			seenReviewCompleted = true
+		case EventCleanupStarted:
+			seenCleanupStarted = true
+			if !seenReviewCompleted {
+				return errEventOrder{"cleanup started before implementation review completed"}
+			}
 		}
 	}
 	if !seenStoryCompleted {
 		return errEventOrder{"missing EventStoryCompleted"}
 	}
-	if !seenReviewStarted {
-		return errEventOrder{"missing EventImplementationReviewStarted"}
+	if reviewCount != 1 {
+		return errEventOrder{fmt.Sprintf("expected 1 implementation review, got %d", reviewCount)}
 	}
 	if !seenReviewCompleted {
 		return errEventOrder{"missing EventImplementationReviewCompleted"}
+	}
+	if !seenCleanupStarted {
+		return errEventOrder{"missing EventCleanupStarted"}
 	}
 	return nil
 }
@@ -73,7 +85,7 @@ type errEventOrder struct{ msg string }
 
 func (e errEventOrder) Error() string { return e.msg }
 
-func TestRunImplementationReviewBeforeNextStory(t *testing.T) {
+func TestRunImplementationReviewNotBetweenStories(t *testing.T) {
 	tmpDir := t.TempDir()
 	testgit.InitRepo(t, tmpDir)
 	cfg := config.DefaultConfig()
@@ -100,38 +112,34 @@ func TestRunImplementationReviewBeforeNextStory(t *testing.T) {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	if err := assertReviewBetweenStories(drainEvents(ch)); err != nil {
+	if err := assertNoReviewBetweenStories(drainEvents(ch)); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func assertReviewBetweenStories(evts []Event) error {
+func assertNoReviewBetweenStories(evts []Event) error {
 	var last string
 	var storyStarts int
+	var reviewBetweenStories bool
 	for _, e := range evts {
 		switch e.(type) {
 		case EventStoryCompleted:
 			last = "story_completed"
 		case EventImplementationReviewStarted:
-			if last != "story_completed" {
-				return errEventOrder{"review started before story completed"}
+			if last == "story_completed" && storyStarts < 2 {
+				reviewBetweenStories = true
 			}
 			last = "review_started"
-		case EventImplementationReviewCompleted:
-			if last != "review_started" {
-				return errEventOrder{"review completed before started"}
-			}
-			last = "review_completed"
 		case EventStoryStarted:
 			storyStarts++
-			if storyStarts > 1 && last != "review_completed" {
-				return errEventOrder{"next story started before review completed"}
-			}
 			last = "story_started"
 		}
 	}
 	if storyStarts < 2 {
 		return errEventOrder{"expected two story starts"}
+	}
+	if reviewBetweenStories {
+		return errEventOrder{"implementation review ran between stories"}
 	}
 	return nil
 }
@@ -407,7 +415,6 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
 	cfg.PRDFile = "prd.json"
-	cfg.SkipCleanup = true
 	cfg.AutoApprove = true
 
 	testPRD := &prd.PRD{
@@ -458,8 +465,8 @@ func TestRunImplementationFindingsAutoRecoverUntilExhausted(t *testing.T) {
 	if !foundReview {
 		t.Fatal("expected EventImplementationReview with findings")
 	}
-	if foundSecondStory {
-		t.Fatal("story-2 should not start after review findings")
+	if !foundSecondStory {
+		t.Fatal("expected story-2 to start before cleanup review")
 	}
 	storyCalls, reviewCalls, _ := countRunnerPromptKinds(mock)
 	if storyCalls < 2 {
@@ -528,6 +535,6 @@ func TestRunImplementationFindingsAutoRecoverAndContinue(t *testing.T) {
 		}
 	}
 	if !foundSecondStory {
-		t.Fatal("expected story-2 to start after automatic recovery cleared review findings")
+		t.Fatal("expected story-2 to start before cleanup review cleared findings")
 	}
 }

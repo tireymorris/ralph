@@ -7,7 +7,7 @@ Cross-cutting discipline (TDD, diff hygiene, review focus, refactor rules) is di
 ## Flow
 
 ```
-User goal → clarify → PRD → review → implement (per story) → impl review → cleanup
+User goal → clarify → PRD → review → implement (per story) → cleanup (impl review + refactor)
 ```
 
 TUI and web share the same `workflow.Driver`. Templates define what the runner is told to do at each step. Each rendered prompt is prefixed with `===ralph-prompt-kind:…===` so Go and mocks route by kind, not prose (see [`README.md`](README.md)).
@@ -20,7 +20,7 @@ TUI and web share the same `workflow.Driver`. Templates define what the runner i
 - Ask few, high-impact clarify questions (0–5); prefer `[]` when the prompt is clear enough
 - Budget ~5–15 targeted file reads for PRD work; do not grep the whole repo
 - Size stories for ~1–10 slices each; verifiable behaviors only
-- Capture observed local conventions in PRD `context` for later phases
+- Capture observed local conventions in PRD `context` using the bundled planning style guide — stack, layout, code style, test style, diff discipline
 - Stop after writing the PRD file — never implement during planning
 
 ## Implementation agent
@@ -57,6 +57,7 @@ TUI and web share the same `workflow.Driver`. Templates define what the runner i
 
 **Philosophy:**
 - Skip if nothing worth doing; otherwise refactor changed files only
+- Match local conventions first; apply the bundled cleanup style guide (diff hygiene, refactor discipline, test cleanup)
 - Preserve behavior; do not mix cleanup with new features
 - Run targeted tests, not the full suite unless the repo is small
 

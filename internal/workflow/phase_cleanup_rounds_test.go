@@ -26,6 +26,10 @@ func TestRunCleanupMultipleRoundsUntilNoProgress(t *testing.T) {
 	mock := newMockRunner()
 	calls := 0
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		if isDiffReviewPrompt(prompt) {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
 		calls++
 		if !strings.Contains(prompt, changedFile) {
 			t.Errorf("cleanup prompt should contain changed file %q", changedFile)
@@ -36,7 +40,7 @@ func TestRunCleanupMultipleRoundsUntilNoProgress(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	if err := exec.RunCleanup(context.Background(), p); err != nil {
+	if _, err := exec.RunCleanup(context.Background(), p); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
@@ -90,7 +94,7 @@ func Hello() string { return "hello" }
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	if err := exec.RunCleanup(context.Background(), testPRD); err != nil {
+	if _, err := exec.RunCleanup(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if recoveryCalls != 1 {
@@ -125,7 +129,7 @@ func TestRunCleanupFailsWhenRecoveryDoesNotFixTests(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	err := exec.RunCleanup(context.Background(), p)
+	_, err := exec.RunCleanup(context.Background(), p)
 	if err == nil {
 		t.Fatal("RunCleanup() error = nil, want test gate failure")
 	}
@@ -188,7 +192,7 @@ func Hello() string { return "hello" }
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	exec.SetReviewLoop(runstate.LocalRunID, loop)
-	if err := exec.RunCleanup(context.Background(), testPRD); err != nil {
+	if _, err := exec.RunCleanup(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if recoveryCalls != 1 {

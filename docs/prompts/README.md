@@ -41,10 +41,12 @@ Do not edit prompt prose in Go files — `internal/prompt/prompt.go` and sibling
 | `partials/codebase-context.tmpl` | story-implement, diff-review, recovery, cleanup |
 | `partials/changed-files.tmpl` | diff-review, cleanup |
 | `partials/clarifications.tmpl` | prd-generate, prd-clarification-revision |
-| `partials/working-conventions.tmpl` | story-implement, recovery, cleanup |
+| `partials/working-conventions.tmpl` | story-implement, recovery |
 | `partials/commit-rules.tmpl` | story-implement (TDD slices + commit rules) |
 | `partials/review-conventions.tmpl` | diff-review |
-| `partials/refactor-discipline.tmpl` | cleanup |
+| `partials/refactor-discipline.tmpl` | (unused; superseded by cleanup-style-guide) |
+| `partials/cleanup-style-guide.tmpl` | cleanup |
+| `partials/planning-style-guide.tmpl` | prd-generate, prd-self-review, prd-critique-revision, prd-clarification-revision, followup |
 
 See [`skill-sources.md`](skill-sources.md) for how these map to `~/.agents/skills`.
 

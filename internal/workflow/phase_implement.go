@@ -50,8 +50,12 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
 			if !e.cfg.SkipCleanup {
-				if err := e.RunCleanup(ctx, p); err != nil {
+				blocked, err := e.RunCleanup(ctx, p)
+				if err != nil {
 					return err
+				}
+				if blocked {
+					return nil
 				}
 			}
 
@@ -91,15 +95,6 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 
 		logger.Debug("story completed", "story_id", story.ID)
 		e.emit(EventStoryCompleted{Story: updatedStory, Success: true})
-
-		e.resetRecoveryAttempts()
-		blocked, reviewErr := e.runImplementationReview(ctx, updatedPRD)
-		if reviewErr != nil {
-			return reviewErr
-		}
-		if blocked {
-			return nil
-		}
 
 		e.resetRecoveryAttempts()
 		if err := e.runTestGateWithRecovery(ctx, updatedPRD); err != nil {

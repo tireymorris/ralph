@@ -494,10 +494,10 @@ func TestCriticalDiffReviewIncludesReviewConventions(t *testing.T) {
 	}
 }
 
-func TestCleanupIncludesRefactorDiscipline(t *testing.T) {
+func TestCleanupIncludesStyleGuide(t *testing.T) {
 	got := Cleanup("", "prd.json", []string{"src/foo.ts"})
 
-	for _, want := range []string{"REFACTOR DISCIPLINE", "Preserve behavior", "backwards-compatibility"} {
+	for _, want := range []string{"STYLE GUIDE", "Refactoring discipline", "Preserve behavior", "backwards-compatibility"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("Cleanup() missing %q in:\n%s", want, got)
 		}
@@ -530,18 +530,18 @@ func TestCleanup_includes_improvement_guidance(t *testing.T) {
 	if result == "" {
 		t.Fatal("Cleanup() returned empty string")
 	}
-	for _, want := range []string{"SOLID", "DRY"} {
+	for _, want := range []string{"Diff hygiene", "Refactoring discipline", "Match local conventions"} {
 		if !strings.Contains(result, want) {
 			t.Errorf("Cleanup() missing %q", want)
 		}
 	}
-	hasCodebaseConventions := strings.Contains(result, "codebase conventions") || strings.Contains(result, "existing conventions")
+	hasCodebaseConventions := strings.Contains(result, "nearby files") || strings.Contains(result, "local conventions")
 	if !hasCodebaseConventions {
-		t.Errorf("Cleanup() missing 'codebase conventions' or 'existing conventions'")
+		t.Errorf("Cleanup() missing guidance to match nearby/local conventions")
 	}
-	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "combine")
+	hasConsolidate := strings.Contains(result, "consolidate") || strings.Contains(result, "Consolidate")
 	if !hasConsolidate {
-		t.Errorf("Cleanup() missing 'consolidate' or 'combine' referencing specs")
+		t.Errorf("Cleanup() missing guidance to consolidate overlapping tests")
 	}
 }
 

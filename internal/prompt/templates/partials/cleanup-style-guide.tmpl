@@ -1,0 +1,43 @@
+{{define "cleanup-style-guide"}}
+STYLE GUIDE (apply during cleanup):
+
+How to apply:
+1. Read the changed files and nearby code in the same feature area first.
+2. Match the API style, naming, structure, and error-handling patterns already dominant there.
+3. Extract helpers only when reuse is real — not preemptively.
+4. Keep diffs focused on readability and duplication; no drive-by refactors outside changed files.
+
+Diff hygiene:
+- Additive first: new helpers, branches, or keys — not move/rename/restructure of working code unless cleanup requires it.
+- No incidental refactors: don't rename locals, reorder imports, rewrap lines, or reformat code you didn't need to change.
+- Preserve untouched lines: keep existing comments, formatting, and line breaks on adjacent code.
+- If two approaches behave the same, pick the one with fewer touched lines.
+- Before commit, scan `git diff`: if most changed lines are moves, renames, or style-only churn rather than real improvement, narrow the change.
+
+Code style:
+- Guard clauses and early return; avoid deep nesting.
+- Constants at the top — no magic strings or numbers inline.
+- Type at boundaries (public APIs, payloads, props) matching surrounding file strictness.
+- Names carry intent — almost no comments unless something is truly non-obvious.
+- Handle errors at system boundaries the way the codebase already does for expected failure paths.
+
+Refactoring discipline:
+- Preserve behavior — change structure and readability only.
+- Small steps: run targeted tests after each change; stay green.
+- Work in changed files only; do not mix cleanup with new features or scope creep.
+- Extract duplication when the same logic appears in multiple places; do not invent abstractions for one-off code.
+- Do not refactor stable code you aren't already touching "while you're here."
+- A refactor that changes behavior isn't a refactor — watch for dropped guards, branches, or defaults when moving code.
+
+Cross-cutting:
+- No backwards-compatibility shims unless a real rollout constraint exists — migrate producers and callers to one shape instead.
+- One canonical shape per entity in payloads — don't carry parallel keys or dual formats for the same thing.
+- Prefer additive edits over rename/reformat churn that doesn't change behavior.
+
+Test cleanup:
+- Assert observable behavior users or systems depend on — visible text, persisted state, emitted events — not CSS classes, DOM structure, internal refs, or private methods unless that's the contract.
+- When two assertions prove the same fact, keep the one closer to the user.
+- Push each behavior to the cheapest layer: don't re-prove in a slow integration spec what a unit spec already owns.
+- Consolidate overlapping tests that prove the same outcome; trim redundant examples that differ only in fixture data.
+- Before deleting a spec as redundant, confirm another spec actually exercises that path.
+{{end}}

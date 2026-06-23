@@ -241,6 +241,7 @@ func TestRunImplementationAllCompleted(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",
@@ -291,6 +292,7 @@ func TestRunImplementationNoNextStory(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = tmpDir
 	cfg.PRDFile = "prd.json"
+	cfg.SkipCleanup = true
 
 	testPRD := &prd.PRD{
 		ProjectName: "Test",

@@ -27,7 +27,7 @@ func TestRunCleanupContextCancelled(t *testing.T) {
 	cancel()
 
 	p := &prd.PRD{Context: "test context"}
-	err := exec.RunCleanup(ctx, p)
+	_, err := exec.RunCleanup(ctx, p)
 
 	if err == nil {
 		t.Fatal("RunCleanup() should return error when context is cancelled")
@@ -60,7 +60,7 @@ func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 	mock := newMockRunner()
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 
-	err := exec.RunCleanup(context.Background(), testPRD)
+	_, err := exec.RunCleanup(context.Background(), testPRD)
 	if err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
@@ -96,8 +96,12 @@ func TestRunCleanupSuccess(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
-		if !strings.Contains(prompt, "SOLID") {
-			t.Error("cleanup prompt should contain SOLID")
+		if isDiffReviewPrompt(prompt) {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
+		if !strings.Contains(prompt, "Match local conventions") {
+			t.Error("cleanup prompt should contain style guide task list")
 		}
 		if !strings.Contains(prompt, "my project context") {
 			t.Error("cleanup prompt should contain the PRD context")
@@ -112,13 +116,13 @@ func TestRunCleanupSuccess(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "my project context"}
 
-	err := exec.RunCleanup(context.Background(), p)
+	_, err := exec.RunCleanup(context.Background(), p)
 	if err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	if mock.CallCount() != 2 {
+		t.Fatalf("runner call count = %d, want 2 (review + cleanup)", mock.CallCount())
 	}
 
 	evts := drainEvents(ch)
@@ -175,7 +179,7 @@ func runCleanupChangedFilesErrorLogHelper(t *testing.T) {
 	mock := newMockRunner()
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 
-	if err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
+	if _, err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if mock.CallCount() != 0 {
@@ -209,19 +213,23 @@ func TestRunCleanupRunnerError(t *testing.T) {
 	ch := make(chan Event, 100)
 	mock := newMockRunner()
 	mock.runFunc = func(ctx context.Context, prompt string, outputCh chan<- runner.OutputLine) error {
+		if isDiffReviewPrompt(prompt) {
+			outputCh <- runner.OutputLine{Text: cleanReviewTranscript}
+			return nil
+		}
 		return errors.New("something broke")
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	err := exec.RunCleanup(context.Background(), p)
+	_, err := exec.RunCleanup(context.Background(), p)
 	if err == nil {
 		t.Fatal("RunCleanup() should return error when runner fails")
 	}
 
-	if mock.CallCount() != 1 {
-		t.Fatalf("runner call count = %d, want 1", mock.CallCount())
+	if mock.CallCount() != 2 {
+		t.Fatalf("runner call count = %d, want 2 (review + cleanup)", mock.CallCount())
 	}
 
 	foundError := false
