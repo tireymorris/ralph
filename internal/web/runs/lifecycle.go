@@ -27,7 +27,7 @@ func (l *Lifecycle) ReviseReview(id string) error {
 func (l *Lifecycle) ContinueImplementationReview(id string) error {
 	return l.registry.UpdateLifecycle(id, LifecycleUpdate{
 		Status: runstate.StatusImplementing,
-		Phase:  runstate.PhaseImplement,
+		Phase:  runstate.PhaseCleanup,
 	})
 }
 

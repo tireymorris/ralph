@@ -62,7 +62,7 @@ func TestLifecycleTransitionsUpdateExpectedFields(t *testing.T) {
 				return l.ContinueImplementationReview(id)
 			},
 			wantStatus: "implementing",
-			wantPhase:  "implement",
+			wantPhase:  runstate.PhaseCleanup,
 		},
 		{
 			name: "follow up",
