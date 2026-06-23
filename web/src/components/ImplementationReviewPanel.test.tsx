@@ -14,6 +14,17 @@ afterEach(() => {
 });
 
 describe("ImplementationReviewPanel", () => {
+  it("renders cleanup-oriented heading and continue label", () => {
+    render(<ImplementationReviewPanel runId="run-1" />);
+
+    expect(
+      screen.getByRole("heading", { name: /cleanup review/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue cleanup/i }),
+    ).toBeInTheDocument();
+  });
+
   it("calls continueImplementationReview when Continue is clicked", async () => {
     const onContinued = vi.fn();
     render(
@@ -24,7 +35,7 @@ describe("ImplementationReviewPanel", () => {
     );
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue implementation/i }),
+      screen.getByRole("button", { name: /continue cleanup/i }),
     );
 
     await waitFor(() => {
@@ -41,14 +52,14 @@ describe("ImplementationReviewPanel", () => {
     render(<ImplementationReviewPanel runId="run-1" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue implementation/i }),
+      screen.getByRole("button", { name: /continue cleanup/i }),
     );
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("server error");
     });
     expect(
-      screen.getByRole("button", { name: /continue implementation/i }),
+      screen.getByRole("button", { name: /continue cleanup/i }),
     ).toBeEnabled();
   });
 
@@ -64,7 +75,7 @@ describe("ImplementationReviewPanel", () => {
     render(<ImplementationReviewPanel runId="run-1" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue implementation/i }),
+      screen.getByRole("button", { name: /continue cleanup/i }),
     );
 
     expect(
@@ -74,7 +85,7 @@ describe("ImplementationReviewPanel", () => {
     resolveContinue();
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /continue implementation/i }),
+        screen.getByRole("button", { name: /continue cleanup/i }),
       ).toBeEnabled();
     });
   });

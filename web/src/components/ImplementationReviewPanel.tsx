@@ -25,8 +25,8 @@ export default function ImplementationReviewPanel({
   }
 
   return (
-    <section className="panel impl-review-panel" aria-label="Implementation review">
-      <h2 className="content-heading">Implementation review</h2>
+    <section className="panel impl-review-panel" aria-label="Cleanup review">
+      <h2 className="content-heading">Cleanup review</h2>
       <p className="content-body">
         Critical diff review reported findings
         {iteration != null && iteration > 0 ? ` (iteration ${iteration})` : ""}.
@@ -43,7 +43,7 @@ export default function ImplementationReviewPanel({
         onClick={() => void handleContinue()}
         disabled={submitting}
       >
-        {submitting ? "Continuing…" : "Continue implementation"}
+        {submitting ? "Continuing…" : "Continue cleanup"}
       </button>
     </section>
   );
