@@ -500,10 +500,11 @@ func TestViewPhaseCleanupShowsReviewBanner(t *testing.T) {
 	}
 	m.currentStory = m.prd.Stories[0]
 	m.activity = session.RunActivity{
-		Kind:       session.ActivityReview,
-		StoryID:    "1",
-		StoryTitle: "Story One",
-		Iteration:  2,
+		Kind:         session.ActivityReview,
+		StoryID:      "1",
+		StoryTitle:   "Story One",
+		Iteration:    2,
+		FindingCount: 2,
 	}
 	m.width = 80
 	m.height = 45
@@ -515,6 +516,9 @@ func TestViewPhaseCleanupShowsReviewBanner(t *testing.T) {
 	}
 	if strings.Contains(view, "in progress") {
 		t.Fatalf("View() should not show stale slice progress during review, got %q", view)
+	}
+	if !strings.Contains(view, "Enter continue") {
+		t.Fatalf("View() should show continue help during waiting review, got %q", view)
 	}
 }
 

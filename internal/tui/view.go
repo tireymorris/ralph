@@ -308,6 +308,9 @@ func (m *Model) helpText() string {
 	if m.phase == PhaseFailed {
 		return "Tab switch pane • ↑/↓ scroll • r retry • q quit • ctrl+c exit"
 	}
+	if m.waitingCleanupReview() {
+		return "Tab switch pane • ↑/↓ scroll • Enter continue cleanup review • q quit • ctrl+c exit"
+	}
 	return "Tab switch pane • ↑/↓ scroll • q quit • ctrl+c exit"
 }
 
