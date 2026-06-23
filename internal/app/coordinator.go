@@ -129,17 +129,17 @@ func (c *Coordinator) Run(opts *args.Options) int {
 			return 1
 		}
 	}
-	attemptBootUpdate(opts)
+	attemptBootUpdate(opts, c.isTerminal(os.Stdin.Fd()))
 	return c.runTUI(cfg, opts.Prompt, opts.DryRun, opts.Resume, opts.Verbose)
 }
 
-func attemptBootUpdate(opts *args.Options) {
+func attemptBootUpdate(opts *args.Options, interactive bool) {
 	repo := update.RepoFromEnv()
 	ref := opts.UpdateRef
 	if ref == "" {
 		ref = update.DefaultRef
 	}
-	_, _ = attemptUpdate(context.Background(), repo, ref)
+	_ = maybePromptedUpdate(context.Background(), repo, ref, interactive)
 }
 
 func (c *Coordinator) withDefaults() *Coordinator {

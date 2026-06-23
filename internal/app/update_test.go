@@ -142,3 +142,109 @@ func TestRunUpdateFailure(t *testing.T) {
 		t.Errorf("stderr = %q, want substring Error", buf.String())
 	}
 }
+
+func TestMaybePromptedUpdateUpToDate(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
+	}()
+
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return true, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		t.Fatal("Install should not run when up to date")
+		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool {
+		t.Fatal("Prompt should not run when up to date")
+		return false
+	}
+
+	if err := maybePromptedUpdate(context.Background(), "repo", "main", true); err != nil {
+		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)
+	}
+}
+
+func TestMaybePromptedUpdateNonInteractiveSkipsInstall(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
+	}()
+
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		t.Fatal("Install should not run when non-interactive")
+		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool {
+		t.Fatal("Prompt should not run when non-interactive")
+		return false
+	}
+
+	if err := maybePromptedUpdate(context.Background(), "repo", "main", false); err != nil {
+		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)
+	}
+}
+
+func TestMaybePromptedUpdateDeclined(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
+	}()
+
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		t.Fatal("Install should not run when update declined")
+		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool { return false }
+
+	if err := maybePromptedUpdate(context.Background(), "repo", "main", true); err != nil {
+		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)
+	}
+}
+
+func TestMaybePromptedUpdateAccepted(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
+	}()
+
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	installCalled := false
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		installCalled = true
+		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool { return true }
+
+	if err := maybePromptedUpdate(context.Background(), "repo", "main", true); err != nil {
+		t.Fatalf("maybePromptedUpdate() = %v, want nil", err)
+	}
+	if !installCalled {
+		t.Fatal("Install was not called after accepting update prompt")
+	}
+}

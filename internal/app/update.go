@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -11,15 +12,47 @@ import (
 )
 
 var (
-	updateInstall = update.Install
-	updateCheck   = update.Check
+	updateInstall       = update.Install
+	updateCheck         = update.Check
+	promptUpdateConfirm = defaultPromptUpdateConfirm
 )
+
+func defaultPromptUpdateConfirm(local, remote string, metadataUnavailable bool) bool {
+	if metadataUnavailable {
+		fmt.Fprint(os.Stdout, "Install ralph from remote? [y/N]: ")
+	} else {
+		fmt.Fprintf(os.Stdout, "Update available (local=%s remote=%s). Update now? [y/N]: ", local, remote)
+	}
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil {
+		return false
+	}
+	answer := strings.TrimSpace(strings.ToLower(line))
+	return answer == "y" || answer == "yes"
+}
 
 type updateAttemptResult struct {
 	upToDate            bool
 	local               string
 	remote              string
 	metadataUnavailable bool
+}
+
+func maybePromptedUpdate(ctx context.Context, repo, ref string, interactive bool) error {
+	up, local, remote, checkErr := updateCheck(ctx, repo, ref)
+	if checkErr == nil && up {
+		return nil
+	}
+	if checkErr != nil && !strings.Contains(checkErr.Error(), "build metadata") {
+		return checkErr
+	}
+	if !interactive {
+		return nil
+	}
+	if !promptUpdateConfirm(local, remote, checkErr != nil) {
+		return nil
+	}
+	return updateInstall(ctx, update.InstallOptions{Repo: repo, Ref: ref})
 }
 
 func attemptUpdate(ctx context.Context, repo, ref string) (updateAttemptResult, error) {

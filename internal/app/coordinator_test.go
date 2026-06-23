@@ -308,12 +308,14 @@ func captureCoordinatorRun(t *testing.T, c *Coordinator, opts *args.Options) (in
 func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
 	oldCheck := updateCheck
 	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
 	defer func() {
 		updateCheck = oldCheck
 		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
 	}()
 
-	calls := make([]string, 0, 4)
+	calls := make([]string, 0, 5)
 	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
 		calls = append(calls, "update-check")
 		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
@@ -321,6 +323,10 @@ func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
 	updateInstall = func(context.Context, update.InstallOptions) error {
 		calls = append(calls, "update-install")
 		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool {
+		calls = append(calls, "update-prompt")
+		return true
 	}
 
 	c := &Coordinator{
@@ -350,18 +356,19 @@ func TestCoordinatorBootUpdatePrecedesPromptFlow(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("stderr = %q, want empty", stderr)
 	}
-	if len(calls) < 4 {
-		t.Fatalf("calls = %v, want update and TUI flow", calls)
+	if len(calls) < 5 {
+		t.Fatalf("calls = %v, want update check, prompt, install, and TUI flow", calls)
 	}
 	updateCheckIdx := indexOf(calls, "update-check")
+	promptIdx := indexOf(calls, "update-prompt")
 	updateInstallIdx := indexOf(calls, "update-install")
 	runTUIIdx := indexOf(calls, "run-tui")
 	loadConfigIdx := indexOf(calls, "load-config")
-	if updateCheckIdx < 0 || updateInstallIdx < 0 || runTUIIdx < 0 || loadConfigIdx < 0 {
-		t.Fatalf("calls = %v, want load-config, update, and run-tui", calls)
+	if updateCheckIdx < 0 || promptIdx < 0 || updateInstallIdx < 0 || runTUIIdx < 0 || loadConfigIdx < 0 {
+		t.Fatalf("calls = %v, want load-config, update check, prompt, install, and run-tui", calls)
 	}
-	if loadConfigIdx >= updateCheckIdx || updateCheckIdx >= updateInstallIdx || updateInstallIdx >= runTUIIdx {
-		t.Fatalf("calls = %v, want load-config before boot update before run-tui", calls)
+	if loadConfigIdx >= updateCheckIdx || updateCheckIdx >= promptIdx || promptIdx >= updateInstallIdx || updateInstallIdx >= runTUIIdx {
+		t.Fatalf("calls = %v, want load-config before update check before prompt before install before run-tui", calls)
 	}
 }
 
@@ -374,12 +381,68 @@ func indexOf(items []string, target string) int {
 	return -1
 }
 
-func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
+func TestCoordinatorBootUpdateDeclinedSkipsInstall(t *testing.T) {
 	oldCheck := updateCheck
 	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
 	defer func() {
 		updateCheck = oldCheck
 		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
+	}()
+
+	calls := make([]string, 0, 4)
+	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
+		calls = append(calls, "update-check")
+		return false, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", nil
+	}
+	updateInstall = func(context.Context, update.InstallOptions) error {
+		calls = append(calls, "update-install")
+		return nil
+	}
+	promptUpdateConfirm = func(string, string, bool) bool {
+		calls = append(calls, "update-prompt")
+		return false
+	}
+
+	c := &Coordinator{
+		loadConfig: func() (*config.Config, error) {
+			return &config.Config{WorkDir: t.TempDir(), PRDFile: "prd.json"}, nil
+		},
+		runTUI: func(*config.Config, string, bool, bool, bool) int {
+			calls = append(calls, "run-tui")
+			return 0
+		},
+		validateGit:    func(string) error { return nil },
+		validateResume: func(*config.Config, bool) error { return nil },
+		helpText:       func() string { return "help text" },
+		versionInfo:    func() string { return "version text" },
+		isTerminal:     func(uintptr) bool { return true },
+	}
+
+	code, _, stderr := captureCoordinatorRun(t, c, &args.Options{Prompt: "build a feature"})
+	if code != 0 {
+		t.Fatalf("Run() = %d, want 0", code)
+	}
+	if stderr != "" {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+	if indexOf(calls, "update-install") >= 0 {
+		t.Fatalf("calls = %v, want no install when update declined", calls)
+	}
+	if indexOf(calls, "update-prompt") < 0 || indexOf(calls, "run-tui") < 0 {
+		t.Fatalf("calls = %v, want prompt and run-tui", calls)
+	}
+}
+
+func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
+	oldCheck := updateCheck
+	oldInstall := updateInstall
+	oldPrompt := promptUpdateConfirm
+	defer func() {
+		updateCheck = oldCheck
+		updateInstall = oldInstall
+		promptUpdateConfirm = oldPrompt
 	}()
 
 	updateCheck = func(context.Context, string, string) (bool, string, string, error) {
@@ -388,6 +451,7 @@ func TestCoordinatorBootUpdateFailureDoesNotBlockPromptFlow(t *testing.T) {
 	updateInstall = func(context.Context, update.InstallOptions) error {
 		return context.Canceled
 	}
+	promptUpdateConfirm = func(string, string, bool) bool { return true }
 
 	runTUICalled := false
 	c := &Coordinator{
