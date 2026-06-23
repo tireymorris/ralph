@@ -17,9 +17,9 @@ func TestEventStatusPhase(t *testing.T) {
 	}{
 		{name: "clarify", event: events.EventClarifyingQuestions{}, wantStatus: runstate.StatusWaitingClarify, wantPhase: runstate.PhaseClarify},
 		{name: "PRD review", event: events.EventPRDReview{}, wantStatus: runstate.StatusWaitingReview, wantPhase: runstate.PhaseReview},
-		{name: "implementation review findings", event: events.EventImplementationReview{}, wantStatus: runstate.StatusWaitingImplReview, wantPhase: runstate.PhaseImplementationReview},
-		{name: "implementation review started", event: events.EventImplementationReviewStarted{Iteration: 1}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseImplementationReview},
-		{name: "implementation review completed", event: events.EventImplementationReviewCompleted{Iteration: 1, Clean: true}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseImplement},
+		{name: "implementation review findings", event: events.EventImplementationReview{}, wantStatus: runstate.StatusWaitingImplReview, wantPhase: runstate.PhaseCleanup},
+		{name: "implementation review started", event: events.EventImplementationReviewStarted{Iteration: 1}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseCleanup},
+		{name: "implementation review completed", event: events.EventImplementationReviewCompleted{Iteration: 1, Clean: true}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseCleanup},
 		{name: "followup", event: events.EventStoryStarted{}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseImplement},
 		{name: "cleanup", event: events.EventCleanupStarted{}, wantStatus: runstate.StatusImplementing, wantPhase: runstate.PhaseCleanup},
 		{name: "complete", event: events.EventCompleted{}, wantStatus: runstate.StatusCompleted, wantPhase: runstate.PhaseCompleted},

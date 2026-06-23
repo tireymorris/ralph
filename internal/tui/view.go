@@ -209,8 +209,12 @@ func (m *Model) renderCompleted() string {
 }
 
 func (m *Model) renderCleanup() string {
-	content := fmt.Sprintf("%s Running final polish pass on changed files…", m.spinner.View())
 	var b strings.Builder
+	if banner := m.renderActivityBanner(); banner != "" {
+		b.WriteString(banner)
+		b.WriteString("\n\n")
+	}
+	content := fmt.Sprintf("%s Running post-implementation cleanup…", m.spinner.View())
 	b.WriteString(infoStyle.Render(inProgressStyle.Render(wrapText(content, m.contentWidth(4)))))
 	b.WriteString("\n\n")
 	b.WriteString(mutedStyle.Render(wrapText("(check logs for runner output)", m.contentWidth(4))))
@@ -332,7 +336,7 @@ func (m *Model) rebuildMainScrollContent() {
 		b.WriteString(m.renderFailed())
 	case PhasePRDReview:
 		b.WriteString(m.renderPRDReview())
-	case PhaseImplementationReview, PhaseImplementation:
+	case PhaseImplementation:
 		b.WriteString(m.renderImplementation())
 	case PhaseCleanup:
 		b.WriteString(m.renderCleanup())
@@ -346,8 +350,8 @@ func (m *Model) refreshLiveProgress() {
 	switch m.phase {
 	case PhaseImplementation:
 		m.syncPresentation(runstate.PhaseImplement)
-	case PhaseImplementationReview:
-		m.syncPresentation(runstate.PhaseImplementationReview)
+	case PhaseCleanup:
+		m.syncPresentation(runstate.PhaseCleanup)
 	}
 }
 

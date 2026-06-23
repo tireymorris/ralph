@@ -76,9 +76,6 @@ func resumePhase(phase string) Phase {
 	if phase == runstate.PhaseCompleted {
 		return PhaseCompleted
 	}
-	if phase == runstate.PhaseImplementationReview {
-		return PhaseImplementationReview
-	}
 	if phase == runstate.PhaseCleanup {
 		return PhaseCleanup
 	}

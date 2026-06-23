@@ -44,7 +44,7 @@ func (c *RunController) ForceResume(ctx context.Context) {
 		case runstate.PhaseReview:
 			c.StartCheckpointResume(ctx)
 			return
-		case runstate.PhaseImplement, runstate.PhaseImplementationReview:
+		case runstate.PhaseImplement, runstate.PhaseCleanup:
 			c.StartImplementationFromPRD(ctx, p)
 			return
 		}

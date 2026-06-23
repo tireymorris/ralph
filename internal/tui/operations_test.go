@@ -177,11 +177,11 @@ func TestResumeStartMsgImplReviewPhase(t *testing.T) {
 	if !ok {
 		t.Fatalf("resumeStartMsg() = %T, want resumeStartMsg", msg)
 	}
-	if rsm.phase != PhaseImplementationReview {
-		t.Errorf("phase = %v, want PhaseImplementationReview", rsm.phase)
+	if rsm.phase != PhaseCleanup {
+		t.Errorf("phase = %v, want PhaseCleanup", rsm.phase)
 	}
-	if rsm.snapshot.Phase != runstate.PhaseImplementationReview {
-		t.Errorf("snapshot.Phase = %q, want %q", rsm.snapshot.Phase, runstate.PhaseImplementationReview)
+	if rsm.snapshot.Phase != runstate.PhaseCleanup {
+		t.Errorf("snapshot.Phase = %q, want %q", rsm.snapshot.Phase, runstate.PhaseCleanup)
 	}
 }
 

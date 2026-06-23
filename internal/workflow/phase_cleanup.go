@@ -26,6 +26,8 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, er
 	}
 	changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
 
+	e.emit(EventCleanupStarted{})
+
 	e.resetRecoveryAttempts()
 	blocked, err = e.runImplementationReview(ctx, p)
 	if err != nil {
@@ -46,10 +48,9 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, er
 	}
 	if len(changedFiles) == 0 {
 		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: no changed files"}})
+		e.emit(EventCleanupCompleted{})
 		return false, nil
 	}
-
-	e.emit(EventCleanupStarted{})
 
 	for round := 1; round <= constants.MaxCleanupRounds; round++ {
 		select {

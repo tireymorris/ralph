@@ -71,8 +71,8 @@ func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 
 	evts := drainEvents(ch)
 	counts := countCleanupEvents(evts)
-	if counts.started != 0 {
-		t.Errorf("EventCleanupStarted count = %d, want 0", counts.started)
+	if counts.started != 1 || counts.completed != 1 {
+		t.Errorf("cleanup events = started %d completed %d, want 1 each", counts.started, counts.completed)
 	}
 
 	foundSkipOutput := false

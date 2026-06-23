@@ -175,14 +175,14 @@ func TestHandleWorkflowEventSliceCompletedReloadsFromDisk(t *testing.T) {
 func TestHandleWorkflowEventImplementationReviewStartedSetsPhaseAndActivity(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhaseImplementation
+	m.phase = PhaseCleanup
 	m.currentStory = &prd.Story{ID: "1", Title: "Story One"}
 	m.prd = &prd.PRD{Stories: []*prd.Story{m.currentStory}}
 
 	m.handleWorkflowEvent(events.EventImplementationReviewStarted{Iteration: 2})
 
-	if m.phase != PhaseImplementationReview {
-		t.Fatalf("phase = %v, want PhaseImplementationReview", m.phase)
+	if m.phase != PhaseCleanup {
+		t.Fatalf("phase = %v, want PhaseCleanup", m.phase)
 	}
 	if m.activity.Kind != session.ActivityReview {
 		t.Fatalf("activity.Kind = %q, want %q", m.activity.Kind, session.ActivityReview)

@@ -72,19 +72,19 @@ func TestMapEventToStatusPhase_ImplementationReviewEvents(t *testing.T) {
 			name:       "started",
 			ev:         events.EventImplementationReviewStarted{Iteration: 1},
 			wantStatus: runstate.StatusImplementing,
-			wantPhase:  runstate.PhaseImplementationReview,
+			wantPhase:  runstate.PhaseCleanup,
 		},
 		{
 			name:       "findings",
 			ev:         events.EventImplementationReview{Findings: []events.ImplementationFinding{{ID: "a", Summary: "s"}}},
 			wantStatus: runstate.StatusWaitingImplReview,
-			wantPhase:  runstate.PhaseImplementationReview,
+			wantPhase:  runstate.PhaseCleanup,
 		},
 		{
 			name:       "completed",
 			ev:         events.EventImplementationReviewCompleted{Iteration: 1, Clean: true},
 			wantStatus: runstate.StatusImplementing,
-			wantPhase:  runstate.PhaseImplement,
+			wantPhase:  runstate.PhaseCleanup,
 		},
 	}
 	for _, tc := range cases {

@@ -186,8 +186,8 @@ func TestRunSnapshotResolvesPhaseFromCheckpoint(t *testing.T) {
 		s.TrackEventState(events.EventPRDLoaded{PRD: completedPRD})
 
 		snap := s.RunSnapshot(runstate.PhaseImplement)
-		if snap.Phase != runstate.PhaseImplementationReview {
-			t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseImplementationReview)
+		if snap.Phase != runstate.PhaseCleanup {
+			t.Fatalf("Phase = %q, want %q", snap.Phase, runstate.PhaseCleanup)
 		}
 	})
 

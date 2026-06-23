@@ -40,17 +40,19 @@ func TestRunImplementationReviewOnceAtEnd(t *testing.T) {
 
 func assertReviewOnceBeforeCleanup(evts []Event) error {
 	seenStoryCompleted := false
+	seenCleanupStarted := false
 	seenReviewStarted := false
 	seenReviewCompleted := false
-	seenCleanupStarted := false
 	reviewCount := 0
 	for _, e := range evts {
 		switch e.(type) {
 		case EventStoryCompleted:
 			seenStoryCompleted = true
+		case EventCleanupStarted:
+			seenCleanupStarted = true
 		case EventImplementationReviewStarted:
-			if !seenStoryCompleted {
-				return errEventOrder{"implementation review started before story completed"}
+			if !seenCleanupStarted {
+				return errEventOrder{"implementation review started before cleanup started"}
 			}
 			seenReviewStarted = true
 			reviewCount++
@@ -59,24 +61,19 @@ func assertReviewOnceBeforeCleanup(evts []Event) error {
 				return errEventOrder{"implementation review completed before started"}
 			}
 			seenReviewCompleted = true
-		case EventCleanupStarted:
-			seenCleanupStarted = true
-			if !seenReviewCompleted {
-				return errEventOrder{"cleanup started before implementation review completed"}
-			}
 		}
 	}
 	if !seenStoryCompleted {
 		return errEventOrder{"missing EventStoryCompleted"}
+	}
+	if !seenCleanupStarted {
+		return errEventOrder{"missing EventCleanupStarted"}
 	}
 	if reviewCount != 1 {
 		return errEventOrder{fmt.Sprintf("expected 1 implementation review, got %d", reviewCount)}
 	}
 	if !seenReviewCompleted {
 		return errEventOrder{"missing EventImplementationReviewCompleted"}
-	}
-	if !seenCleanupStarted {
-		return errEventOrder{"missing EventCleanupStarted"}
 	}
 	return nil
 }
@@ -144,7 +141,7 @@ func assertNoReviewBetweenStories(evts []Event) error {
 	return nil
 }
 
-func TestRunImplementationReviewBeforeCleanup(t *testing.T) {
+func TestRunImplementationReviewWithinCleanup(t *testing.T) {
 	cfg, testPRD := saveSingleStoryPRD(t, false)
 
 	ch := make(chan Event, 100)
@@ -154,39 +151,48 @@ func TestRunImplementationReviewBeforeCleanup(t *testing.T) {
 		t.Fatalf("RunImplementation() error = %v", err)
 	}
 
-	if err := assertReviewBeforeCleanup(drainEvents(ch)); err != nil {
+	if err := assertReviewWithinCleanup(drainEvents(ch)); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func assertReviewBeforeCleanup(evts []Event) error {
-	lastStoryCompleted := -1
-	reviewCompleted := -1
+func assertReviewWithinCleanup(evts []Event) error {
 	cleanupStarted := -1
+	reviewStarted := -1
+	reviewCompleted := -1
+	cleanupCompleted := -1
 	for i, e := range evts {
 		switch e.(type) {
-		case EventStoryCompleted:
-			lastStoryCompleted = i
-		case EventImplementationReviewCompleted:
-			reviewCompleted = i
 		case EventCleanupStarted:
 			cleanupStarted = i
+		case EventImplementationReviewStarted:
+			reviewStarted = i
+		case EventImplementationReviewCompleted:
+			reviewCompleted = i
+		case EventCleanupCompleted:
+			cleanupCompleted = i
 		}
-	}
-	if lastStoryCompleted < 0 {
-		return errEventOrder{"missing EventStoryCompleted"}
-	}
-	if reviewCompleted < 0 {
-		return errEventOrder{"missing EventImplementationReviewCompleted"}
 	}
 	if cleanupStarted < 0 {
 		return errEventOrder{"missing EventCleanupStarted"}
 	}
-	if reviewCompleted <= lastStoryCompleted {
-		return errEventOrder{"review must follow last story completed"}
+	if reviewStarted < 0 {
+		return errEventOrder{"missing EventImplementationReviewStarted"}
 	}
-	if cleanupStarted <= reviewCompleted {
-		return errEventOrder{"cleanup must follow implementation review"}
+	if reviewCompleted < 0 {
+		return errEventOrder{"missing EventImplementationReviewCompleted"}
+	}
+	if cleanupCompleted < 0 {
+		return errEventOrder{"missing EventCleanupCompleted"}
+	}
+	if reviewStarted <= cleanupStarted {
+		return errEventOrder{"review must follow cleanup start"}
+	}
+	if reviewCompleted <= reviewStarted {
+		return errEventOrder{"review must complete after start"}
+	}
+	if cleanupCompleted <= reviewCompleted {
+		return errEventOrder{"cleanup must complete after review"}
 	}
 	return nil
 }

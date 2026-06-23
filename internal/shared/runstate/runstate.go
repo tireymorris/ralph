@@ -28,16 +28,15 @@ const (
 )
 
 const (
-	PhaseGenerate             = "generate"
-	PhaseClarify              = "clarify"
-	PhaseReview               = "review"
-	PhaseImplement            = "implement"
-	PhaseImplementationReview = "implementation_review"
-	PhaseFollowup             = "followup"
-	PhaseCleanup              = "cleanup"
-	PhaseCompleted            = "complete"
-	PhaseFailed               = "failed"
-	PhaseCancelled            = "cancelled"
+	PhaseGenerate  = "generate"
+	PhaseClarify   = "clarify"
+	PhaseReview    = "review"
+	PhaseImplement = "implement"
+	PhaseFollowup  = "followup"
+	PhaseCleanup   = "cleanup"
+	PhaseCompleted = "complete"
+	PhaseFailed    = "failed"
+	PhaseCancelled = "cancelled"
 )
 
 const CheckpointCancelled = StatusCancelled
@@ -59,7 +58,7 @@ func CheckpointStatusPhase(checkpoint string, p *prd.PRD) (status, phase string)
 	case CheckpointPRDReview:
 		return StatusWaitingReview, PhaseReview
 	case CheckpointImplReview:
-		return StatusWaitingImplReview, PhaseImplementationReview
+		return StatusWaitingImplReview, PhaseCleanup
 	case CheckpointFollowup:
 		return StatusImplementing, PhaseImplement
 	case CheckpointComplete:

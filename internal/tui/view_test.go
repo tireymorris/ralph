@@ -477,15 +477,15 @@ func TestViewPhaseCleanupShowsContent(t *testing.T) {
 	if !strings.Contains(view, "Cleanup") {
 		t.Fatalf("View() should mention cleanup phase, got %q", view)
 	}
-	if !strings.Contains(view, "polish") {
+	if !strings.Contains(view, "post-implementation cleanup") {
 		t.Fatalf("View() should describe cleanup work, got %q", view)
 	}
 }
 
-func TestViewPhaseImplementationReviewShowsReviewBanner(t *testing.T) {
+func TestViewPhaseCleanupShowsReviewBanner(t *testing.T) {
 	cfg := config.DefaultConfig()
 	m := NewModel(cfg, "test", false, false, false)
-	m.phase = PhaseImplementationReview
+	m.phase = PhaseCleanup
 	m.prd = &prd.PRD{
 		ProjectName: "Test Project",
 		Stories: []*prd.Story{{
