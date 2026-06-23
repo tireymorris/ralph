@@ -18,7 +18,7 @@ var (
 )
 
 func defaultPromptUpdateConfirm() bool {
-	fmt.Fprint(os.Stdout, "An update is available, install now? [y/N]: ")
+	fmt.Fprint(os.Stdout, "An update is available, install now? [y/N] ")
 	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
 		return false
