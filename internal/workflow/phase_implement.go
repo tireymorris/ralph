@@ -50,12 +50,8 @@ func (e *Executor) RunImplementation(ctx context.Context, p *prd.PRD) error {
 		if p.AllCompleted() {
 			logger.Info("all stories completed successfully")
 			if !e.cfg.SkipCleanup {
-				blocked, err := e.RunCleanup(ctx, p)
-				if err != nil {
+				if err := e.RunCleanup(ctx, p); err != nil {
 					return err
-				}
-				if blocked {
-					return nil
 				}
 			}
 

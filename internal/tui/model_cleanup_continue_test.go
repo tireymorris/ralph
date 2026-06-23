@@ -1,14 +1,38 @@
 package tui
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"ralph/internal/shared/config"
+	"ralph/internal/shared/prd"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/session"
+	"ralph/internal/workflow"
 )
+
+func TestWaitingCleanupReviewFromCheckpoint(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	writeImplReviewCheckpoint(t, cfg.WorkDir)
+
+	om := NewOperationManager(cfg)
+	om.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+
+	m := NewModel(cfg, "goal", false, false, false)
+	m.phase = PhaseCleanup
+	m.operationManager = om
+	m.prd = completedPRDForCleanupReview()
+
+	if !m.waitingCleanupReview() {
+		t.Fatal("waitingCleanupReview() = false, want true from impl_review checkpoint")
+	}
+}
 
 func TestUpdatePhaseCleanupEnterContinuesImplementationReview(t *testing.T) {
 	cfg := config.DefaultConfig()
@@ -28,6 +52,57 @@ func TestUpdatePhaseCleanupEnterContinuesImplementationReview(t *testing.T) {
 	}
 	if !assertContinueImplementationReviewCmd(t, cmd) {
 		t.Fatal("expected ContinueImplementationReview delegation")
+	}
+}
+
+func TestUpdatePhaseCleanupEnterContinuesFromCheckpoint(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.WorkDir = t.TempDir()
+	writeImplReviewCheckpoint(t, cfg.WorkDir)
+
+	om := NewOperationManager(cfg)
+	om.SetReviewLoop(runstate.LocalRunID, workflow.NewFileReviewLoop(cfg.WorkDir, runstate.LocalRunID))
+
+	m := NewModel(cfg, "goal", false, false, false)
+	m.phase = PhaseCleanup
+	m.operationManager = om
+	m.prd = completedPRDForCleanupReview()
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model := updated.(*Model)
+	if model.phase != PhaseCleanup {
+		t.Fatalf("phase = %v, want PhaseCleanup", model.phase)
+	}
+	if !assertContinueImplementationReviewCmd(t, cmd) {
+		t.Fatal("expected ContinueImplementationReview delegation from checkpoint")
+	}
+}
+
+func writeImplReviewCheckpoint(t *testing.T, workDir string) {
+	t.Helper()
+	metaDir := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID)
+	if err := os.MkdirAll(metaDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	meta := map[string]any{
+		"checkpoint":       runstate.CheckpointImplReview,
+		"review_iteration": 1,
+	}
+	data, err := json.Marshal(meta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(metaDir, "meta.json"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func completedPRDForCleanupReview() *prd.PRD {
+	return &prd.PRD{
+		Stories: []*prd.Story{{
+			ID: "s1", Title: "Story", Description: "d", Priority: 1, Passes: true,
+			Slices: []*prd.Slice{{ID: "slice-1", Behavior: "AC", RedHint: "test", Passes: true}},
+		}},
 	}
 }
 

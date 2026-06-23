@@ -27,7 +27,7 @@ func TestRunCleanupContextCancelled(t *testing.T) {
 	cancel()
 
 	p := &prd.PRD{Context: "test context"}
-	_, err := exec.RunCleanup(ctx, p)
+	err := exec.RunCleanup(ctx, p)
 
 	if err == nil {
 		t.Fatal("RunCleanup() should return error when context is cancelled")
@@ -60,7 +60,7 @@ func TestRunCleanupSkipsWhenWorktreeIsClean(t *testing.T) {
 	mock := newMockRunner()
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 
-	_, err := exec.RunCleanup(context.Background(), testPRD)
+	err := exec.RunCleanup(context.Background(), testPRD)
 	if err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
@@ -116,7 +116,7 @@ func TestRunCleanupSuccess(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "my project context"}
 
-	_, err := exec.RunCleanup(context.Background(), p)
+	err := exec.RunCleanup(context.Background(), p)
 	if err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
@@ -179,7 +179,7 @@ func runCleanupChangedFilesErrorLogHelper(t *testing.T) {
 	mock := newMockRunner()
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 
-	if _, err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
+	if err := exec.RunCleanup(context.Background(), &prd.PRD{Context: "ctx"}); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if mock.CallCount() != 0 {
@@ -223,7 +223,7 @@ func TestRunCleanupRunnerError(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	_, err := exec.RunCleanup(context.Background(), p)
+	err := exec.RunCleanup(context.Background(), p)
 	if err == nil {
 		t.Fatal("RunCleanup() should return error when runner fails")
 	}

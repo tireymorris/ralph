@@ -40,7 +40,7 @@ func TestRunCleanupMultipleRoundsUntilNoProgress(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	if _, err := exec.RunCleanup(context.Background(), p); err != nil {
+	if err := exec.RunCleanup(context.Background(), p); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 
@@ -94,7 +94,7 @@ func Hello() string { return "hello" }
 	}
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
-	if _, err := exec.RunCleanup(context.Background(), testPRD); err != nil {
+	if err := exec.RunCleanup(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if recoveryCalls != 1 {
@@ -129,7 +129,7 @@ func TestRunCleanupFailsWhenRecoveryDoesNotFixTests(t *testing.T) {
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	p := &prd.PRD{Context: "ctx"}
 
-	_, err := exec.RunCleanup(context.Background(), p)
+	err := exec.RunCleanup(context.Background(), p)
 	if err == nil {
 		t.Fatal("RunCleanup() error = nil, want test gate failure")
 	}
@@ -192,7 +192,7 @@ func Hello() string { return "hello" }
 
 	exec := NewExecutorWithRunner(cfg, ch, mock)
 	exec.SetReviewLoop(runstate.LocalRunID, loop)
-	if _, err := exec.RunCleanup(context.Background(), testPRD); err != nil {
+	if err := exec.RunCleanup(context.Background(), testPRD); err != nil {
 		t.Fatalf("RunCleanup() error = %v", err)
 	}
 	if recoveryCalls != 1 {

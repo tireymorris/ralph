@@ -13,7 +13,7 @@ const statusLabels: Record<string, string> = {
   implementing: "Implementing",
   waiting_clarify: "Needs Answers",
   waiting_review: "Needs Review",
-  waiting_implementation_review: "Review Findings",
+  waiting_implementation_review: "Cleanup Review",
   completed: "Completed",
   failed: "Failed",
   cancelled: "Cancelled",

@@ -11,10 +11,10 @@ import (
 	"ralph/internal/shared/prd"
 )
 
-func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, err error) {
+func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {
 	select {
 	case <-ctx.Done():
-		return false, ctx.Err()
+		return ctx.Err()
 	default:
 	}
 
@@ -22,45 +22,47 @@ func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) (blocked bool, er
 	if changedFilesErr != nil {
 		logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
 		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})
-		return false, nil
+		return nil
 	}
 	changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
 
 	e.emit(EventCleanupStarted{})
-
-	e.resetRecoveryAttempts()
-	blocked, err = e.runImplementationReview(ctx, p)
-	if err != nil {
-		return false, err
-	}
-	if blocked {
-		return true, nil
-	}
-
-	blocked, err = e.runCleanupRoundsAfterReview(ctx, p, changedFiles)
-	return blocked, err
+	return e.runReviewAndCleanupRounds(ctx, p, changedFiles)
 }
 
-func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, changedFiles []string) (bool, error) {
+func (e *Executor) runReviewAndCleanupRounds(ctx context.Context, p *prd.PRD, changedFiles []string) error {
+	e.resetRecoveryAttempts()
+	if err := e.runImplementationReviewForCleanup(ctx, p); err != nil {
+		return err
+	}
+	return e.runCleanupRoundsAfterReview(ctx, p, changedFiles)
+}
+
+func (e *Executor) runImplementationReviewForCleanup(ctx context.Context, p *prd.PRD) error {
+	_, err := e.runImplementationReview(ctx, p)
+	return err
+}
+
+func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, changedFiles []string) error {
 	if len(changedFiles) == 0 {
 		changedFiles, changedFilesErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
 		if changedFilesErr != nil {
 			logger.Warn("failed to list changed files before cleanup, skipping cleanup", "error", changedFilesErr)
 			e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: could not list changed files"}})
-			return false, nil
+			return nil
 		}
 		changedFiles = gitdiff.ExcludeReviewArtifacts(changedFiles)
 	}
 	if len(changedFiles) == 0 {
 		e.emit(EventOutput{Output: Output{Text: "Skipping cleanup: no changed files"}})
 		e.emit(EventCleanupCompleted{})
-		return false, nil
+		return nil
 	}
 
 	for round := 1; round <= constants.MaxCleanupRounds; round++ {
 		select {
 		case <-ctx.Done():
-			return false, ctx.Err()
+			return ctx.Err()
 		default:
 		}
 
@@ -82,12 +84,12 @@ func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, 
 		cleanupPrompt := prompt.Cleanup(p.Context, e.cfg.PRDFile, changedFiles)
 		if runErr := e.runWithForwardedOutput(ctx, cleanupPrompt); runErr != nil {
 			e.emit(EventError{Err: fmt.Errorf("cleanup failed: %w", runErr)})
-			return false, runErr
+			return runErr
 		}
 
 		e.resetRecoveryAttempts()
 		if err := e.runTestGateWithRecovery(ctx, p); err != nil {
-			return false, err
+			return err
 		}
 
 		afterChanged, afterErr := gitdiff.ChangedFiles(e.cfg.WorkDir)
@@ -102,7 +104,7 @@ func (e *Executor) runCleanupRoundsAfterReview(ctx context.Context, p *prd.PRD, 
 	}
 
 	e.emit(EventCleanupCompleted{})
-	return false, nil
+	return nil
 }
 
 func (e *Executor) completeRunAfterCleanup(ctx context.Context, p *prd.PRD) error {
