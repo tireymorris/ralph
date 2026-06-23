@@ -32,8 +32,8 @@ func (c *RunController) ForceResume(ctx context.Context) {
 	runCfg := c.runConfig()
 	p, err := prd.Load(runCfg)
 	if err == nil {
-		if run.Status == runstate.StatusWaitingImplReview {
-			c.StartImplementationFromPRD(ctx, p)
+		if run.Status == runstate.StatusWaitingImplReview || run.Checkpoint == runstate.CheckpointImplReview {
+			c.ContinueImplementationReviewFromPRD(ctx, p)
 			return
 		}
 		status, phase := runstate.CheckpointStatusPhase(run.Checkpoint, p)

@@ -42,11 +42,11 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 			wantPhase:  runstate.PhaseReview,
 		},
 		{
-			name:       "implementation review resumes implementation",
+			name:       "implementation review resumes cleanup",
 			checkpoint: runstate.CheckpointImplReview,
-			wantEvents: []string{"EventStoryStarted"},
+			wantEvents: []string{"EventRecoveryStarted", "EventRecoveryCompleted", "EventCleanupStarted"},
 			wantStatus: runstate.StatusImplementing,
-			wantPhase:  runstate.PhaseImplement,
+			wantPhase:  runstate.PhaseCleanup,
 		},
 		{
 			name:       "followup resumes implementation",
@@ -82,7 +82,11 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 			if err := reg.Register(run); err != nil {
 				t.Fatalf("Register() error = %v", err)
 			}
-			writeForceResumePRD(t, workDir)
+			if tt.checkpoint == runstate.CheckpointImplReview {
+				writeForceResumeCompletedPRD(t, workDir)
+			} else {
+				writeForceResumePRD(t, workDir)
+			}
 
 			got, ok := reg.Get(run.ID)
 			if !ok {
@@ -128,6 +132,15 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 	}
 }
 
+func writeForceResumeCompletedPRD(t *testing.T, workDir string) {
+	t.Helper()
+	testgit.InitRepo(t, workDir)
+	data := `{"version":1,"project_name":"Test","branch_name":"feature/x","stories":[{"id":"s1","title":"Story","description":"Do it","slices":[{"id":"slice-1","behavior":"AC","red_hint":"add failing test","passes":true}],"priority":1,"passes":true}]}`
+	if err := os.WriteFile(filepath.Join(workDir, "prd.json"), []byte(data), 0o644); err != nil {
+		t.Fatalf("WriteFile prd: %v", err)
+	}
+}
+
 func writeForceResumePRD(t *testing.T, workDir string) {
 	t.Helper()
 	testgit.InitRepo(t, workDir)
@@ -165,6 +178,12 @@ func forceResumeEventName(ev events.Event) string {
 		return "EventPRDReview"
 	case events.EventStoryStarted:
 		return "EventStoryStarted"
+	case events.EventRecoveryStarted:
+		return "EventRecoveryStarted"
+	case events.EventRecoveryCompleted:
+		return "EventRecoveryCompleted"
+	case events.EventCleanupStarted:
+		return "EventCleanupStarted"
 	case events.EventCompleted:
 		return "EventCompleted"
 	case events.EventError:
@@ -191,7 +210,7 @@ func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-	writeForceResumePRD(t, workDir)
+	writeForceResumeCompletedPRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -231,12 +250,12 @@ func TestForceResumeImplReviewCheckpointOverridesWaitingReviewStatus(t *testing.
 		default:
 		}
 		got, ok := reg.Get(run.ID)
-		if ok && strings.Contains(got.Phase, "implement") {
+		if ok && got.Phase == runstate.PhaseCleanup {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("run did not resume implementation from impl_review checkpoint")
+	t.Fatal("run did not resume cleanup from impl_review checkpoint")
 }
 
 func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
@@ -256,7 +275,7 @@ func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
 	if err := reg.Register(run); err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-	writeForceResumePRD(t, workDir)
+	writeForceResumeCompletedPRD(t, workDir)
 
 	cfg := config.DefaultConfig()
 	cfg.WorkDir = workDir
@@ -296,12 +315,12 @@ func TestForceResumeImplReviewCheckpointSkipsPRDGenerating(t *testing.T) {
 		default:
 		}
 		got, ok := reg.Get(run.ID)
-		if ok && strings.Contains(got.Phase, "implement") {
+		if ok && got.Phase == runstate.PhaseCleanup {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("run did not return to implement phase after ForceResume with impl_review checkpoint")
+	t.Fatal("run did not return to cleanup phase after ForceResume with impl_review checkpoint")
 }
 
 func TestForceResumeContinuesImplementation(t *testing.T) {
