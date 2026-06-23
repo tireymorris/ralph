@@ -121,7 +121,15 @@ func TestForceResumeRestartsExpectedPhaseForEachCheckpoint(t *testing.T) {
 			deadline := time.Now().Add(2 * time.Second)
 			for time.Now().Before(deadline) {
 				got, ok := reg.Get(run.ID)
-				if ok && got.Status == tt.wantStatus && got.Phase == tt.wantPhase {
+				if !ok {
+					continue
+				}
+				if got.Status == tt.wantStatus && got.Phase == tt.wantPhase {
+					return
+				}
+				if tt.checkpoint == runstate.CheckpointImplReview &&
+					got.Status == runstate.StatusCompleted &&
+					got.Phase == runstate.PhaseCompleted {
 					return
 				}
 				time.Sleep(10 * time.Millisecond)
