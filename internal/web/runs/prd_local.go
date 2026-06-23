@@ -45,15 +45,15 @@ func OngoingLocalPRD(cfg *config.Config, registry *Registry) (*Run, bool) {
 	meta := loadLocalPRDMeta(cfg.WorkDir)
 	status, phase := localPRDStatus(p, meta.Checkpoint)
 	run := &Run{
-		ID:                LocalPRDRunID,
-		WorkDir:           cfg.WorkDir,
-		Prompt:            localPRDPrompt(p),
-		Status:            status,
-		Phase:             phase,
-		CreatedAt:         mod,
-		UpdatedAt:         mod,
-		PRDPath:           cfg.PRDFile,
-		ReviewLoopState:   meta.ReviewLoopState,
+		ID:              LocalPRDRunID,
+		WorkDir:         cfg.WorkDir,
+		Prompt:          localPRDPrompt(p),
+		Status:          status,
+		Phase:           phase,
+		CreatedAt:       mod,
+		UpdatedAt:       mod,
+		PRDPath:         cfg.PRDFile,
+		ReviewLoopState: meta.ReviewLoopState,
 	}
 	if !meta.UpdatedAt.IsZero() {
 		run.UpdatedAt = meta.UpdatedAt

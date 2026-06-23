@@ -33,10 +33,10 @@ func TestCancelRunTable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			runID := "run-" + tt.status
 			api, reg := setupTestAPI(t, &runs.Run{
-				ID:      runID,
-				Prompt:  "goal",
-				Status:  tt.status,
-				Phase:   tt.phase,
+				ID:     runID,
+				Prompt: "goal",
+				Status: tt.status,
+				Phase:  tt.phase,
 			})
 
 			if tt.withCtrl {

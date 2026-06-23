@@ -374,7 +374,7 @@ type failingReviewLoop struct {
 }
 
 func (f *failingReviewLoop) Snapshot() (int, string, int64, string) { return 0, "", 0, "" }
-func (f *failingReviewLoop) Apply(ReviewLoopUpdate) error            { return f.err }
+func (f *failingReviewLoop) Apply(ReviewLoopUpdate) error           { return f.err }
 
 type capturedSlogRecord struct {
 	level   slog.Level

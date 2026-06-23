@@ -53,7 +53,7 @@ TUI and web share the same `workflow.Driver`. Templates define what the runner i
 
 ## Cleanup agent
 
-**Templates:** `cleanup`, `partials/refactor-discipline`, `partials/working-conventions`
+**Templates:** `cleanup`, `partials/cleanup-style-guide`, `partials/working-conventions`
 
 **Philosophy:**
 - Skip if nothing worth doing; otherwise refactor changed files only

@@ -59,7 +59,9 @@ func TestFollowUpCompletedUnmarksStoriesAndIncrementsVersion(t *testing.T) {
 	implMock := &blockingImplRunner{}
 	ctrl := runctrl.NewControllerWithRunner(cfg, reg, runID, implMock)
 	t.Cleanup(ctrl.Cancel)
-	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) { return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil })
+	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
+	})
 	api.SetController(runID, ctrl)
 
 	rec := postJSON(t, api.FollowUpRun, "/api/runs/"+runID+"/followup", runID, `{"message":"add more tests"}`)
@@ -97,7 +99,9 @@ func TestFollowUpRecreatesControllerWhenReleased(t *testing.T) {
 		Phase:   "complete",
 		PRDPath: "prd.json",
 	})
-	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) { return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil })
+	api.SetRunnerFactory(func(*config.Config) (runner.RunnerInterface, error) {
+		return &runner.NoopRunner{Runner: "mock", Command: "mock"}, nil
+	})
 
 	rec := postJSON(t, api.FollowUpRun, "/api/runs/"+runID+"/followup", runID, `{"message":"tweak scope"}`)
 	if rec.Code != http.StatusAccepted {

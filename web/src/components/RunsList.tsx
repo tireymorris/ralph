@@ -77,7 +77,9 @@ export default function RunsList({
     return <p className="content-body content-muted runs-loading">Loading runs…</p>;
   }
 
-  if (visibleRuns.length === 0) {
+  const filteredRuns = visibleRuns ?? [];
+
+  if (filteredRuns.length === 0) {
     return (
       <div className="runs-empty-state">
         <p className="content-body content-muted runs-empty">No runs yet</p>
@@ -92,7 +94,7 @@ export default function RunsList({
     <div className="runs-section">
       <h2 className="runs-heading">{heading}</h2>
       <ul className="runs-list">
-        {visibleRuns.map((run) => (
+        {filteredRuns.map((run) => (
           <li key={run.id} className={run.id === activeId ? "active" : ""}>
             <Link
               to={`/runs/${run.id}`}

@@ -575,15 +575,15 @@ func TestCoordinatorSubcommandsSkipBootUpdate(t *testing.T) {
 				loadConfig: func() (*config.Config, error) {
 					return &config.Config{WorkDir: t.TempDir(), PRDFile: "prd.json"}, nil
 				},
-				runClean: func(*config.Config) int { return 0 },
-				runStatus: func(*config.Config) int { return 0 },
-				runWeb: func(*config.Config, int) int { return 0 },
-				runHeadless: func(*config.Config, string, bool) int { return 0 },
-				validateGit: func(string) error { return nil },
+				runClean:       func(*config.Config) int { return 0 },
+				runStatus:      func(*config.Config) int { return 0 },
+				runWeb:         func(*config.Config, int) int { return 0 },
+				runHeadless:    func(*config.Config, string, bool) int { return 0 },
+				validateGit:    func(string) error { return nil },
 				validateResume: func(*config.Config, bool) error { return nil },
-				helpText:    func() string { return "help text" },
-				versionInfo: func() string { return "version text" },
-				isTerminal:  func(uintptr) bool { return true },
+				helpText:       func() string { return "help text" },
+				versionInfo:    func() string { return "version text" },
+				isTerminal:     func(uintptr) bool { return true },
 			}
 
 			code, _, stderr := captureCoordinatorRun(t, c, tt.opts)
@@ -609,12 +609,12 @@ func TestCoordinatorMetaCommandsSkipBootUpdate(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name           string
-		opts           *args.Options
-		wantCode       int
-		wantStdout     string
-		wantRoute      bool
-		wantRouteName  string
+		name          string
+		opts          *args.Options
+		wantCode      int
+		wantStdout    string
+		wantRoute     bool
+		wantRouteName string
 	}{
 		{
 			name:       "help",

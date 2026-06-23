@@ -9,12 +9,12 @@ import (
 )
 
 type Logger struct {
-	logView viewport.Model
-	logs    []string
-	maxLogs int
-	width   int
-	height  int
-	verbose bool
+	logView   viewport.Model
+	logs      []string
+	maxLogs   int
+	width     int
+	height    int
+	verbose   bool
 	streaming bool
 }
 

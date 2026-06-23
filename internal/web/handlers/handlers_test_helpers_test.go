@@ -84,5 +84,5 @@ func (blockingImplRunner) Run(ctx context.Context, prompt string, _ chan<- runne
 }
 
 func (blockingImplRunner) RunnerName() string        { return "mock" }
-func (blockingImplRunner) CommandName() string        { return "mock" }
-func (blockingImplRunner) IsInternalLog(string) bool  { return false }
+func (blockingImplRunner) CommandName() string       { return "mock" }
+func (blockingImplRunner) IsInternalLog(string) bool { return false }

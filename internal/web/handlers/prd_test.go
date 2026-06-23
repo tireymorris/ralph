@@ -55,8 +55,8 @@ func TestGetRunPRDReturnsStories(t *testing.T) {
 	}
 	var body struct {
 		Stories []struct {
-			ID       string `json:"id"`
-			Slices   []struct {
+			ID     string `json:"id"`
+			Slices []struct {
 				ID       string `json:"id"`
 				Behavior string `json:"behavior"`
 				RedHint  string `json:"red_hint"`

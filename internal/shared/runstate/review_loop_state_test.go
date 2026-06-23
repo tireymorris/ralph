@@ -145,8 +145,8 @@ func TestApplyReviewLoopUpdate_reviewProgressPreservesTranscriptPath(t *testing.
 
 func TestApplyReviewLoopUpdate_fullUpdateAppliesScalars(t *testing.T) {
 	dst := ReviewLoopState{
-		Checkpoint:       CheckpointImplReview,
-		ReviewIteration:  1,
+		Checkpoint:        CheckpointImplReview,
+		ReviewIteration:   1,
 		ReviewFingerprint: "old",
 	}
 

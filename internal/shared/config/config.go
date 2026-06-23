@@ -48,12 +48,12 @@ func DetectRunner(runner string) RunnerKind {
 const DefaultTestCommand = ""
 
 type Config struct {
-	Runner          string   `json:"runner"`
-	PRDFile         string   `json:"prd_file"`
-	WorkDir         string   `json:"-"`
-	TestCommand     string   `json:"test_command"`
-	BranchPrefix    string   `json:"branch_prefix"`
-	DefaultBranches []string `json:"default_branches,omitempty"`
+	Runner          string        `json:"runner"`
+	PRDFile         string        `json:"prd_file"`
+	WorkDir         string        `json:"-"`
+	TestCommand     string        `json:"test_command"`
+	BranchPrefix    string        `json:"branch_prefix"`
+	DefaultBranches []string      `json:"default_branches,omitempty"`
 	RunnerTimeout   time.Duration `json:"-"`
 	SkipCleanup     bool          `json:"-"`
 	AutoApprove     bool          `json:"-"`

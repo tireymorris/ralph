@@ -13,8 +13,8 @@ import (
 	"ralph/internal/shared/gitdiff"
 	"ralph/internal/shared/prd"
 	"ralph/internal/shared/prd/prdtest"
-	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/runner"
+	"ralph/internal/shared/runstate"
 	"ralph/internal/shared/testgit"
 )
 

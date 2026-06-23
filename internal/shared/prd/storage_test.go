@@ -1,9 +1,9 @@
 package prd
 
 import (
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"

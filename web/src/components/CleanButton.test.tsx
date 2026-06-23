@@ -43,7 +43,9 @@ describe("CleanButton", () => {
     expect(confirm).toHaveBeenCalledWith(
       expect.stringMatching(/prd\.json/i),
     );
-    expect(confirm.mock.calls[0]?.[0]).toMatch(/\.ralph\//);
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringMatching(/\.ralph\//),
+    );
     vi.unstubAllGlobals();
   });
 

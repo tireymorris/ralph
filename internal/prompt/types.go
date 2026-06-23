@@ -11,11 +11,11 @@ type ClarificationsData struct {
 }
 
 type PRDGenerateData struct {
-	UserPrompt       string
-	PRDFile          string
-	BranchPrefix     string
-	ContextGuidance  string
-	Clarifications   []QuestionAnswer
+	UserPrompt      string
+	PRDFile         string
+	BranchPrefix    string
+	ContextGuidance string
+	Clarifications  []QuestionAnswer
 }
 
 type PRDCritiqueRevisionData struct {
@@ -31,10 +31,10 @@ type PRDClarificationRevisionData struct {
 }
 
 type PRDSelfReviewData struct {
-	UserPrompt string
-	PRDFile    string
-	Round      int
-	MaxRounds  int
+	UserPrompt  string
+	PRDFile     string
+	Round       int
+	MaxRounds   int
 	VerdictFile string
 }
 
@@ -84,9 +84,9 @@ type CleanupData struct {
 }
 
 type FollowUpData struct {
-	UserMessage    string
-	PRDFile        string
-	RunTranscript  string
+	UserMessage   string
+	PRDFile       string
+	RunTranscript string
 }
 
 type CodebaseContextData struct {

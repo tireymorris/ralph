@@ -34,13 +34,13 @@ func TestFileReviewLoopClearRecoveryPersistsReviewFieldsInMetaJSON(t *testing.T)
 
 	metaPath := filepath.Join(workDir, ".ralph", "runs", runstate.LocalRunID, "meta.json")
 	assertReviewLoopMetaJSON(t, metaPath, reviewLoopMetaWant{
-		checkpoint:       runstate.CheckpointImplReview,
-		reviewIteration:  3,
+		checkpoint:        runstate.CheckpointImplReview,
+		reviewIteration:   3,
 		reviewFingerprint: "fp-seed",
-		reviewElapsedMs:  4200,
-		transcriptPath:   "review-3.txt",
-		changedFilesHash: "hash-xyz",
-		recoveryAttempts: 0,
+		reviewElapsedMs:   4200,
+		transcriptPath:    "review-3.txt",
+		changedFilesHash:  "hash-xyz",
+		recoveryAttempts:  0,
 	})
 }
 
@@ -81,13 +81,13 @@ func TestRegistryClearRecoveryPersistsReviewFieldsInMetaJSONAndReloads(t *testin
 
 	metaPath := filepath.Join(workDir, ".ralph", "runs", "web-run-1", "meta.json")
 	assertReviewLoopMetaJSON(t, metaPath, reviewLoopMetaWant{
-		checkpoint:       runstate.CheckpointImplReview,
-		reviewIteration:  3,
+		checkpoint:        runstate.CheckpointImplReview,
+		reviewIteration:   3,
 		reviewFingerprint: fp,
-		reviewElapsedMs:  4200,
-		transcriptPath:   "review-3.txt",
-		changedFilesHash: "hash-xyz",
-		recoveryAttempts: 0,
+		reviewElapsedMs:   4200,
+		transcriptPath:    "review-3.txt",
+		changedFilesHash:  "hash-xyz",
+		recoveryAttempts:  0,
 	})
 
 	reloaded := runs.NewRegistry()

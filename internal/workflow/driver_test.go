@@ -2,8 +2,8 @@ package workflow
 
 import (
 	"context"
-	"os/exec"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"

@@ -1,9 +1,0 @@
-{{define "refactor-discipline"}}
-REFACTOR DISCIPLINE:
-- Preserve behavior — change structure and readability only.
-- Work in the changed files only; do not mix cleanup with new features.
-- Small steps: keep tests green after each change.
-- Extract duplication when the same logic appears in multiple places; do not invent abstractions for one-off code.
-- Consolidate overlapping tests that prove the same observable outcome.
-- Do not add backwards-compatibility shims unless a real rollout constraint exists — migrate producers and callers to one shape instead.
-{{end}}

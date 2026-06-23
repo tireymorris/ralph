@@ -8,16 +8,16 @@ const (
 )
 
 const (
-	KindClarify                   = "clarify"
-	KindPRDGenerate               = "prd-generate"
-	KindPRDSelfReview             = "prd-self-review"
-	KindPRDCritiqueRevision       = "prd-critique-revision"
-	KindPRDClarificationRevision  = "prd-clarification-revision"
-	KindStoryImplement            = "story-implement"
-	KindDiffReview                = "diff-review"
-	KindRecovery                  = "recovery"
-	KindCleanup                   = "cleanup"
-	KindFollowUp                  = "followup"
+	KindClarify                  = "clarify"
+	KindPRDGenerate              = "prd-generate"
+	KindPRDSelfReview            = "prd-self-review"
+	KindPRDCritiqueRevision      = "prd-critique-revision"
+	KindPRDClarificationRevision = "prd-clarification-revision"
+	KindStoryImplement           = "story-implement"
+	KindDiffReview               = "diff-review"
+	KindRecovery                 = "recovery"
+	KindCleanup                  = "cleanup"
+	KindFollowUp                 = "followup"
 )
 
 func wrapWithKind(kind, body string) string {

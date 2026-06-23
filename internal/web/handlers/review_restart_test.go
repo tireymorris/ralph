@@ -16,11 +16,11 @@ import (
 
 func TestReviewApproveRecreatesControllerWhenMissing(t *testing.T) {
 	api, reg := setupTestAPI(t, &runs.Run{
-		ID:        "run-review-restart",
-		Prompt:    "goal",
-		Status:    "waiting_review",
-		Phase:     "review",
-		PRDPath:   "prd.json",
+		ID:      "run-review-restart",
+		Prompt:  "goal",
+		Status:  "waiting_review",
+		Phase:   "review",
+		PRDPath: "prd.json",
 	})
 
 	cfg := api.Cfg()

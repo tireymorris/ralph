@@ -10,8 +10,8 @@ type (
 	phaseChangeMsg Phase
 
 	resumeStartMsg struct {
-		phase Phase
-		prd   *prd.PRD
+		phase    Phase
+		prd      *prd.PRD
 		snapshot session.RunSnapshot
 	}
 

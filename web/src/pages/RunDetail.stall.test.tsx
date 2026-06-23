@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getRun, openEventStream, postResume } from "../api/client";
+import { getRun, postResume } from "../api/client";
 import { FORCE_RESUME_CONFIRM_MESSAGE } from "../lib/stall";
 import { resetTimelineEntryIdsForTests } from "../lib/timeline";
 import RunDetail from "./RunDetail";

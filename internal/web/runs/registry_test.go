@@ -112,10 +112,10 @@ func TestUpdateCheckpoint(t *testing.T) {
 	workDir := t.TempDir()
 
 	run := &Run{
-		ID:        "run-ckpt",
-		WorkDir:   workDir,
-		Status:    "waiting_review",
-		Phase:     "review",
+		ID:      "run-ckpt",
+		WorkDir: workDir,
+		Status:  "waiting_review",
+		Phase:   "review",
 		ReviewLoopState: runstate.ReviewLoopState{
 			Checkpoint: runstate.CheckpointPRDReview,
 		},
@@ -386,11 +386,11 @@ func TestResumeCheckpointFromReloadedMeta(t *testing.T) {
 	reg := NewRegistry()
 
 	run := &Run{
-		ID:        "run-resume-ckpt",
-		WorkDir:   workDir,
-		Prompt:    "build feature",
-		Status:    "implementing",
-		Phase:     "implement",
+		ID:      "run-resume-ckpt",
+		WorkDir: workDir,
+		Prompt:  "build feature",
+		Status:  "implementing",
+		Phase:   "implement",
 		ReviewLoopState: runstate.ReviewLoopState{
 			Checkpoint: runstate.CheckpointImplReview,
 		},

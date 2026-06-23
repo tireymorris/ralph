@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	DefaultRepo   = "https://github.com/tireymorris/ralph.git"
-	DefaultRef    = "main"
-	EnvRALPHRepo  = "RALPH_REPO"
-	binaryName    = "ralph"
+	DefaultRepo  = "https://github.com/tireymorris/ralph.git"
+	DefaultRef   = "main"
+	EnvRALPHRepo = "RALPH_REPO"
+	binaryName   = "ralph"
 )
 
 type InstallOptions struct {

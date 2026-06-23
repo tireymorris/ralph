@@ -28,7 +28,6 @@ func TestTemplatesParseAtInit(t *testing.T) {
 		"commit-rules",
 		"working-conventions",
 		"review-conventions",
-		"refactor-discipline",
 		"cleanup-style-guide",
 		"planning-style-guide",
 	}
@@ -53,8 +52,8 @@ func TestAllTemplateFilesEmbedded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("walk templates: %v", err)
 	}
-	if count < 17 {
-		t.Fatalf("expected at least 17 template files, got %d", count)
+	if count < 16 {
+		t.Fatalf("expected at least 16 template files, got %d", count)
 	}
 }
 
