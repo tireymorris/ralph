@@ -49,7 +49,7 @@ On startup, Ralph detects an existing codebase from project manifests (e.g. `go.
 3. **PRD self-review** — `--yolo` runs only; failures keep the last revision
 4. **Review PRD** — approve or revise (skipped with `--yolo` / `auto_approve`)
 5. **Implement** — one runner session per pending slice; Ralph marks `slice.passes` and `story.passes` when the runner succeeds
-6. **Cleanup** — once all stories pass: critical diff review, then an optional refactor pass (skip both with `--skip-cleanup`). Review findings trigger an automatic recovery loop (re-review until clean or limits hit). Web `POST .../implementation-review` and `--resume` continue stalled review checkpoints.
+6. **Cleanup (PhaseCleanup)** — once all stories pass: critical diff review, then optional refactor rounds (skip all with `--skip-cleanup`). Review findings trigger an automatic recovery loop (re-review until clean or limits hit). Status `waiting_implementation_review` is a cleanup sub-state, not a separate implementation phase. TUI Enter, web `POST .../implementation-review`, and `--resume` continue cleanup review from the persisted `impl_review` checkpoint without restarting story slices.
 
 TUI and web share `workflow.Driver` → `Executor`. Web adds registry + SSE via `RunController`; TUI uses `FileReviewLoop` under `.ralph/runs/prd-local/`.
 
@@ -76,7 +76,7 @@ Ralph does not handle runner auth.
 | `GET /api/runs/{id}/events` | SSE replay + live stream (use `curl -N`) | — |
 | `POST /api/runs/{id}/clarify` | Clarification answers (when `waiting_clarify`) | `{"answers":[{"question":"...","answer":"..."}]}` |
 | `POST /api/runs/{id}/review` | Approve or revise PRD (when `waiting_review`) | `{"action":"approve"}` **or** `{"action":"revise","critique":"..."}` |
-| `POST /api/runs/{id}/implementation-review` | Continue after review findings (when `waiting_implementation_review`) | `{}` |
+| `POST /api/runs/{id}/implementation-review` | Continue cleanup review after findings (when `waiting_implementation_review`; run stays in PhaseCleanup) | `{}` |
 | `POST /api/runs/{id}/followup` | Send a follow-up message | `{"message":"..."}` |
 | `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume` | Control | — |
 | `GET /api/version`, `POST /api/update`, `POST /api/clean` | Meta | — |
@@ -100,7 +100,7 @@ Written in the working directory (gitignored). New runs archive prior state to `
 | `.ralph/runs/<id>/review-*.txt` | Implementation review transcripts |
 | `.ralph/backups/<timestamp>/` | Archived prior state |
 
-Checkpoints: `prd_review`, `impl_review`, `followup`, `complete`.
+Checkpoints: `prd_review`, `impl_review` (cleanup review pause), `followup`, `complete`.
 
 ## Architecture
 
