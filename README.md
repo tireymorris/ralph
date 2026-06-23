@@ -76,7 +76,7 @@ Ralph does not handle runner auth.
 | `GET /api/runs/{id}/events` | SSE replay + live stream (use `curl -N`) | — |
 | `POST /api/runs/{id}/clarify` | Clarification answers (when `waiting_clarify`) | `{"answers":[{"question":"...","answer":"..."}]}` |
 | `POST /api/runs/{id}/review` | Approve or revise PRD (when `waiting_review`) | `{"action":"approve"}` **or** `{"action":"revise","critique":"..."}` |
-| `POST /api/runs/{id}/implementation-review` | Continue cleanup review after findings (when `waiting_implementation_review`; run stays in PhaseCleanup) | `{}` |
+| `POST /api/runs/{id}/implementation-review` | Continue cleanup after findings (when `waiting_implementation_review`; run stays in PhaseCleanup) | `{}` |
 | `POST /api/runs/{id}/followup` | Send a follow-up message | `{"message":"..."}` |
 | `POST /api/runs/{id}/cancel`, `POST /api/runs/{id}/resume` | Control | — |
 | `GET /api/version`, `POST /api/update`, `POST /api/clean` | Meta | — |

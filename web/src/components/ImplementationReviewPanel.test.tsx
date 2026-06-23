@@ -18,10 +18,10 @@ describe("ImplementationReviewPanel", () => {
     render(<ImplementationReviewPanel runId="run-1" />);
 
     expect(
-      screen.getByRole("heading", { name: /cleanup review/i }),
+      screen.getByRole("heading", { name: /^cleanup$/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /continue cleanup/i }),
+      screen.getByRole("button", { name: /^continue$/i }),
     ).toBeInTheDocument();
   });
 
@@ -35,7 +35,7 @@ describe("ImplementationReviewPanel", () => {
     );
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue cleanup/i }),
+      screen.getByRole("button", { name: /^continue$/i }),
     );
 
     await waitFor(() => {
@@ -52,14 +52,14 @@ describe("ImplementationReviewPanel", () => {
     render(<ImplementationReviewPanel runId="run-1" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue cleanup/i }),
+      screen.getByRole("button", { name: /^continue$/i }),
     );
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("server error");
     });
     expect(
-      screen.getByRole("button", { name: /continue cleanup/i }),
+      screen.getByRole("button", { name: /^continue$/i }),
     ).toBeEnabled();
   });
 
@@ -75,7 +75,7 @@ describe("ImplementationReviewPanel", () => {
     render(<ImplementationReviewPanel runId="run-1" />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /continue cleanup/i }),
+      screen.getByRole("button", { name: /^continue$/i }),
     );
 
     expect(
@@ -85,7 +85,7 @@ describe("ImplementationReviewPanel", () => {
     resolveContinue();
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /continue cleanup/i }),
+        screen.getByRole("button", { name: /^continue$/i }),
       ).toBeEnabled();
     });
   });

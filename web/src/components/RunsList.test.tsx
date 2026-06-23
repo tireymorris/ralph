@@ -144,7 +144,7 @@ describe("RunsList", () => {
     [
       "waiting_implementation_review",
       "run-status-badge--waiting",
-      "Cleanup Review",
+      "Cleanup",
     ],
     ["completed", "run-status-badge--completed", "Completed"],
     ["failed", "run-status-badge--failed", "Failed"],

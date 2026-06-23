@@ -562,7 +562,7 @@ describe("RunDetail", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole("region", { name: /cleanup review/i }),
+          screen.getByRole("region", { name: /^cleanup$/i }),
         ).toBeInTheDocument();
       });
     });
@@ -581,11 +581,11 @@ describe("RunDetail", () => {
       });
 
       expect(
-        screen.queryByRole("region", { name: /cleanup review/i }),
+        screen.queryByRole("region", { name: /^cleanup$/i }),
       ).not.toBeInTheDocument();
     });
 
-    it("calls continueImplementationReview when continue cleanup is clicked", async () => {
+    it("calls continueImplementationReview when Continue is clicked", async () => {
       vi.mocked(getRun).mockResolvedValue({
         ...baseRun,
         status: "waiting_implementation_review",
@@ -596,12 +596,12 @@ describe("RunDetail", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByRole("button", { name: /continue cleanup/i }),
+          screen.getByRole("button", { name: /^continue$/i }),
         ).toBeInTheDocument();
       });
 
       await userEvent.click(
-        screen.getByRole("button", { name: /continue cleanup/i }),
+        screen.getByRole("button", { name: /^continue$/i }),
       );
 
       await waitFor(() => {

@@ -24,10 +24,10 @@ func TestHandleWorkflowEventImplementationReviewLogs(t *testing.T) {
 
 	logView := m.logger.GetView().View()
 	for _, want := range []string{
-		"Cleanup review started (iteration 2)",
+		"Cleanup started (iteration 2)",
 		"Review finding: missing tests",
 		"Review finding: unsafe cast",
-		"Cleanup review completed (iteration 2, findings)",
+		"Cleanup completed (iteration 2, findings)",
 	} {
 		if !strings.Contains(logView, want) {
 			t.Fatalf("log view missing %q, got:\n%s", want, logView)

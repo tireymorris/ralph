@@ -19,8 +19,12 @@ export function buildBinary() {
   built = true;
 }
 
-export function buildFrontend() {
-  execSync("npm run build", { cwd: join(ROOT, "web"), stdio: "pipe" });
+export function buildFrontend(env: Record<string, string> = {}) {
+  execSync("npm run build", {
+    cwd: join(ROOT, "web"),
+    stdio: "pipe",
+    env: { ...process.env, ...env },
+  });
 }
 
 export interface ServerHandle {

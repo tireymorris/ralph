@@ -158,7 +158,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 			Iteration:  e.Iteration,
 		}
 		m.phase = PhaseCleanup
-		m.logger.AddLog(fmt.Sprintf("Cleanup review started (iteration %d)", e.Iteration))
+		m.logger.AddLog(fmt.Sprintf("Cleanup started (iteration %d)", e.Iteration))
 		m.syncPresentation(runstate.PhaseCleanup)
 		m.markMainScrollJump()
 
@@ -179,7 +179,7 @@ func (m *Model) handleWorkflowEvent(event events.Event) tea.Cmd {
 		if !e.Clean {
 			outcome = "findings"
 		}
-		m.logger.AddLog(fmt.Sprintf("Cleanup review completed (iteration %d, %s)", e.Iteration, outcome))
+		m.logger.AddLog(fmt.Sprintf("Cleanup completed (iteration %d, %s)", e.Iteration, outcome))
 		if e.Clean {
 			m.activity = session.RunActivity{Kind: session.ActivityCleanup}
 		}

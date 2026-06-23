@@ -9,7 +9,7 @@ describe("formatStatus", () => {
   it("preserves existing labels", () => {
     expect(formatStatus("running")).toBe("Running");
     expect(formatStatus("completed")).toBe("Completed");
-    expect(formatStatus("waiting_implementation_review")).toBe("Cleanup Review");
+    expect(formatStatus("waiting_implementation_review")).toBe("Cleanup");
   });
 });
 

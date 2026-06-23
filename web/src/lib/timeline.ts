@@ -114,13 +114,21 @@ export function entryFromEnvelope(
         text: `${envelope.type === "EventSliceStarted" ? "Started" : "Completed"} slice: ${formatSliceLabel(payload)}`,
       };
     }
+    case "EventCleanupStarted":
+      return null;
+    case "EventCleanupCompleted":
+      return {
+        id,
+        variant: "system",
+        text: "Cleanup finished",
+      };
     case "EventImplementationReviewStarted": {
       const payload = envelope.payload as ImplementationReviewStartedPayload;
       const iteration = payload.Iteration ?? 0;
       return {
         id,
         variant: "system",
-        text: `Implementation review started (iteration ${iteration})`,
+        text: `Cleanup started (iteration ${iteration})`,
       };
     }
     case "EventImplementationReview": {
@@ -132,13 +140,13 @@ export function entryFromEnvelope(
         return {
           id,
           variant: "system",
-          text: "Implementation review reported findings",
+          text: "Cleanup reported findings",
         };
       }
       return {
         id,
         variant: "system",
-        text: `Review findings: ${summaries.join("; ")}`,
+        text: `Cleanup findings: ${summaries.join("; ")}`,
       };
     }
     case "EventImplementationReviewCompleted": {
@@ -148,7 +156,7 @@ export function entryFromEnvelope(
       return {
         id,
         variant: "system",
-        text: `Implementation review completed (iteration ${iteration}, ${outcome})`,
+        text: `Cleanup completed (iteration ${iteration}, ${outcome})`,
       };
     }
     case "EventError": {

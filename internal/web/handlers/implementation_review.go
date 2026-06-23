@@ -16,7 +16,7 @@ func (a *API) ContinueImplementationReview(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if run.Status != runstate.StatusWaitingImplReview {
-		writeJSONError(w, http.StatusConflict, "run is not waiting for implementation review")
+		writeJSONError(w, http.StatusConflict, "run is not waiting for cleanup")
 		return
 	}
 	if err := workdir.ValidateGit(run.WorkDir); err != nil {

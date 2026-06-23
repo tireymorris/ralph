@@ -1,4 +1,11 @@
-export const RUN_STALL_THRESHOLD_MS = 120_000;
+const configuredStallThreshold = Number(
+  import.meta.env.VITE_RUN_STALL_THRESHOLD_MS,
+);
+
+export const RUN_STALL_THRESHOLD_MS =
+  Number.isFinite(configuredStallThreshold) && configuredStallThreshold > 0
+    ? configuredStallThreshold
+    : 120_000;
 export const RUN_STALL_CHECK_INTERVAL_MS = 5_000;
 
 export const FORCE_RESUME_CONFIRM_MESSAGE =

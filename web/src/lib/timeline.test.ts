@@ -23,7 +23,7 @@ describe("stableEnvelopeEntryId", () => {
   });
 });
 
-describe("entryFromEnvelope implementation review", () => {
+describe("entryFromEnvelope cleanup", () => {
   it("maps started, findings, and completed events", () => {
     const started = entryFromEnvelope({
       type: "EventImplementationReviewStarted",
@@ -35,7 +35,7 @@ describe("entryFromEnvelope implementation review", () => {
         payload: { Iteration: 1 },
       }),
       variant: "system",
-      text: "Implementation review started (iteration 1)",
+      text: "Cleanup started (iteration 1)",
     });
 
     const findings = entryFromEnvelope({
@@ -48,15 +48,21 @@ describe("entryFromEnvelope implementation review", () => {
       },
     });
     expect(findings?.variant).toBe("system");
-    expect(findings?.text).toContain("missing tests");
-    expect(findings?.text).toContain("unsafe cast");
+    expect(findings?.text).toBe("Cleanup findings: missing tests; unsafe cast");
 
     const completed = entryFromEnvelope({
       type: "EventImplementationReviewCompleted",
       payload: { Iteration: 1, Clean: true },
     });
     expect(completed?.text).toBe(
-      "Implementation review completed (iteration 1, clean)",
+      "Cleanup completed (iteration 1, clean)",
+    );
+
+    expect(
+      entryFromEnvelope({ type: "EventCleanupStarted", payload: {} }),
+    ).toBeNull();
+    expect(entryFromEnvelope({ type: "EventCleanupCompleted", payload: {} })?.text).toBe(
+      "Cleanup finished",
     );
   });
 });

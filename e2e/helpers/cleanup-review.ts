@@ -6,7 +6,31 @@ const findingsTranscript = `===ralph-findings===
 [{"category":"bug","path":"feature.go","summary":"add test"}]
 ===/ralph-findings===`;
 
-export function seedWaitingCleanupReviewRun(workDir: string, runId = "run-cleanup-review") {
+export interface SeedCleanupReviewOptions {
+  runId?: string;
+  reviewIteration?: number;
+  seedEvents?: boolean;
+}
+
+export function seedWaitingCleanupReviewRun(
+  workDir: string,
+  runIdOrOptions: string | SeedCleanupReviewOptions = "run-cleanup-review",
+  maybeOptions?: SeedCleanupReviewOptions,
+) {
+  let runId = "run-cleanup-review";
+  let options: SeedCleanupReviewOptions = {};
+
+  if (typeof runIdOrOptions === "string") {
+    runId = runIdOrOptions;
+    options = maybeOptions ?? {};
+  } else {
+    options = runIdOrOptions;
+    runId = options.runId ?? runId;
+  }
+
+  const reviewIteration = options.reviewIteration ?? 1;
+  const seedEvents = options.seedEvents ?? true;
+
   const prd = {
     version: 1,
     project_name: "Mock",
@@ -56,13 +80,29 @@ export function seedWaitingCleanupReviewRun(workDir: string, runId = "run-cleanu
     status: "waiting_implementation_review",
     phase: "cleanup",
     checkpoint: "impl_review",
-    review_iteration: 1,
+    review_iteration: reviewIteration,
     last_review_transcript_path: "review-1.txt",
     created_at: now,
     updated_at: now,
     prd_path: "prd.json",
   };
   writeFileSync(join(runDir, "meta.json"), JSON.stringify(meta, null, 2));
+
+  if (seedEvents) {
+    const eventLines = [
+      JSON.stringify({
+        type: "EventImplementationReviewStarted",
+        payload: { Iteration: reviewIteration },
+      }),
+      JSON.stringify({
+        type: "EventImplementationReview",
+        payload: {
+          Findings: [{ ID: "f1", Summary: "add test" }],
+        },
+      }),
+    ];
+    writeFileSync(join(runDir, "events.ndjson"), `${eventLines.join("\n")}\n`);
+  }
 
   return runId;
 }
