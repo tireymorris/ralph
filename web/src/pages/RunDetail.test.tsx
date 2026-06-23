@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ApiError,
   cancelRun,
+  continueImplementationReview,
   createRun,
   getRun,
   getRunPRD,
@@ -37,6 +38,7 @@ vi.mock("../api/client", async (importOriginal) => {
     getRun: vi.fn(),
     getRunPRD: vi.fn(),
     cancelRun: vi.fn().mockResolvedValue(undefined),
+    continueImplementationReview: vi.fn().mockResolvedValue(undefined),
     createRun: vi.fn().mockResolvedValue({ id: "run-2" }),
     submitClarify: vi.fn().mockResolvedValue(undefined),
     submitFollowUp: vi.fn().mockResolvedValue(undefined),
@@ -135,6 +137,7 @@ afterEach(() => {
   });
   vi.mocked(getRunPRD).mockReset();
   vi.mocked(cancelRun).mockResolvedValue(undefined);
+  vi.mocked(continueImplementationReview).mockResolvedValue(undefined);
   vi.mocked(createRun).mockResolvedValue({ id: "run-2" });
   vi.mocked(submitClarify).mockResolvedValue(undefined);
   vi.mocked(submitFollowUp).mockResolvedValue(undefined);
@@ -543,6 +546,67 @@ describe("RunDetail", () => {
       const currentStory = screen.getByText("Current story").closest("details");
       expect(currentStory).not.toBeNull();
       expect(currentStory).toHaveAttribute("open");
+    });
+  });
+
+  describe("cleanup review panel", () => {
+    it("shows the panel only while waiting for implementation review", async () => {
+      vi.mocked(getRun).mockResolvedValue({
+        ...baseRun,
+        status: "waiting_implementation_review",
+        phase: "cleanup",
+        review_iteration: 1,
+      });
+
+      renderRunDetail();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("region", { name: /cleanup review/i }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("hides the panel for other run statuses", async () => {
+      vi.mocked(getRun).mockResolvedValue({
+        ...baseRun,
+        status: "implementing",
+        phase: "implement",
+      });
+
+      renderRunDetail();
+
+      await waitFor(() => {
+        expect(openEventStream).toHaveBeenCalledWith("run-1");
+      });
+
+      expect(
+        screen.queryByRole("region", { name: /cleanup review/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("calls continueImplementationReview when continue cleanup is clicked", async () => {
+      vi.mocked(getRun).mockResolvedValue({
+        ...baseRun,
+        status: "waiting_implementation_review",
+        phase: "cleanup",
+      });
+
+      renderRunDetail();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /continue cleanup/i }),
+        ).toBeInTheDocument();
+      });
+
+      await userEvent.click(
+        screen.getByRole("button", { name: /continue cleanup/i }),
+      );
+
+      await waitFor(() => {
+        expect(continueImplementationReview).toHaveBeenCalledWith("run-1");
+      });
     });
   });
 });
