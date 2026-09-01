@@ -13,7 +13,7 @@ Ralph turns a natural-language goal into `prd.json`, then implements it story by
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
+go install github.com/tireymorris/ralph@latest
 ```
 
 ## Use
