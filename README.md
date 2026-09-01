@@ -5,6 +5,12 @@ Turn a goal into `prd.json`, then implement it slice-by-slice via an AI coding C
 ## Install
 
 ```bash
+go install github.com/tireymorris/ralph@latest
+```
+
+Or with the install script:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/tireymorris/ralph/main/scripts/install.sh | bash
 ```
 
