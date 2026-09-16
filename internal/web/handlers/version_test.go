@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/update"
-	"ralph/internal/version"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestGetVersionCurrent(t *testing.T) {

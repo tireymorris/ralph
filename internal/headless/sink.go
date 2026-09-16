@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 type ndjsonSink struct {

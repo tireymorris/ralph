@@ -1,8 +1,8 @@
 package workflow
 
 import (
-	"ralph/internal/shared/runstate"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func EventStatusPhase(ev events.Event) (status, phase string) {

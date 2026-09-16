@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/session"
 )
 
 func TestRunCompletesUnattended(t *testing.T) {

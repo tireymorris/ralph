@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runner"
 )
 
 func TestLoggerWrapsLongLine(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/shared/runstate"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 // Reattach restores an in-memory workflow session for a run interrupted by process restart.

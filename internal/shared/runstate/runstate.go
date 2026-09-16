@@ -1,6 +1,6 @@
 package runstate
 
-import "ralph/internal/shared/prd"
+import "github.com/tireymorris/ralph/internal/shared/prd"
 
 const LocalRunID = "prd-local"
 

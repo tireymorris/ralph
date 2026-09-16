@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/testgit"
-	"ralph/internal/web/handlers"
-	webrunner "ralph/internal/web/runner"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/web/handlers"
+	webrunner "github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestClarifySubmitRecreatesControllerAfterRestart(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/prd/prdtest"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd/prdtest"
 )
 
 // blockedPRDStore bypasses prd.Load validation so tests can return a PRD

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 func TestPaths(t *testing.T) {

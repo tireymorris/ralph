@@ -3,8 +3,8 @@ package status
 import (
 	"fmt"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func Display(cfg *config.Config) error {

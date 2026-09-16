@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/web/handlers"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/web/handlers"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestReviewNotWaitingReturns409(t *testing.T) {

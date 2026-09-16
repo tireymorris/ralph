@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runner"
 )
 
 type testRunner struct {

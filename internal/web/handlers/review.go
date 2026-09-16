@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
 )
 
 type reviewRequest struct {

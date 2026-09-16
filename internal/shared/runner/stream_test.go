@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/constants"
 )
 
 func passthroughTransform(line string) []OutputLine {

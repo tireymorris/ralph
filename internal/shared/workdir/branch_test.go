@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
 )
 
 func initGitRepo(t *testing.T, dir string) {

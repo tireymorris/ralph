@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestFollowUpResumeTransitionsToImplementPhase(t *testing.T) {

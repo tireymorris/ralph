@@ -1,6 +1,6 @@
 package workflow
 
-import "ralph/internal/shared/runstate"
+import "github.com/tireymorris/ralph/internal/shared/runstate"
 
 const StopReasonDuplicateFindings = runstate.StopReasonDuplicateFindings
 

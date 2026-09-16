@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
 )
 
 // Executor orchestrates PRD generation, clarification, and story implementation.

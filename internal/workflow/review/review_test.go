@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
 )
 
 func TestReviewDiffRespectsContextCancellation(t *testing.T) {

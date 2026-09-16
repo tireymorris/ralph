@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func (e *Executor) RunGenerate(ctx context.Context, userPrompt string) (*prd.PRD, error) {

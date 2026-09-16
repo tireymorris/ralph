@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func TestNew(t *testing.T) {

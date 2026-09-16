@@ -9,10 +9,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestPhaseString(t *testing.T) {

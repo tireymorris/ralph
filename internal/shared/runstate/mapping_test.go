@@ -3,7 +3,7 @@ package runstate
 import (
 	"testing"
 
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func TestCheckpointStatusPhase(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"ralph/internal/shared/prd"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func (a *API) GetRunPRD(w http.ResponseWriter, r *http.Request) {

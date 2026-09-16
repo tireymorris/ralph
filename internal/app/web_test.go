@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/web"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/web"
 )
 
 func TestRunWebServesHealth(t *testing.T) {

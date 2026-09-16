@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func mustNewHandler(t *testing.T) http.Handler {

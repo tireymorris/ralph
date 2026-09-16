@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
 )
 
 func TestValidateGitWorkdirMissingDir(t *testing.T) {

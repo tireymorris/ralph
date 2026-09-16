@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/prd/prdtest"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/testgit"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd/prdtest"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestRunGenerateEmptyWorkdirUsesNewProjectPrompt(t *testing.T) {

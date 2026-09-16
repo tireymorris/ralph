@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"ralph/internal/shared/workdir"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func (a *API) ResumeRun(w http.ResponseWriter, r *http.Request) {

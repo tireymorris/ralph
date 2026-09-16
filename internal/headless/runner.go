@@ -6,11 +6,11 @@ import (
 	"os"
 	"sync"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/session"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 type Runner struct {

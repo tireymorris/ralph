@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/constants"
 )
 
 type stdinSetter interface {

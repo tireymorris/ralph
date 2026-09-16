@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/session"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestHandleWorkflowEventPRDGenerating(t *testing.T) {

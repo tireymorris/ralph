@@ -4,10 +4,10 @@ import (
 	"os/exec"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/prd/prdtest"
-	"ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd/prdtest"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
 )
 
 type inMemoryPRDStore struct {

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"ralph/internal/shared/gitdiff"
+	"github.com/tireymorris/ralph/internal/shared/gitdiff"
 )
 
 func TestCleanupBranchUpstreamDiffDetectable(t *testing.T) {

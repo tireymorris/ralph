@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/logger"
-	sharedrunner "ralph/internal/shared/runner"
-	runctrl "ralph/internal/web/runner"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	sharedrunner "github.com/tireymorris/ralph/internal/shared/runner"
+	runctrl "github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 type runnerFactory func(*config.Config) (sharedrunner.RunnerInterface, error)

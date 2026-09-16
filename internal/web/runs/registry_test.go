@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/runstate"
-	"ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/workflow"
 )
 
 func TestRunEmbedsReviewLoopState(t *testing.T) {

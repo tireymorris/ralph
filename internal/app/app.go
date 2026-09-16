@@ -1,6 +1,6 @@
 package app
 
-import "ralph/internal/args"
+import "github.com/tireymorris/ralph/internal/args"
 
 func Run(argv []string) int {
 	return newCoordinator().Run(args.Parse(argv))

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/workdir"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 type clarifyRequest struct {

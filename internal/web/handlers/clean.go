@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"ralph/internal/clean"
+	"github.com/tireymorris/ralph/internal/clean"
 )
 
 func (a *API) CleanState(w http.ResponseWriter, r *http.Request) {

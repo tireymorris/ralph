@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/gitdiff"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/gitdiff"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
 )
 
 type Params struct {

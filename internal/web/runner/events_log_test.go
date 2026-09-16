@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestEventsNDJSONThreeLines(t *testing.T) {

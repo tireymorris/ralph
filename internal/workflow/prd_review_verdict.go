@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/prompt"
 )
 
 // PRDReviewVerdict is the agent's self-review verdict on the generated PRD.

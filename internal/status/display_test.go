@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func TestDisplay(t *testing.T) {

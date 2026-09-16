@@ -3,8 +3,8 @@ package workflow
 import (
 	"context"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/logger"
 )
 
 // RunClarify emits questions and waits for consumer answers; skipped questions return nil.

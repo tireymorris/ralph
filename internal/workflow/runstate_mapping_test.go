@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"ralph/internal/shared/runstate"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestEventStatusPhase(t *testing.T) {

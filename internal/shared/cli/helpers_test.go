@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func TestOutputPrefix(t *testing.T) {

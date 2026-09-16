@@ -1,6 +1,6 @@
 package prdtest
 
-import "ralph/internal/shared/prd"
+import "github.com/tireymorris/ralph/internal/shared/prd"
 
 func Slices(behavior string) []*prd.Slice {
 	return []*prd.Slice{{

@@ -3,8 +3,8 @@ package events
 import (
 	"testing"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func TestEventTypes(t *testing.T) {

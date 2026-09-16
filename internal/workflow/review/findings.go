@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 type Finding = events.ImplementationFinding

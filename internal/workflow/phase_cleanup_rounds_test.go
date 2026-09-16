@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
 )
 
 func TestRunCleanupMultipleRoundsUntilNoProgress(t *testing.T) {

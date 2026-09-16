@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/testgit"
-	"ralph/internal/web/handlers"
-	runctrl "ralph/internal/web/runner"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/web/handlers"
+	runctrl "github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 var runIDPattern = regexp.MustCompile(`^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

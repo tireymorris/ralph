@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 const runDirPerm = 0o750

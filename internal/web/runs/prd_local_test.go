@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 func TestOngoingLocalPRD_incompletePRD(t *testing.T) {

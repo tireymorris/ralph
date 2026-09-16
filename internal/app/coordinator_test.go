@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"ralph/internal/args"
-	"ralph/internal/shared/config"
-	"ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/args"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/update"
 )
 
 func TestCoordinatorRoutesCommands(t *testing.T) {

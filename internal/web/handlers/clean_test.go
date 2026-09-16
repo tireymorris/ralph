@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/clean"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/clean"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestCleanState(t *testing.T) {

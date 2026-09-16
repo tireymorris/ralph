@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/clean"
-	sharedprd "ralph/internal/shared/prd"
-	"ralph/internal/shared/workdir"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/clean"
+	sharedprd "github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 type createRunRequest struct {

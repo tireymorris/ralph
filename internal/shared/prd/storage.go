@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/constants"
 )
 
 // Load reads and parses the PRD under a shared lock.

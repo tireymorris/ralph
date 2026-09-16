@@ -1,6 +1,6 @@
 package workflow
 
-import "ralph/internal/workflow/events"
+import "github.com/tireymorris/ralph/internal/workflow/events"
 
 type (
 	Event                              = events.Event

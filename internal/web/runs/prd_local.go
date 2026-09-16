@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runpaths"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 // LocalPRDRunID is the stable API id for an in-progress TUI/CLI run backed only by prd.json.

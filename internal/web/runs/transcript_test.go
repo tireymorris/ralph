@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestReadEventTranscript_last200Lines(t *testing.T) {

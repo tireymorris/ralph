@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/update"
 )
 
 func TestRunUpdateSuccess(t *testing.T) {

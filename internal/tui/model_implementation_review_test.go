@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestHandleWorkflowEventImplementationReviewLogs(t *testing.T) {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 // runPRDSelfReview has the agent critique and revise the PRD against the

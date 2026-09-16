@@ -6,9 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestHandleWorkflowEventClarifyingQuestions(t *testing.T) {

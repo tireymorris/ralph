@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestResumeRunRejectsNonGitWorkdir(t *testing.T) {

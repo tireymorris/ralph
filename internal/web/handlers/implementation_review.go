@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
 )
 
 func (a *API) ContinueImplementationReview(w http.ResponseWriter, r *http.Request) {

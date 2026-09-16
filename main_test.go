@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"ralph/internal/app"
-	"ralph/internal/args"
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/app"
+	"github.com/tireymorris/ralph/internal/args"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func TestRunHelp(t *testing.T) {

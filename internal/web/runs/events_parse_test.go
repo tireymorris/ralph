@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/runpaths"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/web/runner"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestNeedsSessionReattach(t *testing.T) {

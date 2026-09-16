@@ -8,4 +8,4 @@ version="$(git describe --tags --always 2>/dev/null || echo dev)"
 commit="$(git rev-parse HEAD)"
 ref="$(git symbolic-ref -q --short HEAD 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || echo unknown)"
 
-printf '%s' "-X ralph/internal/version.Version=${version} -X ralph/internal/version.Commit=${commit} -X ralph/internal/version.Ref=${ref}"
+printf '%s' "-X github.com/tireymorris/ralph/internal/version.Version=${version} -X github.com/tireymorris/ralph/internal/version.Commit=${commit} -X github.com/tireymorris/ralph/internal/version.Ref=${ref}"

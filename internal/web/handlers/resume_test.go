@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestResumeRunOnRunningReturnsAccepted(t *testing.T) {

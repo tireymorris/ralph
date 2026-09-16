@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	webrunner "ralph/internal/web/runner"
-	"ralph/internal/workflow/events"
+	webrunner "github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestEventEnvelopeRunnerMatchesWorkflowEvents(t *testing.T) {

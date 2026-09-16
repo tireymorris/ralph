@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/gitdiff"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/workflow/review"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/gitdiff"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/workflow/review"
 )
 
 func (e *Executor) SetReviewLoop(runID string, updater ReviewLoopUpdater) {

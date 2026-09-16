@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestMarshalEventEnvelope_DelegatesToWorkflowEvents(t *testing.T) {

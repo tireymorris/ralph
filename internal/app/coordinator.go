@@ -10,17 +10,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
 
-	"ralph/internal/args"
-	"ralph/internal/clean"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/logger"
-	sharedprd "ralph/internal/shared/prd"
-	"ralph/internal/shared/workdir"
-	"ralph/internal/status"
-	"ralph/internal/tui"
-	"ralph/internal/update"
-	"ralph/internal/version"
-	"ralph/internal/web"
+	"github.com/tireymorris/ralph/internal/args"
+	"github.com/tireymorris/ralph/internal/clean"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	sharedprd "github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/status"
+	"github.com/tireymorris/ralph/internal/tui"
+	"github.com/tireymorris/ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/web"
 )
 
 type Coordinator struct {

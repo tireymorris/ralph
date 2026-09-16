@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func (a *API) CancelRun(w http.ResponseWriter, r *http.Request) {

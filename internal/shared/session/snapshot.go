@@ -1,8 +1,8 @@
 package session
 
 import (
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 type RunSnapshot struct {

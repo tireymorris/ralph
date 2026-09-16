@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/args"
-	"ralph/internal/shared/config"
-	"ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/args"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/version"
 )
 
 func TestRunVersion(t *testing.T) {

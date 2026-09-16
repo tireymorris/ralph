@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/version"
 )
 
 const (

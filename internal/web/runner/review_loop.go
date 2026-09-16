@@ -1,8 +1,8 @@
 package runner
 
 import (
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow"
 )
 
 type registryReviewLoop struct {

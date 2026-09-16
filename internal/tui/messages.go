@@ -1,9 +1,9 @@
 package tui
 
 import (
-	"ralph/internal/prompt"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/session"
 )
 
 type (

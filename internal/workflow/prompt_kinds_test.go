@@ -1,6 +1,6 @@
 package workflow
 
-import promptpkg "ralph/internal/prompt"
+import promptpkg "github.com/tireymorris/ralph/internal/prompt"
 
 func isDiffReviewPrompt(p string) bool {
 	return promptpkg.HasKind(p, promptpkg.KindDiffReview)

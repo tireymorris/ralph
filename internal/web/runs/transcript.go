@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
 )
 
 func ReadEventTranscript(workDir, runID string, maxLines int) (string, error) {

@@ -5,12 +5,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/session"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func (m *Model) syncPresentation(fallbackPhase string) {

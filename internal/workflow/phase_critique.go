@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 // RunCritiqueRevision applies user critique to the PRD, re-runs clarification, then returns to review.

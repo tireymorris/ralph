@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 var (

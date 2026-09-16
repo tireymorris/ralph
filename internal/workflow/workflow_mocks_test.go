@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	promptpkg "ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
+	promptpkg "github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
 )
 
 const cleanReviewTranscript = "===ralph-findings===\n[]\n===/ralph-findings===\n"

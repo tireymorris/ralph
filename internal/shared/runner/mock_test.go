@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func TestMockRunnerWritesPRD(t *testing.T) {

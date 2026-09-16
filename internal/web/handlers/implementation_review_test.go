@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func TestContinueImplementationReviewConflictWhenNotWaiting(t *testing.T) {

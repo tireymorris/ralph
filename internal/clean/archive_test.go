@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/shared/prd"
-	"ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/workflow"
 )
 
 func TestArchivePriorState_seededArtifacts(t *testing.T) {

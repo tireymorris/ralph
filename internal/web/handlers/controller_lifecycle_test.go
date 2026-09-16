@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	runctrl "ralph/internal/web/runner"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	runctrl "github.com/tireymorris/ralph/internal/web/runner"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 func TestReleaseControllerOnCompleted(t *testing.T) {

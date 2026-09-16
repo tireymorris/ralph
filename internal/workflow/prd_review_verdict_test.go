@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/prompt"
 )
 
 func TestParsePRDReviewVerdict(t *testing.T) {

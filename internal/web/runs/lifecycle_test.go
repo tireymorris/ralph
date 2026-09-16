@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 func TestLifecycleClarifyUpdatesStatusAndPhase(t *testing.T) {

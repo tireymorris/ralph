@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/logger"
 )
 
 func (e *Executor) runClarifyRunner(ctx context.Context, userPrompt string, isEmpty bool) error {

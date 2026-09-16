@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/logger"
 )
 
 type CursorAgentRunner struct {

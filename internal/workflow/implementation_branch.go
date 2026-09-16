@@ -3,9 +3,9 @@ package workflow
 import (
 	"fmt"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/workdir"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/workdir"
 )
 
 var currentBranchName = workdir.CurrentBranchName

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"ralph/internal/shared/runpaths"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 type fileRunMeta struct {

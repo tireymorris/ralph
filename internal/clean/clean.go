@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func RemoveState(cfg *config.Config) error {

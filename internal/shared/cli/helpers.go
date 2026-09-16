@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func OutputPrefix(isErr bool) string {

@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/session"
 )
 
 func (m *Model) View() string {

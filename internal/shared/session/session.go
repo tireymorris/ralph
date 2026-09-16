@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/runner"
-	"ralph/internal/workflow"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 // Session is a shared facade over workflow.Driver for UI-specific callers.

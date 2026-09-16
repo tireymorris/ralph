@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	promptpkg "ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
+	promptpkg "github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 const mockQuestionsFile = ".ralph/questions.json"

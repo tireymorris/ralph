@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func ArchivePriorState(cfg *config.Config) (backupDir string, err error) {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/gitdiff"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/gitdiff"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func (e *Executor) RunCleanup(ctx context.Context, p *prd.PRD) error {

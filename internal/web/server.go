@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/web/handlers"
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/web/handlers"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 func NewHandler(cfg *config.Config) (http.Handler, error) {

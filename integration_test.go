@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/clean"
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/clean"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func requireBinary(t *testing.T, name string) {

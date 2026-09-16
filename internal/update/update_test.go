@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/version"
 )
 
 type mockRunner struct {
@@ -94,7 +94,7 @@ func TestInstallInvokesCloneAndGoInstall(t *testing.T) {
 					return nil, nil
 				}
 			case "bash":
-				return []byte("-X ralph/internal/version.Version=test"), nil
+				return []byte("-X github.com/tireymorris/ralph/internal/version.Version=test"), nil
 			case "go":
 				if c.dir != "" && len(c.args) >= 2 && c.args[0] == "install" && c.args[len(c.args)-1] == "." {
 					gotGoInstall = true

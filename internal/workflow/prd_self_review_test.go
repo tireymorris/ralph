@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/constants"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/prd/prdtest"
-	"ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/constants"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd/prdtest"
+	"github.com/tireymorris/ralph/internal/shared/runner"
 )
 
 func newSelfReviewConfig(t *testing.T) *config.Config {

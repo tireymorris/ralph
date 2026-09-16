@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"ralph/internal/shared/runpaths"
-	"ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
 )
 
 const eventTypeClarifyingQuestions = "EventClarifyingQuestions"

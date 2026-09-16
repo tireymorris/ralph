@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/gitdiff"
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
-	"ralph/internal/shared/prd/prdtest"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/testgit"
-	"ralph/internal/workflow/review"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/gitdiff"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/prd/prdtest"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/testgit"
+	"github.com/tireymorris/ralph/internal/workflow/review"
 )
 
 func TestRunImplementationReviewOnceAtEnd(t *testing.T) {

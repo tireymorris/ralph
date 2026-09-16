@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"ralph/internal/shared/logger"
-	"ralph/internal/shared/prd"
+	"github.com/tireymorris/ralph/internal/shared/logger"
+	"github.com/tireymorris/ralph/internal/shared/prd"
 )
 
 func describeBlockedStories(p *prd.PRD, blocked []*prd.Story) string {

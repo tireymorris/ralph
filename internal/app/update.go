@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"ralph/internal/args"
-	"ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/args"
+	"github.com/tireymorris/ralph/internal/update"
 )
 
 var (

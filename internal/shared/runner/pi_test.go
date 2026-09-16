@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func TestPiRunnerRunArgs(t *testing.T) {

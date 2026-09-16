@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"ralph/internal/update"
-	"ralph/internal/version"
+	"github.com/tireymorris/ralph/internal/update"
+	"github.com/tireymorris/ralph/internal/version"
 )
 
 var (

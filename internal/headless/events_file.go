@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
 )
 
 func writeRunEventFile(workDir, runID string, line []byte) error {

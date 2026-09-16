@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	promptpkg "ralph/internal/prompt"
-	"ralph/internal/shared/config"
+	promptpkg "github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func TestNewCopilot(t *testing.T) {

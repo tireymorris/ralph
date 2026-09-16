@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/runstate"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow"
 )
 
 func TestFileReviewLoopClearRecoveryPersistsReviewFieldsInMetaJSON(t *testing.T) {

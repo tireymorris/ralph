@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/web/runs"
 )
 
 type followUpRequest struct {

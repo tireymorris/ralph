@@ -6,15 +6,15 @@ import (
 	"os"
 	"sync"
 
-	"ralph/internal/prompt"
-	"ralph/internal/shared/config"
-	"ralph/internal/shared/runner"
-	"ralph/internal/shared/runpaths"
-	"ralph/internal/shared/runstate"
-	"ralph/internal/shared/session"
-	"ralph/internal/web/runs"
-	"ralph/internal/workflow"
-	"ralph/internal/workflow/events"
+	"github.com/tireymorris/ralph/internal/prompt"
+	"github.com/tireymorris/ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/runner"
+	"github.com/tireymorris/ralph/internal/shared/runpaths"
+	"github.com/tireymorris/ralph/internal/shared/runstate"
+	"github.com/tireymorris/ralph/internal/shared/session"
+	"github.com/tireymorris/ralph/internal/web/runs"
+	"github.com/tireymorris/ralph/internal/workflow"
+	"github.com/tireymorris/ralph/internal/workflow/events"
 )
 
 type RunController struct {

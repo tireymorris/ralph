@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"ralph/internal/shared/config"
+	"github.com/tireymorris/ralph/internal/shared/config"
 )
 
 func manualRunnerPrompt(t *testing.T) string {
